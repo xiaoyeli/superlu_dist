@@ -258,7 +258,7 @@ int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 	}
 
     return 0;
-}
+} /* end zzRecvLPanel */
 
 int_t zzSendUPanel(int_t k, int_t receiver,
                     zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
@@ -327,7 +327,7 @@ int_t zzRecvUPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 		}
 	}
     return 0;
-}
+} /* end zzRecvUPanel */
 
 
 int_t zp3dScatter(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *supernodeMask)

@@ -253,12 +253,11 @@ float symbfact_dist
  *  combined left-looking, right-looking approach. 
  * </pre>
  */
-  NRformat_loc *Astore;
-  int iam, szSep, fstP, lstP, npNode, nlvls, lvl, p, iSep, jSep;
+  int iam, szSep, fstP, lstP, npNode, lvl, iSep, jSep;
   int iinfo; /* return code */
-  int_t m, n;
+  int_t n;
   int_t nextl, nextu, neltsZr, neltsTotal, nsuper_loc, szLGr, szUGr;
-  int_t ind_blk, nsuper, vtx, min_mn, szsn;
+  int_t ind_blk, nsuper, vtx, szsn;
   long long int nnzL, nnzU, nnzLU;
   float stat_loc[23], stat_glob[23], mem_glob[15];
   
@@ -307,8 +306,9 @@ float symbfact_dist
     PS.allocMem += 2 * nprocs_symb * sizeof(MPI_Comm);
   }
   
-  nlvls = (int) LOG2( nprocs_num ) + 1;
 #if ( PROFlevel>=1 )
+  int nlvls;
+  nlvls = (int) LOG2( nprocs_num ) + 1;
   time_lvlsT = (double *) SUPERLU_MALLOC(3*nprocs_symb*(nlvls+1) 
 					 * sizeof(double));
   time_lvls  = (double *) SUPERLU_MALLOC(3*(nlvls+1) * sizeof(double));
@@ -329,9 +329,8 @@ float symbfact_dist
   nextl   = 0; nextu      = 0;
   neltsZr = 0; neltsTotal = 0;
   
-  m = A->nrow;
+  //m = A->nrow;
   n = A->ncol;
-  min_mn = SUPERLU_MIN( m, n );
   
   if (!(tempArray = intMalloc_symbfact(n))) {
     fprintf (stderr, "Malloc fails for tempArray[].\n");  
@@ -370,8 +369,10 @@ float symbfact_dist
 
     /* Allocate storage common to the symbolic factor routines */
     if ((iinfo = symbfact_alloc (options, n, nprocs_symb, Pslu_freeable, 
-				 &Llu_symbfact, &VInfo, &CS, &PS))) 
-      return (PS.allocMem);
+				 &Llu_symbfact, &VInfo, &CS, &PS))) {
+	printf("ERROR: symbfact_alloc: iinfo %.0f\n", (float) iinfo);
+	return (PS.allocMem);
+    }
     /* Copy the redistributed input matrix AS at the end of the memory buffer
        allocated to store L and U.  That is, copy (AS.x_ainf, AS.ind_ainf) in
        (xlsub, lsub), (AS.x_asup, AS.ind_asup) in (xusub, usub).  Free the
@@ -715,6 +716,7 @@ float symbfact_dist
 #endif      
 
 #if ( PROFlevel>=1 )
+      int p;
       printf("Distribute matrix time = %8.3f\n", t_symbFact[0]);
       printf("Count vertices time    = %8.3f\n", t_symbFact[2]);
       printf("Symbfact DIST time     = %8.3f\n", t_symbFact[1]);
@@ -875,16 +877,16 @@ cntsVtcs
   int_t nvtcs_loc, ind_blk, vtx, vtx_lid, ii, jj, lv, vtx_elt, cur_blk;
   int_t fstVtx, lstVtx, fstVtx_blk, lstVtx_blk;
   int_t nelts, nelts_new_blk;
-  int_t *xlsub, *lsub, *xusub, *usub, *globToLoc, maxNvtcsPProc;
+  int_t *xlsub, *lsub, *xusub, *usub;
   int_t *minElt_vtx, *cntelt_vtcs;
   
   /* Initialization */
+  //int_t globToLoc = Pslu_freeable->globToLoc;
+  //int_t maxNvtcsPProc = Pslu_freeable->maxNvtcsPProc;
   xlsub = Llu_symbfact->xlsub; lsub = Llu_symbfact->lsub;
   xusub = Llu_symbfact->xusub; usub = Llu_symbfact->usub;
   cntelt_vtcs = Llu_symbfact->cntelt_vtcs;
-  globToLoc = Pslu_freeable->globToLoc;
   nvtcs_loc = VInfo->nvtcs_loc;
-  maxNvtcsPProc = Pslu_freeable->maxNvtcsPProc;
   if (Llu_symbfact->szLsub - VInfo->nnz_ainf_loc > n)
     minElt_vtx = lsub;
   else { 
@@ -1050,7 +1052,7 @@ symbfact_mapVtcs
   int szSep, npNode, firstP, p, iSep, jSep, ind_ap_s, ind_ap_d;
   int_t k, n, kk;
   int_t fstVtx, lstVtx;
-  int_t fstVtxBlk, ind_blk;
+  int_t ind_blk;
   int_t noVtcsProc, noBlk;
   int_t nvtcs_loc; /* number of vertices owned by process iam */
   int_t nblks_loc; /* no of blocks owned by process iam */
@@ -1125,7 +1127,7 @@ symbfact_mapVtcs
 	/* superior levels of the separator tree */
 	k = fstVtx;
 	noVtcsProc = maxSzBlk;
-	fstVtxBlk = fstVtx;
+	// fstVtxBlk = fstVtx;
 	if ((jSep - iSep) % 2 == 0) ind_ap_d = (jSep - iSep) * npNode;
 	/* first allocate processors from previous levels */	
 	for (ind_ap_s = (jSep-iSep) * npNode; ind_ap_s < (jSep-iSep+1) * npNode; ind_ap_s ++) {
@@ -1287,12 +1289,11 @@ symbfact_distributeMatrix
  * Ainf : inferior part of A, including diagonal.
  * Asup : superior part of A.
  */
-  int p, p_irow, code_err, ainf_data;
+  int p, p_irow, ainf_data;
   int_t n, m_loc, fst_row;
   int_t i, j, k, irow, jcol;
   NRformat_loc *Astore;
   int_t  nnz_loc, nnz_iam;    /* number of local nonzeros */
-  int_t  nnz_remote; /* number of remote nonzeros to be sent */
   int_t  SendCnt; /* number of remote nonzeros to be sent */
   int_t  RecvCnt; /* number of remote nonzeros to be received */
   /* number of nonzeros to send/receive per processor */
@@ -1699,7 +1700,7 @@ float allocPrune_lvl
 {
   int_t  lword;
   int_t  nzlmaxPr, nzumaxPr, *xlsubPr, *xusubPr, *lsubPr, *usubPr;
-  int_t  nvtcs_loc, no_expand_pr, x_sz;
+  int_t  no_expand_pr, x_sz;
   float  alpha = 1.5;
   int_t  FILL = sp_ienv_dist(6, options);
   
@@ -1708,7 +1709,7 @@ float allocPrune_lvl
   CHECK_MALLOC(iam, "Enter allocPrune_lvl()");
 #endif
   
-  nvtcs_loc = VInfo->nvtcs_loc;
+  //nvtcs_loc = VInfo->nvtcs_loc;
   
   no_expand_pr = 0;
   lword     = (int_t) sizeof(int_t);
@@ -1815,7 +1816,7 @@ allocPrune_domain
 {
   int_t  lword;
   int_t  nzlmaxPr, nzumaxPr, *xlsubPr, *xusubPr, *lsubPr, *usubPr;
-  int_t  nvtcs_loc, no_expand_pr, x_sz;
+  int_t  no_expand_pr, x_sz;
   float  alpha = 1.5;
   int_t  FILL = 2 * sp_ienv_dist(6, options);
   
@@ -1824,7 +1825,7 @@ allocPrune_domain
   CHECK_MALLOC(iam, "Enter allocPrune_domain()");
 #endif
   
-  nvtcs_loc = VInfo->nvtcs_loc;
+  //nvtcs_loc = VInfo->nvtcs_loc;
   
   no_expand_pr = 0;
   lword     = (int_t) sizeof(int_t);
@@ -1912,13 +1913,13 @@ int symbfact_alloc
  * Return value:
  *     0 if enough memory was available;
  *     otherwise, return the amount of space intended to allocate 
- *     when memory allocation failure occurred.
+ *                when memory allocation failure occurred.
  * </pre>
  */
 {
   int    nlvls, p;  /* no of levels in the separator tree */
   int_t  lword, no_expand;
-  int_t  *xsup, *supno;
+  int_t  *supno;
   int_t  *lsub, *xlsub;
   int_t  *usub, *xusub;
   int_t  nzlmax, nzumax, nnz_a_loc;
@@ -2051,14 +2052,14 @@ symbfact_vtx
  )
 { 
   int_t x_aind_beg, x_aind_end;
-  int_t k, vtx_elt, ind, pr, pr_lid, mem_error, ii, jj, compRcvd;
+  int_t k, vtx_elt, ind, pr_lid, mem_error, compRcvd;
   int_t *xsub, *sub, *xsubPr, *subPr, *xsub_rcvd, *xsub_src, *sub_src;
-  int_t pr_elt, next, prval_curvtx, maxNvtcsPProc;
-  int_t  neltsVtx, neltsMatched, neltsZrVtx, neltsZrSn, neltsVtx_CSep;
-  int_t  neltsVtxInit, kk;
+  int_t pr_elt, next, prval_curvtx;
+  int_t  neltsVtx, neltsMatched, neltsZrVtx, neltsVtx_CSep;
+  int_t  neltsVtxInit;
   int   diagind, upd_lstSn;
   
-  maxNvtcsPProc = Pslu_freeable->maxNvtcsPProc;
+  //maxNvtcsPProc = Pslu_freeable->maxNvtcsPProc;
   upd_lstSn     = FALSE;
   diagind       = FALSE;
   prval_curvtx  = *p_prval_curvtx;
@@ -2197,7 +2198,7 @@ symbfact_vtx
   neltsVtx = next - xsub[vtx_lid];
   neltsZrVtx = 0; /* number of zero elements which would
 		     be introduced in the vertex */
-  neltsZrSn = 0; /* -"- in the supernode */
+  //neltsZrSn = 0; /* -"- in the supernode */
   neltsMatched = 0; 
   if (vtx != fstVtx) {
     for (k = xsub[snrep_lid]; k < xsub[snrep_lid+1]; k++) {
@@ -2259,8 +2260,8 @@ updateRcvd_prGraph
 )
 {
   int_t i, k, nelts, prVal, vtx_elt, vtx_elt_lid, ind;
-  int_t vtx, vtx_lid, fstVtx_toUpd_lid, fstVtx_srcUpd_lid;
-  int_t *xsub, *sub, *xsub_rcvd, *xsubPr, *subPr, szsubPr, *p_indsubPr;
+  int_t vtx, vtx_lid, fstVtx_toUpd_lid;
+  int_t *sub, *xsub_rcvd, *xsubPr, *subPr, szsubPr, *p_indsubPr;
   int_t maxNvtcsPProc, *globToLoc, mem_error;
   int_t nvtcs_toUpd, fstVtx_srcUpd, vtx_lid_p;
   
@@ -2270,14 +2271,16 @@ updateRcvd_prGraph
   nvtcs_toUpd = lstVtx_toUpd - fstVtx_toUpd;
   
   if (computeL) {
-    xsub = Llu_symbfact->xlsub; sub = Llu_symbfact->lsub;
+      //xsub = Llu_symbfact->xlsub;
+    sub = Llu_symbfact->lsub;
     xsub_rcvd = Llu_symbfact->xlsub_rcvd;
     xsubPr = Llu_symbfact->xlsubPr; subPr = Llu_symbfact->lsubPr;
     p_indsubPr = &(Llu_symbfact->indLsubPr);
     szsubPr = Llu_symbfact->szLsubPr;
   }
   else {
-    xsub = Llu_symbfact->xusub; sub = Llu_symbfact->usub;
+      //xsub = Llu_symbfact->xusub;
+    sub = Llu_symbfact->usub;
     xsub_rcvd = Llu_symbfact->xusub_rcvd;
     xsubPr = Llu_symbfact->xusubPr; subPr = Llu_symbfact->usubPr;
     p_indsubPr = &(Llu_symbfact->indUsubPr);
@@ -2516,13 +2519,13 @@ blk_symbfact
 {
   int szSep_tmp, lvl_tmp, ii, jj;
   int_t  *xlsubPr, *xusubPr; 
-  int_t  *xsup, *supno, *lsub, *xlsub, *usub, *xusub;
-  int_t  vtx_lid, vtx_prid, vtx, vtx_super, vtx_elt, maxNvtcsPProc;
-  int_t  ind, pr, pr_elt, newnext, k, vtx_elt_lid;
+  int_t  *supno, *lsub, *xlsub, *usub, *xusub;
+  int_t  vtx_lid, vtx_prid, vtx, vtx_elt, maxNvtcsPProc;
+  int_t  newnext, k;
   int_t  nextl, nextu, nsuper_loc, nvtcs, n, mem_error;
-  int_t  x_aind_beg, x_aind_end, i, szLp, xlsub_snp1, xusub_snp1;
+  int_t  i, szLp, xlsub_snp1, xusub_snp1;
   int_t  snrep, snrep_lid, szsn, vtxp1, *globToLoc, domain_symb;
-  int_t lstVtx, neltsCurSep, maxNeltsVtx, fstVtx_loc_lid;
+  int_t lstVtx,  maxNeltsVtx, fstVtx_loc_lid;
   /* supernode relaxation parameters */
   int_t  neltsVtx_L, neltsZrVtx_L, neltsMatched_L, neltsVtx_CSep_L;
   int_t  neltsVtx_U, neltsZrVtx_U, neltsMatched_U, neltsVtx_CSep_U;
@@ -2986,16 +2989,15 @@ initLvl_symbfact
  int_t  nextu
  ) 
 {
-  int_t *cntelt_vtcs, x_aind_beg, x_aind_end, x_aind_beg_l, x_aind_beg_u,
+  int_t *cntelt_vtcs, x_aind_end, x_aind_beg_l, x_aind_beg_u,
     nelts_asup, nelts_ainf;
   int_t nvtcsLvl_loc, fstVtx_loc, fstVtx_loc_lid, fstVtx_nextLvl;
   int_t curblk_loc, nblks_loc, ind_blk;
   int_t *lsub, *xlsub, *usub, *xusub;
-  int_t *begEndBlks_loc, code_err, mem_error;
-  int_t i, j, k, vtx, vtx_lid, fstVtx_blk, lstVtx_blk, vtx_elt, p, fill;
+  int_t *begEndBlks_loc, mem_error;
+  int_t k, vtx, vtx_lid, fstVtx_blk, lstVtx_blk, fill;
   int_t nelts, nelts_fill_l, nelts_fill_u, nelts_cnts, maxNvtcsPProc, *globToLoc;
   int_t use_fillcnts, cntelt_vtx_l, cntelt_vtx_u;
-  MPI_Status status;
   
 #if ( DEBUGlevel>=1 )
   CHECK_MALLOC(iam, "Enter initLvl_symbfact()");
@@ -3204,7 +3206,7 @@ expand_RL
 {
   int_t fstVtx_toUpd_lid, vtx_lid, vtx, vtx_elt, vtx_elt_lid, nextl, nelts_in;
   int_t i, ii, j, nelts, nelts_vtx, mpnelts, lvtx_lid, elt, vtxXp_lid;
-  int_t *xusubPr, *usubPr, *xlsub, *lsub, *xusub, *usub;
+  int_t *xusubPr, *usubPr, *xlsub, *lsub;
   int_t markl, *globToLoc, maxNvtcsPProc;
   int_t mem_error, len_texp;
   
@@ -3213,12 +3215,16 @@ expand_RL
 
   xusubPr = Llu_symbfact->xlsubPr; usubPr  = Llu_symbfact->lsubPr;
   if (computeL) {
-    xlsub   = Llu_symbfact->xlsub;   lsub    = Llu_symbfact->lsub;
-    xusub   = Llu_symbfact->xusub;   usub    = Llu_symbfact->usub;
+    xlsub   = Llu_symbfact->xlsub;
+    lsub    = Llu_symbfact->lsub;
+    //xusub   = Llu_symbfact->xusub;
+    //usub    = Llu_symbfact->usub;
   }
   else {
-    xlsub   = Llu_symbfact->xusub;   lsub    = Llu_symbfact->usub;
-    xusub   = Llu_symbfact->xlsub;   usub    = Llu_symbfact->lsub;
+    xlsub   = Llu_symbfact->xusub;
+    lsub    = Llu_symbfact->usub;
+    //xusub   = Llu_symbfact->xlsub;
+    //usub    = Llu_symbfact->lsub;
   }
   markl = *pmarkl + 1;
   fstVtx_toUpd_lid = LOCAL_IND( globToLoc[fstVtx_toUpd] );
@@ -3351,7 +3357,7 @@ rl_update
   int_t fstVtx_toUpd_lid, markl, elt, vtx_loc, ind_blk;
   int_t *xusubPr, *usubPr, *xlsub, *lsub, *xusub, *usub;
   int_t fstVtx_upd, lstVtx_upd, maxNvtcsPProc, *globToLoc;
-  int_t fstVtx_srcUpd_lid, nelts_vtx, expand;
+  int_t fstVtx_srcUpd_lid;
   
   /* quick return */
   if (fstVtx_toUpd >= lstVtx_toUpd)
@@ -3365,11 +3371,13 @@ rl_update
   xusubPr = Llu_symbfact->xlsubPr; usubPr  = Llu_symbfact->lsubPr;
   if (computeL) {
     xlsub   = Llu_symbfact->xlsub;   lsub    = Llu_symbfact->lsub;
-    xusub   = Llu_symbfact->xusub;   usub    = Llu_symbfact->usub;
+    xusub   = Llu_symbfact->xusub;
+    //usub    = Llu_symbfact->usub;
   }
   else {
     xlsub   = Llu_symbfact->xusub;   lsub    = Llu_symbfact->usub;
-    xusub   = Llu_symbfact->xlsub;   usub    = Llu_symbfact->lsub;
+    xusub   = Llu_symbfact->xlsub;
+    //usub    = Llu_symbfact->lsub;
   }
   markl = *pmarkl;
   fstVtx_toUpd_lid = LOCAL_IND( globToLoc[fstVtx_toUpd] );
@@ -3789,7 +3797,7 @@ dnsCurSep_symbfact
     fstVtx, lstVtx, lstVtx_dns_lid;
   int_t ind_blk, i, vtx, vtx_lid, vtx_lid_x, nvtcs_upd, save_cnt, mem_error;
   int_t computeL, computeU, vtx_elt, j, cur_blk, snlid, snrep;
-  int_t *sub, *xsub, *minElt_vtx, *cntelt_vtcs;
+  int_t *sub, *xsub, *minElt_vtx;
   int_t mark, next, *x_newelts, *x_newelts_L, *x_newelts_U;
   int_t *newelts_L, *newelts_U, *newelts;
   int_t *globToLoc, maxNvtcsPProc, lvl;
@@ -4291,20 +4299,16 @@ interLvl_symbfact
   int   nprocsLvl, rcvdP, p, filledSep_lvl;
   int   toSend, toSendL, toSendU;
   int_t *rcv_interLvl;
-  int_t *snd_interLvl, *snd_interLvl1, *snd_interLvl2,
-    snd_interLvlSz, snd_LinterLvlSz, snd_vtxLvl;
+  int_t *snd_interLvl, snd_interLvlSz, snd_LinterLvlSz, snd_vtxLvl;
   int_t  vtx_elt, update_loc, code_err;
   int_t *lsub, *xlsub, *usub, *xusub;
   int_t *lsub_rcvd, lsub_rcvd_sz, *usub_rcvd, usub_rcvd_sz;
   int_t  n, mark, max_rcvSz; 
-  int_t nextl, nextu, ind_blk, vtx_lid, k, count, nelts, 
-    lstVtxLvl_loc, lstVtxLvl_loc_lid, mem_error;
-  int_t fstVtx_blk, lstVtx_blk, i, j, vtx, prElt_L, prElt_U, 
-    snd_indBlk, prElt_ind;
+  int_t nextl, nextu, ind_blk, vtx_lid, k, nelts, lstVtxLvl_loc_lid, mem_error;
+  int_t fstVtx_blk, lstVtx_blk, i, j, vtx, prElt_L, prElt_U, snd_indBlk;
   int_t fstVtxLvl_loc, nvtcsLvl_loc, maxNvtcsPProc, *globToLoc, 
     fstVtx, lstVtx;
-  int  ind1, nprocsToRcv, nprocsToSnd, ind2, ind_l, ind_u, ij, ik;
-  int_t req_ind, sent_msgs, req_ind_snd;
+  int  ind1, nprocsToRcv, nprocsToSnd, ind2, ind_l, ij, ik;
   int_t initInfo_loc[2], initInfo_gl[2];
 
 #if ( DEBUGlevel>=1 )
@@ -4489,7 +4493,7 @@ interLvl_symbfact
 	}
       }
     }
-    lstVtxLvl_loc = vtx;
+    //lstVtxLvl_loc = vtx;  NOT USED
     lstVtxLvl_loc_lid = vtx_lid;
   }
   
@@ -4631,7 +4635,8 @@ interLvl_symbfact
 	  rcvdP = p; p = lstP;
 	  if (ind1 == ij) ind2 = ij+1;
 	  else ind2 = ind1 - 1;
-	  ind_l = ij; ind_u = ij+1;
+	  ind_l = ij;
+	  //ind_u = ij+1; NOT USED
 	}
 	ij += 2;
       }
@@ -4676,7 +4681,7 @@ interLvl_symbfact
 #endif
   
   return 0;
-}
+} /* end interLvl_symbfact */
 
 static void
 freeComm
@@ -4687,8 +4692,8 @@ freeComm
  MPI_Comm *symb_comm /* Input - communicator for symbolic factorization */
  )
 {
-  int szSep, i, j, k;
-  int np, npNode, fstP, lstP, ind;
+  int szSep, i, j;
+  int npNode, fstP, lstP, ind;
 
   i = 2 * nprocs - 2;
   MPI_Comm_free (&(commLvls[i]));
@@ -4723,8 +4728,8 @@ createComm
  MPI_Comm *symb_comm
  )
 {
-  int szSep, i, j, jj, k, *pranks;
-  int np, npNode, fstP, lstP, p, code_err, ind, col, key;
+  int szSep, i, j, *pranks;
+  int npNode, fstP, lstP, ind, col, key;
   
   for (i=0; i < 2*nprocs; i++)
     commLvls[i] = MPI_COMM_NULL;
@@ -4794,17 +4799,17 @@ intraLvl_symbfact
 {
   int nprocsLvl, p, prvP, rcvP;
   int toSend, rcvd_prvP, index_req[2];
-  int_t fstVtx_loc_lid, fstVtx_loc, vtx, vtxLvl, curblk_loc, denseSep;
-  int_t fstVtx_blk, fstVtx_blk_lid, lstVtx_blk, lstVtx_blk_lid, tag;
+  int_t fstVtx_loc, vtx, denseSep;
+  int_t fstVtx_blk, fstVtx_blk_lid, lstVtx_blk, tag;
   int_t nvtcs_blk, xusub_end, xlsub_end, prv_fstVtx_blk;
   int_t n;
   int_t *rcv_intraLvl, *snd_intraLvl;
   int_t *lsub_rcvd, lsub_rcvd_sz, *usub_rcvd, usub_rcvd_sz;
   int_t nmsgsRcvd, nmsgsTRcv, sz_msg;
-  int_t nvtcsLvl_loc, nextl, nextu, ind_blk, snd_vtxLvl, maxNeltsVtx_in;
-  int_t count, vtx_loc, mem_error, lstBlkRcvd;
-  int_t fstVtx_blk_loc, fstBlk, vtx_lid, prElt, nelts, j, nvtcs_toUpd;
-  int_t snd_LinterLvlSz, fstVtx_blk_loc_lid, prElt_ind, maxNmsgsToRcv;
+  int_t nvtcsLvl_loc, nextl, nextu, snd_vtxLvl, maxNeltsVtx_in;
+  int_t mem_error, lstBlkRcvd;
+  int_t vtx_lid, nelts, j, nvtcs_toUpd;
+  int_t maxNmsgsToRcv;
   int_t *xlsub, *xusub, *lsub, *usub;
   int_t *globToLoc, maxNvtcsPProc, nblk_loc, upd_myD, r, fstVtx_blkCyc;
   int_t k, prElt_L, prElt_U, vtx_elt, fstVtx_toUpd;
@@ -4837,7 +4842,7 @@ intraLvl_symbfact
   nblk_loc        = 0;
   nvtcs_toUpd     = nvtcsLvl_loc;
   fstVtx_blk      = fstVtx;
-  denseSep        = FALSE;
+  //denseSep        = FALSE;
 
   /* determine first vertex that belongs to fstP */
   k = fstVtx;
@@ -4856,7 +4861,7 @@ intraLvl_symbfact
     request[r] = MPI_REQUEST_NULL;
 
   fstVtx_loc = VInfo->begEndBlks_loc[VInfo->curblk_loc];
-  fstVtx_loc_lid = LOCAL_IND( globToLoc[fstVtx_loc] ); 
+  //fstVtx_loc_lid = LOCAL_IND( globToLoc[fstVtx_loc] ); 
   vtx = fstVtx_loc;
   if (fstVtx_loc >= fstVtx_blkCyc)
     nblk_loc = 1;
@@ -4870,7 +4875,7 @@ intraLvl_symbfact
     lstVtx_blk     = VInfo->begEndBlks_loc[VInfo->curblk_loc + 1];
     fstVtx_toUpd   = VInfo->begEndBlks_loc[VInfo->curblk_loc + 2];
     fstVtx_blk_lid = LOCAL_IND( globToLoc[fstVtx_blk] );
-    lstVtx_blk_lid = LOCAL_IND( globToLoc[lstVtx_blk - 1] + 1);
+    //lstVtx_blk_lid = LOCAL_IND( globToLoc[lstVtx_blk - 1] + 1);
     nvtcs_blk      = lstVtx_blk - fstVtx_blk;
     nvtcs_toUpd   -= nvtcs_blk;
     nmsgsTRcv      = n;
@@ -5013,7 +5018,7 @@ intraLvl_symbfact
 	       (lstVtx - fstVtx_blkCyc > VInfo->maxSzBlk * nprocsLvl && nblk_loc == 0))))
 	  /* if current separator is dense and this is not the last block, 
 	     then ... */
-	  denseSep = TRUE;
+	   denseSep = TRUE;
 	else
 	  /* separator dense but not enough uncomputed blocks 
 	     in the separator to take advantage of it */
@@ -5232,7 +5237,7 @@ intraLvl_symbfact
   CHECK_MALLOC(iam, "Exit intraLvl_symbfact()");
 #endif
   
-}
+} /* end intraLvl_symbfact */
 
 static void
 symbfact_free 
@@ -5301,7 +5306,7 @@ estimate_memUsage
  )
 {
   int_t nvtcs_loc, lword, nsuper_loc;
-  float lu_mem, other_mem, overestimMem;
+  float lu_mem, overestimMem;
   
   nvtcs_loc = VInfo->nvtcs_loc;
   nsuper_loc = Pslu_freeable->supno_loc[nvtcs_loc];

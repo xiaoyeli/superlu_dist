@@ -1188,10 +1188,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		}
 #endif
 
-
-
-
-
 		t = SuperLU_timer_();
 
 		/*factorize in grid 1*/
@@ -1211,28 +1207,56 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
 
+			if(options->batchCount == 0)
+			{
 #define TEMPLATED_VERSION 
 #ifdef TEMPLATED_VERSION
-dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-						  SCT, options, stat, thresh, info);
-			
-			/* call pdgstrf3d() in C++ code */
-			pdgstrf3d_LUv1(dLUgpu);
-			
-			dCopyLUGPU2Host(dLUgpu, LUstruct);
-			dDestroyLUgpuHandle(dLUgpu);
+				dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+							SCT, options, stat, thresh, info);
+				
+				/* call pdgstrf3d() in C++ code */
+				pdgstrf3d_LUv1(dLUgpu);
+				
+				dCopyLUGPU2Host(dLUgpu, LUstruct);
+				dDestroyLUgpuHandle(dLUgpu);
 #else 
-			/* call constructor in C++ code */
-			LUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-						  SCT, options, stat, thresh, info);
+				/* call constructor in C++ code */
+				LUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+							SCT, options, stat, thresh, info);
 
-			/* call pdgstrf3d() in C++ code */
-			pdgstrf3d_LUpackedInterface(LUgpu);
-			
-			copyLUGPU2Host(LUgpu, LUstruct);
-			destroyLUgpuHandle(LUgpu);
+				/* call pdgstrf3d() in C++ code */
+				pdgstrf3d_LUpackedInterface(LUgpu);
+				
+				copyLUGPU2Host(LUgpu, LUstruct);
+				destroyLUgpuHandle(LUgpu);
 #endif /* TEMPLATED_VERSION */
+			}
+			else 
+			{
+#ifdef HAVE_MAGMA
+				BatchFactorize_Handle batch_ws = getBatchFactorizeWorkspace(
+					nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info
+				);
 
+				int maxLvl = log2i(grid3d->zscp.Np) + 1;
+				
+				for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
+				{
+					if (!trf3Dpartition->myZeroTrIdxs[ilvl])
+					{
+						sForest_t *sforest = trf3Dpartition->sForests[trf3Dpartition->myTreeIdxs[ilvl]];
+						if (sforest)
+							dsparseTreeFactorBatchGPU(batch_ws, sforest);
+					}
+				}
+
+				copyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
+				freeBatchFactorizeWorkspace(batch_ws);
+#else 
+					// TODO: How should we handle this?
+				ABORT("Fatal error: Batched mode requires magma support!\n");
+#endif 
+			}
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
 			// 	SCT_printSummary(grid, SCT);

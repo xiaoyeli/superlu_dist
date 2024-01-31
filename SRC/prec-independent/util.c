@@ -354,7 +354,7 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
     double *utime = stat->utime;
     flops_t *ops = stat->ops;
     int_t iam = grid->iam;
-    flops_t flopcnt, factflop, solveflop;
+    flops_t factflop, solveflop;
 
     if (options->PrintStat == NO)
         return;
@@ -373,27 +373,25 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
 	printf("\tDISTRIBUTE time    %8.3f\n", utime[DIST]);
     }
 
-    MPI_Reduce(&ops[FACT], &flopcnt, 1, MPI_FLOAT, MPI_SUM,
+    MPI_Reduce(&ops[FACT], &factflop, 1, MPI_FLOAT, MPI_SUM,
                0, grid->comm);
-    factflop = flopcnt;
     if ( !iam && options->Fact != FACTORED ) {
 	printf("\tFACTOR time        %8.3f\n", utime[FACT]);
 	if ( utime[FACT] != 0.0 )
 	    printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
-		   flopcnt,
-		   flopcnt*1e-6/utime[FACT]);
+		   factflop,
+		   factflop*1e-6/utime[FACT]);
     }
 
-    MPI_Reduce(&ops[SOLVE], &flopcnt, 1, MPI_FLOAT, MPI_SUM,
+    MPI_Reduce(&ops[SOLVE], &solveflop, 1, MPI_FLOAT, MPI_SUM,
                0, grid->comm);
-    solveflop = flopcnt;
     if (!iam)
     {
         printf("\tSOLVE time         %8.3f\n", utime[SOLVE]);
         if (utime[SOLVE] != 0.0)
             printf("\tSolve flops\t%e\tMflops \t%8.2f\n",
-                   flopcnt,
-                   flopcnt * 1e-6 / utime[SOLVE]);
+                   solveflop,
+                   solveflop * 1e-6 / utime[SOLVE]);
         if (options->IterRefine != NOREFINE)
         {
             printf("\tREFINEMENT time    %8.3f\tSteps%8d\n\n",
@@ -402,9 +400,10 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
         printf("**************************************************\n");
     }
 
+#if (PROFlevel >= 1)
     double *utime1, *utime2, *utime3, *utime4;
     flops_t *ops1;
-#if (PROFlevel >= 1)
+
     fflush(stdout);
     MPI_Barrier(grid->comm);
 
@@ -516,7 +515,7 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
         SUPERLU_FREE(ops1);
     }
 
-#endif
+#endif // end if PROFlevel>=1 
 
     /*  if ( !iam ) fflush(stdout);  CRASH THE SYSTEM pierre.  */
 }
@@ -1010,8 +1009,6 @@ int_t num_full_cols_U(
     int_t rukp0 = rukp;
     int_t jb, ljb;
     int nsupc;
-    int full = 1;
-    int full_Phi = 1;
     int temp_ncols = 0;
     int segsize;
 
@@ -1045,7 +1042,6 @@ int_t num_full_cols_U_mod(
     int_t *ldu /* max. segment size of nonzero columns in U(kk,:) */
 )
 {
-    int_t lk = LBi(kk, grid);
 
     if (usub == NULL)
         return 0; /* code */
@@ -1059,8 +1055,6 @@ int_t num_full_cols_U_mod(
     int_t rukp0 = rukp;
     int_t jb, ljb;
     int nsupc;
-    int full = 1;
-    int full_Phi = 1;
     int temp_ncols = 0;
     int segsize;
 
@@ -1086,10 +1080,6 @@ int_t num_full_cols_U_mod(
 }
 
 
-
-
-
-
 int_t estimate_bigu_size(
       int_t nsupers,
       int_t **Ufstnz_br_ptr, /* point to U index[] array */
@@ -1099,11 +1089,9 @@ int_t estimate_bigu_size(
 			  This is used for allocating GEMM V buffer.  */
 			 )
 {
-    int_t iam = grid->iam;
-    int_t Pc = grid->npcol;
-    int_t Pr = grid->nprow;
-    int_t myrow = MYROW(iam, grid);
-    int_t mycol = MYCOL(iam, grid);
+    int iam = grid->iam;
+    int Pr = grid->nprow;
+    int myrow = MYROW(iam, grid);
 
     int_t *xsup = Glu_persist->xsup;
 
@@ -1141,7 +1129,7 @@ int_t estimate_bigu_size(
 #endif
 
     return (max_ldu * (*max_ncols));
-}
+} /* end estimate_bigu_size */
 
 void quickSort(int_t *a, int_t l, int_t r, int_t dir)
 {

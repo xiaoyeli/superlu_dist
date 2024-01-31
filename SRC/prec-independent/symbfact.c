@@ -97,7 +97,6 @@ int_t symbfact
     int_t relax, *desc, *relax_end;
     int_t nnzLU, nnzLSUB;
     int_t nnzL, nnzU;
-    NRformat_loc *Astore;
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(pnum, "Enter symbfact()");

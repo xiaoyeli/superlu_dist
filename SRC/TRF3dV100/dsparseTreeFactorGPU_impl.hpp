@@ -709,7 +709,8 @@ void xLUstruct_t<Ftype>::marshallBatchedBufferCopyData(int k_st, int k_end, int_
 template <typename Ftype>
 void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 {
-#ifdef HAVE_MAGMA
+#if 0//def HAVE_MAGMA
+    //#ifdef HAVE_MAGMA
     // Marshall the data for the leaf level batched LU decomposition
     LUMarshallData &mdata = A_gpu.marshall_data;
     cudaStream_t stream = A_gpu.cuStreams[0];
@@ -804,7 +805,7 @@ int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int tag_ub)
 {
-#ifdef HAVE_MAGMA
+#if 0// def HAVE_MAGMA
     int nnodes = sforest->nNodes; // number of nodes in the tree
     int topoLvl, k_st, k_end, k0, k, offset, ksupc;
     if (nnodes < 1)

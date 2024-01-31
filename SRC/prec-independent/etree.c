@@ -312,8 +312,8 @@ sp_coletree_dist(
  * </pre>
  */
 
-static int_t	*first_kid, *next_kid;	/* Linked list of children.	*/
-static int_t	*post, postnum;
+//static int_t	*first_kid, *next_kid;	/* Linked list of children.	*/
+//static int_t	*post, postnum;
 
 static
 /*

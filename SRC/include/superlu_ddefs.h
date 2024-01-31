@@ -1548,7 +1548,11 @@ extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_
 
 extern int pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                            gridinfo_t *grid, SuperLUStat_t * stat);
-
+extern void pdconvert_flatten_skyline2UROWDATA(superlu_dist_options_t *options, gridinfo_t *grid,
+	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n);
+extern void pdconvertUROWDATA2skyline(superlu_dist_options_t *options, gridinfo_t *grid,
+	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n);
+       
 extern int_t
 dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
                 Glu_freeable_t *Glu_freeable, int_t *xsup, int_t *supno,

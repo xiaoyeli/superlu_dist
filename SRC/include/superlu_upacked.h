@@ -113,6 +113,23 @@ typedef struct cLUstruct_t cLUstruct_t;
 
     extern int pzgstrf3d_LUpackedInterface(zLUgpu_Handle LUHand);
 
+    struct BatchFactorizeWorkspace;
+    typedef struct BatchFactorizeWorkspace* BatchFactorize_Handle;
+
+    extern int dsparseTreeFactorBatchGPU(BatchFactorize_Handle ws, sForest_t *sforest);
+
+    extern BatchFactorize_Handle getBatchFactorizeWorkspace(
+        int_t nsupers, int_t ldt, dtrf3Dpartition_t *trf3Dpartition, dLUstruct_t *LUstruct, 
+        gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info
+    );
+
+    extern void copyGPULUDataToHost(
+        BatchFactorize_Handle ws, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+        SCT_t *SCT_, superlu_dist_options_t *options, SuperLUStat_t *stat
+    );
+
+    extern void freeBatchFactorizeWorkspace(BatchFactorize_Handle ws);
+
 #ifdef __cplusplus
 }
 #endif

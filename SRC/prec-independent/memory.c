@@ -66,7 +66,7 @@ void *superlu_malloc_dist(size_t size)
     int iam;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &iam);
-    if ( size < 0 ) {
+    if ( size <= 0 ) {
 	printf("(%d) superlu_malloc size %lu\n", iam, size);
 	ABORT("superlu_malloc: nonpositive size");
     }
