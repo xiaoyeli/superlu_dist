@@ -86,12 +86,16 @@ struct MarshallTRSMUFunc_flat {
 
         if(Ucolind_br && Unzval && Lrowind_bc && Lnzval)
         {
+            int upanel_rows = Ucolind_br[2];
+            int sup_offset = ksupc - upanel_rows;
+
             panel_ptrs[i] = Unzval;
-            panel_ld_batch[i] = Ucolind_br[2];
+            panel_ld_batch[i] = upanel_rows;
             panel_dim_batch[i] = Ucolind_br[1];
-            diag_ptrs[i] = Lnzval;
+
+            diag_ptrs[i] = Lnzval + sup_offset + sup_offset * Lrowind_bc[1];
             diag_ld_batch[i] = Lrowind_bc[1];
-            diag_dim_batch[i] = ksupc;
+            diag_dim_batch[i] = upanel_rows;
         }
         else
         {
@@ -197,6 +201,7 @@ struct MarshallSCUFunc_flat {
     {
         int_t k = dperm_c_supno[k_st + i];
         
+        int_t ksupc = SuperSize(k);
         int_t *Ucolind_br = Ucolind_br_ptr[k];
         double* Unzval = Unzval_br_new_ptr[k];
         int_t *Lrowind_bc = Lrowind_bc_ptr[k];
@@ -204,21 +209,24 @@ struct MarshallSCUFunc_flat {
 
         if(Ucolind_br && Unzval && Lrowind_bc && Lnzval)
         {
+            int upanel_rows = Ucolind_br[2];
+            int sup_offset = ksupc - upanel_rows;
+
             int_t diag_block_offset = Lrowind_bc[BC_HEADER + 1];
             int_t L_nzrows = Lrowind_bc[1];
             int_t L_len = L_nzrows - diag_block_offset;
 
-            A_ptrs[i] = Lnzval + diag_block_offset;
+            A_ptrs[i] = Lnzval + diag_block_offset + sup_offset * L_nzrows;
             B_ptrs[i] = Unzval;
             C_ptrs[i] = dgpuGemmBuffs[i];
 
             lda_array[i] = L_nzrows;
-            ldb_array[i] = Ucolind_br[2];
+            ldb_array[i] = upanel_rows;
             ldc_array[i] = L_len;
                         
-            m_array[i] = ldc_array[i];
+            m_array[i] = L_len;
             n_array[i] = Ucolind_br[1];
-            k_array[i] = SuperSize(k);
+            k_array[i] = upanel_rows;
 
             ist[i] = 1;
             jst[i] = 0;

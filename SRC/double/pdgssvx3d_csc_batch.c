@@ -195,14 +195,14 @@ pdgssvx3d_csc_batch(
     dpivot_batch(options, batchCount, m, n, SparseMatrix_handles,
 		 ReqPtr, CeqPtr, DiagScale, RpivPtr);
     
-    for (d = 0; d < batchCount; ++d) {
-	printf("DiagScale[%d] %d\n", d, DiagScale[d]);
-	if ( DiagScale[d] ) {
-	    Printdouble5("ReqPtr[d]", m, ReqPtr[d]);
-	    Printdouble5("CeqPtr[d]", m, CeqPtr[d]);
-	}
-	PrintInt32("RpivPtr[d]", m, RpivPtr[d]);
-    }
+    // for (d = 0; d < batchCount; ++d) {
+	// printf("DiagScale[%d] %d\n", d, DiagScale[d]);
+	// if ( DiagScale[d] ) {
+	//     Printdouble5("ReqPtr[d]", m, ReqPtr[d]);
+	//     Printdouble5("CeqPtr[d]", m, CeqPtr[d]);
+	// }
+	// PrintInt32("RpivPtr[d]", m, RpivPtr[d]);
+    // }
     
     stat->utime[ROWPERM] = SuperLU_timer_() - t;
     t = SuperLU_timer_();
@@ -212,9 +212,9 @@ pdgssvx3d_csc_batch(
      * A may be overwritten as Pr*R*A*C from previous steps, but is not modified in this routine.
      */
     get_perm_c_batch(options, batchCount, SparseMatrix_handles, CpivPtr); 
-    for (d = 0; d < batchCount; ++d) {
-	PrintInt32("CpivPtr[d]", m, CpivPtr[d]);
-    }
+    // for (d = 0; d < batchCount; ++d) {
+	//     PrintInt32("CpivPtr[d]", m, CpivPtr[d]);
+    // }
     stat->utime[COLPERM] = SuperLU_timer_() - t;
 
     /*---------------------
