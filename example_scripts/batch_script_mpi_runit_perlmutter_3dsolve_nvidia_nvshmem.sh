@@ -13,7 +13,7 @@
 #modules:
 module load PrgEnv-nvidia 
 module load cudatoolkit
-module load cray-libsci/23.02.1.1
+module load cray-libsci
 module load cmake
 
 # ulimit -s unlimited
@@ -81,9 +81,9 @@ fi
 # npz=(64 32 16)
 # nrhs=(1 50) 
 
-nprows=(2 )
+nprows=(1 )
 npcols=(1 )
-npz=(2 )
+npz=(1 )
 nrhs=(1)
 
 NTH=1
@@ -134,12 +134,12 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # export NSUP=256
 # export NREL=256
 # for MAT in big.rua
-# for MAT in g20.rua
+for MAT in g20.rua
 # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua
 # for MAT in dielFilterV3real.bin
 # for MAT in Geo_1438.bin s2D9pt2048.rua raefsky3.mtx rma10.mtx
 # for MAT in Geo_1438.bin 
-for MAT in s1_mat_0_126936.bin
+# for MAT in s1_mat_0_126936.bin
 # for MAT in s2D9pt2048.rua
 # for MAT in s2D9pt1536.rua
 # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin
@@ -153,9 +153,9 @@ do
 export SUPERLU_ACC_SOLVE=1
 
 
-# # srun -n $NCORE_VAL_TOT2D -N $NODE_VAL2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
-# export SUPERLU_ACC_OFFLOAD=0
-srun -n $NCORE_VAL_TOT2D -N $NODE_VAL2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
+# # # srun -n $NCORE_VAL_TOT2D -N $NODE_VAL2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
+# # export SUPERLU_ACC_OFFLOAD=0
+# srun -n $NCORE_VAL_TOT2D -N $NODE_VAL2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
 
 # unset SUPERLU_ACC_SOLVE
 # echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}"

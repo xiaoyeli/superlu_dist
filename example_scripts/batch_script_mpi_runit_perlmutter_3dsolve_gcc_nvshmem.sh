@@ -2,12 +2,12 @@
 #
 #modules:
 module load PrgEnv-gnu
-module load gcc/11.2.0
+# module load gcc/11.2.0
 module load cmake
-module load cudatoolkit/11.7
+module load cudatoolkit/12.2
 # avoid bug in cray-libsci/21.08.1.2
 # module load cray-libsci/22.11.1.2
-module load cray-libsci/23.02.1.1
+module load cray-libsci/23.12.5
 ulimit -s unlimited
 #MPI settings:
 export MPICH_GPU_SUPPORT_ENABLED=1
@@ -68,7 +68,7 @@ else
   exit $EXIT_HOST
 fi
 nprows=(2)
-npcols=(2)
+npcols=(1)
 npz=(1)
 nrhs=(1)
 NTH=1
@@ -118,10 +118,10 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # export NREL=256
 # for MAT in big.rua
 # for MAT in Geo_1438.bin
-# for MAT in g20.rua
+for MAT in big.rua
 # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua
 # for MAT in dielFilterV3real.bin
-for MAT in rma10.mtx 
+# for MAT in rma10.mtx 
 # for MAT in raefsky3.mtx
 # for MAT in s2D9pt2048.rua raefsky3.mtx rma10.mtx
 # for MAT in s1_mat_0_126936.bin  # for MAT in s1_mat_0_126936.bin
@@ -146,13 +146,14 @@ do
 
 SUPERLU_ACC_OFFLOAD=1
 export GPU3DVERSION=0
+export SUPERLU_ACC_SOLVE=1
 echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
 srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
 
-SUPERLU_ACC_OFFLOAD=1
-export GPU3DVERSION=1
-echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
-srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
+# SUPERLU_ACC_OFFLOAD=1
+# export GPU3DVERSION=1
+# echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
 
 
 # export SUPERLU_ACC_SOLVE=1

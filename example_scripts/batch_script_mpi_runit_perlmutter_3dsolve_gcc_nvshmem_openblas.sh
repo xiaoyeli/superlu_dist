@@ -2,9 +2,9 @@
 #
 #modules:
 module load PrgEnv-gnu
-module load gcc/11.2.0
-module load cmake/3.22.0
-module load cudatoolkit/11.7
+# module load gcc/11.2.0
+module load cmake
+module load cudatoolkit/12.2
 module unload cray-libsci
 
 #MPI settings:
@@ -21,7 +21,7 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 
 
-export SUPERLU_LBS=ND  
+export SUPERLU_LBS=GD  
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
 export GPU3DVERSION=0
 export NEW3DSOLVE=1

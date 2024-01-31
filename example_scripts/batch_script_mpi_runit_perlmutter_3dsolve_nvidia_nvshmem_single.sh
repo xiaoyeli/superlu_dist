@@ -13,7 +13,7 @@
 #modules:
 module load PrgEnv-nvidia 
 module load cudatoolkit
-module load cray-libsci/23.02.1.1
+module load cray-libsci
 module load cmake
 
 # ulimit -s unlimited
