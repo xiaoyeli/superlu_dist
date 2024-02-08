@@ -430,6 +430,7 @@ pdgssvx3d_csc_batch(
 	
 	A = (SuperMatrix *) SparseMatrix_handles[d];
 	perm_c = CpivPtr[d];
+    perm_r = RpivPtr[d];
 	
 	/* Permute the solution matrix z <= Pc'*y */
 	//PrintInt32("prepare Pc'*y: perm_c", n, perm_c);
