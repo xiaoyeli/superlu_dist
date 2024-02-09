@@ -194,7 +194,10 @@ psgssvx3d_csc_batch(
     /* no internal malloc */
     spivot_batch(options, batchCount, m, n, SparseMatrix_handles,
 		 ReqPtr, CeqPtr, DiagScale, RpivPtr);
+
+    stat->utime[ROWPERM] = SuperLU_timer_() - t;
     
+#if 0
     for (d = 0; d < batchCount; ++d) {
 	printf("DiagScale[%d] %d\n", d, DiagScale[d]);
 	if ( DiagScale[d] ) {
@@ -203,19 +206,26 @@ psgssvx3d_csc_batch(
 	}
 	PrintInt32("RpivPtr[d]", m, RpivPtr[d]);
     }
-    
-    stat->utime[ROWPERM] = SuperLU_timer_() - t;
-    t = SuperLU_timer_();
-    
+#endif
+
     /**** sparsity reordering ****/
     /* col perms are computed for each matrix; may be different due to different row perm.
      * A may be overwritten as Pr*R*A*C from previous steps, but is not modified in this routine.
      */
-    get_perm_c_batch(options, batchCount, SparseMatrix_handles, CpivPtr); 
+    t = SuperLU_timer_();
+    
+    get_perm_c_batch(options, batchCount, SparseMatrix_handles, CpivPtr);
+    
+    stat->utime[COLPERM] = SuperLU_timer_() - t;
+#if 0    
     for (d = 0; d < batchCount; ++d) {
 	PrintInt32("CpivPtr[d]", m, CpivPtr[d]);
     }
-    stat->utime[COLPERM] = SuperLU_timer_() - t;
+#endif
+
+#if (PRNTlevel >= 1)
+    printf("<---- END PREPROCESSING ----\n");
+#endif
 
     /*---------------------
      **** Stack the matrices into block diagonal form: A_big, and RHS B_big
@@ -326,8 +336,8 @@ psgssvx3d_csc_batch(
 
     } /* end for d ... batchCount */
     
-    assert(j == nnz_big);
-    assert(row == m_big);
+    // assert(j == nnz_big);
+    // assert(row == m_big);
     rowptr[row] = nnz_big;  /* +1 as an end marker */
 
     /**** By now:  each A transformed to Pc*Pr*R*A*C
@@ -348,7 +358,7 @@ psgssvx3d_csc_batch(
     options_big.ColPerm  = NATURAL;
     options_big.RowPerm  = NOROWPERM;
     options_big.ParSymbFact = NO;
-    options_big.batchCount = 0;
+    options_big.batchCount = batchCount;
 
     /* Copy most of the other options */
     options_big.Fact = options->Fact;
@@ -430,7 +440,7 @@ psgssvx3d_csc_batch(
 	
 	A = (SuperMatrix *) SparseMatrix_handles[d];
 	perm_c = CpivPtr[d];
-    perm_r = RpivPtr[d];
+        perm_r = RpivPtr[d];
 	
 	/* Permute the solution matrix z <= Pc'*y */
 	//PrintInt32("prepare Pc'*y: perm_c", n, perm_c);

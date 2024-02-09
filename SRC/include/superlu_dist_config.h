@@ -1,7 +1,7 @@
 /* superlu_dist_config.h.in */
 
 /* Enable CUDA */
-#define HAVE_CUDA TRUE
+/* #undef HAVE_CUDA */
 
 /* Enable NVSHMEM */
 /* #undef HAVE_NVSHMEM */
@@ -22,7 +22,7 @@
 /* #undef HAVE_COMBBLAS */
 
 /* Enable MAGMA */
-#define HAVE_MAGMA TRUE
+/* #undef HAVE_MAGMA */
 
 /* enable 64bit index mode */
 /* #undef XSDK_INDEX_SIZE */
