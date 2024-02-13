@@ -16,42 +16,35 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Device functions and kernels 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-__device__ int find_entry_index_flat(int *index_list, int index, int n)
+__device__ int_t find_entry_index_flat(int_t *index_list, int_t index, int_t n)
 {
     int threadId = threadIdx.x;
-    __shared__ int idx;
-    __shared__ int found;
-    if (!threadId)
-    {
+    __shared__ int_t idx;
+    
+    if (!threadId)    
         idx = -1;
-        found = 0;
-    }
+
     __syncthreads();
 
     int nThreads = blockDim.x;
     int blocksPerThreads = CEILING(n, nThreads);
 
-    for (int blk = blocksPerThreads * threadIdx.x;
+    for (int_t blk = blocksPerThreads * threadIdx.x;
          blk < blocksPerThreads * (threadIdx.x + 1);
          blk++)
     {
-        // if(found) break;
-
         if (blk < n)
         {
             if(index == index_list[blk])
-            {
                 idx = blk;
-                found = 1;
-            }
         }
     }
     __syncthreads();
     return idx;
 }
 
-__device__ int computeIndirectMapGPU_flat(int *rcS2D, int_t srcLen, int_t *srcVec, int_t src_first_index,
-                                     int_t dstLen, int_t *dstVec, int_t dst_first_index, int *dstIdx)
+__device__ int computeIndirectMapGPU_flat(int_t *rcS2D, int_t srcLen, int_t *srcVec, int_t src_first_index,
+                                     int_t dstLen, int_t *dstVec, int_t dst_first_index, int_t *dstIdx)
 {
     int threadId = threadIdx.x;
     if (dstVec == NULL) /*uncompressed dimension*/
@@ -74,30 +67,30 @@ __device__ int computeIndirectMapGPU_flat(int *rcS2D, int_t srcLen, int_t *srcVe
 }
 
 __global__ void scatterGPU_batch_flat(
-    int k_st, int maxSuperSize, double **gemmBuff_ptrs, int *LDgemmBuff_batch,
-    double **Unzval_br_new_ptr, int** Ucolind_br_ptr, double** Lnzval_bc_ptr, 
-    int** Lrowind_bc_ptr, int** lblock_gid_ptrs, int **lblock_start_ptrs, 
-    int *dperm_c_supno, int *xsup
+    int_t k_st, int_t maxSuperSize, double **gemmBuff_ptrs, BatchDim_t *LDgemmBuff_batch,
+    double **Unzval_br_new_ptr, int_t** Ucolind_br_ptr, double** Lnzval_bc_ptr, 
+    int_t** Lrowind_bc_ptr, int_t** lblock_gid_ptrs, int_t **lblock_start_ptrs, 
+    int_t *dperm_c_supno, int_t *xsup
 )
 {
     int batch_index = blockIdx.z;
-    int k = dperm_c_supno[k_st + batch_index];
+    int_t k = dperm_c_supno[k_st + batch_index];
     
     double* gemmBuff = gemmBuff_ptrs[batch_index];
-    int *Ucolind_br = Ucolind_br_ptr[k];
-    int *Lrowind_bc = Lrowind_bc_ptr[k];
-    int *lblock_gid = lblock_gid_ptrs[k];
-    int *lblock_start = lblock_start_ptrs[k];
+    int_t *Ucolind_br = Ucolind_br_ptr[k];
+    int_t *Lrowind_bc = Lrowind_bc_ptr[k];
+    int_t *lblock_gid = lblock_gid_ptrs[k];
+    int_t *lblock_start = lblock_start_ptrs[k];
 
     if(!Ucolind_br || !Lrowind_bc || !gemmBuff || !lblock_gid || !lblock_start)
         return;
 
-    int L_blocks = Lrowind_bc[0];    
-    int U_blocks = Ucolind_br[0];
-    int LDgemmBuff = LDgemmBuff_batch[batch_index];
+    int_t L_blocks = Lrowind_bc[0];    
+    int_t U_blocks = Ucolind_br[0];
+    BatchDim_t LDgemmBuff = LDgemmBuff_batch[batch_index];
 
-    int ii = 1 + blockIdx.x;
-    int jj = blockIdx.y;
+    int_t ii = 1 + blockIdx.x;
+    int_t jj = blockIdx.y;
 
     if(ii >= L_blocks || jj >= U_blocks)
         return;
@@ -105,8 +98,8 @@ __global__ void scatterGPU_batch_flat(
     // calculate gi, gj
     int threadId = threadIdx.x;
 
-    int gi = lblock_gid[ii];
-    int gj = Ucolind_br[UB_DESCRIPTOR_NEWUCPP + jj];
+    int_t gi = lblock_gid[ii];
+    int_t gj = Ucolind_br[UB_DESCRIPTOR_NEWUCPP + jj];
     
     double *Dst;
     int_t lddst;
@@ -114,16 +107,16 @@ __global__ void scatterGPU_batch_flat(
     int_t *dstRowList;
     int_t *dstColList;
     int_t dst_row_first_index, dst_col_first_index;
-    int li = 0, lj = 0;
+    int_t li = 0, lj = 0;
 
     if (gj > gi) // its in upanel
     {
-        int* U_index_i = Ucolind_br_ptr[gi];
-        int nub = U_index_i[0];
+        int_t* U_index_i = Ucolind_br_ptr[gi];
+        int_t nub = U_index_i[0];
         lddst = U_index_i[2];
         lj = find_entry_index_flat(U_index_i + UB_DESCRIPTOR_NEWUCPP, gj, nub);
         li = gi;
-        int col_offset = U_index_i[UB_DESCRIPTOR_NEWUCPP + nub + lj];
+        int_t col_offset = U_index_i[UB_DESCRIPTOR_NEWUCPP + nub + lj];
         Dst = Unzval_br_new_ptr[gi] + lddst * col_offset;
         dstRowLen = lddst;
         dstRowList = NULL;
@@ -134,12 +127,12 @@ __global__ void scatterGPU_batch_flat(
     }
     else
     {
-        int* L_index_j = Lrowind_bc_ptr[gj], *ljblock_start = lblock_start_ptrs[gj];
-        int nlb = L_index_j[0];
+        int_t* L_index_j = Lrowind_bc_ptr[gj], *ljblock_start = lblock_start_ptrs[gj];
+        int_t nlb = L_index_j[0];
         lddst = L_index_j[1];
         li = find_entry_index_flat(lblock_gid_ptrs[gj], gi, nlb);
         lj = gj;
-        int row_offset = ljblock_start[li];
+        int_t row_offset = ljblock_start[li];
         Dst = Lnzval_bc_ptr[gj] + row_offset;
         dstRowLen = ljblock_start[li + 1] - row_offset;
         dstRowList = L_index_j + BC_HEADER + (li + 1) * LB_DESCRIPTOR + row_offset;
@@ -150,19 +143,19 @@ __global__ void scatterGPU_batch_flat(
     }
 
     // compute source row to dest row mapping
-    extern __shared__ int baseSharedPtr[];
-    int *rowS2D = baseSharedPtr;
-    int *colS2D = &rowS2D[maxSuperSize];
-    int *dstIdx = &colS2D[maxSuperSize];
+    extern __shared__ int_t baseSharedPtr[];
+    int_t *rowS2D = baseSharedPtr;
+    int_t *colS2D = &rowS2D[maxSuperSize];
+    int_t *dstIdx = &colS2D[maxSuperSize];
 
-    int ublock_start = Ucolind_br[UB_DESCRIPTOR_NEWUCPP + U_blocks + jj];
-    int nrows = lblock_start[ii + 1] - lblock_start[ii];
-    int ncols = Ucolind_br[UB_DESCRIPTOR_NEWUCPP + U_blocks + jj + 1] - ublock_start;
+    int_t ublock_start = Ucolind_br[UB_DESCRIPTOR_NEWUCPP + U_blocks + jj];
+    int_t nrows = lblock_start[ii + 1] - lblock_start[ii];
+    int_t ncols = Ucolind_br[UB_DESCRIPTOR_NEWUCPP + U_blocks + jj + 1] - ublock_start;
 
-    int *lpanel_row_list = Lrowind_bc + BC_HEADER + (ii + 1) * LB_DESCRIPTOR + lblock_start[ii];
-    int *upanel_col_list = Ucolind_br + UB_DESCRIPTOR_NEWUCPP + 2 * U_blocks + 1 + ublock_start;
-    int lpanel_first_index = xsup[gi];
-    int upanel_first_index = xsup[gj];
+    int_t *lpanel_row_list = Lrowind_bc + BC_HEADER + (ii + 1) * LB_DESCRIPTOR + lblock_start[ii];
+    int_t *upanel_col_list = Ucolind_br + UB_DESCRIPTOR_NEWUCPP + 2 * U_blocks + 1 + ublock_start;
+    int_t lpanel_first_index = xsup[gi];
+    int_t upanel_first_index = xsup[gj];
 
     computeIndirectMapGPU_flat(rowS2D, nrows, lpanel_row_list, lpanel_first_index,
                           dstRowLen, dstRowList, dst_row_first_index, dstIdx);
@@ -174,11 +167,11 @@ __global__ void scatterGPU_batch_flat(
     int nThreads = blockDim.x;
     int colsPerThreadBlock = nThreads / nrows;
 
-    int rowOff = lblock_start[ii] - lblock_start[1];
-    int colOff = ublock_start;
+    int_t rowOff = lblock_start[ii] - lblock_start[1];
+    int_t colOff = ublock_start;
 
     double *Src = &gemmBuff[rowOff + colOff * LDgemmBuff];
-    int ldsrc = LDgemmBuff;
+    int_t ldsrc = LDgemmBuff;
 
     // TODO: this seems inefficient
     if (threadId < nrows * colsPerThreadBlock)
@@ -207,18 +200,18 @@ __global__ void scatterGPU_batch_flat(
 }
 
 inline void scatterGPU_batchDriver_flat(
-    int k_st, int maxSuperSize, double **gemmBuff_ptrs, int *LDgemmBuff_batch,
-    double **Unzval_br_new_ptr, int** Ucolind_br_ptr, double** Lnzval_bc_ptr, 
-    int** Lrowind_bc_ptr, int** lblock_gid_ptrs, int **lblock_start_ptrs, 
-    int *dperm_c_supno, int *xsup, int ldt, int max_ilen, int max_jlen, int batchCount, 
-    cudaStream_t cuStream
+    int_t k_st, int_t maxSuperSize, double **gemmBuff_ptrs, BatchDim_t *LDgemmBuff_batch,
+    double **Unzval_br_new_ptr, int_t** Ucolind_br_ptr, double** Lnzval_bc_ptr, 
+    int_t** Lrowind_bc_ptr, int_t** lblock_gid_ptrs, int_t **lblock_start_ptrs, 
+    int_t *dperm_c_supno, int_t *xsup, int_t ldt, BatchDim_t max_ilen, BatchDim_t max_jlen, 
+    BatchDim_t batchCount, cudaStream_t cuStream
 )
 {
-    const int op_increment = 65535;
+    const BatchDim_t op_increment = 65535;
     
-    for(int op_start = 0; op_start < batchCount; op_start += op_increment)
+    for(BatchDim_t op_start = 0; op_start < batchCount; op_start += op_increment)
 	{
-		int batch_size = std::min(op_increment, batchCount - op_start);
+		BatchDim_t batch_size = std::min(op_increment, batchCount - op_start);
     
         dim3 dimBlock(ldt); // 1d thread
         dim3 dimGrid(max_ilen, max_jlen, batch_size);
@@ -254,16 +247,16 @@ BatchLUMarshallData::~BatchLUMarshallData()
     gpuErrchk(cudaFree(dev_panel_dim_array));
 }
 
-void BatchLUMarshallData::setBatchSize(int_t batch_size)
+void BatchLUMarshallData::setBatchSize(BatchDim_t batch_size)
 {
     gpuErrchk(cudaMalloc(&dev_diag_ptrs, batch_size * sizeof(double*)));
     gpuErrchk(cudaMalloc(&dev_panel_ptrs, batch_size * sizeof(double*)));
 
-    gpuErrchk(cudaMalloc(&dev_diag_ld_array, batch_size * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_diag_dim_array, (batch_size + 1) * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_info_array, batch_size * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_panel_ld_array, batch_size * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_panel_dim_array, (batch_size + 1) * sizeof(int_t)));
+    gpuErrchk(cudaMalloc(&dev_diag_ld_array, batch_size * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_diag_dim_array, (batch_size + 1) * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_info_array, batch_size * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_panel_ld_array, batch_size * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_panel_dim_array, (batch_size + 1) * sizeof(BatchDim_t)));
 }
 
 BatchSCUMarshallData::BatchSCUMarshallData()
@@ -291,24 +284,24 @@ BatchSCUMarshallData::~BatchSCUMarshallData()
     gpuErrchk(cudaFree(dev_jend));
 }
 
-void BatchSCUMarshallData::setBatchSize(int_t batch_size)
+void BatchSCUMarshallData::setBatchSize(BatchDim_t batch_size)
 {
     gpuErrchk(cudaMalloc(&dev_A_ptrs, batch_size * sizeof(double*)));
     gpuErrchk(cudaMalloc(&dev_B_ptrs, batch_size * sizeof(double*)));
     gpuErrchk(cudaMalloc(&dev_C_ptrs, batch_size * sizeof(double*)));
 
-    gpuErrchk(cudaMalloc(&dev_lda_array, batch_size * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_ldb_array, batch_size * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_ldc_array, batch_size * sizeof(int_t)));
+    gpuErrchk(cudaMalloc(&dev_lda_array, batch_size * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_ldb_array, batch_size * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_ldc_array, batch_size * sizeof(BatchDim_t)));
 
-    gpuErrchk(cudaMalloc(&dev_m_array, (batch_size + 1) * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_n_array, (batch_size + 1) * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_k_array, (batch_size + 1) * sizeof(int_t)));
+    gpuErrchk(cudaMalloc(&dev_m_array, (batch_size + 1) * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_n_array, (batch_size + 1) * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_k_array, (batch_size + 1) * sizeof(BatchDim_t)));
 
-    gpuErrchk(cudaMalloc(&dev_ist, batch_size * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_iend, batch_size * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_jst, batch_size * sizeof(int_t)));
-    gpuErrchk(cudaMalloc(&dev_jend, batch_size * sizeof(int_t)));
+    gpuErrchk(cudaMalloc(&dev_ist, batch_size * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_iend, batch_size * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_jst, batch_size * sizeof(BatchDim_t)));
+    gpuErrchk(cudaMalloc(&dev_jend, batch_size * sizeof(BatchDim_t)));
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -391,11 +384,11 @@ void marshallBatchedSCUData(BatchFactorizeWorkspace* ws, int_t k_st, int_t k_end
     thrust::for_each(thrust::system::cuda::par, start, end, func);
 
     // Set the max dims in the marshalled data 
-    sc_mdata.max_m = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_m_array, sc_mdata.dev_m_array + sc_mdata.batchsize, 0, thrust::maximum<int_t>());
-    sc_mdata.max_n = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_n_array, sc_mdata.dev_n_array + sc_mdata.batchsize, 0, thrust::maximum<int_t>());
-    sc_mdata.max_k = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_k_array, sc_mdata.dev_k_array + sc_mdata.batchsize, 0, thrust::maximum<int_t>());
-    sc_mdata.max_ilen = thrust::transform_reduce(thrust::system::cuda::par, start, end, element_diff<int_t>(sc_mdata.dev_ist, sc_mdata.dev_iend), 0, thrust::maximum<int_t>());
-    sc_mdata.max_jlen = thrust::transform_reduce(thrust::system::cuda::par, start, end, element_diff<int_t>(sc_mdata.dev_jst, sc_mdata.dev_jend), 0, thrust::maximum<int_t>());
+    sc_mdata.max_m = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_m_array, sc_mdata.dev_m_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_n = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_n_array, sc_mdata.dev_n_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_k = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_k_array, sc_mdata.dev_k_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_ilen = thrust::transform_reduce(thrust::system::cuda::par, start, end, element_diff<BatchDim_t>(sc_mdata.dev_ist, sc_mdata.dev_iend), 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_jlen = thrust::transform_reduce(thrust::system::cuda::par, start, end, element_diff<BatchDim_t>(sc_mdata.dev_jst, sc_mdata.dev_jend), 0, thrust::maximum<BatchDim_t>());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -511,22 +504,22 @@ void batchAllocateGemmBuffers(
     int_t mxLeafNode = trf3Dpartition->mxLeafNode;
 
     // TODO: is this necessary if this is being done on a single node?
-    int maxLvl = log2i(grid3d->zscp.Np) + 1;
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 
     std::vector<int64_t> gemmCsizes(mxLeafNode, 0);
 	int_t mx_fsize = 0;
 	
-	for (int ilvl = 0; ilvl < maxLvl; ++ilvl) 
+	for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl) 
     {
-	    int treeId = trf3Dpartition->myTreeIdxs[ilvl];
+	    int_t treeId = trf3Dpartition->myTreeIdxs[ilvl];
 	    sForest_t* sforest = trf3Dpartition->sForests[treeId];
 	    if (sforest)
         {
             int_t *perm_c_supno = sforest->nodeList;
             mx_fsize = max(mx_fsize, sforest->nNodes);
 
-            int maxTopoLevel = sforest->topoInfo.numLvl;
-            for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl) 
+            int_t maxTopoLevel = sforest->topoInfo.numLvl;
+            for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl) 
             {
                 int_t k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
                 int_t k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
@@ -724,8 +717,8 @@ BatchFactorizeWorkspace* getBatchFactorizeWorkspace(
     // TODO: this should be assigned somewhere 
     const int device_id = 0;
 
-    int* xsup = LUstruct->Glu_persist->xsup;
-    int n = xsup[nsupers];
+    int_t* xsup = LUstruct->Glu_persist->xsup;
+    int_t n = xsup[nsupers];
     gridinfo_t *grid = &(grid3d->grid2d);
     pdconvert_flatten_skyline2UROWDATA(options, grid, LUstruct, stat, n);
 
@@ -772,7 +765,7 @@ void copyGPULUDataToHost(
 
     // Convert the host data from block row to skyline 
     int_t* xsup = LUstruct->Glu_persist->xsup;
-    int n = xsup[ws->nsupers];
+    int_t n = xsup[ws->nsupers];
     gridinfo_t *grid = &(grid3d->grid2d);
     pdconvertUROWDATA2skyline(options, grid, LUstruct, stat, n);
 }

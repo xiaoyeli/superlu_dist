@@ -7,13 +7,13 @@
 #include "superlu_defs.h"
 
 struct MarshallLUFunc_flat {
-    int_t k_st, *ld_batch, *dim_batch;
+    BatchDim_t *ld_batch, *dim_batch;
     double** diag_ptrs, **Lnzval_bc_ptr;
-    int_t** Lrowind_bc_ptr, *xsup, *dperm_c_supno;
+    int_t k_st, **Lrowind_bc_ptr, *xsup, *dperm_c_supno;
     
     MarshallLUFunc_flat(
-        int_t k_st, double** diag_ptrs, int_t *ld_batch, int_t *dim_batch, double** Lnzval_bc_ptr,
-        int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, int_t *xsup
+        int_t k_st, double** diag_ptrs, BatchDim_t *ld_batch, BatchDim_t *dim_batch, 
+        double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, int_t *xsup
     )
     {
         this->k_st = k_st;
@@ -49,13 +49,13 @@ struct MarshallLUFunc_flat {
 };
 
 struct MarshallTRSMUFunc_flat {
-    int_t k_st, *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
+    BatchDim_t *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
     double** diag_ptrs, **panel_ptrs, **Unzval_br_new_ptr, **Lnzval_bc_ptr;
-    int_t** Ucolind_br_ptr, **Lrowind_bc_ptr, *xsup, *dperm_c_supno;
+    int_t k_st, **Ucolind_br_ptr, **Lrowind_bc_ptr, *xsup, *dperm_c_supno;
 
     MarshallTRSMUFunc_flat(
-        int_t k_st, double** diag_ptrs, int_t *diag_ld_batch, int_t *diag_dim_batch, double** panel_ptrs,
-        int_t *panel_ld_batch, int_t *panel_dim_batch, double **Unzval_br_new_ptr, int_t** Ucolind_br_ptr, 
+        int_t k_st, double** diag_ptrs, BatchDim_t *diag_ld_batch, BatchDim_t *diag_dim_batch, double** panel_ptrs,
+        BatchDim_t *panel_ld_batch, BatchDim_t *panel_dim_batch, double **Unzval_br_new_ptr, int_t** Ucolind_br_ptr, 
         double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, int_t *xsup
     )
     {
@@ -107,13 +107,13 @@ struct MarshallTRSMUFunc_flat {
 };
 
 struct MarshallTRSMLFunc_flat {
-    int_t k_st, *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
+    BatchDim_t *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
     double** diag_ptrs, **panel_ptrs, **Lnzval_bc_ptr;
-    int_t** Lrowind_bc_ptr, *xsup,  *dperm_c_supno;
+    int_t k_st, **Lrowind_bc_ptr, *xsup,  *dperm_c_supno;
 
     MarshallTRSMLFunc_flat(
-        int_t k_st, double** diag_ptrs, int_t *diag_ld_batch, int_t *diag_dim_batch, double** panel_ptrs,
-        int_t *panel_ld_batch, int_t *panel_dim_batch, double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, 
+        int_t k_st, double** diag_ptrs, BatchDim_t *diag_ld_batch, BatchDim_t *diag_dim_batch, double** panel_ptrs,
+        BatchDim_t *panel_ld_batch, BatchDim_t *panel_dim_batch, double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, 
         int_t *dperm_c_supno, int_t *xsup
     )
     {
@@ -162,16 +162,17 @@ struct MarshallTRSMLFunc_flat {
 
 struct MarshallSCUFunc_flat {
     double** A_ptrs, **B_ptrs, **C_ptrs;
-    int_t* lda_array, *ldb_array, *ldc_array, *m_array, *n_array, *k_array;
+    BatchDim_t* lda_array, *ldb_array, *ldc_array, *m_array, *n_array, *k_array;
     double **Unzval_br_new_ptr, **Lnzval_bc_ptr, **dgpuGemmBuffs;
     int_t** Ucolind_br_ptr, **Lrowind_bc_ptr, *xsup, *dperm_c_supno, k_st;
-    int_t *ist, *iend, *jst, *jend;
+    BatchDim_t *ist, *iend, *jst, *jend;
 
     MarshallSCUFunc_flat(
-        int_t k_st, double** A_ptrs, int_t* lda_array, double** B_ptrs, int_t* ldb_array, double **C_ptrs, int_t *ldc_array,
-        int_t *m_array, int_t *n_array, int_t *k_array, int_t *ist, int_t *iend, int_t *jst, int_t *jend, 
-        double **Unzval_br_new_ptr, int_t** Ucolind_br_ptr, double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, 
-        int_t *dperm_c_supno, int_t *xsup, double** dgpuGemmBuffs
+        int_t k_st, double** A_ptrs, BatchDim_t* lda_array, double** B_ptrs, BatchDim_t* ldb_array, 
+        double **C_ptrs, BatchDim_t *ldc_array, BatchDim_t *m_array, BatchDim_t *n_array, BatchDim_t *k_array, 
+        BatchDim_t *ist, BatchDim_t *iend, BatchDim_t *jst, BatchDim_t *jend, double **Unzval_br_new_ptr, 
+        int_t** Ucolind_br_ptr, double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, 
+        int_t *xsup, double** dgpuGemmBuffs
     )
     {
         this->k_st = k_st;

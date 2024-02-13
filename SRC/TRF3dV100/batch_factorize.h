@@ -6,7 +6,11 @@
 
 #ifdef HAVE_MAGMA
 #include "magma.h"
+#define BatchDim_t magma_int_t
+#else 
+#define BatchDim_t int_t
 #endif
+
 // Device memory used to store marshalled batch data for LU and TRSM
 struct BatchLUMarshallData 
 {
@@ -15,19 +19,19 @@ struct BatchLUMarshallData
 
     // Diagonal device pointer data 
     double **dev_diag_ptrs;
-    int_t *dev_diag_ld_array, *dev_diag_dim_array, *dev_info_array;
+    BatchDim_t *dev_diag_ld_array, *dev_diag_dim_array, *dev_info_array;
     
     // TRSM panel device pointer data 
     double **dev_panel_ptrs;
-    int_t *dev_panel_ld_array, *dev_panel_dim_array;
+    BatchDim_t *dev_panel_ld_array, *dev_panel_dim_array;
 
     // Max of marshalled device data 
-    int_t max_panel, max_diag;
+    BatchDim_t max_panel, max_diag;
 
     // Number of marshalled operations
-    int_t batchsize;
+    BatchDim_t batchsize;
 
-    void setBatchSize(int_t batch_size);
+    void setBatchSize(BatchDim_t batch_size);
 };
 
 // Device memory used to store marshalled batch data for Schur complement update 
@@ -38,22 +42,22 @@ struct BatchSCUMarshallData
 
     // GEMM device pointer data 
     double **dev_A_ptrs, **dev_B_ptrs, **dev_C_ptrs;
-    int_t *dev_lda_array, *dev_ldb_array, *dev_ldc_array;
-    int_t *dev_m_array, *dev_n_array, *dev_k_array;
+    BatchDim_t *dev_lda_array, *dev_ldb_array, *dev_ldc_array;
+    BatchDim_t *dev_m_array, *dev_n_array, *dev_k_array;
 
     // Panel device pointer data and scu loop limits 
-    int_t* dev_ist, *dev_iend, *dev_jst, *dev_jend;
+    BatchDim_t* dev_ist, *dev_iend, *dev_jst, *dev_jend;
     
     // Max of marshalled gemm device data 
-    int_t max_m, max_n, max_k;    
+    BatchDim_t max_m, max_n, max_k;    
     
     // Max of marshalled loop limits  
-    int_t max_ilen, max_jlen;
+    BatchDim_t max_ilen, max_jlen;
 
     // Number of marshalled operations
-    int_t batchsize;
+    BatchDim_t batchsize;
 
-    void setBatchSize(int_t batch_size);
+    void setBatchSize(BatchDim_t batch_size);
 };
 
 struct BatchFactorizeWorkspace {
