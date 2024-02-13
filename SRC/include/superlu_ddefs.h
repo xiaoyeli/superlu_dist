@@ -771,9 +771,6 @@ extern int_t dleafForestForwardSolve3d(superlu_dist_options_t *options, int_t tr
                                dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
 
 
-extern int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
-                           dScalePermstruct_t * ScalePermstruct,
-                           int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat);
 extern int_t dreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
                       dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, double* recvbuf, xtrsTimer_t *xtrsTimer);
 
@@ -988,7 +985,8 @@ extern void dscaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *, SuperMatri
 extern void dperform_row_permutation(superlu_dist_options_t *, fact_t Fact,
            dScalePermstruct_t *, dLUstruct_t *LUstruct, int_t m, int_t n,
 	       gridinfo_t *, SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *,
-	       int job, int_t Equil, int *rowequ, int *colequ, int_t *iinfo);
+	       int job, int Equil, int_t *rowequ, int *colequ, int *iinfo);
+           
 extern double dcomputeA_Norm(int notran, SuperMatrix *, gridinfo_t *);
 extern int dtrs_compute_communication_structure(superlu_dist_options_t *options,
        int_t n, dLUstruct_t *, dScalePermstruct_t * ScalePermstruct,

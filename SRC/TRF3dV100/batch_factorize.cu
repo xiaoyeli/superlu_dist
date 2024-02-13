@@ -771,7 +771,7 @@ void copyGPULUDataToHost(
     gpuErrchk( cudaMemcpy(host_Llu->Unzval_br_new_dat, d_localLU.Unzval_br_new_dat, d_localLU.Unzval_br_new_cnt * sizeof(double), cudaMemcpyDeviceToHost) );
 
     // Convert the host data from block row to skyline 
-    int* xsup = LUstruct->Glu_persist->xsup;
+    int_t* xsup = LUstruct->Glu_persist->xsup;
     int n = xsup[ws->nsupers];
     gridinfo_t *grid = &(grid3d->grid2d);
     pdconvertUROWDATA2skyline(options, grid, LUstruct, stat, n);

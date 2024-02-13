@@ -1303,7 +1303,7 @@ __global__ void swait_bcrd_u
                 int* d_msgnum,
                 int* d_flag_mod_u,
                 float *lsum,    /* Sum of local modifications.                        */
-                int_t *bmod,     /* Modification count for L-solve.                    */
+                int *bmod,     /* Modification count for L-solve.                    */
                 gridinfo_t *grid,
                 int_t *xsup,
                 int_t *ilsum,

@@ -771,9 +771,6 @@ extern int_t zleafForestForwardSolve3d(superlu_dist_options_t *options, int_t tr
                                zSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
 
 
-extern int_t ztrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
-                           zScalePermstruct_t * ScalePermstruct,
-                           int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat);
 extern int_t zreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, doublecomplex* x, int nrhs,
                       ztrf3Dpartition_t*  trf3Dpartition, zLUstruct_t* LUstruct, gridinfo3d_t* grid3d, doublecomplex* recvbuf, xtrsTimer_t *xtrsTimer);
 
@@ -990,7 +987,7 @@ extern void zscaleMatrixDiagonally(fact_t Fact, zScalePermstruct_t *, SuperMatri
 extern void zperform_row_permutation(superlu_dist_options_t *, fact_t Fact,
            zScalePermstruct_t *, zLUstruct_t *LUstruct, int_t m, int_t n,
 	       gridinfo_t *, SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *,
-	       int job, int_t Equil, int *rowequ, int *colequ, int_t *iinfo);
+	       int job, int Equil, int_t *rowequ, int *colequ, int *iinfo);
 extern double zcomputeA_Norm(int notran, SuperMatrix *, gridinfo_t *);
 extern int ztrs_compute_communication_structure(superlu_dist_options_t *options,
        int_t n, zLUstruct_t *, zScalePermstruct_t * ScalePermstruct,

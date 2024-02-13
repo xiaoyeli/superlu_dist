@@ -64,6 +64,7 @@ cmake .. \
   -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
   -DMPIEXEC_MAX_NUMPROCS=16 \
   -Denable_complex16=ON \
+  -DXSDK_INDEX_SIZE=64 \
   -Denable_single=ON
      
 make pddrive -j16
