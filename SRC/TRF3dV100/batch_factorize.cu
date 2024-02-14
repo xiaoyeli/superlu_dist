@@ -720,7 +720,12 @@ BatchFactorizeWorkspace* getBatchFactorizeWorkspace(
     int_t* xsup = LUstruct->Glu_persist->xsup;
     int_t n = xsup[nsupers];
     gridinfo_t *grid = &(grid3d->grid2d);
+
+    double tic = SuperLU_timer_();
+
     pdconvert_flatten_skyline2UROWDATA(options, grid, LUstruct, stat, n);
+
+    double convert_time = SuperLU_timer_() - tic;
 
     // TODO: determine if ldt is supposed to be the same as maxSuperSize?
     ws->ldt = ws->maxSuperSize = ldt;
@@ -732,6 +737,7 @@ BatchFactorizeWorkspace* getBatchFactorizeWorkspace(
     magma_queue_create_from_cuda(device_id, ws->stream, ws->cuhandle, NULL, &ws->magma_queue);
 
     // Copy the xsup to the GPU 
+    tic = SuperLU_timer_();
     gpuErrchk(cudaMalloc(&ws->xsup, (nsupers + 1) * sizeof(int_t)));
     gpuErrchk(cudaMemcpy(ws->xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice));
 
@@ -740,12 +746,20 @@ BatchFactorizeWorkspace* getBatchFactorizeWorkspace(
     // and compute block offsets. Can this be avoided with a change to the L index structure?
     copyHostLUDataToGPU(ws, LUstruct->Llu, nsupers);
 
+    double copy_time = SuperLU_timer_() - tic;
+
     // Allocate marhsalling workspace
+    tic = SuperLU_timer_();
     ws->marshall_data.setBatchSize(trf3Dpartition->mxLeafNode);
     ws->sc_marshall_data.setBatchSize(trf3Dpartition->mxLeafNode);
 
     // Determine buffer sizes for schur complement updates and supernode lists 
     batchAllocateGemmBuffers(ws, LUstruct, trf3Dpartition, grid3d);
+    double ws_time = SuperLU_timer_() - tic;
+    
+    printf("\tSky2UROWDATA Convert time = %.4f\n", convert_time);
+    printf("\tH2D Copy time = %.4f\n", copy_time);
+    printf("\tWorkspace alloc time = %.4f\n", ws_time);
 
     return ws;
 #endif
@@ -759,15 +773,25 @@ void copyGPULUDataToHost(
     dLocalLU_t& d_localLU = ws->d_localLU;
     dLocalLU_t* host_Llu = LUstruct->Llu;
 
+    double tic = SuperLU_timer_();
+    
     // Only need to copy the nzval data arrays when moving from the GPU to the Host 
     gpuErrchk( cudaMemcpy(host_Llu->Lnzval_bc_dat, d_localLU.Lnzval_bc_dat, d_localLU.Lnzval_bc_cnt * sizeof(double), cudaMemcpyDeviceToHost) );
     gpuErrchk( cudaMemcpy(host_Llu->Unzval_br_new_dat, d_localLU.Unzval_br_new_dat, d_localLU.Unzval_br_new_cnt * sizeof(double), cudaMemcpyDeviceToHost) );
+    
+    double copy_time = SuperLU_timer_() - tic;
 
     // Convert the host data from block row to skyline 
     int_t* xsup = LUstruct->Glu_persist->xsup;
     int_t n = xsup[ws->nsupers];
     gridinfo_t *grid = &(grid3d->grid2d);
+
+    tic = SuperLU_timer_();
     pdconvertUROWDATA2skyline(options, grid, LUstruct, stat, n);
+    double convert_time = SuperLU_timer_() - tic;
+
+    printf("\tD2H Copy time = %.4f\n", copy_time);
+    printf("\tConvert time = %.4f\n", convert_time);
 }
 
 void freeBatchFactorizeWorkspace(BatchFactorizeWorkspace* ws)
