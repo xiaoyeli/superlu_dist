@@ -2621,6 +2621,7 @@ t1 = SuperLU_timer_();
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 	t = SuperLU_timer_();
+	t3 = SuperLU_timer_();
 #endif
 
 	/*

@@ -2091,6 +2091,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 	t = SuperLU_timer_();
+	t3 = SuperLU_timer_();
 #endif
 
 	/*
