@@ -1305,6 +1305,7 @@ extern SupernodeToGridMap_t* createSuperGridMap(int_t nsuper,int_t maxLvl, int_t
     int_t *myZeroTrIdxs, int_t* gNodeCount, int_t** gNodeLists);
 extern int_t *createSupernode2TreeMap(int_t nsupers, int_t maxLvl, int_t *gNodeCount, int_t **gNodeLists);
 extern void allocBcastArray(void **array, int_t size, int root, MPI_Comm comm);
+extern void allocBcastLargeArray(void **array, int64_t size, int root, MPI_Comm comm);
 extern int_t* create_iperm_c_supno(int_t nsupers, superlu_dist_options_t *options, Glu_persist_t *Glu_persist, int_t *etree, int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr, gridinfo3d_t *grid3d);
 extern gEtreeInfo_t fillEtreeInfo( int_t nsupers, int_t* setree, treeList_t *treeList);
 extern sForest_t **compute_sForests(int_t nsupers,  Glu_persist_t *Glu_persist, int_t *etree, gridinfo3d_t *grid3d);
