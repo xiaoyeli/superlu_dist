@@ -2714,6 +2714,44 @@ void allocBcastArray(void **array, int_t size, int root, MPI_Comm comm)
     MPI_Bcast(*array, size, MPI_BYTE, root, comm);
 }
 
+void allocBcastLargeArray(void **array, int64_t size, int root, MPI_Comm comm)
+{
+    int rank;
+    MPI_Comm_rank(comm, &rank); // Get the rank of the current process
+
+    // Check if the size is valid
+    if (rank == root)
+    {
+        if (size <= 0)
+        {
+            fprintf(stderr, "Entered large array allocation. Error: Size should be a positive integer.\n");
+            MPI_Abort(comm, EXIT_FAILURE);
+        }
+        
+    }
+
+    // Send the size from root to all other processes in the communicator
+    MPI_Bcast(&size, 1, MPI_INT64_T, root, comm);
+
+    // If I am not the root, receive the size from the root and allocate the array
+    if (rank != root)
+    {
+        *array = SUPERLU_MALLOC(size);
+        if (*array == NULL)
+        {
+            fprintf(stderr, "Error: Failed to allocate memory.\n");
+            MPI_Abort(comm, EXIT_FAILURE);
+        }
+    }
+
+    // Then broadcast the array from the root to all other processes
+    int chunk = size / INT_MAX;
+    for (int i = 0; i < chunk; i++) {
+        MPI_Bcast(&((*array)[i*INT_MAX]), INT_MAX, MPI_BYTE, root, comm);
+    }
+    MPI_Bcast(&((*array)[chunk*INT_MAX]), size-chunk*INT_MAX, MPI_BYTE, root, comm);
+}
+
 sForest_t **compute_sForests(int_t nsupers,  Glu_persist_t *Glu_persist, int_t *etree, gridinfo3d_t *grid3d)
 {
     // Calculation of supernodal etree
