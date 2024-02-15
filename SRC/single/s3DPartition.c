@@ -272,11 +272,11 @@ void sbcastPermutedSparseA(SuperMatrix *A,
 //     int64_t nnzLU;   /* number of nonzeros in L+U*/
 // } Glu_freeable_t;
 
-    allocBcastArray( (void **) &(Glu_freeable->lsub), Glu_freeable->nzlmax*sizeof(int_t),
+    allocBcastLargeArray( (void **) &(Glu_freeable->lsub), Glu_freeable->nzlmax*sizeof(int_t),
         0, grid3d->zscp.comm);
     allocBcastArray( (void **) &(Glu_freeable->xlsub), (n+1)*sizeof(int_t),
         0, grid3d->zscp.comm);
-    allocBcastArray( (void **) &(Glu_freeable->usub), Glu_freeable->nzumax*sizeof(int_t),
+    allocBcastLargeArray( (void **) &(Glu_freeable->usub), Glu_freeable->nzumax*sizeof(int_t),
         0, grid3d->zscp.comm);
     allocBcastArray( (void **) &(Glu_freeable->xusub), (n+1)*sizeof(int_t),
         0, grid3d->zscp.comm);
