@@ -243,7 +243,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     d2Hreduce_t* d2Hred = &d2HredObj;
     dsluGPU_t sluGPUobj;
     dsluGPU_t *sluGPU = &sluGPUobj;
-    sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
+    
     if (superlu_acc_offload)
     {
 #if 0 	/* Sherry: For GPU code on titan, we do not need performance 
@@ -256,7 +256,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         LookUpTableInit(iam);
         acc_async_cost = get_acc_async_cost();
 #endif
-
+    sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
 	//OLD: int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
 	int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
 					      LUstruct->etree,

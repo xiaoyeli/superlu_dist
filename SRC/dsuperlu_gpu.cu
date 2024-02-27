@@ -159,7 +159,7 @@ void device_scatter_u_2D (int thread_id,
     int i;
 
     if ( thread_id < temp_nbrow * ColPerBlock )
-    {    
+    {
 	/* 1D threads are logically arranged in 2D shape. */
 	int thread_id_x  = thread_id % temp_nbrow;
 	int thread_id_y  = thread_id / temp_nbrow;
@@ -208,16 +208,16 @@ void Scatter_GPU_kernel(
 	   assigned to block (lb, j) in 2D grid */
 	int lb = blockIdx.x + ii_st;
 	int j  = blockIdx.y + jj_st;
-	
+
 	extern __shared__ int s[];
 	int* indirect_lptr = s;  /* row-wise */
 	int* indirect2_thread= (int*) &indirect_lptr[ldt]; /* row-wise */
 	int* IndirectJ1= (int*) &indirect2_thread[ldt];    /* column-wise */
 	int* IndirectJ3= (int*) &IndirectJ1[ldt];    /* column-wise */
-	//int THREAD_BLOCK_SIZE =ldt; 
-	
+	//int THREAD_BLOCK_SIZE =ldt;
+
 	int* pfxStorage = (int*) &IndirectJ3[ldt];
-	
+
 	int thread_id = threadIdx.x;
 
 	int iukp = Ublock_info[j].iukp;
@@ -511,6 +511,10 @@ int dSchurCompUpdate_GPU(
 	/*sizeof RemainLbuf = Rnbuf*knsupc */
 	double tTmp = SuperLU_timer_();
 	gpuEventRecord(stat->ePCIeH2D[k0], FunCallStream);
+	//YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
+	gpuEventRecord(stat->GemmStart[k0], FunCallStream);
+	gpuEventRecord(stat->GemmEnd[k0], FunCallStream);
+	gpuEventRecord(stat->ScatterEnd[k0], FunCallStream);
 
 	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].usub_IndirectJ3,
 	                          A_gpu->scubufs[streamId].usub_IndirectJ3_host,
@@ -768,17 +772,20 @@ int dfree_LUstruct_gpu (
 	SUPERLU_FREE(stat->ePCIeH2D);
 	SUPERLU_FREE(stat->ePCIeD2H_Start);
 	SUPERLU_FREE(stat->ePCIeD2H_End);
+	SUPERLU_FREE(sluGPU->isNodeInMyGrid);
+	SUPERLU_FREE(A_gpu->perm_c_supno);
 
 	/* Free the U data structure on GPU */
 	checkGPU(gpuFree(A_gpu->UrowindVec));
 	checkGPU(gpuFree(A_gpu->UrowindPtr));
 
+	free(A_gpu->UnzvalPtr_host);
 	//free(A_gpu->UrowindPtr_host); // Sherry: this is NOT allocated
 
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
 	checkGPU(gpuFree(A_gpu->UnzvalPtr));
 
-	checkGPU(gpuFree(A_gpu->grid));
+	//checkGPU(gpuFree(A_gpu->grid)); // Sherry: this is not used
 
 	/* Free the Schur complement structure on GPU */
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigV));
@@ -797,10 +804,10 @@ int dfree_LUstruct_gpu (
 
 	checkGPU(gpuFree(A_gpu->local_l_blk_infoVec));
 	checkGPU(gpuFree(A_gpu->local_l_blk_infoPtr));
-#if 0	
+#if 0
 	checkGPU(gpuFree(A_gpu->jib_lookupVec)); // not used
 	checkGPU(gpuFree(A_gpu->jib_lookupPtr)); // not used
-#endif	
+#endif
 	checkGPU(gpuFree(A_gpu->local_u_blk_infoVec));
 	checkGPU(gpuFree(A_gpu->local_u_blk_infoPtr));
 
@@ -810,7 +817,7 @@ int dfree_LUstruct_gpu (
 	    gpuStreamDestroy(sluGPU->funCallStreams[streamId]);
 	    gpublasDestroy(sluGPU->gpublasHandles[streamId]);
     	}
-    
+	free(A_gpu);
 	return 0;
 } /* end dfree_LUstruct_gpu */
 
@@ -835,7 +842,7 @@ void dPrint_matrix( char *desc, int_t m, int_t n, double * dA, int_t lda )
 
 /* Initialize the GPU side of the data structure. */
 int dinitSluGPU3D_t(
-    dsluGPU_t *sluGPU, // LU structures on GPU, see dlustruct_gpu.h 
+    dsluGPU_t *sluGPU, // LU structures on GPU, see dlustruct_gpu.h
     dLUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
@@ -846,24 +853,24 @@ int dinitSluGPU3D_t(
     SuperLUStat_t *stat
 )
 {
-    checkGPUErrors(gpuDeviceReset ());
+    // checkGPUErrors(gpuDeviceReset ()); //YL: to be moved to pddrive.c or pddrive3d.c if needed
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
     int* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
     sluGPU->nGPUStreams = getnGPUStreams();
-    
-    int SCATTER_THREAD_BLOCK_SIZE = ldt; 
+
+    int SCATTER_THREAD_BLOCK_SIZE = ldt;
     if(getenv("SCATTER_THREAD_BLOCK_SIZE"))
     {
 	int stbs = atoi(getenv("SCATTER_THREAD_BLOCK_SIZE"));
 	if(stbs>=ldt)
 	{
-	    SCATTER_THREAD_BLOCK_SIZE = stbs; 
+	    SCATTER_THREAD_BLOCK_SIZE = stbs;
 	}
-	
+
     }
-    
+
     if (grid3d->iam == 0)
     {
 #if ( PRNTlevel>=1 )
@@ -1277,6 +1284,15 @@ void dCopyLUToGPU3D (
 	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeH2D[i])));
 	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeD2H_Start[i])));
 	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeD2H_End[i])));
+
+		//YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
+		checkGPUErrors(gpuEventRecord(stat->GemmStart[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->GemmEnd[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->ScatterEnd[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->ePCIeH2D[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->ePCIeD2H_Start[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->ePCIeD2H_End[i], sluGPU->funCallStreams[0]));
+
 	}
 
     /*---- Copy L data structure to GPU ----*/
@@ -1346,11 +1362,13 @@ void dCopyLUToGPU3D (
     A_gpu->local_l_blk_infoVec = (local_l_blk_info_t *) tmp_ptr;
     gpu_mem_used += cum_num_l_blocks * sizeof(local_l_blk_info_t);
     checkGPUErrors(gpuMemcpy( (A_gpu->local_l_blk_infoVec), local_l_blk_infoVec, cum_num_l_blocks * sizeof(local_l_blk_info_t), gpuMemcpyHostToDevice)) ;
+	free(local_l_blk_infoVec);
 
     checkGPUErrors(gpuMalloc(  &tmp_ptr,  CEILING(nsupers, Pc)*sizeof(int_t))) ;
     A_gpu->local_l_blk_infoPtr = (int_t *) tmp_ptr;
     gpu_mem_used += CEILING(nsupers, Pc) * sizeof(int_t);
     checkGPUErrors(gpuMemcpy( (A_gpu->local_l_blk_infoPtr), local_l_blk_infoPtr, CEILING(nsupers, Pc)*sizeof(int_t), gpuMemcpyHostToDevice)) ;
+	free(local_l_blk_infoPtr);
 
     /*---- Copy U data structure to GPU ----*/
 
@@ -1415,11 +1433,13 @@ void dCopyLUToGPU3D (
 	A_gpu->local_u_blk_infoVec = (local_u_blk_info_t *) tmp_ptr;
 	gpu_mem_used += cum_num_u_blocks * sizeof(local_u_blk_info_t);
 	checkGPUErrors(gpuMemcpy( (A_gpu->local_u_blk_infoVec), local_u_blk_infoVec, cum_num_u_blocks * sizeof(local_u_blk_info_t), gpuMemcpyHostToDevice)) ;
+	free(local_u_blk_infoVec);
 
 	checkGPUErrors(gpuMalloc( &tmp_ptr,  CEILING(nsupers, Pr)*sizeof(int_t))) ;
 	A_gpu->local_u_blk_infoPtr = (int_t *) tmp_ptr;
 	gpu_mem_used += CEILING(nsupers, Pr) * sizeof(int_t);
 	checkGPUErrors(gpuMemcpy( (A_gpu->local_u_blk_infoPtr), local_u_blk_infoPtr, CEILING(nsupers, Pr)*sizeof(int_t), gpuMemcpyHostToDevice)) ;
+	free(local_u_blk_infoPtr);
 
 	/* Copy the actual L indices and values */
 	int_t l_k = CEILING( nsupers, grid->npcol ); /* # of local block columns */
@@ -1659,6 +1679,8 @@ void dCopyLUToGPU3D (
 	free (temp_UrowindPtr);
 	free (indtemp1);
 	free (indtemp);
+	free (Unzval_size);
+	free (Lnzval_size);
 
 } /* end dCopyLUToGPU3D */
 

@@ -1933,10 +1933,13 @@ for (lk=0;lk<nsupers_j;++lk){
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t)));
 	checkGPU(gpuMemcpy(Llu->d_Uindval_loc_bc_offset, Llu->Uindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));	
 
+	SUPERLU_FREE (Llu->Ucolind_bc_ptr);
 	SUPERLU_FREE (Llu->Ucolind_bc_dat);
 	SUPERLU_FREE (Llu->Ucolind_bc_offset);
 	SUPERLU_FREE (Llu->Unzval_bc_dat);
+	SUPERLU_FREE (Llu->Unzval_bc_ptr);
 	SUPERLU_FREE (Llu->Unzval_bc_offset);
+	SUPERLU_FREE (Llu->Uindval_loc_bc_ptr);
 	SUPERLU_FREE (Llu->Uindval_loc_bc_dat);
 	SUPERLU_FREE (Llu->Uindval_loc_bc_offset);
 
