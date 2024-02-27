@@ -78,9 +78,9 @@ if(enable_double)
   # target_link_libraries(pddrive4 ${all_link_libs})
   # install(TARGETS pddrive4 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
 
-  # add_executable(pddrive3d ${DEXM3D})
-  # target_link_libraries(pddrive3d ${all_link_libs})
-  # install(TARGETS pddrive3d RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
+  add_executable(pddrive3d ${DEXM3D})
+  target_link_libraries(pddrive3d ${all_link_libs})
+  install(TARGETS pddrive3d RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
 
   # add_executable(pddrive3d1 ${DEXM3D1})
   # target_link_libraries(pddrive3d1 ${all_link_libs})

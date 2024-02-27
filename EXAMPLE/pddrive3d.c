@@ -118,7 +118,7 @@ main (int argc, char *argv[])
     int lookahead, colperm, rowperm, ir, batch;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
-    FILE *fp, *fopen ();
+    FILE *fp;
     
     int ii, omp_mpi_level;
     int*    usermap;     /* The following variables are used for batch solves */
@@ -211,7 +211,7 @@ main (int argc, char *argv[])
 	   INITIALIZE MULTIPLE SUPERLU PROCESS GRIDS. 
 	   ------------------------------------------------------------*/
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-	usermap = SUPERLU_MALLOC(nprow*npcol*npdep * sizeof(int));
+	usermap = (int*)SUPERLU_MALLOC(nprow*npcol*npdep * sizeof(int));
 	int color = myrank/(nprow*npcol*npdep); /* Assuming each grid uses the same number of nprow, npcol and npdep */
 	MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
 	p = 0;
@@ -239,10 +239,12 @@ main (int argc, char *argv[])
             gpuFree(0);
             double t2 = SuperLU_timer_();
             if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+            #ifndef HAVE_SYCL
             gpublasHandle_t hb;
             gpublasCreate(&hb);
             if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
+            #endif
 	}
 #endif
 
@@ -262,10 +264,12 @@ main (int argc, char *argv[])
             gpuFree(0);
             double t2 = SuperLU_timer_();
             if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+            #ifndef HAVE_SYCL
             gpublasHandle_t hb;
             gpublasCreate(&hb);
             if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
+            #endif
 	}
 #endif
     }
@@ -298,10 +302,14 @@ main (int argc, char *argv[])
     if (iam == -1)     goto out;
     if (!iam) {
 	int v_major, v_minor, v_bugfix;
+    // C-specific prints (not applicable to SYCL) since SYCL is
+    // only compliant from C++17 onwards
+    #ifndef HAVE_SYCL
 #ifdef __INTEL_COMPILER
 	printf("__INTEL_COMPILER is defined\n");
 #endif
 	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+    #endif
 
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
@@ -407,10 +415,10 @@ main (int argc, char *argv[])
     options.ReplaceTinyPivot = YES;
 #endif
 
-    if (rowperm != -1) options.RowPerm = rowperm;
-    if (colperm != -1) options.ColPerm = colperm;
+    if (rowperm != -1) options.RowPerm = (rowperm_t)rowperm;
+    if (colperm != -1) options.ColPerm = (colperm_t)colperm;
     if (lookahead != -1) options.num_lookaheads = lookahead;
-    if (ir != -1) options.IterRefine = ir;
+    if (ir != -1) options.IterRefine = (IterRefine_t)ir;
     
     if (!iam) {
     	//print_sp_ienv_dist(&options);
@@ -530,3 +538,4 @@ cpp_defs ()
     printf ("....\n");
     return 0;
 }
+

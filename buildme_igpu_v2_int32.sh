@@ -1,5 +1,7 @@
 #!/bin/bash
+
 module load spack cmake
+
 installdir=$PWD/install_igpu
 echo $installdir
 
@@ -23,9 +25,9 @@ cmake -DCMAKE_BUILD_TYPE=Debug \
       -DCMAKE_C_COMPILER=mpicc \
       -DCMAKE_CXX_COMPILER=mpicxx \
       -DCMAKE_Fortran_COMPILER=mpifort \
-      -DCMAKE_CXX_FLAGS=" -DMKL_ILP64 -qmkl=sequential -D__STRICT_ANSI__ -DSUPERLU_USE_MKL -DPRNTlevel=1 -DDEBUGlevel=0 -Wno-format -Wno-deprecated-declarations -Wno-return-type -Wno-deprecated-declarations -Wno-writable-strings" \
+      -DCMAKE_CXX_FLAGS=" -DMKL_LP64 -qmkl=sequential -D__STRICT_ANSI__ -DSUPERLU_USE_MKL -DPRNTlevel=1 -DDEBUGlevel=0 -Wno-format -Wno-deprecated-declarations -Wno-return-type -Wno-deprecated-declarations -Wno-writable-strings" \
       -DCMAKE_INSTALL_PREFIX=${installdir} \
-      -DXSDK_INDEX_SIZE=64 \
+      -DXSDK_INDEX_SIZE=32 \
       -DXSDK_ENABLE_Fortran=OFF \
       ..
-make pddrive -j8
+
