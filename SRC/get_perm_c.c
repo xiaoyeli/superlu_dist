@@ -35,75 +35,39 @@ get_metis_dist(
 	  int_t bnz,       /* number of nonzeros in matrix A. */
 	  int_t *b_colptr, /* column pointer of size n+1 for matrix B. */
 	  int_t *b_rowind, /* row indices of size bnz for matrix B. */
-	  int_t *perm_c    /* out - the column permutation vector. */
+	  int_t *perm_c,   /* out - the column permutation vector. */
+	  MPI_Comm comm    /* MPI communicator to broadcast the permutation. */
 	  )
 {
 #ifdef HAVE_PARMETIS
-    /*#define METISOPTIONS 8*/
-#define METISOPTIONS 40
-    int_t metis_options[METISOPTIONS];
-    int_t i, nm, numflag = 0; /* C-Style ordering */
-    int_t *perm, *iperm;
-    int_t *b_colptr_int, *b_rowind_int;
+    int iam;
+    MPI_Comm_rank( comm, &iam );
+    if ( !iam ) {
+        int_t i, nm;
+        int_t *perm, *iperm;
 
-    extern int METIS_NodeND(int_t*, int_t*, int_t*, int_t*, int_t*,
-			    int_t*, int_t*);
+        extern int METIS_NodeND(int_t*, int_t*, int_t*, int_t*, int_t*,
+                    int_t*, int_t*);
 
-    metis_options[0] = 0; /* Use Defaults for now */
+        perm = (int_t*) SUPERLU_MALLOC(2*n * sizeof(int_t));
+        if (!perm) ABORT("SUPERLU_MALLOC fails for perm.");
+        iperm = perm + n;
+        nm = n;
 
-    perm = (int_t*) SUPERLU_MALLOC(2*n * sizeof(int_t));
-    if (!perm) ABORT("SUPERLU_MALLOC fails for perm.");
-    iperm = perm + n;
-    nm = n;
+        /* Call metis */
+        METIS_NodeND(&nm, b_colptr, b_rowind, NULL, NULL, perm, iperm);
 
-#if 0
-#if defined(_LONGINT)
-    /* Metis can only take 32-bit integers */
+        /* Copy the permutation vector into SuperLU data structure. */
+        for (i = 0; i < n; ++i) perm_c[i] = iperm[i];
 
-    if ( !(b_colptr_int = (int*) SUPERLU_MALLOC((n+1) * sizeof(int))) )
-	 ABORT("SUPERLU_MALLOC fails for b_colptr_int.");
-    for (i = 0; i < n+1; ++i) b_colptr_int[i] = b_colptr[i];
-    SUPERLU_FREE(b_colptr);
-    
-    if ( !(b_rowind_int = (int*) SUPERLU_MALLOC(bnz * sizeof(int))) )
-	ABORT("SUPERLU_MALLOC fails for b_rowind_int.");
+        SUPERLU_FREE(perm);
+    }
+    MPI_Bcast( perm_c, n, mpi_int_t, 0, comm);
 
-    for (i = 0; i < bnz; ++i) b_rowind_int[i] = b_rowind[i];
-    SUPERLU_FREE(b_rowind);
-#else
-    b_colptr_int = b_colptr;
-    b_rowind_int = b_rowind;
-#endif
-#endif
-
-    /* Call metis */
-#undef USEEND
-#ifdef USEEND
-    METIS_EdgeND(&nm, b_colptr_int, b_rowind_int, &numflag, metis_options,
-		 perm, iperm);
-#else
-
-    /* Earlier version 3.x.x */
-    /* METIS_NodeND(&nm, b_colptr, b_rowind, &numflag, metis_options,
-       perm, iperm);*/
-
-    /* Latest version 4.x.x */
-    METIS_NodeND(&nm, b_colptr, b_rowind, NULL, NULL, perm, iperm);
-
-    /*check_perm_dist("metis perm",  n, perm);*/
-#endif
-
-    /* Copy the permutation vector into SuperLU data structure. */
-    for (i = 0; i < n; ++i) perm_c[i] = iperm[i];
-
-#if 0
-    SUPERLU_FREE(b_colptr_int);
-    SUPERLU_FREE(b_rowind_int);
-#else
     SUPERLU_FREE(b_colptr);
     SUPERLU_FREE(b_rowind);
-#endif
-    SUPERLU_FREE(perm);
+#else
+    for (int i = 0; i < n; ++i) perm_c[i] = i;
 #endif /* HAVE_PARMETIS */
 }
 
@@ -114,31 +78,40 @@ get_colamd_dist(
 	   const int nnz,/* number of nonzeros in matrix A. */
 	   int_t *colptr,  /* column pointer of size n+1 for matrix A. */
 	   int_t *rowind,  /* row indices of size nz for matrix A. */
-	   int_t *perm_c   /* out - the column permutation vector. */
+	   int_t *perm_c,  /* out - the column permutation vector. */
+	   MPI_Comm comm   /* MPI communicator to broadcast the permutation. */
 	   )
 {
 #ifdef HAVE_COLAMD    
-    int Alen, *A, i, info, *p;
-    double knobs[COLAMD_KNOBS];
-    int stats[COLAMD_STATS];
+    int iam;
+    MPI_Comm_rank( comm, &iam );
+    if ( !iam ) {
+        int Alen, *A, i, info, *p;
+        double knobs[COLAMD_KNOBS];
+        int stats[COLAMD_STATS];
 
-    Alen = colamd_recommended(nnz, m, n);
+        Alen = colamd_recommended(nnz, m, n);
 
-    colamd_set_defaults(knobs);
+        colamd_set_defaults(knobs);
 
-    if (!(A = (int *) SUPERLU_MALLOC(Alen * sizeof(int))) )
-        ABORT("Malloc fails for A[]");
-    if (!(p = (int *) SUPERLU_MALLOC((n+1) * sizeof(int))) )
-        ABORT("Malloc fails for p[]");
-    for (i = 0; i <= n; ++i) p[i] = colptr[i];
-    for (i = 0; i < nnz; ++i) A[i] = rowind[i];
-    info = colamd(m, n, Alen, A, p, knobs, stats);
-    if ( info == FALSE ) ABORT("COLAMD failed");
+        if (!(A = (int *) SUPERLU_MALLOC(Alen * sizeof(int))) )
+            ABORT("Malloc fails for A[]");
+        if (!(p = (int *) SUPERLU_MALLOC((n+1) * sizeof(int))) )
+            ABORT("Malloc fails for p[]");
+        for (i = 0; i <= n; ++i) p[i] = colptr[i];
+        for (i = 0; i < nnz; ++i) A[i] = rowind[i];
+        info = colamd(m, n, Alen, A, p, knobs, stats);
+        if ( info == FALSE ) ABORT("COLAMD failed");
 
-    for (i = 0; i < n; ++i) perm_c[p[i]] = i;
+        for (i = 0; i < n; ++i) perm_c[p[i]] = i;
 
-    SUPERLU_FREE(A);
-    SUPERLU_FREE(p);
+        SUPERLU_FREE(A);
+        SUPERLU_FREE(p);
+    }
+    MPI_Bcast( perm_c, n, mpi_int_t, 0, comm);
+
+    SUPERLU_FREE(colptr);
+    SUPERLU_FREE(rowind);
 #else
     for (int i = 0; i < n; ++i) perm_c[i] = i;
 #endif // HAVE_COLAMD    
@@ -466,7 +439,13 @@ at_plus_a_dist(
  * </pre>
  */
 void
-get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
+get_perm_c_dist(
+	  int_t pnum,
+	  int_t ispec,
+	  SuperMatrix *A,
+	  int_t *perm_c,
+	  MPI_Comm comm
+	  )
 
 {
     NCformat *Astore = A->Store;
@@ -516,7 +495,7 @@ get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 
         case (COLAMD): /* Approximate minimum degree column ordering. */
 	      get_colamd_dist(m, n, Astore->nnz, Astore->colptr, Astore->rowind,
-			      perm_c);
+			      perm_c, comm);
 #if ( PRNTlevel>=1 )
 	      printf(".. Use approximate minimum degree column ordering.\n");
 #endif
@@ -528,7 +507,7 @@ get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 			     &bnz, &b_colptr, &b_rowind);
 
 	      if ( bnz ) { /* non-empty adjacency structure */
-		  get_metis_dist(n, bnz, b_colptr, b_rowind, perm_c);
+		  get_metis_dist(n, bnz, b_colptr, b_rowind, perm_c, comm);
 	      } else { /* e.g., diagonal matrix */
 		  for (i = 0; i < n; ++i) perm_c[i] = i;
 		  SUPERLU_FREE(b_colptr);
