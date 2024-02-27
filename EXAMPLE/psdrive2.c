@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     float   *b, *b1, *xtrue, *xtrue1;
     int_t    *colind, *colind1, *rowptr, *rowptr1;
     int_t    i, j, m, n, nnz_loc, m_loc;
-    int      nprow, npcol;
+    int      nprow, npcol, colperm, rowperm, symbfact;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;
     int ii, omp_mpi_level;
@@ -78,6 +78,9 @@ int main(int argc, char *argv[])
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
+    colperm = -1;
+    rowperm = -1;
+    symbfact = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -99,6 +102,12 @@ int main(int argc, char *argv[])
 	      case 'r': nprow = atoi(*cpp);
 		        break;
 	      case 'c': npcol = atoi(*cpp);
+		        break;
+	      case 'p': rowperm = atoi(*cpp);
+		        break;
+	      case 'q': colperm = atoi(*cpp);
+		        break;
+	      case 's': symbfact = atoi(*cpp);
 		        break;
 	    }
 	} else { /* Last arg is considered a filename */
@@ -174,6 +183,10 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
     options.IterRefine = SLU_SINGLE;
+
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (symbfact != -1) options.ParSymbFact = symbfact;
 
     if (!iam) {
 	print_options_dist(&options);
