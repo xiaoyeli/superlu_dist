@@ -1223,6 +1223,7 @@ zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			zCopyLUGPU2Host(zLUgpu, LUstruct);
 			zDestroyLUgpuHandle(zLUgpu);
 		    //TODO: zCreateLUgpuHandle,pzgstrf3d_LUpackedInterface,zCopyLUGPU2Host,zDestroyLUgpuHandle haven't been created
+
 #else 
 			/* call constructor in C++ code */
 			LUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,

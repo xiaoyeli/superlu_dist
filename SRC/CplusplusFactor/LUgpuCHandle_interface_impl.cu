@@ -129,7 +129,7 @@ extern "C"
     }
 
 
-    //  Double COmplex precision:
+    //  Double Complex precision:
     zLUgpu_Handle zCreateLUgpuHandle(int_t nsupers, int_t ldt_, ztrf3Dpartition_t *trf3Dpartition,
                                      zLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                                      SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,

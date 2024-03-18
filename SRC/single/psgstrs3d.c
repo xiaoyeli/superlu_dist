@@ -1345,19 +1345,19 @@ int strs_compute_communication_structure(superlu_dist_options_t *options, int_t 
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(float)));
 
 
-    /* nvshmem related*/
- #ifdef HAVE_NVSHMEM
+       /* nvshmem related*/
+#ifdef HAVE_NVSHMEM
 	checkGPU(gpuMalloc( (void**)&d_recv_cnt, CEILING(nsupers, grid->nprow) * sizeof(int)));
 	checkGPU(gpuMemcpy(d_recv_cnt, h_recv_cnt,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
-    checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
-    checkGPU(gpuMemcpy(d_recv_cnt_u, h_recv_cnt_u,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
+        checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
+        checkGPU(gpuMemcpy(d_recv_cnt_u, h_recv_cnt_u,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
 #endif
     }
 #ifdef HAVE_NVSHMEM
     SUPERLU_FREE(h_recv_cnt);
     SUPERLU_FREE(h_recv_cnt_u);
 #endif
-#endif
+#endif /* end ifdef GPU_ACC */
 
     // /* recompute fmod, bmod */
 	// for (int_t i = 0; i < kc; ++i)
