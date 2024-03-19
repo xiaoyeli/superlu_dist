@@ -27,7 +27,7 @@ at the top-level directory.
 #endif
 
 /* Inititalize the data structure to assist HALO offload of Schur-complement. */
-void zInit_HyP(HyP_t* HyP, zLocalLU_t *Llu, int_t mcb, int_t mrb )
+void zInit_HyP(superlu_dist_options_t *options, HyP_t* HyP, zLocalLU_t *Llu, int_t mcb, int_t mrb )
 {
     HyP->last_offload = -1;
 #if 0
@@ -63,7 +63,7 @@ void zInit_HyP(HyP_t* HyP, zLocalLU_t *Llu, int_t mcb, int_t mrb )
     }
 
     HyP->last_offload = -1;
-    HyP->superlu_acc_offload = get_acc_offload ();
+    HyP->superlu_acc_offload = sp_ienv_dist(10, options); // get_acc_offload();
 
     HyP->nGPUStreams =0;
 } /* zInit_HyP */

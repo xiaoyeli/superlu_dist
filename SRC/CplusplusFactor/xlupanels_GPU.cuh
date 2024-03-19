@@ -14,6 +14,7 @@
 
 #include "lu_common.hpp"
 // #include "lupanels.hpp" 
+#include "lupanels_GPU.cuh" 
 
 #ifdef __CUDACC__
 #define DEVICE_CALLABLE __device__

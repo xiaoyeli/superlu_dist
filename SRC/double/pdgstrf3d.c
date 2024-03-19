@@ -262,7 +262,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t mcb =    (nsupers + Pc - 1) / Pc;
     HyP_t *HyP = (HyP_t *) SUPERLU_MALLOC(sizeof(HyP_t));
 
-    dInit_HyP(HyP, Llu, mcb, mrb);
+    dInit_HyP(options, HyP, Llu, mcb, mrb);
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
 

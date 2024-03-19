@@ -10,12 +10,12 @@
 // #include "acc_aux.c"
 #endif
 
-#include "lupanels.hpp"
+// n#include "lupanels.hpp"
 #include "superlu_upacked.h"
 #include "luAuxStructTemplated.hpp"
-#include "anc25d-GPU_impl.hpp"
+// #include "anc25d-GPU_impl.hpp"
 #include "dAncestorFactor_impl.hpp"
-#include "anc25d_impl.hpp"
+// #include "anc25d_impl.hpp"
 #include "dsparseTreeFactorGPU_impl.hpp"
 #include "dsparseTreeFactor_upacked_impl.hpp"
 #include "schurCompUpdate_impl.cuh"
@@ -101,7 +101,7 @@ int_t pdgstrf3d_upacked(superlu_dist_options_t *options, int m, int n, AnormType
          * ******************************************/
         // Create the new LU structure
         int *isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
-        int superlu_acc_offload = get_acc_offload();
+        int superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();
         double tConst = SuperLU_timer_();
         xLUstruct_t<Ftype> LU_packed(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
                                 SCT, options, stat, thresh, info);

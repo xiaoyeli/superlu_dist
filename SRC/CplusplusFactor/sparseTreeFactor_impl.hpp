@@ -1,6 +1,6 @@
 #pragma once 
 #include "superlu_ddefs.h"
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dsparseTreeFactor(

@@ -771,6 +771,9 @@ extern int_t zleafForestForwardSolve3d(superlu_dist_options_t *options, int_t tr
                                zSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
 
 
+extern int_t ztrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
+                           zScalePermstruct_t * ScalePermstruct,
+                           int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat);
 extern int_t zreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, doublecomplex* x, int nrhs,
                       ztrf3Dpartition_t*  trf3Dpartition, zLUstruct_t* LUstruct, gridinfo3d_t* grid3d, doublecomplex* recvbuf, xtrsTimer_t *xtrsTimer);
 
@@ -1122,7 +1125,7 @@ extern void pzgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 extern int_t pzgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
 		       ztrf3Dpartition_t*, SCT_t *, zLUstruct_t *,
 		       gridinfo3d_t *, SuperLUStat_t *, int *);
-extern void zInit_HyP(HyP_t* HyP, zLocalLU_t *Llu, int_t mcb, int_t mrb );
+extern void zInit_HyP(superlu_dist_options_t *, HyP_t* HyP, zLocalLU_t *Llu, int_t mcb, int_t mrb);
 extern void Free_HyP(HyP_t* HyP);
 extern int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid);
 
@@ -1547,6 +1550,10 @@ extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_
 
 extern int pzflatten_LDATA(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
                            gridinfo_t *grid, SuperLUStat_t * stat);
+extern void pzconvert_flatten_skyline2UROWDATA(superlu_dist_options_t *, gridinfo_t *,
+	                 zLUstruct_t *, SuperLUStat_t *, int n);
+extern void pzconvertUROWDATA2skyline(superlu_dist_options_t *, gridinfo_t *,
+       	    		zLUstruct_t *, SuperLUStat_t *, int n);
 
 extern int_t
 zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,

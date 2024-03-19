@@ -175,6 +175,8 @@ int main(int argc, char *argv[])
     if (ir != -1) options.IterRefine = ir;
     if (symbfact != -1) options.ParSymbFact = symbfact;
 
+    int superlu_acc_offload = sp_ienv_dist(10, &options); //get_acc_offload();
+    
     /* In the batch mode: create multiple SuperLU grids,
         each grid solving one linear system. */
     if ( batch ) {
@@ -195,7 +197,6 @@ int main(int argc, char *argv[])
         SUPERLU_FREE(usermap);
 
 #ifdef GPU_ACC
-        int superlu_acc_offload = get_acc_offload();
         if (superlu_acc_offload) {
             /* Binding each MPI to a GPU device */
             char *ttemp;
@@ -229,7 +230,6 @@ int main(int argc, char *argv[])
         superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
 #ifdef GPU_ACC
-        int superlu_acc_offload = get_acc_offload();
         if (superlu_acc_offload) {
             MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
             double t1 = SuperLU_timer_();

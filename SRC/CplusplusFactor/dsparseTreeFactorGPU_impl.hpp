@@ -3,6 +3,7 @@
 #include <cinttypes>
 #include "superlu_ddefs.h"
 #include "lupanels.hpp"
+#include "xlupanels.hpp"
 #ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #include "batch_block_copy.h"

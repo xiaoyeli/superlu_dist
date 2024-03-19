@@ -154,6 +154,17 @@ int main (int argc, char *argv[])
         }
     }
 
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------ */
+    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
+    iam = grid.iam;
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (iam, "Enter main()");
+#endif
+
+
     /* Parse command line argv[]. */
     for (cpp = argv + 1; *cpp; ++cpp)
     {
@@ -205,70 +216,6 @@ int main (int argc, char *argv[])
         }
     }
 
-    /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID.
-       ------------------------------------------------------------ */
-    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
-#ifdef GPU_ACC
-    int superlu_acc_offload = get_acc_offload();
-    if (superlu_acc_offload) {
-        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-        double t1 = SuperLU_timer_();
-        gpuFree(0);
-        double t2 = SuperLU_timer_();
-        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-        gpublasHandle_t hb;
-        gpublasCreate(&hb);
-        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
-        gpublasDestroy(hb);
-	}
-#endif
-    if(grid.iam==0) {
-	MPI_Query_thread(&omp_mpi_level);
-	switch (omp_mpi_level) {
-	case MPI_THREAD_SINGLE:
-	    printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
-	    fflush(stdout);
-	    break;
-	case MPI_THREAD_FUNNELED:
-	    printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
-	    fflush(stdout);
-	    break;
-	case MPI_THREAD_SERIALIZED:
-	    printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
-	    fflush(stdout);
-	    break;
-	case MPI_THREAD_MULTIPLE:
-	    printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
-	    fflush(stdout);
-	    break;
-	}
-        fflush(stdout);
-    }
-	
-    /* Bail out if I do not belong in the grid. */
-    iam = grid.iam;
-    if (iam == -1)     goto out;
-    if (!iam) {
-	int v_major, v_minor, v_bugfix;
-#ifdef __INTEL_COMPILER
-	printf("__INTEL_COMPILER is defined\n");
-#endif
-	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
-
-	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
-	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
-
-	printf("Input matrix file:\t%s\n", *cpp);
-	printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
-	//printf("2D Process grid: %d X %d\n", (int)grid.nprow, (int)grid.npcol);
-	fflush(stdout);
-    }
-
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter main()");
-#endif
-
     /* Set the default input options:
        options.Fact              = DOFACT;
        options.Equil             = YES;
@@ -307,10 +254,65 @@ int main (int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (ir != -1) options.IterRefine = ir;
     if (lookahead != -1) options.num_lookaheads = lookahead;
-    
+
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
+	fflush(stdout);
+    }
+    
+#ifdef GPU_ACC
+    int superlu_acc_offload = sp_ienv_dist(10, &options); //get_acc_offload();
+    if (superlu_acc_offload) {
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        double t1 = SuperLU_timer_();
+        gpuFree(0);
+        double t2 = SuperLU_timer_();
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
+	}
+#endif
+    if(grid.iam==0) {
+	MPI_Query_thread(&omp_mpi_level);
+	switch (omp_mpi_level) {
+	case MPI_THREAD_SINGLE:
+	    printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
+	    fflush(stdout);
+	    break;
+	case MPI_THREAD_FUNNELED:
+	    printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
+	    fflush(stdout);
+	    break;
+	case MPI_THREAD_SERIALIZED:
+	    printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
+	    fflush(stdout);
+	    break;
+	case MPI_THREAD_MULTIPLE:
+	    printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
+	    fflush(stdout);
+	    break;
+	}
+        fflush(stdout);
+    }
+	
+    /* Bail out if I do not belong in the grid. */
+    if (iam == -1)     goto out;
+    if (!iam) {
+	int v_major, v_minor, v_bugfix;
+#ifdef __INTEL_COMPILER
+	printf("__INTEL_COMPILER is defined\n");
+#endif
+	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+
+	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+
+	printf("Input matrix file:\t%s\n", *cpp);
+	printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
+	//printf("2D Process grid: %d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
 
@@ -320,7 +322,7 @@ int main (int argc, char *argv[])
     for (ii = 0; ii<strlen(*cpp); ii++) {
 	if((*cpp)[ii]=='.'){
 	    suffix = &((*cpp)[ii+1]);
-	    printf("%s\n", suffix);
+	    // printf("%s\n", suffix);
 	}
     }
 

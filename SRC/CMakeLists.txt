@@ -13,23 +13,16 @@ set(headers
     include/superlu_dist_config.h
     include/superlu_FortranCInterface.h
     include/oneside.h
-    CplusplusFactor/lupanels.hpp
     CplusplusFactor/commWrapper.hpp
-    CplusplusFactor/lupanels_GPU.cuh
     CplusplusFactor/batch_block_copy.h
-    CplusplusFactor/anc25d-GPU_impl.hpp
-    CplusplusFactor/anc25d.hpp
     CplusplusFactor/lupanelsComm3dGPU_impl.hpp
-    CplusplusFactor/anc25d_impl.hpp
     CplusplusFactor/lupanels_GPU_impl.hpp
     CplusplusFactor/lupanels_comm3d_impl.hpp
     CplusplusFactor/cublas_cusolver_wrappers.hpp
     CplusplusFactor/lupanels_impl.hpp
     CplusplusFactor/dAncestorFactor_impl.hpp
-    CplusplusFactor/pdgstrf3d_upacked_impl.hpp
     CplusplusFactor/dsparseTreeFactorGPU_impl.hpp
     CplusplusFactor/sparseTreeFactor_impl.hpp
-    CplusplusFactor/dsparseTreeFactor_upacked_impl.hpp
     CplusplusFactor/superlu_blas.hpp
     CplusplusFactor/l_panels_impl.hpp
     CplusplusFactor/u_panels_impl.hpp
@@ -40,7 +33,17 @@ set(headers
     CplusplusFactor/schurCompUpdate_impl.cuh
     CplusplusFactor/batch_factorize.h 
     CplusplusFactor/batch_factorize_marshall.h 
+    CplusplusFactor/lupanels_GPU.cuh  # used by batch
+    CplusplusFactor/lupanels.hpp   #?? replaced by templated xlupanels.hpp
 )
+#    CplusplusFactor/pdgstrf3d_upacked_impl.hpp
+#    CplusplusFactor/dsparseTreeFactor_upacked_impl.hpp
+#    CplusplusFactor/anc25d-GPU_impl.hpp
+#    CplusplusFactor/anc25d.hpp
+#    CplusplusFactor/anc25d_impl.hpp
+#????    CplusplusFactor/dsparseTreeFactorGPU_impl.hpp
+
+#
 #    ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
 #    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 #    colamd.h
@@ -170,24 +173,24 @@ if(enable_double)
 if (TPL_ENABLE_CUDALIB)
   list(APPEND sources
        cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
-       CplusplusFactor/schurCompUpdate.cu 
-       CplusplusFactor/pdgstrf3d_upacked.cpp
-       CplusplusFactor/dsparseTreeFactor_upacked.cpp
-       CplusplusFactor/dsparseTreeFactorGPU.cpp
-       CplusplusFactor/anc25d-GPU.cpp 
-       CplusplusFactor/lupanels.cpp
-       CplusplusFactor/lupanels_comm3d.cpp
-       CplusplusFactor/lupanelsComm3dGPU.cpp
        CplusplusFactor/commWrapper.cpp 
-       CplusplusFactor/l_panels.cpp
-       CplusplusFactor/u_panels.cpp
-       CplusplusFactor/lupanels_GPU.cpp
-       CplusplusFactor/anc25d.cpp 
-       CplusplusFactor/LUgpuCHandle_interface.cpp
        CplusplusFactor/LUgpuCHandle_interface_impl.cu  
        CplusplusFactor/batch_factorize.cu 
        CplusplusFactor/batch_block_copy.cu
+       CplusplusFactor/schurCompUpdate.cu   #?? replaced by templated schurCompUpdate_impl.cuh
   )
+#       CplusplusFactor/pdgstrf3d_upacked.cpp
+#       CplusplusFactor/dsparseTreeFactor_upacked.cpp
+#       CplusplusFactor/dsparseTreeFactorGPU.cpp
+#       CplusplusFactor/anc25d-GPU.cpp 
+#       CplusplusFactor/lupanels.cpp
+#       CplusplusFactor/lupanels_comm3d.cpp
+#       CplusplusFactor/lupanelsComm3dGPU.cpp
+#       CplusplusFactor/l_panels.cpp
+#       CplusplusFactor/u_panels.cpp
+#       CplusplusFactor/lupanels_GPU.cpp
+#       CplusplusFactor/anc25d.cpp 
+#       CplusplusFactor/LUgpuCHandle_interface.cpp
 endif()
 
 if (HAVE_COMBBLAS)

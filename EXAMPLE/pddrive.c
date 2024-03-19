@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
     //MPI_Init( &argc, &argv );
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
 
+
 #if ( VAMPIR>=1 )
     VT_traceoff();
 #endif
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
 #if ( VTUNE>=1 )
 	__itt_pause();
 #endif
-	
+
     /* Set the default input options:
         options.Fact              = DOFACT;
         options.Equil             = YES;
@@ -115,16 +116,11 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
-    options.ReplaceTinyPivot = YES;
-    options.IterRefine = NOREFINE;
-    options.DiagInv           = YES;
 #if 0
-    options.ParSymbFact       = YES;
-    options.ColPerm           = PARMETIS;
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
-    options.Equil = NO; 
+    options.Equil = NO;
     options.ReplaceTinyPivot = YES;
 #endif
 
@@ -178,6 +174,8 @@ int main(int argc, char *argv[])
     if (ir != -1) options.IterRefine = ir;
     if (symbfact != -1) options.ParSymbFact = symbfact;
 
+    int superlu_acc_offload = sp_ienv_dist(10, &options); //get_acc_offload();
+    
     /* In the batch mode: create multiple SuperLU grids,
         each grid solving one linear system. */
     if ( batch ) {
@@ -187,7 +185,7 @@ int main(int argc, char *argv[])
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
         usermap = SUPERLU_MALLOC(nprow*npcol * sizeof(int));
         ldumap = nprow;
-	
+
         /* Assuming each grid uses the same number of nprow and npcol */
 	int color = myrank/(nprow*npcol);
 	MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
@@ -196,9 +194,8 @@ int main(int argc, char *argv[])
     	    for (int j = 0; j < npcol; ++j) usermap[i+j*ldumap] = p++;
         superlu_gridmap(SubComm, nprow, npcol, usermap, ldumap, &grid);
         SUPERLU_FREE(usermap);
-        
+
 #ifdef GPU_ACC
-        int superlu_acc_offload = get_acc_offload();
         if (superlu_acc_offload) {
             /* Binding each MPI to a GPU device */
             char *ttemp;
@@ -211,12 +208,12 @@ int main(int argc, char *argv[])
 	        gpuSetDevice(rank % devs); // Set device to be used for GPU executions
             }
 
-            // This is to initialize GPU, which can be costly. 
-            double t1 = SuperLU_timer_();                       
+            // This is to initialize GPU, which can be costly.
+            double t1 = SuperLU_timer_();
             gpuFree(0);
-            double t2 = SuperLU_timer_();    
+            double t2 = SuperLU_timer_();
             if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-            gpublasHandle_t hb;           
+            gpublasHandle_t hb;
             gpublasCreate(&hb);
             if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
@@ -229,19 +226,16 @@ int main(int argc, char *argv[])
         /* ------------------------------------------------------------
            INITIALIZE THE SUPERLU PROCESS GRID.
            ------------------------------------------------------------ */
-            // nv_init_wrapper(grid.comm);
-
         superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
 #ifdef GPU_ACC
-        int superlu_acc_offload = get_acc_offload();
         if (superlu_acc_offload) {
             MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-            double t1 = SuperLU_timer_();                       
+            double t1 = SuperLU_timer_();
             gpuFree(0);
-            double t2 = SuperLU_timer_();    
+            double t2 = SuperLU_timer_();
             if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-            gpublasHandle_t hb;           
+            gpublasHandle_t hb;
             gpublasCreate(&hb);
             if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
@@ -294,7 +288,7 @@ int main(int argc, char *argv[])
 	print_options_dist(&options);
 	fflush(stdout);
     }
-    
+
 #if ( VAMPIR>=1 )
     VT_traceoff();
 #endif

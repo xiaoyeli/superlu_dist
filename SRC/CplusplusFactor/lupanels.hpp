@@ -369,7 +369,7 @@ struct LUstruct_v100
     int_t maxUvalCount = 0;
     int_t maxUidxCount = 0;
     std::vector<double *> diagFactBufs; /* stores diagonal blocks, 
-					   each one is a normal dense matrix.
+v					   each one is a normal dense matrix.
 					Sherry: where are they free'd ?? */
     std::vector<double *> LvalRecvBufs;
     std::vector<double *> UvalRecvBufs;
@@ -474,7 +474,7 @@ struct LUstruct_v100
 	for (i = 0; i < numDiagBufs; i++) SUPERLU_FREE(diagFactBufs[i]);
 
 	/* Sherry added the following, which comes from batch setup */
-    superlu_acc_offload = get_acc_offload();    
+	superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();    
     if (superlu_acc_offload){
 	printf(".. free batch buffers\n"); fflush(stdout);
 	SUPERLU_FREE(A_gpu.dFBufs);

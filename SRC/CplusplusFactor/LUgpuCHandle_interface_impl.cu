@@ -1,9 +1,9 @@
 
 #include "superlu_upacked.h"
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "xlupanels.hpp"
 #include "lupanels_impl.hpp"
-#include "pdgstrf3d_upacked_impl.hpp"
+// #include "pdgstrf3d_upacked_impl.hpp"
 
 
 extern "C"

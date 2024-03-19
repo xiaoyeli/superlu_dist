@@ -1,5 +1,5 @@
 #pragma once 
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "xgstrf2.hpp"
 template <typename Ftype>
 xlpanel_t<Ftype>::xlpanel_t(int_t k, int_t *lsub, Ftype* lval, int_t *xsup, int_t isDiagIncluded)

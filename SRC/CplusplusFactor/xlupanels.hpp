@@ -4,7 +4,7 @@
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
 #ifdef HAVE_CUDA
-#include "lupanels_GPU.cuh"
+// #include "lupanels_GPU.cuh"
 #include "xlupanels_GPU.cuh"
 #include "gpuCommon.hpp"
 #endif
@@ -487,7 +487,7 @@ struct xLUstruct_t
             SUPERLU_FREE(diagFactBufs[i]);
 
         /* Sherry added the following, which comes from batch setup */
-        superlu_acc_offload = get_acc_offload();
+        superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();
         if (superlu_acc_offload)
         {
             printf(".. free batch buffers\n");

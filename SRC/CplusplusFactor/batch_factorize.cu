@@ -9,8 +9,11 @@
 #include <thrust/functional.h>
 #include <thrust/logical.h>
 #include <thrust/extrema.h>
+#include <vector>
+#include <iostream>
 
-#include "lupanels.hpp" // For gpuErrchk - maybe move that function to utils 
+// #include "lupanels.hpp" // For gpuErrchk - maybe move that function to utils
+#include "gpuCommon.hpp"
 #include "batch_factorize_marshall.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

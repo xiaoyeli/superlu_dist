@@ -771,6 +771,9 @@ extern int_t dleafForestForwardSolve3d(superlu_dist_options_t *options, int_t tr
                                dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
 
 
+extern int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+                           dScalePermstruct_t * ScalePermstruct,
+                           int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat);
 extern int_t dreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
                       dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, double* recvbuf, xtrsTimer_t *xtrsTimer);
 
@@ -986,7 +989,6 @@ extern void dperform_row_permutation(superlu_dist_options_t *, fact_t Fact,
            dScalePermstruct_t *, dLUstruct_t *LUstruct, int_t m, int_t n,
 	       gridinfo_t *, SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *,
 	       int job, int Equil, int_t *rowequ, int *colequ, int *iinfo);
-           
 extern double dcomputeA_Norm(int notran, SuperMatrix *, gridinfo_t *);
 extern int dtrs_compute_communication_structure(superlu_dist_options_t *options,
        int_t n, dLUstruct_t *, dScalePermstruct_t * ScalePermstruct,
@@ -1121,7 +1123,7 @@ extern void pdgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 extern int_t pdgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
 		       dtrf3Dpartition_t*, SCT_t *, dLUstruct_t *,
 		       gridinfo3d_t *, SuperLUStat_t *, int *);
-extern void dInit_HyP(HyP_t* HyP, dLocalLU_t *Llu, int_t mcb, int_t mrb );
+extern void dInit_HyP(superlu_dist_options_t *, HyP_t* HyP, dLocalLU_t *Llu, int_t mcb, int_t mrb);
 extern void Free_HyP(HyP_t* HyP);
 extern int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid);
 
@@ -1546,11 +1548,11 @@ extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_
 
 extern int pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                            gridinfo_t *grid, SuperLUStat_t * stat);
-extern void pdconvert_flatten_skyline2UROWDATA(superlu_dist_options_t *options, gridinfo_t *grid,
-	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n);
-extern void pdconvertUROWDATA2skyline(superlu_dist_options_t *options, gridinfo_t *grid,
-	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n);
-       
+extern void pdconvert_flatten_skyline2UROWDATA(superlu_dist_options_t *, gridinfo_t *,
+	                 dLUstruct_t *, SuperLUStat_t *, int n);
+extern void pdconvertUROWDATA2skyline(superlu_dist_options_t *, gridinfo_t *,
+       	    		dLUstruct_t *, SuperLUStat_t *, int n);
+
 extern int_t
 dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
                 Glu_freeable_t *Glu_freeable, int_t *xsup, int_t *supno,
