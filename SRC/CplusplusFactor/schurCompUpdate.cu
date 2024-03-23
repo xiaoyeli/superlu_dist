@@ -1010,9 +1010,13 @@ int_t LUstruct_v100::setLUstruct_GPU()
     }
     
     // Wajih: Adding allocation for batched LU and SCU marshalled data
-    // TODO: these are serialized workspaces, so the allocations can be shared 
+    // TODO: these are serialized workspaces, so the allocations can be shared
+
+#if 0 // old batch code 
     A_gpu.marshall_data.setBatchSize(num_dfbufs);
     A_gpu.sc_marshall_data.setBatchSize(num_dfbufs);
+#endif
+
     // TODO: where should these be freed?
     // Allocate GPU copy for the node list 
     gpuErrchk(cudaMalloc(&(A_gpu.dperm_c_supno), sizeof(int) * mx_fsize));
@@ -1116,6 +1120,10 @@ int_t LUstruct_v100::checkGPU()
               << "\n";
     return 0;
 }
+
+
+#if 0 // Sherry: old batch code 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Marshall Functors for batched execution 
 struct MarshallLUFunc {
@@ -1849,6 +1857,10 @@ int LUstruct_v100::marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_
     // return done_j;
 }
 
+#endif // Sherry: old batch code commented out
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 /**
  * @brief Pack non-zero values into a vector.
  *
@@ -2090,4 +2102,5 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     return uPanelVec_GPU;
     
 } /* copyUpanelsToGPU */
+
 #endif

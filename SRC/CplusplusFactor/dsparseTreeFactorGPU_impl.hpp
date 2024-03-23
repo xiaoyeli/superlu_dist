@@ -4,9 +4,12 @@
 #include "superlu_ddefs.h"
 #include "lupanels.hpp"
 #include "xlupanels.hpp"
+
 #ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
+#include "xlupanels_GPU.cuh"
 #include "batch_block_copy.h"
+
 
 int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin);
 // int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
@@ -18,6 +21,7 @@ int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin);
 //     return offset;
 // }
 
+#if 0 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename Ftype>
 xLUMarshallData<Ftype>::xLUMarshallData()
 {
@@ -196,6 +200,9 @@ void xSCUMarshallData<Ftype>::copyPanelDataToGPU()
     gpuErrchk(cudaMemcpy(dev_gpu_lpanels, host_gpu_lpanels.data(), batchsize * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(dev_gpu_upanels, host_gpu_upanels.data(), batchsize * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 }
+
+#endif
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, diagFactBufs_type<Ftype> **dFBufs)
@@ -657,6 +664,8 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
     return 0;
 } /* dsparseTreeFactorGPU */
 
+
+#if 0 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename Ftype>
 void xLUstruct_t<Ftype>::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno)
 {
@@ -706,6 +715,9 @@ void xLUstruct_t<Ftype>::marshallBatchedBufferCopyData(int k_st, int k_end, int_
     gpuErrchk(cudaMemcpy(mdata.dev_panel_ld_array, panel_ld_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(mdata.dev_panel_dim_array, panel_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
 }
+
+#endif
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename Ftype>
 void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
@@ -799,6 +811,7 @@ void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supn
 #endif
 }
 
+//// This is not used anymore //////
 template <typename Ftype>
 int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
     sForest_t *sforest,
@@ -897,7 +910,7 @@ int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
 #if 0 // Sherry commented out 7/4/23
 #ifndef NDEBUG
                 dSchurComplementUpdate(k, k_lpanel, k_upanel);   // ?? why do this on CPU ?
-                cudaStreamSynchronize(cuStream);
+n                cudaStreamSynchronize(cuStream);
                 checkGPU();
 #endif
 #endif		
@@ -1115,4 +1128,6 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
 
     return 0;
 } /* dsparseTreeFactorGPUBaseline */
-#endif
+
+#endif  /* match #if HAVE_CUDA  */
+

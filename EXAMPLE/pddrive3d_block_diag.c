@@ -157,6 +157,12 @@ main (int argc, char *argv[])
         }
     }
 
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------ */
+    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
+    iam = grid.iam;
+    
     /* Parse command line argv[]. */
     for (cpp = argv + 1; *cpp; ++cpp)
     {
@@ -206,12 +212,57 @@ main (int argc, char *argv[])
         }
     }
 
-    /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID.
-       ------------------------------------------------------------ */
-    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
+    /* Set the default input options:
+       options.Fact              = DOFACT;
+       options.Equil             = YES;
+       options.ParSymbFact       = NO;
+       options.ColPerm           = METIS_AT_PLUS_A;
+       options.RowPerm           = LargeDiag_MC64;
+       options.ReplaceTinyPivot  = NO;
+       options.IterRefine        = SLU_DOUBLE;
+       options.Trans             = NOTRANS;
+       options.SolveInitialized  = NO;
+       options.RefineInitialized = NO;
+       options.PrintStat         = YES;
+       options->num_lookaheads    = 10;
+       options->lookahead_etree   = NO;
+       options->SymPattern        = NO;
+       options.DiagInv           = NO;
+     */
+    set_default_options_dist (&options);
+    options.Algo3d = YES;
+    options.ReplaceTinyPivot = YES;
+    options.IterRefine = NOREFINE;
+    options.DiagInv           = YES;
+    // options.ParSymbFact       = YES;
+    // options.ColPerm           = PARMETIS;
+    options.Algo3d = YES;
+	options.DiagInv = YES;
+    options.ReplaceTinyPivot  = YES;    
+#if 0
+    options.ReplaceTinyPivot = YES;
+    options.RowPerm = NOROWPERM;
+    options.ColPerm = NATURAL;
+    options.Equil = NO;
+    options.ReplaceTinyPivot = YES;
+#endif
+
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+    
+    if ( batchCount > 0 )
+        options.batchCount = batchCount;
+    
+    if (!iam) {
+	print_sp_ienv_dist(&options);
+	print_options_dist(&options);
+	fflush(stdout);
+    }
+    
 #ifdef GPU_ACC
-    int superlu_acc_offload = get_acc_offload();
+    int superlu_acc_offload = sp_ienv_dist(10, &options); //get_acc_offload();
     if (superlu_acc_offload) {
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
         double t1 = SuperLU_timer_();
@@ -339,54 +390,6 @@ main (int argc, char *argv[])
        NOW WE SOLVE THE LINEAR SYSTEM.
        ------------------------------------------------------------ */
 
-    /* Set the default input options:
-       options.Fact              = DOFACT;
-       options.Equil             = YES;
-       options.ParSymbFact       = NO;
-       options.ColPerm           = METIS_AT_PLUS_A;
-       options.RowPerm           = LargeDiag_MC64;
-       options.ReplaceTinyPivot  = NO;
-       options.IterRefine        = SLU_DOUBLE;
-       options.Trans             = NOTRANS;
-       options.SolveInitialized  = NO;
-       options.RefineInitialized = NO;
-       options.PrintStat         = YES;
-       options->num_lookaheads    = 10;
-       options->lookahead_etree   = NO;
-       options->SymPattern        = NO;
-       options.DiagInv           = NO;
-     */
-    set_default_options_dist (&options);
-    options.Algo3d = YES;
-    options.ReplaceTinyPivot = YES;
-    options.IterRefine = NOREFINE;
-    options.DiagInv           = YES;
-    // options.ParSymbFact       = YES;
-    // options.ColPerm           = PARMETIS;
-    options.Algo3d = YES;
-	options.DiagInv = YES;
-    options.ReplaceTinyPivot  = YES;    
-#if 0
-    options.ReplaceTinyPivot = YES;
-    options.RowPerm = NOROWPERM;
-    options.ColPerm = NATURAL;
-    options.Equil = NO;
-    options.ReplaceTinyPivot = YES;
-#endif
-
-    if (rowperm != -1) options.RowPerm = rowperm;
-    if (colperm != -1) options.ColPerm = colperm;
-    if (lookahead != -1) options.num_lookaheads = lookahead;
-    if (ir != -1) options.IterRefine = ir;
-    
-    if ( batchCount > 0 )
-        options.batchCount = batchCount;
-      
-    if (!iam) {
-	print_sp_ienv_dist(&options);
-	print_options_dist(&options);
-	fflush(stdout);
-    }
 
 #ifdef NRFRMT  // matrix is on 3D process grid
     m = A.nrow;

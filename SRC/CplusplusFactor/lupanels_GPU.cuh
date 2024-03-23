@@ -308,6 +308,9 @@ public:
     }
 };
 
+#if 0
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Wajih: Device and host memory used to store marshalled batch data for LU and TRSM
 struct LUMarshallData 
 {
@@ -384,6 +387,9 @@ struct SCUMarshallData
     void copyToGPU();
 };
 
+#endif
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #define MAX_CUDA_STREAMS 64 
 struct LUstructGPU_t
 {
@@ -404,9 +410,13 @@ struct LUstructGPU_t
     // Magma is needed for non-uniform batched execution 
 #ifdef HAVE_MAGMA
     magma_queue_t magma_queue;
-#endif 
+#endif
+
+#if 0
     LUMarshallData marshall_data;
     SCUMarshallData sc_marshall_data;
+#endif
+
     int* dperm_c_supno;
 
     /* Sherry: Allocate an array of buffers for the diagonal blocks

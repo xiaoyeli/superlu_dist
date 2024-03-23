@@ -284,7 +284,18 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     if (options->PrintStat == NO)
         return;
 
-    int num_threads = omp_get_num_threads ();
+    int num_threads = 1;
+#ifdef _OPENMP
+    #pragma omp parallel default(shared)
+    {
+        #pragma omp master
+        {
+            num_threads = omp_get_num_threads ();
+
+        }
+    }
+#endif
+
     int gpu_enabled = 0;
 #ifdef GPU_ACC
     gpu_enabled = sp_ienv_dist(10, options);
@@ -296,7 +307,7 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**    max supernode              : %d\n", sp_ienv_dist(3, options));
     printf("**    estimated fill ratio       : %d\n", sp_ienv_dist(6, options));
     printf("**    min GEMM m*k*n to use GPU  : %d\n", sp_ienv_dist(7, options));
-    printf("** parallel environment:\n");
+    printf(".. parallel environment:\n");
     printf("**    OpenMP threads            : %4d\n", num_threads);
     printf("**    GPU enable?               : %4d\n", gpu_enabled);
     printf("**************************************************\n");

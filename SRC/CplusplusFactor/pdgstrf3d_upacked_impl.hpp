@@ -10,13 +10,14 @@
 // #include "acc_aux.c"
 #endif
 
-// n#include "lupanels.hpp"
+
+#include "lupanels.hpp"
 #include "superlu_upacked.h"
 #include "luAuxStructTemplated.hpp"
-// #include "anc25d-GPU_impl.hpp"
+#include "anc25d-GPU_impl.hpp"
 #include "dAncestorFactor_impl.hpp"
-// #include "anc25d_impl.hpp"
-#include "dsparseTreeFactorGPU_impl.hpp"
+#include "anc25d_impl.hpp"
+#include "dsparseTreeFactorGPU_impl.hpp"  //needed???
 #include "dsparseTreeFactor_upacked_impl.hpp"
 #include "schurCompUpdate_impl.cuh"
 #include "l_panels_impl.hpp"

@@ -5,10 +5,10 @@
 #include "superlu_defs.h"
 #include "luAuxStructTemplated.hpp"
 #ifdef HAVE_CUDA
-//#include "lupanels_GPU.cuh"
+#include "lupanels_GPU.cuh"
 #include "xlupanels_GPU.cuh"
 #endif
-// #include "lupanels.hpp"
+#include "lupanels.hpp"  //unneeded??
 #include "xlupanels.hpp"
 #include "superlu_blas.hpp"
 

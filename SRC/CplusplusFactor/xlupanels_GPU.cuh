@@ -13,7 +13,7 @@
 #endif
 
 #include "lu_common.hpp"
-// #include "lupanels.hpp" 
+#include "lupanels.hpp"  //unneeded?
 #include "lupanels_GPU.cuh" 
 
 #ifdef __CUDACC__
@@ -313,6 +313,8 @@ public:
     }
 };
 
+#if 0 ///////////////////////////////
+
 // Wajih: Device and host memory used to store marshalled batch data for LU and TRSM
 template <typename Ftype>
 struct xLUMarshallData 
@@ -390,6 +392,7 @@ struct xSCUMarshallData
     void copyPanelDataToGPU();
     void copyToGPU();
 };
+#endif /* end #if 0 */
 
 #define MAX_CUDA_STREAMS 64
 template <typename Ftype> 
@@ -412,9 +415,12 @@ struct xLUstructGPU_t
     // Magma is needed for non-uniform batched execution 
 #ifdef HAVE_MAGMA
     magma_queue_t magma_queue;
-#endif 
+#endif
+#if 0  ////////////////////////////
     LUMarshallData marshall_data;
     xSCUMarshallData<Ftype> sc_marshall_data;
+#endif
+
     int* dperm_c_supno;
 
     /* Sherry: Allocate an array of buffers for the diagonal blocks

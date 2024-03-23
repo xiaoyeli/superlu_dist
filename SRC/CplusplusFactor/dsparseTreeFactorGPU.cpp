@@ -19,6 +19,9 @@ int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
     return offset;
 }
 
+#if 0 // Sherry: old batch code 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 LUMarshallData::LUMarshallData()
 {
     dev_diag_ptrs = dev_panel_ptrs = NULL;
@@ -186,6 +189,60 @@ void SCUMarshallData::copyPanelDataToGPU()
     gpuErrchk(cudaMemcpy(dev_gpu_lpanels, host_gpu_lpanels.data(), batchsize * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(dev_gpu_upanels, host_gpu_upanels.data(), batchsize * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 }
+
+void LUstruct_v100::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno)
+{
+    // First gather up all the pointer and meta data on the host 
+    LUMarshallData& mdata = A_gpu.marshall_data;
+    double **panel_ptrs = mdata.host_panel_ptrs.data();
+    int *panel_ld_batch = mdata.host_panel_ld_array.data();
+    int *panel_dim_batch = mdata.host_panel_dim_array.data();
+    double **diag_ptrs = mdata.host_diag_ptrs.data();
+    int *diag_ld_batch = mdata.host_diag_ld_array.data();
+    int *diag_dim_batch = mdata.host_diag_dim_array.data();
+ 
+    mdata.batchsize = 0;
+
+    for (int_t k0 = k_st; k0 < k_end; k0++)
+    {
+        int_t k = perm_c_supno[k0];
+        int_t buffer_offset = k0 - k_st;
+		int ksupc = SuperSize(k);
+
+		if (iam == procIJ(k, k))
+		{			
+            lpanel_t &lpanel = lPanelVec[g2lCol(k)];
+ 
+            assert(mdata.batchsize < mdata.host_diag_ptrs.size());
+
+            panel_ptrs[mdata.batchsize] = lpanel.blkPtrGPU(0);
+            panel_ld_batch[mdata.batchsize] = lpanel.LDA();
+            panel_dim_batch[mdata.batchsize] = ksupc;
+            
+            diag_ptrs[mdata.batchsize] = A_gpu.dFBufs[buffer_offset];
+            diag_ld_batch[mdata.batchsize] = ksupc;
+            diag_dim_batch[mdata.batchsize] = ksupc;
+
+            mdata.batchsize++;
+
+		}     
+    }
+
+    mdata.setMaxDiag();
+    mdata.setMaxPanel();
+    
+    // Then copy the marshalled data over to the GPU 
+    gpuErrchk(cudaMemcpy(mdata.dev_diag_ptrs, diag_ptrs, mdata.batchsize * sizeof(double*), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(mdata.dev_diag_ld_array, diag_ld_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(mdata.dev_diag_dim_array, diag_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(mdata.dev_panel_ptrs, panel_ptrs, mdata.batchsize * sizeof(double*), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(mdata.dev_panel_ld_array, panel_ld_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(mdata.dev_panel_dim_array, panel_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
+}
+
+#endif
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
@@ -645,55 +702,9 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     return 0;
 } /* dsparseTreeFactorGPU */
 
-void LUstruct_v100::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno)
-{
-    // First gather up all the pointer and meta data on the host 
-    LUMarshallData& mdata = A_gpu.marshall_data;
-    double **panel_ptrs = mdata.host_panel_ptrs.data();
-    int *panel_ld_batch = mdata.host_panel_ld_array.data();
-    int *panel_dim_batch = mdata.host_panel_dim_array.data();
-    double **diag_ptrs = mdata.host_diag_ptrs.data();
-    int *diag_ld_batch = mdata.host_diag_ld_array.data();
-    int *diag_dim_batch = mdata.host_diag_dim_array.data();
- 
-    mdata.batchsize = 0;
 
-    for (int_t k0 = k_st; k0 < k_end; k0++)
-    {
-        int_t k = perm_c_supno[k0];
-        int_t buffer_offset = k0 - k_st;
-		int ksupc = SuperSize(k);
-
-		if (iam == procIJ(k, k))
-		{			
-            lpanel_t &lpanel = lPanelVec[g2lCol(k)];
- 
-            assert(mdata.batchsize < mdata.host_diag_ptrs.size());
-
-            panel_ptrs[mdata.batchsize] = lpanel.blkPtrGPU(0);
-            panel_ld_batch[mdata.batchsize] = lpanel.LDA();
-            panel_dim_batch[mdata.batchsize] = ksupc;
-            
-            diag_ptrs[mdata.batchsize] = A_gpu.dFBufs[buffer_offset];
-            diag_ld_batch[mdata.batchsize] = ksupc;
-            diag_dim_batch[mdata.batchsize] = ksupc;
-
-            mdata.batchsize++;
-
-		}     
-    }
-
-    mdata.setMaxDiag();
-    mdata.setMaxPanel();
-    
-    // Then copy the marshalled data over to the GPU 
-    gpuErrchk(cudaMemcpy(mdata.dev_diag_ptrs, diag_ptrs, mdata.batchsize * sizeof(double*), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(mdata.dev_diag_ld_array, diag_ld_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(mdata.dev_diag_dim_array, diag_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(mdata.dev_panel_ptrs, panel_ptrs, mdata.batchsize * sizeof(double*), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(mdata.dev_panel_ld_array, panel_ld_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(mdata.dev_panel_dim_array, panel_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
-}
+#if 0 // Sherry: old batch code 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 {
@@ -926,6 +937,8 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     return 0;
 } /* end dsparseTreeFactorBatchGPU */
 
+#endif // Sherry: old batch code commented out
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //TODO: needs to be merged as a single factorization function
 int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(

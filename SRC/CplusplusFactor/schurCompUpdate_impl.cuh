@@ -758,11 +758,13 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     int_t maxBuffSize = sp_ienv_dist (8, options);
     int maxsup = sp_ienv_dist(3, options); // max. supernode size
     maxBuffSize = SUPERLU_MAX(maxsup * maxsup, maxBuffSize); // Sherry added 7/10/23
+    
  #if 0   
     A_gpu.gemmBufferSize = SUPERLU_MIN(maxBuffSize, totalNzvalSize); 
  #else 
     A_gpu.gemmBufferSize = SUPERLU_MIN(maxBuffSize, SUPERLU_MAX(max_gemmCsize,totalNzvalSize)); /* Yang added 10/20/2023 */
- #endif    
+ #endif
+ 
     size_t dataPerStream = 3 * sizeof(Ftype) * maxLvalCount + 3 * sizeof(Ftype) * maxUvalCount + 2 * sizeof(int_t) * maxLidxCount + 2 * sizeof(int_t) * maxUidxCount + A_gpu.gemmBufferSize * sizeof(Ftype) + ldt * ldt * sizeof(Ftype);
     if (memReqData + 2 * dataPerStream > useableGPUMem)
     {
@@ -1020,9 +1022,13 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     }
     
     // Wajih: Adding allocation for batched LU and SCU marshalled data
-    // TODO: these are serialized workspaces, so the allocations can be shared 
+    // TODO: these are serialized workspaces, so the allocations can be shared
+    
+#if 0    
     A_gpu.marshall_data.setBatchSize(num_dfbufs);
     A_gpu.sc_marshall_data.setBatchSize(num_dfbufs);
+#endif
+
     // TODO: where should these be freed?
     // Allocate GPU copy for the node list 
     gpuErrchk(cudaMalloc(&(A_gpu.dperm_c_supno), sizeof(int) * mx_fsize));
@@ -1377,6 +1383,7 @@ xupanelGPU_t<Ftype> *xLUstruct_t<Ftype>::copyUpanelsToGPU()
 #endif
 
 
+//////// REST OF THE CODE NOT USED ANYMORE
 #if (0)
 // Marshall Functors for batched execution 
 template <typename Ftype>

@@ -3,14 +3,16 @@
 #include <iostream>
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
+
 #ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #include "gpuCommon.hpp"
 #endif
+
 #include "commWrapper.hpp"
 #include "anc25d.hpp"
-// class lpanelGPU_t;
-// class upanelGPU_t;
+//class lpanelGPU_t;
+//class upanelGPU_t;
 #define GLOBAL_BLOCK_NOT_FOUND -1
 // it can be templatized for double and complex double
 class lpanel_t
@@ -369,7 +371,7 @@ struct LUstruct_v100
     int_t maxUvalCount = 0;
     int_t maxUidxCount = 0;
     std::vector<double *> diagFactBufs; /* stores diagonal blocks, 
-v					   each one is a normal dense matrix.
+					   each one is a normal dense matrix.
 					Sherry: where are they free'd ?? */
     std::vector<double *> LvalRecvBufs;
     std::vector<double *> UvalRecvBufs;
@@ -398,6 +400,7 @@ v					   each one is a normal dense matrix.
     int_t g2lCol(int_t k) { return k / Pc; }
 
     anc25d_t anc25d;
+    
     // For GPU acceleration
     LUstructGPU_t *dA_gpu; // pointing to memory on GPU
     LUstructGPU_t A_gpu;   // pointing to memory accessible on CPU

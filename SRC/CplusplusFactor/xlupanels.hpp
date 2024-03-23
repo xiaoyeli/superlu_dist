@@ -1,10 +1,10 @@
 #pragma once
 #include <vector>
 #include <iostream>
-#include "superlu_ddefs.h"
+#include "superlu_ddefs.h"   // superlu_defs.h ??
 #include "lu_common.hpp"
 #ifdef HAVE_CUDA
-// #include "lupanels_GPU.cuh"
+#include "lupanels_GPU.cuh"
 #include "xlupanels_GPU.cuh"
 #include "gpuCommon.hpp"
 #endif
