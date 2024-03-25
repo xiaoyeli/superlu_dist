@@ -58,6 +58,9 @@ cmake .. \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
   -DCMAKE_BUILD_TYPE=Debug \
+  -DTPL_ENABLE_MAGMALIB=ON \
+  -DTPL_MAGMA_INCLUDE_DIRS="/global/cfs/cdirs/m2957/lib/magma-2.7.1/include" \
+  -DTPL_MAGMA_LIBRARIES="/global/cfs/cdirs/m2957/lib/magma-2.7.1/lib/libmagma.so" \
   -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
   -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
   -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \
