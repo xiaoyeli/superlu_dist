@@ -351,7 +351,8 @@ int main (int argc, char *argv[])
 	ldRHS = int32Malloc_dist(batchCount);
 	xtrues = (doublecomplex **) SUPERLU_MALLOC( batchCount *  sizeof(doublecomplex *) );
 	ldX = int32Malloc_dist(batchCount);
-	
+
+	/* This creates identical copies in the batch */
 	zcreate_batch_systems(SparseMatrix_handles, batchCount, nrhs, RHSptr, ldRHS,
 			      xtrues, ldX, fp, suffix, &grid);
 

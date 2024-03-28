@@ -11,15 +11,14 @@
 #include "batch_block_copy.h"
 
 
-int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin);
-// int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
-// {
-//     int_t offset = (k0 - k1) % winSize;
-//     if (winParity % 2)
-//         offset += halfWin;
+int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
+{
+    int offset = (k0 - k1) % winSize;
+    if (winParity % 2)
+         offset += halfWin;
 
-//     return offset;
-// }
+    return offset;
+}
 
 #if 0 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename Ftype>
@@ -811,6 +810,7 @@ void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supn
 #endif
 }
 
+#if 0
 //// This is not used anymore //////
 template <typename Ftype>
 int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
@@ -950,6 +950,10 @@ n                cudaStreamSynchronize(cuStream);
 
     return 0;
 } /* end dsparseTreeFactorBatchGPU */
+
+#endif /* match #if 0 */
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 // TODO: needs to be merged as a single factorization function
 template <typename Ftype>

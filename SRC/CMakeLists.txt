@@ -170,20 +170,20 @@ if(enable_double)
 if (TPL_ENABLE_CUDALIB)
   list(APPEND sources
        cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
-       CplusplusFactor/schurCompUpdate.cu 
+##       CplusplusFactor/schurCompUpdate.cu 
 #       CplusplusFactor/pdgstrf3d_upacked.cpp
 #       CplusplusFactor/dsparseTreeFactor_upacked.cpp
-      CplusplusFactor/dsparseTreeFactorGPU.cpp  # required by 2.5D ??
-       CplusplusFactor/lupanels.cpp
+##      CplusplusFactor/dsparseTreeFactorGPU.cpp 
+##       CplusplusFactor/lupanels.cpp
        CplusplusFactor/lupanels_comm3d.cpp
        CplusplusFactor/lupanelsComm3dGPU.cpp
        CplusplusFactor/commWrapper.cpp 
-       CplusplusFactor/l_panels.cpp
-       CplusplusFactor/u_panels.cpp
+##       CplusplusFactor/l_panels.cpp
+##       CplusplusFactor/u_panels.cpp
        CplusplusFactor/lupanels_GPU.cpp
-       CplusplusFactor/anc25d.cpp 
-       CplusplusFactor/anc25d-GPU.cpp 
-#       CplusplusFactor/LUgpuCHandle_interface.cpp
+##       CplusplusFactor/anc25d.cpp 
+##       CplusplusFactor/anc25d-GPU.cpp 
+##       CplusplusFactor/LUgpuCHandle_interface.cpp
        CplusplusFactor/LUgpuCHandle_interface_impl.cu  
        CplusplusFactor/batch_factorize.cu 
        CplusplusFactor/batch_block_copy.cu

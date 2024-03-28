@@ -292,6 +292,12 @@ int screate_matrix_postfix3d(SuperMatrix *A, int nrhs, float **rhs,
     return 0;
 }
 
+
+/*
+ * This routine mimics the batch setup.
+ * It reads a sparse matrix from a file, then creates *batchCount* copies,
+ * and assign a handle pointing to a copy.
+ */
 int screate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
 			  int nrhs, float **RHSptr,
 			  int *ldRHS, float **xtrue, int *ldX,

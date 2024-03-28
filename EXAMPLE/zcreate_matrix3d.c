@@ -291,6 +291,12 @@ int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     return 0;
 }
 
+
+/*
+ * This routine mimics the batch setup.
+ * It reads a sparse matrix from a file, then creates *batchCount* copies,
+ * and assign a handle pointing to a copy.
+ */
 int zcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
 			  int nrhs, doublecomplex **RHSptr,
 			  int *ldRHS, doublecomplex **xtrue, int *ldX,

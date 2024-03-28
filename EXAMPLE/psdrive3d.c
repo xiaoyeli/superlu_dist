@@ -351,7 +351,8 @@ int main (int argc, char *argv[])
 	ldRHS = int32Malloc_dist(batchCount);
 	xtrues = (float **) SUPERLU_MALLOC( batchCount *  sizeof(float *) );
 	ldX = int32Malloc_dist(batchCount);
-	
+
+	/* This creates identical copies in the batch */
 	screate_batch_systems(SparseMatrix_handles, batchCount, nrhs, RHSptr, ldRHS,
 			      xtrues, ldX, fp, suffix, &grid);
 

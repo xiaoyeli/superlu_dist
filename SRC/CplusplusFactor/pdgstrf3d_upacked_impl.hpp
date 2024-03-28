@@ -299,8 +299,11 @@ int_t xLUstruct_t<Ftype>::pdgstrf3d()
                         if ( superlu_acc_offload ) {
                             if ( options->batchCount==0 )
                                 dsparseTreeFactorGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
-                            else
-                                dsparseTreeFactorBatchGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
+                            else {
+				printf("Batch ERROR: should not get to this branch!\n");
+				// Sherry commented out the following
+                                //dsparseTreeFactorBatchGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
+			    }
                         } else {
                             dsparseTreeFactor(sforest, dFBufs,
                                             &gEtreeInfo,

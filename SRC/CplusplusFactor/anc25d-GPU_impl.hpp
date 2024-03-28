@@ -4,6 +4,7 @@
 #include "lupanels.hpp"
 #include "lupanels_GPU.cuh"
 #include "luAuxStructTemplated.hpp"
+#include "schurCompUpdate_impl.cuh"
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dAncestorFactorBaselineGPU(

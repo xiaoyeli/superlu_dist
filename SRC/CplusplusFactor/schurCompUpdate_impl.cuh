@@ -1,5 +1,4 @@
 #pragma once 
-#if 1//def HAVE_CUDA
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/system/cuda/execution_policy.h>
@@ -12,6 +11,8 @@
 #include "lupanels.hpp"
 #include "gpuCommon.hpp"
 #include "cublas_cusolver_wrappers.hpp"
+
+#define USABLE_GPU_MEM_FRACTION 0.9
 
 size_t getGPUMemPerProcs(MPI_Comm baseCommunicator);
 
@@ -152,27 +153,27 @@ __device__ int_t xupanelGPU_t<Ftype>::find(int_t k)
 
 __device__ int computeIndirectMapGPU(int *rcS2D, int_t srcLen, int_t *srcVec,
                                      int_t dstLen, int_t *dstVec,
-                                     int *dstIdx);
-// {
-//     int threadId = threadIdx.x;
-//     if (dstVec == NULL) /*uncompressed dimension*/
-//     {
-//         if (threadId < srcLen)
-//             rcS2D[threadId] = srcVec[threadId];
-//         __syncthreads();
-//         return 0;
-//     }
+                                     int *dstIdx)
+{
+    int threadId = threadIdx.x;
+    if (dstVec == NULL) /*uncompressed dimension*/
+    {
+        if (threadId < srcLen)
+            rcS2D[threadId] = srcVec[threadId];
+        __syncthreads();
+        return 0;
+    }
 
-//     if (threadId < dstLen)
-//         dstIdx[dstVec[threadId]] = threadId;
-//     __syncthreads();
+    if (threadId < dstLen)
+        dstIdx[dstVec[threadId]] = threadId;
+    __syncthreads();
 
-//     if (threadId < srcLen)
-//         rcS2D[threadId] = dstIdx[srcVec[threadId]];
-//     __syncthreads();
+    if (threadId < srcLen)
+        rcS2D[threadId] = dstIdx[srcVec[threadId]];
+    __syncthreads();
 
-//     return 0;
-// }
+    return 0;
+}
 
 template <typename Ftype>
 __device__ void scatterGPU_dev(
@@ -645,43 +646,41 @@ int_t xLUstruct_t<Ftype>::dSchurCompUpLimitedMem(
     return 0;
 }
 
-// int getMPIProcsPerGPU()
-// {
-//     if (!(getenv("MPI_PROCESS_PER_GPU")))
-//     {
-//         return 1;
-//     }
-//     else
-//     {
-//         int devCount;
-//         cudaGetDeviceCount(&devCount);
-//         int envCount = atoi(getenv("MPI_PROCESS_PER_GPU"));
-//         envCount = SUPERLU_MAX(envCount, 1);
-//         printf("MPI_PROCESS_PER_GPU=%d, devCount=%d\n", envCount, devCount);
-//         return SUPERLU_MIN(envCount, devCount);
-//     }
-// }
+int getMPIProcsPerGPU()
+{
+    if (!(getenv("MPI_PROCESS_PER_GPU")))
+    {
+        return 1;
+    } else {
+        int devCount;
+        cudaGetDeviceCount(&devCount);
+        int envCount = atoi(getenv("MPI_PROCESS_PER_GPU"));
+        envCount = SUPERLU_MAX(envCount, 1);
+        printf("MPI_PROCESS_PER_GPU=%d, devCount=%d\n", envCount, devCount);
+        return SUPERLU_MIN(envCount, devCount);
+    }
+}
 
 // #define USABLE_GPU_MEM_FRACTION 0.9
 
-// size_t getGPUMemPerProcs(MPI_Comm baseCommunicator)
-// {
-
-//     size_t mfree, mtotal;
-//     // TODO: shared memory communicator should be part of
-//     //  LU struct
-//     //  MPI_Comm sharedComm;
-//     //  MPI_Comm_split_type(baseCommunicator, MPI_COMM_TYPE_SHARED,
-//     //                      0, MPI_INFO_NULL, &sharedComm);
-//     //  MPI_Barrier(sharedComm);
-//     cudaMemGetInfo(&mfree, &mtotal);
-//     // MPI_Barrier(sharedComm);
-//     // MPI_Comm_free(&sharedComm);
-// #if 0
-//     printf("Total memory %zu & free memory %zu\n", mtotal, mfree);
-// #endif
-//     return (size_t)(USABLE_GPU_MEM_FRACTION * (Ftype)mfree) / getMPIProcsPerGPU();
-// }
+size_t getGPUMemPerProcs(MPI_Comm baseCommunicator)
+{
+    size_t mfree, mtotal;
+    // TODO: shared memory communicator should be part of
+    //  LU struct
+    //  MPI_Comm sharedComm;
+    //  MPI_Comm_split_type(baseCommunicator, MPI_COMM_TYPE_SHARED,
+    //                      0, MPI_INFO_NULL, &sharedComm);
+    //  MPI_Barrier(sharedComm);
+    cudaMemGetInfo(&mfree, &mtotal);
+    // MPI_Barrier(sharedComm);
+    // MPI_Comm_free(&sharedComm);
+#if 0
+    printf("Total memory %zu & free memory %zu\n", mtotal, mfree);
+#endif
+    //return (size_t)(USABLE_GPU_MEM_FRACTION * (Ftype)mfree) / getMPIProcsPerGPU();
+    return (size_t)(USABLE_GPU_MEM_FRACTION * (double)mfree) / getMPIProcsPerGPU();
+}
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
@@ -1380,10 +1379,10 @@ xupanelGPU_t<Ftype> *xLUstruct_t<Ftype>::copyUpanelsToGPU()
     return uPanelVec_GPU;
     
 } /* copyUpanelsToGPU */
-#endif
+//#endif
 
 
-//////// REST OF THE CODE NOT USED ANYMORE
+//////// Rest of the code for batch not used anymore 
 #if (0)
 // Marshall Functors for batched execution 
 template <typename Ftype>
@@ -1631,7 +1630,7 @@ struct MarshallSCUInner_Predicate
     {
         return x == 0;
     }
-};
+}
 
 template<typename T>
 struct element_diff : public thrust::unary_function<T,T>
@@ -1647,7 +1646,7 @@ struct element_diff : public thrust::unary_function<T,T>
     {
         return end[x] - st[x];
     }
-};
+}
 
 
 struct MarshallSCUInnerFunc {
@@ -1716,7 +1715,7 @@ struct MarshallSCUInnerFunc {
             m_array[i] = n_array[i] = k_array[i] = 0;
         }
     }
-};
+}
 
 // Marshalling routines for batched execution 
 void xLUstruct_t<Ftype>::marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno)
@@ -2117,4 +2116,4 @@ int xLUstruct_t<Ftype>::marshallSCUBatchedDataInner(int k_st, int k_end, int_t *
 
     // return done_j;
 }
-#endif // USE_BATCHED_LU
+#endif /* match if (0) */
