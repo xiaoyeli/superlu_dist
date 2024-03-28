@@ -320,3 +320,4 @@ void setDiagToThreshold(doublecomplex* diagptr, double thresh) {
     
     *diagptr = z;
 }
+

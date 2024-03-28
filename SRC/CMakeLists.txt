@@ -26,10 +26,10 @@ set(headers
     CplusplusFactor/cublas_cusolver_wrappers.hpp
     CplusplusFactor/lupanels_impl.hpp
     CplusplusFactor/dAncestorFactor_impl.hpp
-    CplusplusFactor/pdgstrf3d_upacked_impl.hpp
+#    CplusplusFactor/pdgstrf3d_upacked_impl.hpp
     CplusplusFactor/dsparseTreeFactorGPU_impl.hpp
     CplusplusFactor/sparseTreeFactor_impl.hpp
-    CplusplusFactor/dsparseTreeFactor_upacked_impl.hpp
+#    CplusplusFactor/dsparseTreeFactor_upacked_impl.hpp
     CplusplusFactor/superlu_blas.hpp
     CplusplusFactor/l_panels_impl.hpp
     CplusplusFactor/u_panels_impl.hpp
