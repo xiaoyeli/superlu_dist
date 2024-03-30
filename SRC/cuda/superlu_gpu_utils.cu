@@ -174,7 +174,7 @@ void nv_init_wrapper( MPI_Comm mpi_comm)
     int get_cur_dev;
     CUDA_CHECK(cudaGetDevice(&get_cur_dev));
 
-    cudaDeviceProp prop;
+    // cudaDeviceProp prop;
     //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
     // CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node)); // Yang Liu: this line is causing runtime error
     // //int status=nvshmemx_init_status();

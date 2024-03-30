@@ -22,7 +22,7 @@ at the top-level directory.
  *
  */
 
-#define SCHEDULE_STRATEGY dynamic
+#define GPU_SCHEDULE_STRATEGY dynamic
 
 int full;
 double gemm_timer = 0.0;
@@ -153,7 +153,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    tt_start = SuperLU_timer_();
 
 #ifdef _OPENMP
-#pragma omp for schedule( SCHEDULE_STRATEGY )
+#pragma omp for schedule( GPU_SCHEDULE_STRATEGY )
 #endif
 	    // Copy U segments into tempu, up to jjj_global block */
             for (j = jjj_st; j < jjj; ++j) {
@@ -329,7 +329,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                         luptr = luptr0;
 
 #ifdef _OPENMP
-#pragma omp for schedule( SCHEDULE_STRATEGY ) nowait
+#pragma omp for schedule( GPU_SCHEDULE_STRATEGY ) nowait
 #endif
                         for (lb = 0; lb < nlb; lb++ ) {
                             int cum_nrow = 0;
@@ -397,7 +397,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                     // TAU_STATIC_TIMER_STOP("SPECIAL_CPU_SCATTER");
                 } else { // ncpu_blks >= omp_get_num_threads()
 #ifdef _OPENMP
-#pragma omp for schedule(SCHEDULE_STRATEGY) nowait
+#pragma omp for schedule(GPU_SCHEDULE_STRATEGY) nowait
 #endif
                     for (j = jjj_st; j < jjj_st+ncpu_blks; ++j) {
                         /* code */
@@ -506,7 +506,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                     assert(jjj_st1>jjj_st) ;
 
                     /* now scatter it */
-#pragma omp for schedule( SCHEDULE_STRATEGY ) nowait
+#pragma omp for schedule( GPU_SCHEDULE_STRATEGY ) nowait
                     for (j = jjj_st1; j < jjj_end; ++j) {
                         /* code */
 #ifdef PI_DEBUG

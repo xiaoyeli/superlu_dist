@@ -29,7 +29,7 @@ at the top-level directory.
  *  June 1, 2018  add parallel AWPM pivoting; add back arrive_at_ublock()
  */
 
-#define SCHEDULE_STRATEGY guided
+#define CPU_SCHEDULE_STRATEGY guided
 
 /*
  * Buffers:
@@ -211,8 +211,13 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /* Padding zeros to make {m,n,k} multiple of vector length. */
 	 jj = 8; //n;
 	 if (gemm_padding > 0 && Rnbrow > jj && ncols > jj && ldu > jj) {
-	     gemm_m_pad = Rnbrow + (Rnbrow % GEMM_PADLEN);
+#if 0
+             gemm_m_pad = Rnbrow + (Rnbrow % GEMM_PADLEN);
 	     gemm_n_pad = ncols + (ncols % GEMM_PADLEN);
+#else  // Sherry corrected
+	     gemm_m_pad = CEILING(Rnbrow,GEMM_PADLEN) * GEMM_PADLEN;
+	     gemm_n_pad = ncols + (ncols % GEMM_PADLEN);
+#endif
 	     //gemm_n_pad = ncols;
 	     //gemm_k_pad = ldu + (ldu % GEMM_PADLEN);
 	     gemm_k_pad = ldu;
@@ -241,7 +246,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
 #pragma omp parallel for firstprivate(iukp, rukp) \
     private(j,tempu, jb, nsupc,ljb,segsize, lead_zero, jj, i) \
-    default (shared) schedule(SCHEDULE_STRATEGY)
+    default (shared) schedule(CPU_SCHEDULE_STRATEGY)
 #endif
         for (j = jj0; j < nub; ++j) { /* jj0 starts after look-ahead window. */
 
@@ -340,7 +345,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
      /* Loop through the remaining blocks to copy Lval into the buffer */
 #ifdef _OPENMP
 #pragma omp parallel for private(i,j,jj,tempu,tempv) default (shared) \
-    schedule(SCHEDULE_STRATEGY)
+    schedule(CPU_SCHEDULE_STRATEGY)
 #endif
      for (int i = 0; i < RemainBlk; ++i) {
          int StRowDest, temp_nbrow;

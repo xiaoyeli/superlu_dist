@@ -1303,7 +1303,7 @@ __global__ void dwait_bcrd_u
                 int* d_msgnum,
                 int* d_flag_mod_u,
                 double *lsum,    /* Sum of local modifications.                        */
-                int *bmod,     /* Modification count for L-solve.                    */
+                int_t *bmod,     /* Modification count for L-solve.                    */
                 gridinfo_t *grid,
                 int_t *xsup,
                 int_t *ilsum,
@@ -1830,29 +1830,16 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
         )
 {
     double zero = 0.0, alpha = 1.0, beta = 0.0;
-    double *lusup, *lusup1;
-    double *dest;
+    double *lusup;
     double *Linv;/* Inverse of diagonal block */
-    int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nbrow_ref, nsupr, nsupr1, p, pi, idx_r,m;
-    int_t  k,i, l,ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready;
-    int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
-    int_t  luptr_tmp,luptr_tmp1,lptr1_tmp, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
-    int thread_id1;
-    flops_t ops_loc=0.0;
-    MPI_Status status;
-    int test_flag;
-    yes_no_t done;
-    int_t* idx_lsum,idx_lsum1;
-    const int Nbk=1;
-    __shared__ double rtemp_loc[128];
-    double temp,temp1;
-    int_t ldalsum;
-    int_t nleaf_send_tmp;
+    int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nsupr, m;
+    int_t  k,i, l,ii, ik, il, irow, j, lb, lk, rel, lib;
+    int_t  *lsub, *lloc;
+    int_t  luptr_tmp,luptr_tmp1,lptr1_tmp, idx_i, idx_v, fmod_tmp;
+    //__shared__ double rtemp_loc[128];
+    double temp, temp1;
     int_t lptr;      /* Starting position in lsub[*].                      */
-    int_t luptr;     /* Starting position in lusup[*].                     */
-    int_t iword = sizeof(int_t);
-    int_t dword = sizeof (double);
-    int_t aln_d,aln_i;
+    int aln_d,aln_i;
     aln_d = 1;//ceil(CACHELINE/(double)dword);
     aln_i = 1;//ceil(CACHELINE/(double)iword);
     int   knsupc;    /* Size of supernode k.                               */
@@ -1861,22 +1848,19 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
     int_t bid=blockIdx_x;
     int_t tmp;
     int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
-    int_t ready = 0;
 // int_t lock = 0;
     const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
     double rC[THR_N][THR_M];
-    gpuError_t error;
     int_t idx = threadIdx_x;  // thread's m dimension
     int_t idy = threadIdx_y;  // thread's n dimension
     int_t ni,mi;
     int cnt;
-    yes_no_t test;
 
     if (Lrowind_bc_offset[bid] == -1) {
         return;
     }
 
-    int get_offset, get_msgsize, get_rank, gc, gr, tmp_id, recv_offset = 0;
+    int gc, gr;
 
     lk = bid;
     iam = grid->iam;
@@ -1896,14 +1880,14 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
 
     if (myrow == krow) {
         nlb = lsub[0] - 1;
-        idx_n = 1;
+	// idx_n = 1;
         idx_i = nlb + 2;
         idx_v = 2 * nlb + 3;
         luptr_tmp = lloc[idx_v];
         m = nsupr - knsupc;
     } else {
         nlb = lsub[0];
-        idx_n = 0;
+        // idx_n = 0;
         idx_i = nlb;
         idx_v = 2 * nlb;
         luptr_tmp = lloc[idx_v];
@@ -2270,7 +2254,6 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
     int_t idx = threadIdx_x;  // thread's m dimension
     int_t idy = threadIdx_y;  // thread's n dimension
     int_t ni,mi;
-    int cnt;
 
 
     // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
@@ -2638,7 +2621,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
  gridinfo_t *grid
 )
 {
-    double zero = 0.0, alpha = 1.0, beta = 0.0;
+    double zero = 0.0;
     double *lusup;
     double *Linv;/* Inverse of diagonal block */
     int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nsupr,m;
@@ -2682,17 +2665,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
     // wrp= threadIdx_x + blockIdx_x * blockDim_x;
     // wrp/=WARP_SIZE;
 
-
-
-
-    double rC[THR_N][THR_M];
-
     bid= blockIdx_x;
-    int_t idx = threadIdx_x;  // thread's m dimension
-    int_t idy = threadIdx_y;  // thread's n dimension
-    int_t ni,mi;
-    int cnt;
-
 
     // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
 
@@ -2840,7 +2813,8 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                         }
 
 
-                    }
+
+}
                     // __syncwarp();
 
                 //     luptr_tmp1 = lloc[idx_v];
@@ -2944,13 +2918,9 @@ void dlsum_fmod_inv_gpu_wrap
                 int procs
         ) {
 
-    gpuStream_t sid = 0;
-    int gid = 0;
-    int mycol;
-    int_t lk, k, knsupc;
     int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
 
-    int mype, npes, ndevices;
+    int mype, npes;
 
     if(procs==1){
         nblock_ex=0;
@@ -3003,7 +2973,6 @@ void dlsum_fmod_inv_gpu_wrap
     //if (npes==1){
     //    dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,grid,maxrecvsz);
     //}else{
-        int launch_success = 0;
 
         void *args[] = {&nrhs, &LRtree_ptr, &maxrecvsz, &mype, &flag_bc_q, &flag_rd_q,
                         &dready_x, &dready_lsum, &my_flag_bc, &my_flag_rd, &d_nfrecv, &d_status,
@@ -3087,14 +3056,10 @@ gridinfo_t *grid
 )
 {
     double zero = 0.0, alpha = 1.0, beta = 0.0;
-	double xtemp;
-	double *dest;
 	double *Uinv;/* Inverse of diagonal block */
 	int    iam, iknsupc, myrow, mycol, krow;
-	int_t  k,i,i1, l,ii,jj, ik, il, irow, j, lk, lib, ub;
-	int_t gik,ikfrow,iklrow, rel, lptr, ncol, icol;
-	int_t  uptr;
-	int_t fnz,fnzmin;
+	int_t  k,i, l,ii, ik, il, j, lk, lib, ub;
+	int_t gik, rel, lptr, ncol, icol;
 	double temp,temp1;
      __shared__ double temp2[MAXSUPER];
 	int_t aln_i;
@@ -3115,7 +3080,6 @@ gridinfo_t *grid
 	int_t idy = threadIdx_y;  // thread's n dimension
 	int_t ni,mi;
 	int_t  *usub, *lloc;
-	double *uval;
 	double *lusup;
 	int_t nrow, nnz_offset, offset;
 	int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
@@ -3370,12 +3334,6 @@ gridinfo_t *grid
 } /* dlsum_bmod_inv_gpu_mrhs */
 
 
-
-
-
-
-
-
  /************************************************************************/
  /*! \brief
   *
@@ -3385,9 +3343,6 @@ gridinfo_t *grid
   *   Perform local block modifications: lsum[i] -= L_i,k * X[k].
   * </pre>
   */
-
-
-
   __global__ void dlsum_bmod_inv_gpu_1rhs_new
   /************************************************************************/
   (
@@ -3417,7 +3372,7 @@ gridinfo_t *grid
     //   double xtemp;
     //   double *dest;
       double *Uinv;/* Inverse of diagonal block */
-      int    iam, iknsupc, myrow, mycol, krow, kcol;
+      int    iam, iknsupc, myrow, mycol, kcol;
       int_t  k,i,i1, bb, l,ii, lk, jk, lib, ljb, ub;
       int_t gik, rel, lptr, ncol, icol;
       double temp,temp1;
@@ -3669,7 +3624,7 @@ gridinfo_t *grid
   //   double xtemp;
   //   double *dest;
     double *Uinv;/* Inverse of diagonal block */
-    int    iam, iknsupc, myrow, mycol, krow, kcol;
+    int    iam, iknsupc, myrow, mycol, kcol;
     int_t  k,i, bb, l,ii, lk, jk, lib, ljb;
     int_t gik, rel, ncol, icol;
     double temp,temp1;
@@ -3912,15 +3867,11 @@ int_t *xsup,
 gridinfo_t *grid
 )
 {
-    double zero = 0.0, alpha = 1.0, beta = 0.0;
-	double xtemp;
-	double *dest;
+    double zero = 0.0;
 	double *Uinv;/* Inverse of diagonal block */
 	int    iam, iknsupc, myrow, mycol, krow;
-	int_t  k,i,i1, l,ii,jj, ik, il, irow, j, lk, lib, ub;
-	int_t gik,ikfrow,iklrow, rel, lptr, ncol, icol;
-	int_t  uptr;
-	int_t fnz,fnzmin;
+	int_t  k,i, l,ii, ik, il, j, lk, lib, ub;
+	int_t gik, rel, lptr, ncol, icol;
 	double temp,temp1;
 	// __shared__ double temp2[MAXSUPER];
 	int_t aln_i;
@@ -3933,15 +3884,13 @@ gridinfo_t *grid
 	int_t bmod_tmp;
 	int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
 	const int block_size = blockDim_x*blockDim_y; /* number of threads per block*/
-	double rC[THR_N][THR_M];
+	// double rC[THR_N][THR_M];
 	// __shared__ double x_share[DIM_X*DIM_Y];
 
 	// bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
 	int_t idx = threadIdx_x;  // thread's m dimension
-	int_t idy = threadIdx_y;  // thread's n dimension
-	int_t ni,mi;
+	//int_t idy = threadIdx_y;  // thread's n dimension
 	int_t  *usub, *lloc;
-	double *uval;
 	double *lusup;
 	int_t nrow, nnz_offset, offset;
 	int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
@@ -4186,14 +4135,10 @@ gridinfo_t *grid
          )
  {
     double zero = 0.0, alpha = 1.0, beta = 0.0;
-     double xtemp;
-     double *dest;
      double *Uinv;/* Inverse of diagonal block */
      int    iam, iknsupc, myrow, mycol, krow;
-     int_t  k,i,i1, l,ii,jj, ik, il, irow, j, lk, lib, ub;
-     int_t gik,ikfrow,iklrow, rel, lptr, ncol, icol;
-     int_t  uptr;
-     int_t fnz,fnzmin;
+     int_t  k,i, l, ii, ik, il, irow, j, lk, lib, ub;
+     int_t gik, rel, lptr, ncol, icol;
      double temp,temp1;
      __shared__ double temp2[MAXSUPER];
      int_t aln_i;
@@ -4214,7 +4159,6 @@ gridinfo_t *grid
      int_t idy = threadIdx_y;  // thread's n dimension
      int_t ni,mi;
      int_t  *usub, *lloc;
-     double *uval;
      double *lusup;
      int_t nrow, nnz_offset, offset;
      int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
@@ -4574,12 +4518,6 @@ void dlsum_bmod_inv_gpu_wrap
     int procs
 ) {
 
-gpuStream_t sid = 0;
-int gid = 0;
-int mycol;
-int_t lk, k, knsupc;
-
-
 //printf("pinv %d\n",Llu->inv);
 //fflush(stdout);
 int_t maxsuper = sp_ienv_dist(3, options);
@@ -4619,13 +4557,12 @@ if(procs==1){
     cudaStreamCreateWithFlags(&stream[i], cudaStreamNonBlocking);
     }
 
-    int mype, npes, ndevices;
+    int mype, npes;
     mype = nvshmem_my_pe();
     npes = nvshmem_n_pes();
     //printf("(%d) nbcol_loc %d\n", mype, nbcol_loc);
     //printf("(%d), U Enter,mynode=%d\n",mype,mype_node);
     //fflush(stdout);
-    int launch_success = 0;
     dim3 dimGrid(nbcol_loc);
     dim3 dimBlock(nthread_x, nthread_y);
 
