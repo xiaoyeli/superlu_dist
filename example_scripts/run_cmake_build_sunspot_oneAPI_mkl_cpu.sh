@@ -4,7 +4,7 @@ module load spack cmake
 
 
 cmake .. \
-  -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -D_XOPEN_SOURCE -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -I${MKLROOT}/include -fopenmp" \
+  -DCMAKE_C_FLAGS="  -std=c11 -D_XOPEN_SOURCE -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -I${MKLROOT}/include -fopenmp" \
   -DCMAKE_CXX_FLAGS="-I${MKLROOT}/include -fopenmp" \
   -DCMAKE_CXX_COMPILER=mpicxx \
   -DCMAKE_C_COMPILER=mpicc \

@@ -2686,7 +2686,7 @@ void zForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
 
 
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 
 #if ( PRNTlevel>=1 )
 
@@ -2977,7 +2977,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
     if (get_acc_solve()) /* GPU trisolve*/
     {
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 // #if 0 /* CPU trisolve*/
 
 // #if HAVE_CUDA
@@ -4786,7 +4786,7 @@ void zBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
 	int_t cnt1,cnt2;
     double tx;
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 
 	const int nwrp_block = 1; /* number of warps in each block */
 	const int warp_size = 32; /* number of threads per warp*/
@@ -5108,7 +5108,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 
 if (get_acc_solve()){  /* GPU trisolve*/
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 // #if 0 /* CPU trisolve*/
 
 

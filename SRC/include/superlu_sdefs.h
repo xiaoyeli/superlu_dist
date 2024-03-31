@@ -979,7 +979,7 @@ extern void  sreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  float **, int_t **, int_t **);
 extern int  sread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  float **, int_t **, int_t **);
-			  
+
 extern void validateInput_psgssvx3d(superlu_dist_options_t *, SuperMatrix *A,
        int ldb, int nrhs, gridinfo3d_t *, int *info);
 extern void sallocScalePermstruct_RC(sScalePermstruct_t *, int_t m, int_t n);
@@ -1022,7 +1022,7 @@ extern void sGenCSRLblocks(int, int_t, gridinfo_t*,
 		  Glu_persist_t*, sLocalLU_t *, float **, int_t **, int_t **, int_t*, int_t*);
 
 /* multi-GPU */
-#ifdef GPU_SOLVE
+#ifdef GPU_ACC
 // extern void create_nv_buffer(int* , int*, int* , int* );
 extern void nv_init_wrapper(MPI_Comm);
 // extern void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level);
@@ -1594,7 +1594,7 @@ extern int psgssvx3d_csc_batch(
 		int nrhs, handle_t *, float **RHSptr, int *ldRHS,
 		float **ReqPtr, float **CeqPtr,
 		int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
-		handle_t *F, float **Xptr, int *ldX, float **Berrs, 
+		handle_t *F, float **Xptr, int *ldX, float **Berrs,
 		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
 		//DeviceContext context /* device context including queues, events, dependencies */
 		);
@@ -1608,7 +1608,7 @@ extern int spivot_batch(
     float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
-    
+
 /*== end 3D prototypes ===================*/
 
 extern float *sready_x;

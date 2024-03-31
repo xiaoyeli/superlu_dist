@@ -1438,8 +1438,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 
 
-#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
-        if(options->DiagInv==NO){
+#if ( defined(GPU_ACC) )
+        if(options->DiagInv==NO && get_acc_solve()){
 	    if (iam==0) {
 	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
                 printf("           otherwise, use CPU trisolve\n");

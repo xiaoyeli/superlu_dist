@@ -1168,7 +1168,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
 	int_t cnt1,cnt2;
 
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 
 #if ( PRNTlevel>=1 )
     if (get_acc_solve()){
@@ -1565,7 +1565,7 @@ if(procs==1){
 	// }
 
 if (get_acc_solve()){  /* GPU trisolve*/
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 // #if 0 /* CPU trisolve*/
 
 #ifdef GPUREF /* use cuSparse*/
@@ -1945,7 +1945,6 @@ t1 = SuperLU_timer_();
 
 	/* the following transfer is not needed at the U solve works on the d_x directly */
 	// checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
-
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate
 
@@ -2621,7 +2620,6 @@ t1 = SuperLU_timer_();
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 	t = SuperLU_timer_();
-	t3 = SuperLU_timer_();
 #endif
 
 	/*
@@ -2637,7 +2635,7 @@ t1 = SuperLU_timer_();
 
 
 if (get_acc_solve()){  /* GPU trisolve*/
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 // #if 0 /* CPU trisolve*/
 
     d_bmod=SOLVEstruct->d_bmod;
@@ -2709,7 +2707,6 @@ if (get_acc_solve()){  /* GPU trisolve*/
 
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
-
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
 

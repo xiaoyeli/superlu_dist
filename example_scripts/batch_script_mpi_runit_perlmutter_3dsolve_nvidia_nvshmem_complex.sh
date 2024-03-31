@@ -81,9 +81,9 @@ fi
 # npz=(64 32 16)
 # nrhs=(1 50) 
 
-nprows=(1 )
+nprows=(2 )
 npcols=(1 )
-npz=(1 )
+npz=(2 )
 nrhs=(1)
 
 NTH=1
@@ -116,7 +116,7 @@ fi
 
 # NODE_VAL=2
 # NCORE_VAL_TOT=`expr $NODE_VAL_TOT \* $CORES_PER_NODE / $NTH`
-batch=4 # whether to do batched test
+batch=0 # whether to do batched test
 NCORE_VAL_TOT=`expr $NROW \* $NCOL \* $NPZ `
 NCORE_VAL_TOT2D=`expr $NROW \* $NCOL `
 

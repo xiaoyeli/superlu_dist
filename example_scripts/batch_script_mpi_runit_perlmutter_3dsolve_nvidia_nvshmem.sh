@@ -26,7 +26,7 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 
 export SUPERLU_LBS=GD  
-export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
+export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
 export GPU3DVERSION=0
 export ANC25D=0
 export NEW3DSOLVE=1    
@@ -81,9 +81,9 @@ fi
 # npz=(64 32 16)
 # nrhs=(1 50) 
 
-nprows=(1 )
+nprows=(2 )
 npcols=(1 )
-npz=(1 )
+npz=(2 )
 nrhs=(1)
 
 NTH=1
@@ -134,12 +134,12 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # export NSUP=256
 # export NREL=256
 # for MAT in big.rua
-for MAT in g20.rua
+# for MAT in g20.rua
 # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua
 # for MAT in dielFilterV3real.bin
 # for MAT in Geo_1438.bin s2D9pt2048.rua raefsky3.mtx rma10.mtx
 # for MAT in Geo_1438.bin 
-# for MAT in s1_mat_0_126936.bin
+for MAT in s1_mat_0_126936.bin
 # for MAT in s2D9pt2048.rua
 # for MAT in s2D9pt1536.rua
 # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin

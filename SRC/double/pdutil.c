@@ -779,7 +779,7 @@ int_t
 pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
 	     dLUstruct_t *LUstruct, dSOLVEstruct_t *SOLVEstruct, int* supernodeMask)
 {
-#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+#if ( defined(GPU_ACC) )
     double zero = 0.0;
     int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
@@ -1066,7 +1066,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 int_t
 pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
 {
-#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+#if ( defined(GPU_ACC) )
     checkGPU (gpuFree (SOLVEstruct->d_x));
     checkGPU (gpuFree (SOLVEstruct->d_lsum));
     checkGPU (gpuFree (SOLVEstruct->d_lsum_save));

@@ -981,7 +981,7 @@ extern void  zreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
 extern int  zread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
-			  
+
 extern void validateInput_pzgssvx3d(superlu_dist_options_t *, SuperMatrix *A,
        int ldb, int nrhs, gridinfo3d_t *, int *info);
 extern void zallocScalePermstruct_RC(zScalePermstruct_t *, int_t m, int_t n);
@@ -1024,7 +1024,7 @@ extern void zGenCSRLblocks(int, int_t, gridinfo_t*,
 		  Glu_persist_t*, zLocalLU_t *, doublecomplex **, int_t **, int_t **, int_t*, int_t*);
 
 /* multi-GPU */
-#ifdef GPU_SOLVE
+#ifdef GPU_ACC
 // extern void create_nv_buffer(int* , int*, int* , int* );
 extern void nv_init_wrapper(MPI_Comm);
 // extern void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level);
@@ -1596,7 +1596,7 @@ extern int pzgssvx3d_csc_batch(
 		int nrhs, handle_t *, doublecomplex **RHSptr, int *ldRHS,
 		double **ReqPtr, double **CeqPtr,
 		int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
-		handle_t *F, doublecomplex **Xptr, int *ldX, double **Berrs, 
+		handle_t *F, doublecomplex **Xptr, int *ldX, double **Berrs,
 		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
 		//DeviceContext context /* device context including queues, events, dependencies */
 		);
@@ -1610,7 +1610,7 @@ extern int zpivot_batch(
     double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
-    
+
 /*== end 3D prototypes ===================*/
 
 extern doublecomplex *zready_x;

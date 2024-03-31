@@ -20,7 +20,7 @@ export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
 CXX=mpiCC
 
 cmake .. \
-  -DCMAKE_C_FLAGS="-D_USE_SUMMIT -DGPU_SOLVE -qsmp=omp -DSLU_HAVE_LAPACK -fopenmp -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -I${NVSHMEM_HOME}/include" \
+  -DCMAKE_C_FLAGS="-D_USE_SUMMIT   -qsmp=omp -DSLU_HAVE_LAPACK -fopenmp -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -I${NVSHMEM_HOME}/include" \
   -DCMAKE_CXX_COMPILER=mpiCC \
   -DCMAKE_C_COMPILER=mpicc \
   -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \

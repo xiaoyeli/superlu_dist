@@ -1188,6 +1188,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		}
 #endif
 
+
+
+
+
 		t = SuperLU_timer_();
 
 		/*factorize in grid 1*/
@@ -1207,69 +1211,29 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
 
-			if(options->batchCount == 0)
-			{
-#define TEMPLATED_VERSION 
+#define TEMPLATED_VERSION
 #ifdef TEMPLATED_VERSION
-				dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-							SCT, options, stat, thresh, info);
-				
-				/* call pdgstrf3d() in C++ code */
-				pdgstrf3d_LUv1(dLUgpu);
-				
-				dCopyLUGPU2Host(dLUgpu, LUstruct);
-				dDestroyLUgpuHandle(dLUgpu);
-#else 
-				/* call constructor in C++ code */
-				LUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-							SCT, options, stat, thresh, info);
+dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
 
-				/* call pdgstrf3d() in C++ code */
-				pdgstrf3d_LUpackedInterface(LUgpu);
-				
-				copyLUGPU2Host(LUgpu, LUstruct);
-				destroyLUgpuHandle(LUgpu);
+			/* call pdgstrf3d() in C++ code */
+			pdgstrf3d_LUv1(dLUgpu);
+
+			dCopyLUGPU2Host(dLUgpu, LUstruct);
+			dDestroyLUgpuHandle(dLUgpu);
+		    //TODO: dCreateLUgpuHandle,pdgstrf3d_LUpackedInterface,dCopyLUGPU2Host,dDestroyLUgpuHandle haven't been created
+#else
+			/* call constructor in C++ code */
+			LUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
+
+			/* call pdgstrf3d() in C++ code */
+			pdgstrf3d_LUpackedInterface(LUgpu);
+
+			copyLUGPU2Host(LUgpu, LUstruct);
+			destroyLUgpuHandle(LUgpu);
 #endif /* TEMPLATED_VERSION */
-			}
-			else 
-			{
-#ifdef HAVE_MAGMA
-				double tic = SuperLU_timer_();
-				BatchFactorize_Handle batch_ws = getBatchFactorizeWorkspace(
-					nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info
-				);
 
-				double setup_time = SuperLU_timer_() - tic;
-				
-				int maxLvl = log2i(grid3d->zscp.Np) + 1;
-				
-				tic = SuperLU_timer_();
-				for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
-				{
-					if (!trf3Dpartition->myZeroTrIdxs[ilvl])
-					{
-						sForest_t *sforest = trf3Dpartition->sForests[trf3Dpartition->myTreeIdxs[ilvl]];
-						if (sforest)
-							dsparseTreeFactorBatchGPU(batch_ws, sforest);
-					}
-				}
-				double factor_time = SuperLU_timer_() - tic;
-				
-				tic = SuperLU_timer_();
-				copyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
-				freeBatchFactorizeWorkspace(batch_ws);
-				double transfer_time = SuperLU_timer_() - tic;
-				double total_time = transfer_time + factor_time + setup_time;
-
-				printf("Batch Setup time = %.4f (%.2f %% of total)\n", setup_time, 100 * setup_time / total_time);
-				printf("Batch Factorization time = %.4f (%.2f %% of total)\n", factor_time, 100 * factor_time / total_time);
-				printf("Transfer time = %.4f (%.2f %% of total)\n", transfer_time, 100 * transfer_time / total_time);
-				printf("Total time = %.4f\n", total_time);
-#else 
-					// TODO: How should we handle this?
-				ABORT("Fatal error: Batched mode requires magma support!\n");
-#endif 
-			}
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
 			// 	SCT_printSummary(grid, SCT);
@@ -1478,7 +1442,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 				// The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d.
 				int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-#if (defined(GPU_ACC) && defined(GPU_SOLVE))
+#if defined(GPU_ACC)
 
 				pdconvertU(options, grid, LUstruct, stat, n);
 
@@ -1561,8 +1525,8 @@ if (get_acc_solve()){
 			}
 			}
 
-#if (defined(GPU_ACC) && defined(GPU_SOLVE))
-			if (options->DiagInv == NO)
+#if (defined(GPU_ACC))
+			if (options->DiagInv == NO && get_acc_solve())
 			{
 				if (iam == 0)
 				{

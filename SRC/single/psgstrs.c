@@ -989,7 +989,7 @@ psgstrs(superlu_dist_options_t *options, int_t n,
 	int_t cnt1,cnt2;
 
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 
 #if ( PRNTlevel>=1 )
     if (get_acc_solve()){
@@ -1343,7 +1343,7 @@ if(procs==1){
 	// }
 
 if (get_acc_solve()){  /* GPU trisolve*/
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 // #if 0 /* CPU trisolve*/
 
 #ifdef GPUREF /* use cuSparse*/
@@ -2091,7 +2091,6 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 	t = SuperLU_timer_();
-	t3 = SuperLU_timer_();
 #endif
 
 	/*
@@ -2107,7 +2106,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 
 
 if (get_acc_solve()){  /* GPU trisolve*/
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 // #if 0 /* CPU trisolve*/
 
     d_bmod=SOLVEstruct->d_bmod;
