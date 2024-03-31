@@ -822,11 +822,11 @@ __global__ void zwait_bcrd
     if (bid == 1) { // for RD recv
 #endif
         //if (tid==0) printf("RD---(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecvmod[1]);
-       int j, iam, lib, mycol, myrow, k, knsupc, il, cnt;
+       int j, iam, lib, myrow, k, knsupc, il, cnt;
        int_t fmod_tmp, aln_i;
 
        aln_i = 1;
-       doublecomplex temp;
+    //   doublecomplex temp;
        if (WAIT_NUM_THREADS >= d_nfrecvmod[1]) { // one thread wait for one col
            if (tid < d_nfrecvmod[1]) {
                //printf("(%d,%d,%d) d_colnummod=%d,recv_cnt=%d\n", mype, bid, tid, d_colnummod[tid], d_recv_cnt[d_colnummod[tid]]);
@@ -838,7 +838,7 @@ __global__ void zwait_bcrd
                    d_statusmod[d_colnummod[tid] * 2 + wm_val] = 1;
                    lib = (d_colnummod[tid] * 2 + wm_val) / 2;
                    iam = grid->iam;
-                   mycol = MYCOL(iam, grid);
+               //    mycol = MYCOL(iam, grid);
                    myrow = MYROW(iam, grid);
                    k = myrow + lib * grid->nprow; // global block row
                    knsupc = SuperSize(k);
@@ -857,7 +857,7 @@ __global__ void zwait_bcrd
                                RHS_ITERATE(j) {
                                    for (int aab = 0; aab < knsupc; ++aab) {
                                        //temp=z_atomicAdd(&lsum[il+i + j*knsupc], zready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
-                                       temp = z_atomicAdd(&lsum[il + aab + j * knsupc],
+                                       z_atomicAdd(&lsum[il + aab + j * knsupc],
                                                         zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab +
                                                                    j * knsupc]);
                                        //tmp_sum += zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
@@ -881,7 +881,7 @@ __global__ void zwait_bcrd
                            RHS_ITERATE(j) {
                                for (int aab = 0; aab < knsupc; ++aab) {
                                    //temp=z_atomicAdd(&lsum[il+i + j*knsupc], zready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
-                                   temp = z_atomicAdd(&lsum[il + aab + j * knsupc],
+                                   z_atomicAdd(&lsum[il + aab + j * knsupc],
                                                     zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
                                    //tmp_sum += zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                    //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,sum=%lf,zready_lsum[%d]=%lf\n", mype, bid, tid, lib, k, ii,
@@ -984,7 +984,7 @@ __global__ void zwait_bcrd
                //printf("recv,%d,%d,%d,%d,%d\n",
                //       mype,tid,d_colnummod[d_mymaskstartmod[tid]]*2,wm_val,lib);
                iam = grid->iam;
-               mycol = MYCOL(iam, grid);
+           //    mycol = MYCOL(iam, grid);
                myrow = MYROW(iam, grid);
 
                k = myrow + lib * grid->nprow; // global block row
@@ -1003,7 +1003,7 @@ __global__ void zwait_bcrd
                            RHS_ITERATE(j) {
                                for (int aab = 0; aab < knsupc; aab++) {
                                    //temp=z_atomicAdd(&lsum[il+i + j*knsupc], zready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
-                                   temp = z_atomicAdd(&lsum[il + aab + j * knsupc],
+                                   z_atomicAdd(&lsum[il + aab + j * knsupc],
                                                     zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab +
                                                                j * knsupc]);
                                    //tmp_sum += zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
@@ -1023,7 +1023,7 @@ __global__ void zwait_bcrd
                        if (flag_rd_q[lib * 2 + 1] == 1) ii = 1;
                        RHS_ITERATE(j) {
                            for (int aab = 0; aab < knsupc; ++aab) {
-                               temp = z_atomicAdd(&lsum[il + aab + j * knsupc],
+                               z_atomicAdd(&lsum[il + aab + j * knsupc],
                                                 zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
                                //tmp_sum += zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,zready_lsum[%d]=%f\n", mype, bid, tid, lib, k, ii,
@@ -1259,11 +1259,11 @@ __global__ void zwait_bcrd_u
      if (bid == 1) { // for RD recv
 #endif
         //if (tid==0) printf("RD---(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecvmod[1]);
-        int j, iam, lib, mycol, myrow, k, knsupc, il, cnt;
+        int j, iam, lib, myrow, k, knsupc, il, cnt;
         int_t bmod_tmp, aln_i;
 
         aln_i = 1;
-        doublecomplex temp;
+        // doublecomplex temp;
         if (WAIT_NUM_THREADS >= d_nfrecvmod[1]) { // one thread wait for one col
             if (tid < d_nfrecvmod[1]) {
                 //printf("(%d,%d,%d) d_colnummod=%d,recv_cnt=%d\n", mype, bid, tid, d_colnummod[tid], d_recv_cnt[d_colnummod[tid]]);
@@ -1274,7 +1274,7 @@ __global__ void zwait_bcrd_u
                     d_statusmod[d_colnummod[tid] * 2 + wm_val] = 1;
                     lib = (d_colnummod[tid] * 2 + wm_val) / 2;
                     iam = grid->iam;
-                    mycol = MYCOL(iam, grid);
+                    // mycol = MYCOL(iam, grid);
                     myrow = MYROW(iam, grid);
                     k = myrow + lib * grid->nprow; // global block row
                     knsupc = SuperSize(k);
@@ -1293,7 +1293,7 @@ __global__ void zwait_bcrd_u
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; ++aab) {
                                         //temp=z_atomicAdd(&lsum[il+i + j*knsupc], zready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
-                                        temp = z_atomicAdd(&lsum[il + aab + j * knsupc],
+                                        z_atomicAdd(&lsum[il + aab + j * knsupc],
                                                          zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab +
                                                                     j * knsupc]);
 
@@ -1318,7 +1318,7 @@ __global__ void zwait_bcrd_u
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; ++aab) {
                                     //temp=z_atomicAdd(&lsum[il+i + j*knsupc], zready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
-                                    temp = z_atomicAdd(&lsum[il + aab + j * knsupc],
+                                    z_atomicAdd(&lsum[il + aab + j * knsupc],
                                                      zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
                                     // tmp_sum += zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                     //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,sum=%lf,zready_lsum[%d]=%lf\n", mype, bid, tid, lib, k, ii,
@@ -1418,7 +1418,7 @@ __global__ void zwait_bcrd_u
                 //printf("recv,%d,%d,%d,%d,%d\n",
                 //       mype,tid,d_colnummod[d_mymaskstartmod[tid]]*2,wm_val,lib);
                 iam = grid->iam;
-                mycol = MYCOL(iam, grid);
+                // mycol = MYCOL(iam, grid);
                 myrow = MYROW(iam, grid);
 
                 k = myrow + lib * grid->nprow; // global block row
@@ -1437,7 +1437,7 @@ __global__ void zwait_bcrd_u
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; aab++) {
                                     //temp=z_atomicAdd(&lsum[il+i + j*knsupc], zready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
-                                    temp = z_atomicAdd(&lsum[il + aab + j * knsupc],
+                                    z_atomicAdd(&lsum[il + aab + j * knsupc],
                                                      zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab +
                                                                 j * knsupc]);
                                     // tmp_sum += zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
@@ -1458,7 +1458,7 @@ __global__ void zwait_bcrd_u
                         // tmp_sum = 0;
                         RHS_ITERATE(j) {
                             for (int aab = 0; aab < knsupc; ++aab) {
-                                temp = z_atomicAdd(&lsum[il + aab + j * knsupc],
+                                z_atomicAdd(&lsum[il + aab + j * knsupc],
                                                  zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
                                 // tmp_sum += zready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                 //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,zready_lsum[%d]=%f\n", mype, bid, tid, lib, k, ii,
@@ -1512,7 +1512,7 @@ __global__ void zwait_bcrd_u
 
         //if (d_nfrecvmod[3]==0) return;
         int lk=-1,k=-1,iam=-1,myroot=-1,myrank=-1;
-        int mycol,myrow,lib;
+        int myrow,lib;
         __shared__ int recv_num, finish_num;
         __shared__ int cur_send_num;
         recv_num = finish_num = 0;
@@ -1554,7 +1554,7 @@ __global__ void zwait_bcrd_u
                     lk=d_flag_mod_u[i+tid/32];
                     //if (tid%32==0) printf("-- Warp, (%d,%d) i=%d, recv_num=%d,cur_send_num=%d, lk=%d, size=%d\n",mype,tid,i, recv_num,cur_send_num,lk,my_flag_rd[RDMA_FLAG_SIZE*k+1]);
                     iam = grid->iam;
-                    mycol = MYCOL(iam, grid);
+                    // mycol = MYCOL(iam, grid);
                     myrow = MYROW(iam, grid);
                     k = myrow + lk * grid->nprow; // global block row
                     myroot=URtree_ptr[lk].myRoot_;
@@ -1568,7 +1568,7 @@ __global__ void zwait_bcrd_u
                 if (tid < cur_send_num){
                     lk=d_flag_mod_u[i+tid];
                     iam = grid->iam;
-                    mycol = MYCOL(iam, grid);
+                    // mycol = MYCOL(iam, grid);
                     myrow = MYROW(iam, grid);
                     k = myrow + lk * grid->nprow; // global block row
                     myroot=URtree_ptr[lk].myRoot_;
@@ -1590,7 +1590,7 @@ __global__ void zwait_bcrd_u
                 for(int j=0;j<mynum;j++){
                     lk=d_flag_mod_u[i+myoffset+j];
                     iam = grid->iam;
-                    mycol = MYCOL(iam, grid);
+                    // mycol = MYCOL(iam, grid);
                     myrow = MYROW(iam, grid);
                     k = myrow + lk * grid->nprow; // global block row
                     myroot=URtree_ptr[lk].myRoot_;
@@ -1734,12 +1734,12 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
     int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nsupr, m;
     int_t  k,i, l,ii, ik, il, irow, j, lb, lk, rel, lib;
     int_t  *lsub, *lloc;
-    int_t  luptr_tmp,luptr_tmp1,lptr1_tmp, idx_i, idx_v, fmod_tmp;
+    int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v, fmod_tmp;
     //__shared__ doublecomplex rtemp_loc[128];
-    doublecomplex temp, temp1;
+    doublecomplex temp1;
     int_t lptr;      /* Starting position in lsub[*].                      */
-    int aln_d,aln_i;
-    aln_d = 1;//ceil(CACHELINE/(double)dword);
+    int aln_i;
+    // aln_d = 1;//ceil(CACHELINE/(double)dword);
     aln_i = 1;//ceil(CACHELINE/(double)iword);
     int   knsupc;    /* Size of supernode k.                               */
     int_t nlb;       /* Number of L blocks.                                */
@@ -1759,7 +1759,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
         return;
     }
 
-    int gc, gr;
+    int gc;
 
     lk = bid;
     iam = grid->iam;
@@ -1782,14 +1782,14 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 	// idx_n = 1;
         idx_i = nlb + 2;
         idx_v = 2 * nlb + 3;
-        luptr_tmp = lloc[idx_v];
+        // luptr_tmp = lloc[idx_v];
         m = nsupr - knsupc;
     } else {
         nlb = lsub[0];
         // idx_n = 0;
         idx_i = nlb;
         idx_v = 2 * nlb;
-        luptr_tmp = lloc[idx_v];
+        // luptr_tmp = lloc[idx_v];
         m = nsupr;
     }
 
@@ -1965,7 +1965,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                     doublecomplex tempm;
                     tempm.r=-temp1.r;
                     tempm.i=-temp1.i;
-                    temp = z_atomicAdd(&lsum[il + irow + j * iknsupc], tempm);
+                    z_atomicAdd(&lsum[il + irow + j * iknsupc], tempm);
                     //printf("(%d,%d,%d),lsum[%d]=%f\n",mype,bid,tid,il+irow + j*iknsupc,lsum[il+irow + j*iknsupc]);
                 }
 
@@ -1990,7 +1990,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
             lk = LBi(ik, grid); /* Local block number, row-wise. */
             iknsupc = SuperSize(ik);
             il = LSUM_BLK(lk);
-            gr=myrow + lk * grid->nprow;
+            // gr=myrow + lk * grid->nprow;
             //knsupc = SuperSize(gr);
 
             for (i = tid; i < m; i += block_size) {
@@ -2085,7 +2085,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                                     doublecomplex tempm;
                                     tempm.r=-regC.r;
                                     tempm.i=-regC.i;
-                                    temp = z_atomicAdd(&lsum[il + irow + coord_dCn * iknsupc], tempm);
+                                    z_atomicAdd(&lsum[il + irow + coord_dCn * iknsupc], tempm);
 
 
                                 }
@@ -2138,11 +2138,11 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
     int_t  k,i, l,ii,ik, il, irow, j, lb, lk, rel, lib;
     int_t  *lsub, *lloc;
     int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
-    int fmod_tmp;
+    // int fmod_tmp;
    //  MPI_Status status;
    //  const int Nbk=1;
    //  __shared__ doublecomplex rtemp_loc[128];
-    doublecomplex temp,temp1;
+    doublecomplex temp1;
     int_t lptr;      /* Starting position in lsub[*].                      */
    //  int_t iword = sizeof(int_t);
    //  int_t dword = sizeof (doublecomplex);
@@ -2371,7 +2371,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                     doublecomplex tempm;
                     tempm.r=-temp1.r;
                     tempm.i=-temp1.i;
-                    temp = z_atomicAdd(&lsum[il + irow + j * iknsupc], tempm);
+                    z_atomicAdd(&lsum[il + irow + j * iknsupc], tempm);
 
                         }
 
@@ -2412,7 +2412,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
 
                        irow = lsub[lptr+i-nbrow] - rel; /* Relative row. */
                        if(i==nbrow+lsub[lptr1_tmp+1]-1){
-                           fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+                           atomicSub(&fmod[lk*aln_i],1);
                            // __threadfence();
                        }
                    }
@@ -2484,7 +2484,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                                                 doublecomplex tempm;
                                                 tempm.r=-regC.r;
                                                 tempm.i=-regC.i;
-                                                temp = z_atomicAdd(&lsum[il + irow + coord_dCn * iknsupc], tempm);
+                                                z_atomicAdd(&lsum[il + irow + coord_dCn * iknsupc], tempm);
                                             }
                                         }
                                     }
@@ -2492,7 +2492,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                             }
                         // }//if(nrhs==1)
 
-                        if(tid==0)fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+                        if(tid==0)atomicSub(&fmod[lk*aln_i],1);
 
 
 
@@ -2551,15 +2551,15 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
     doublecomplex zero = {0.0, 0.0};
     doublecomplex *lusup;
     doublecomplex *Linv;/* Inverse of diagonal block */
-    int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nsupr,m;
+    int    iam, iknsupc, myrow, mycol, krow, nbrow, nsupr,m;
     int_t  k,i, l,ii,ik, il, irow, j, lb, lk, rel, lib;
     int_t  *lsub, *lloc;
     int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
-    int fmod_tmp;
+    // int fmod_tmp;
    //  MPI_Status status;
    //  const int Nbk=1;
    //  __shared__ doublecomplex rtemp_loc[128];
-    doublecomplex temp,temp1;
+    doublecomplex temp1;
     int_t lptr;      /* Starting position in lsub[*].                      */
    //  int_t iword = sizeof(int_t);
    //  int_t dword = sizeof (doublecomplex);
@@ -2569,7 +2569,7 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
     int   knsupc;    /* Size of supernode k.                               */
     int_t nlb;       /* Number of L blocks.                                */
 
-    int_t bid;
+    // int_t bid;
     int_t tmp;
     int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
    //  int_t ready = 0;
@@ -2592,7 +2592,7 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
     // wrp= threadIdx_x + blockIdx_x * blockDim_x;
     // wrp/=WARP_SIZE;
 
-    bid= blockIdx_x;
+    // bid= blockIdx_x;
 
     // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
 
@@ -2709,7 +2709,7 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
                     nbrow=0;
                     lptr1_tmp = lloc[lb+idx_i];
                     lptr= lptr1_tmp+2;
-                    nbrow1 = lsub[lptr1_tmp+1];
+                    // nbrow1 = lsub[lptr1_tmp+1];
                     ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
                     rel = xsup[ik]; /* Global row index of block ik. */
                     lk = LBi( ik, grid ); /* Local block number, row-wise. */
@@ -2740,11 +2740,11 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
                         doublecomplex tempm;
                         tempm.r=-temp1.r;
                         tempm.i=-temp1.i;
-                        temp = z_atomicAdd(&lsum[il+irow + j*iknsupc], tempm);
+                        z_atomicAdd(&lsum[il+irow + j*iknsupc], tempm);
                         }
 
                         if(i==nbrow+lsub[lptr1_tmp+1]-1){
-                       	 fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+                       	 atomicSub(&fmod[lk*aln_i],1);
                        	 // __threadfence();
                         }
 
@@ -2856,7 +2856,7 @@ void zlsum_fmod_inv_gpu_wrap
 
     int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
 
-    int mype, npes;
+    int mype;
 
     if(procs==1){
         nblock_ex=0;
@@ -2876,7 +2876,7 @@ void zlsum_fmod_inv_gpu_wrap
 
 #ifdef HAVE_NVSHMEM
         mype = nvshmem_my_pe();
-        npes = nvshmem_n_pes();
+        // npes = nvshmem_n_pes();
 
 
         cudaStream_t stream[2];
@@ -2997,7 +2997,7 @@ gridinfo_t *grid
 	int    iam, iknsupc, myrow, mycol, krow;
 	int_t  k,i, l,ii, ik, il, j, lk, lib, ub;
 	int_t gik, rel, lptr, ncol, icol;
-	doublecomplex temp,temp1;
+	doublecomplex temp1;
      __shared__ doublecomplex temp2[MAXSUPER];
 	int_t aln_i;
 	aln_i = 1;//ceil(CACHELINE/(double)iword);
@@ -3006,7 +3006,7 @@ gridinfo_t *grid
 
 	int_t bid;
 	int_t tmp;
-	int_t bmod_tmp;
+	// int_t bmod_tmp;
 	int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
 	const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
 	doublecomplex rC[THR_N][THR_M];
@@ -3216,14 +3216,14 @@ gridinfo_t *grid
                         doublecomplex tempm;
                         tempm.r=-temp1.r;
                         tempm.i=-temp1.i;
-                        temp = z_atomicAdd(&lsum[il+offset], tempm);
+                        z_atomicAdd(&lsum[il+offset], tempm);
 
                     }
                     __syncthreads();
 
                     for (ub = tid; ub < nub; ub+=block_size){
                         ik = lloc[ub];
-                        bmod_tmp=atomicSub(&bmod[ik*aln_i],1);
+                        atomicSub(&bmod[ik*aln_i],1);
                         // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
                     }
                 }else{
@@ -3258,13 +3258,13 @@ gridinfo_t *grid
                                             doublecomplex tempm;
                                             tempm.r=-regC.r;
                                             tempm.i=-regC.i;
-                                            temp = z_atomicAdd(&lsum[il+coord_dCm + coord_dCn*iknsupc], tempm);
+                                            z_atomicAdd(&lsum[il+coord_dCm + coord_dCn*iknsupc], tempm);
                                         }
                                     }
                                 }
                             }
                         }
-                        if(tid==0)bmod_tmp=atomicSub(&bmod[ik*aln_i],1);
+                        if(tid==0)atomicSub(&bmod[ik*aln_i],1);
                     }
 
 				}//if(nrhs==1)
@@ -3320,11 +3320,11 @@ gridinfo_t *grid
   {
     //   doublecomplex xtemp;
     //   doublecomplex *dest;
-      doublecomplex *Uinv;/* Inverse of diagonal block */
+    //  doublecomplex *Uinv;/* Inverse of diagonal block */
       int    iam, iknsupc, myrow, mycol, kcol;
       int_t  k,i,i1, bb, l,ii, lk, jk, lib, ljb, ub;
       int_t gik, rel, lptr, ncol, icol;
-      doublecomplex temp,temp1;
+      doublecomplex temp1;
       __shared__ doublecomplex s_lsum[MAXSUPER];
       // volatile __shared__ doublecomplex temp2[MAXSUPER];
       volatile __shared__ int s_bmod;
@@ -3334,7 +3334,7 @@ gridinfo_t *grid
 
       int_t bid;
       int_t tmp;
-      int_t bmod_tmp;
+      // int_t bmod_tmp;
       int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
       const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
       doublecomplex zero = {0.0, 0.0};
@@ -3445,12 +3445,12 @@ gridinfo_t *grid
                 doublecomplex tempm;
                 tempm.r=-temp1.r;
                 tempm.i=-temp1.i;
-                temp = z_atomicAdd((doublecomplex *)&s_lsum[i], tempm);
+                z_atomicAdd((doublecomplex *)&s_lsum[i], tempm);
             }
             __syncwarp();
 
             /*only the first thread in a warp modify bmod */
-            if(lne==0)bmod_tmp=atomicSub((int *)&s_bmod,1);
+            if(lne==0)atomicSub((int *)&s_bmod,1);
             // if(bid==4 && lne==0)printf("  Row 4 kernel:   %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,tid,uind_br[0],bmod[lk*aln_i]);
 
           }
@@ -3483,7 +3483,7 @@ gridinfo_t *grid
 
                 __syncwarp();
 
-                Uinv = &Uinv_bc_dat[Uinv_bc_offset[jk]];
+                // Uinv = &Uinv_bc_dat[Uinv_bc_offset[jk]];
 
                 if(nrhs==1){
                     for (i = lne; i < iknsupc; i+=WARP_SIZE){
@@ -3589,7 +3589,7 @@ gridinfo_t *grid
     int    iam, iknsupc, myrow, mycol, kcol;
     int_t  k,i, bb, l,ii, lk, jk, lib, ljb;
     int_t gik, rel, ncol, icol;
-    doublecomplex temp,temp1;
+    doublecomplex temp1;
     __shared__ doublecomplex s_lsum[MAXSUPER];
     // volatile __shared__ doublecomplex temp2[MAXSUPER];
     volatile __shared__ int s_bmod;
@@ -3696,7 +3696,7 @@ gridinfo_t *grid
                 doublecomplex tempm;
                 tempm.r=-temp1.r;
                 tempm.i=-temp1.i;
-                temp = z_atomicAdd((doublecomplex *)&s_lsum[i+iknsupc-LDA], tempm);
+                z_atomicAdd((doublecomplex *)&s_lsum[i+iknsupc-LDA], tempm);
 
           }
           __syncwarp();
@@ -3847,23 +3847,23 @@ gridinfo_t *grid
 	int    iam, iknsupc, myrow, mycol, krow;
 	int_t  k,i, l,ii, ik, il, j, lk, lib, ub;
 	int_t gik, rel, lptr, ncol, icol;
-	doublecomplex temp,temp1;
+	doublecomplex temp1;
 	// __shared__ doublecomplex temp2[MAXSUPER];
 	int_t aln_i;
 	aln_i = 1;//ceil(CACHELINE/(double)iword);
 	int   knsupc;    /* Size of supernode k.                               */
 	int_t nub;       /* Number of L blocks.                                */
 
-	int_t bid;
+	// int_t bid;
 	int_t tmp;
-	int_t bmod_tmp;
+	// int_t bmod_tmp;
 	int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
 	const int block_size = blockDim_x*blockDim_y; /* number of threads per block*/
 	// doublecomplex rC[THR_N][THR_M];
 	// __shared__ doublecomplex x_share[DIM_X*DIM_Y];
 
 	// bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
-	int_t idx = threadIdx_x;  // thread's m dimension
+	// int_t idx = threadIdx_x;  // thread's m dimension
 	//int_t idy = threadIdx_y;  // thread's n dimension
 	int_t  *usub, *lloc;
 	doublecomplex *lusup;
@@ -4040,14 +4040,14 @@ gridinfo_t *grid
                         doublecomplex tempm;
                         tempm.r=-temp1.r;
                         tempm.i=-temp1.i;
-                        temp = z_atomicAdd(&lsum[il+offset], tempm);
+                        z_atomicAdd(&lsum[il+offset], tempm);
 
                     }
                     __syncwarp();
 
                     for (ub = lne; ub < nub; ub+=WARP_SIZE){
                         ik = lloc[ub];
-                        bmod_tmp=atomicSub(&bmod[ik*aln_i],1);
+                        atomicSub(&bmod[ik*aln_i],1);
                         // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
                     }
 				}//if(nrhs==1)
@@ -4122,9 +4122,9 @@ gridinfo_t *grid
     doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
      doublecomplex *Uinv;/* Inverse of diagonal block */
      int    iam, iknsupc, myrow, mycol, krow;
-     int_t  k,i, l, ii, ik, il, irow, j, lk, lib, ub;
+     int_t  k,i, l, ii, ik, il, j, lk, lib, ub;
      int_t gik, rel, lptr, ncol, icol;
-     doublecomplex temp,temp1;
+     doublecomplex temp1;
      __shared__ doublecomplex temp2[MAXSUPER];
      int_t aln_i;
      aln_i = 1;//ceil(CACHELINE/(double)iword);
@@ -4359,7 +4359,7 @@ gridinfo_t *grid
                 doublecomplex tempm;
                 tempm.r=-temp1.r;
                 tempm.i=-temp1.i;
-                temp = z_atomicAdd(&lsum[il+offset], tempm);
+                z_atomicAdd(&lsum[il+offset], tempm);
 
              }
          }else{
@@ -4394,7 +4394,7 @@ gridinfo_t *grid
                                     doublecomplex tempm;
                                     tempm.r=-regC.r;
                                     tempm.i=-regC.i;
-                                    temp = z_atomicAdd(&lsum[il+coord_dCm + coord_dCn*iknsupc], tempm);
+                                    z_atomicAdd(&lsum[il+coord_dCm + coord_dCn*iknsupc], tempm);
                                  }
                              }
                          }
@@ -4554,9 +4554,10 @@ if(procs==1){
     cudaStreamCreateWithFlags(&stream[i], cudaStreamNonBlocking);
     }
 
-    int mype, npes;
+    // int mype, npes;
+    int mype;
     mype = nvshmem_my_pe();
-    npes = nvshmem_n_pes();
+    // npes = nvshmem_n_pes();
     //printf("(%d) nbcol_loc %d\n", mype, nbcol_loc);
     //printf("(%d), U Enter,mynode=%d\n",mype,mype_node);
     //fflush(stdout);
