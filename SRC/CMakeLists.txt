@@ -382,10 +382,12 @@ endif()
 
 target_sources(superlu_dist PRIVATE ${sources} ${HEADERS})
 set(targets superlu_dist)
+target_compile_features(superlu_dist PUBLIC c_std_99)
 
 if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   # build both shared and static libs
   target_sources(superlu_dist-static PRIVATE ${sources} ${HEADERS})
+  target_compile_features(superlu_dist-static PUBLIC c_std_99)
   list(APPEND targets superlu_dist-static)
 endif()
 

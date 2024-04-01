@@ -74,6 +74,7 @@ if(enable_double)
   set(DTEST pdtest.c dcreate_matrix.c pdcompute_resid.c)
   add_executable(pdtest ${DTEST})
   target_link_libraries(pdtest ${all_link_libs})
+  target_compile_features(pdtest PUBLIC c_std_99)
   add_superlu_dist_tests(pdtest g20.rua)
 endif()
 

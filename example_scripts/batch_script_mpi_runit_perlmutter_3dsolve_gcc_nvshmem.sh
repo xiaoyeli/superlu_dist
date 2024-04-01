@@ -67,6 +67,7 @@ else
   # Host unknown; exiting
   exit $EXIT_HOST
 fi
+
 nprows=(2)
 npcols=(1)
 npz=(1)

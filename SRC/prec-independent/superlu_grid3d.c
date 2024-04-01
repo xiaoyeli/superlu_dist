@@ -267,7 +267,7 @@ void superlu_gridmap3d(
 
 void superlu_gridexit3d(gridinfo3d_t *grid)
 {
-    if ( grid->comm != MPI_COMM_NULL && grid->comm != MPI_COMM_WORLD ) {
+    if ( grid->comm != MPI_COMM_NULL ) {
         /* Marks the communicator objects for deallocation. */
         MPI_Comm_free( &grid->rscp.comm );
         MPI_Comm_free( &grid->cscp.comm );

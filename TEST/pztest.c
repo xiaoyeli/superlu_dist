@@ -34,6 +34,8 @@ at the top-level directory.
 #include "superlu_dist_config.h"
 #include "superlu_zdefs.h"
 
+#define _XOPEN_SOURCE // C99 standard extension to support putenv()
+
 #define NTESTS 1 /*5*/      /* Number of test types */
 #define NTRAN  2    
 #define THRESH 20.0

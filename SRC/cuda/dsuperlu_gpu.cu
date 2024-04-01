@@ -512,8 +512,8 @@ int dSchurCompUpdate_GPU(
 	double tTmp = SuperLU_timer_();
 
 	gpuEventRecord(stat->ePCIeH2D[k0], FunCallStream);
-        //YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
-        gpuEventRecord(stat->GemmStart[k0], FunCallStream);
+	//YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
+	gpuEventRecord(stat->GemmStart[k0], FunCallStream);
 	gpuEventRecord(stat->GemmEnd[k0], FunCallStream);
 	gpuEventRecord(stat->ScatterEnd[k0], FunCallStream);
 

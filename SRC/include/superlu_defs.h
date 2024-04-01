@@ -32,6 +32,7 @@ at the top-level directory.
  *     July 5, 2022        version 8.1.0
  *     October 1, 2022     version 8.1.1
  *     November 12, 2022   version 8.1.2
+ *     November 17, 2023   version 8.2.1
  * </pre>
  */
 
@@ -66,8 +67,9 @@ at the top-level directory.
 // #include <ittnotify.h>
 // #define USE_VTUNE
 // #endif
-#if ( VTUNE>=1 )
-#include <ittnotify.h>
+
+#if defined(VTUNE) && (VTUNE>=1)
+#include <ittnotify.h>			 
 #endif
 
 /*************************************************************************
@@ -84,9 +86,9 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     8
-#define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     2
-#define SUPERLU_DIST_RELEASE_DATE      "November 12, 2022"
+#define SUPERLU_DIST_MINOR_VERSION     2
+#define SUPERLU_DIST_PATCH_VERSION     1
+#define SUPERLU_DIST_RELEASE_DATE      "November 17, 2023"
 
 #include "superlu_dist_config.h"
 
@@ -286,7 +288,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define SuperLU_timer_  SuperLU_timer_dist_
 #define LOG2(x)   (log10((double) x) / log10(2.0))
 
-#if ( VAMPIR>=1 )
+#if defined(VAMPIR) && (VAMPIR>=1)
 #define VT_TRACEON    VT_traceon()
 #define VT_TRACEOFF   VT_traceoff()
 #else
@@ -296,7 +298,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 
 /* Support Windows */
 #ifndef SUPERLU_DIST_EXPORT
-#if MSVC
+#if defined(MSVC) && MSVC
 #ifdef SUPERLU_DIST_EXPORTS
 #define SUPERLU_DIST_EXPORT __declspec(dllexport)
 #else

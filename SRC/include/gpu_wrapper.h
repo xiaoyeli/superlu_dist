@@ -105,9 +105,13 @@ at the top-level directory.
 
 #elif defined(HAVE_HIP)
 
+#ifndef __HIP_PLATFORM_AMD__ 
+#define __HIP_PLATFORM_AMD__
+#endif
+
 #include "hip/hip_runtime_api.h"
 #include "hip/hip_runtime.h"
-#include "hipblas.h"
+#include <hipblas/hipblas.h>
 
 // #include "roctracer_ext.h"    // need to pass the include dir directly to HIP_HIPCC_FLAGS
 // // roctx header file

@@ -171,7 +171,7 @@ typedef struct {
 
 #define SuperLU_FIRSTCOL_OF_SNODE(i)	(xsup[i])
 
-#if ( PROFlevel>=1 )
+#if defined(PROFlevel) && PROFlevel>=1
 #define TIC(t)          t = SuperLU_timer_()
 #define TOC(t2, t1)     t2 = SuperLU_timer_() - t1
 #else
