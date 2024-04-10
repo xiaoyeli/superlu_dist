@@ -89,7 +89,7 @@ at the top-level directory.
  */
 void
 zgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
-	double *colcnd, double *amax, int_t *info)
+	double *colcnd, double *amax, int *info)
 {
 
 

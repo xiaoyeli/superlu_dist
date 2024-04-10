@@ -271,8 +271,8 @@ void dRgather_U( int_t k, int_t jj0, int_t *usub,	double *uval,
     int_t klst = FstBlockC (k + 1);
     int_t iukp0 = iukp;
     int_t rukp0 = rukp;
-    int_t jb, ljb;
-    int_t nsupc;
+    int jb, ljb;
+    int nsupc;
     int_t full = 1;
     int_t full_Phi = 1;
     int_t temp_ncols = 0;

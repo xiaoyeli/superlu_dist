@@ -141,15 +141,14 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #include "util_dist.h"
 #include "psymbfact.h"
 
-
-#define MAX_SUPER_SIZE 512   /* Sherry: moved from superlu_gpu.cu */
-
-
 #define ISORT     /* NOTE: qsort() has bug on Mac */
 
 /***********************************************************************
  * Constants
  ***********************************************************************/
+
+#define MAX_SUPER_SIZE 512   /* Sherry: moved from superlu_gpu.cu */
+
 /*
  * For each block column of L, the index[] array contains both the row
  * subscripts and the integers describing the size of the blocks.
@@ -932,7 +931,7 @@ typedef struct
     int* IbcastPanel_U;  /*I bcast and recv placed for the k-th U panel*/
     //int* numChildLeft; /* (NOT USED in this structure) number of children left to be factored*/
     int* gpuLUreduced;   /*New for GPU acceleration*/
-}factStat_t;
+} factStat_t;
 
 typedef struct
 {
@@ -1118,7 +1117,7 @@ extern int_t symbfact_SubInit(superlu_dist_options_t *options,
 			      Glu_persist_t *, Glu_freeable_t *);
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
-extern int_t symbfact_SubFree(Glu_freeable_t *);
+extern int symbfact_SubFree(Glu_freeable_t *);
 extern void    countnz_dist (const int_t, int_t *, int_t *, int_t *,
 			     Glu_persist_t *, Glu_freeable_t *);
 extern int64_t fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
@@ -1133,9 +1132,8 @@ extern int   *int32Calloc_dist (int);
 extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
 extern int   mc64id_dist(int *);
-extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
-			       int_t *, int_t *, int_t, int_t,
-			       int_t *, int_t *, int_t *, gridinfo_t *);
+extern void  arrive_at_ublock (int, int_t *, int_t *, int *, int *, int *,
+			       int_t, int_t, int_t *, int_t *, int_t *, gridinfo_t *);
 extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 				 gridinfo_t *, int_t *, int_t*);
 

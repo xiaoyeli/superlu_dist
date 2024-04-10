@@ -356,7 +356,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
     int myrow = MYROW(iam, grid);
     int mycol = MYCOL(iam, grid);
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
-    int_t myGrid = grid3d->zscp.Iam;
+    int myGrid = grid3d->zscp.Iam;
 
     sForest_t** sForests = trf3Dpartition->sForests;
     int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
@@ -400,7 +400,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if (myGrid == grid_id && result)
                     {
                         printf("Check U index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+			       (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
 
@@ -413,7 +413,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if (myGrid == grid_id && result)
                     {
                         printf("Check U value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+			       (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
 
@@ -441,7 +441,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if (myGrid == grid_id && result)
                     {
                         printf("Check L index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+			       (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
 
@@ -454,7 +454,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if (myGrid == grid_id && result)
                     {
                         printf("Check L value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+			       (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
                 }/* Check L panel*/
@@ -466,13 +466,13 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
     }
 
     // Now check if I am only allocating the memory for the blocks I own
-    if(myGrid)
+    if ( myGrid )
     // if(0)
     {
         SupernodeToGridMap_t *superGridMap = trf3Dpartition->superGridMap;
         // int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
         int_t nsupers = trf3Dpartition->nsupers;
-        for(int_t k =0; k< nsupers; k++)
+        for(int k =0; k < nsupers; k++)
         {
             if(superGridMap[k] == NOT_IN_GRID)
             {
@@ -481,20 +481,20 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                 int kcol = PCOL(k, grid);
                 if(myrow == krow)
                 {
-                    int_t lk = LBi(k, grid);
+                    int lk = LBi(k, grid);
                     int_t* usub = LUstruct->Llu->Ufstnz_br_ptr[lk];
                     double* uval = LUstruct->Llu->Unzval_br_ptr[lk];
                     if(usub != NULL || uval != NULL)
                     {
                         printf("Check 3D LU structure failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-                            k, myGrid, grid3d->zscp.Iam, grid3d->zscp.Iam);
+			       k, myGrid, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
                 }
 
                 if (mycol == kcol)
                 {
-                    int_t lk = LBj(k, grid);
+                    int lk = LBj(k, grid);
                     int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
                     double* lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
                     if(lsub != NULL || lusup != NULL)
@@ -505,7 +505,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     }
                 }
             }
-        }
+        } /* end for k ... */
     }
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit checkDist3DLUStruct()");

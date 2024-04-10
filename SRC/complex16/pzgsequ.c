@@ -1,3 +1,4 @@
+
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -83,7 +84,7 @@ at the top-level directory.
 
 void
 pzgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
-	double *colcnd, double *amax, int_t *info, gridinfo_t *grid)
+	double *colcnd, double *amax, int *info, gridinfo_t *grid)
 {
 
     /* Local variables */

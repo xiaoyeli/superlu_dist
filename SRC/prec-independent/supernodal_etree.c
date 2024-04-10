@@ -819,7 +819,7 @@ int_t** getNodeList(int_t maxLvl, int_t* setree, int_t* nnodes,
 			if (nodeList[i]){
 				int_t tmpcnt=getCommonAncestorList(treeHeads[i], nodeList[i],  setree, treeList);
 				if(tmpcnt!=nnodes[i]){
-					printf("nnodes[i] = %10d but getCommonAncestorList returns %10d. The code will continue but the solution can be wrong. Likely SUPERLU_LBS=ND is used for a non-binary tree!!! Try to use SUPERLU_LBS=GD instead. \n",nnodes[i], tmpcnt);
+				    printf("nnodes[i] = %10d but getCommonAncestorList returns %10d. The code will continue but the solution can be wrong. Likely SUPERLU_LBS=ND is used for a non-binary tree!!! Try to use SUPERLU_LBS=GD instead. \n", (int)nnodes[i], (int)tmpcnt);
 					fflush(stdout);
 					nnodes[i]=tmpcnt; // this makes sure the code doesn't crash, but the result is wrong! 
 				}

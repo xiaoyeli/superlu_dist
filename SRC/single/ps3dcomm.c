@@ -1211,11 +1211,11 @@ int_t sgatherAllFactoredLU3d( strf3Dpartition_t*  trf3Dpartition,
 		int start = (1 << alvl) - 1;
 		int end = (1 << (alvl + 1)) - 1;
 
-		for (int_t tr = start+1; tr < end; ++tr)
+		for (int tr = start+1; tr < end; ++tr)
 		{
 			int sender = (1 << (ilvl )) * ( tr - start );
 			int receiver =0;
-			printf("tr = %d, sender %d, receiver %d\n", tr, sender, receiver);
+			//printf("tr = %d, sender %d, receiver %d\n", tr, sender, receiver);
 			if(myGrid == sender || myGrid == receiver)
 			sgatherFactoredLU(sender, receiver,
 						     gNodeCount[tr], gNodeLists[tr],

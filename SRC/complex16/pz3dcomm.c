@@ -258,7 +258,7 @@ int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 	}
 
     return 0;
-} /* end zzRecvLPanel */
+}
 
 int_t zzSendUPanel(int_t k, int_t receiver,
                     zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
@@ -327,7 +327,7 @@ int_t zzRecvUPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 		}
 	}
     return 0;
-} /* end zzRecvUPanel */
+}
 
 
 int_t zp3dScatter(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *supernodeMask)
@@ -1210,11 +1210,11 @@ int_t zgatherAllFactoredLU3d( ztrf3Dpartition_t*  trf3Dpartition,
 		int start = (1 << alvl) - 1;
 		int end = (1 << (alvl + 1)) - 1;
 
-		for (int_t tr = start+1; tr < end; ++tr)
+		for (int tr = start+1; tr < end; ++tr)
 		{
 			int sender = (1 << (ilvl )) * ( tr - start );
 			int receiver =0;
-			printf("tr = %d, sender %d, receiver %d\n", tr, sender, receiver);
+			//printf("tr = %d, sender %d, receiver %d\n", tr, sender, receiver);
 			if(myGrid == sender || myGrid == receiver)
 			zgatherFactoredLU(sender, receiver,
 						     gNodeCount[tr], gNodeLists[tr],

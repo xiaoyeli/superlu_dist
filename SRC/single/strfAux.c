@@ -223,8 +223,8 @@ int_t sSchurComplementSetup(
             perm_u[2 * jj] = iperm_c_supno[usub[iukp]]; /* Global block number of block U(k,j). */
             perm_u[2 * jj + 1] = jj;
 #endif
-            int_t jb = usub[iukp];    /* Global block number of block U(k,j). */
-            int_t nsupc = SuperSize (jb);
+            int jb = usub[iukp];    /* Global block number of block U(k,j). */
+            int nsupc = SuperSize (jb);
             iukp += UB_DESCRIPTOR;  /* Start fstnz of block U(k,j). */
             iukp += nsupc;
         }
@@ -246,7 +246,8 @@ int_t sSchurComplementSetup(
             int_t iukp, temp_ncols;
 
             temp_ncols = 0;
-            int_t  rukp, jb, ljb, nsupc, segsize;
+            int_t  rukp;
+	    int jb, ljb, nsupc, segsize;
             arrive_at_ublock(
                 j, &iukp, &rukp, &jb, &ljb, &nsupc,
                 iukp0, rukp0, usub, perm_u, xsup, grid

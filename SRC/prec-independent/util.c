@@ -954,12 +954,12 @@ int_t static_partition(struct superlu_pair *work_load, int_t nwl, int_t *partiti
 /*
  * Search for the metadata of the j-th block in a U panel.
  */
-void arrive_at_ublock(int_t j,      /* j-th block in a U panel */
+void arrive_at_ublock(int j,      /* j-th block in a U panel */
                       int_t *iukp,  /* output : point to index[] of j-th block */
                       int_t *rukp,  /* output : point to nzval[] of j-th block */
-                      int_t *jb,    /* Global block number of block U(k,j). */
-                      int_t *ljb,   /* Local block number of U(k,j). */
-                      int_t *nsupc, /* supernode size of destination block */
+                      int *jb,    /* Global block number of block U(k,j). */
+                      int *ljb,   /* Local block number of U(k,j). */
+                      int *nsupc, /* supernode size of destination block */
                       int_t iukp0,  /* input : search starting point */
                       int_t rukp0,
                       int_t *usub,   /* U subscripts */
@@ -1027,16 +1027,15 @@ int_t num_full_cols_U(
     int klst = FstBlockC(kk + 1);
     int_t iukp0 = iukp;
     int_t rukp0 = rukp;
-    int_t jb, ljb;
+    int jb, ljb;
     int nsupc;
     int temp_ncols = 0;
     int segsize;
 
     *ldu = 0;
 
-    for (int_t j = 0; j < nub; ++j)
+    for (int j = 0; j < nub; ++j)
     {
-
         /* Sherry -- no need to search from beginning ?? */
         arrive_at_ublock(
             j, &iukp, &rukp, &jb, &ljb, &nsupc,
@@ -1073,16 +1072,15 @@ int_t num_full_cols_U_mod(
     int_t klst = FstBlockC(kk + 1);
     int_t iukp0 = iukp;
     int_t rukp0 = rukp;
-    int_t jb, ljb;
+    int jb, ljb;
     int nsupc;
     int temp_ncols = 0;
     int segsize;
 
     *ldu = 0;
 
-    for (int_t j = 0; j < nub; ++j)
+    for (int j = 0; j < nub; ++j)
     {
-
         /* Sherry -- no need to search from beginning ?? */
         arrive_at_ublock(
             j, &iukp, &rukp, &jb, &ljb, &nsupc,

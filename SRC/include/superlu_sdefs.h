@@ -545,12 +545,12 @@ extern void   sScalePermstructFree(sScalePermstruct_t *);
 
 /* Driver related */
 extern void    sgsequ_dist (SuperMatrix *, float *, float *, float *,
-			    float *, float *, int_t *);
+			    float *, float *, int *);
 extern float  slangs_dist (char *, SuperMatrix *);
 extern void    slaqgs_dist (SuperMatrix *, float *, float *, float,
 			    float, float, char *);
 extern void    psgsequ (SuperMatrix *, float *, float *, float *,
-			float *, float *, int_t *, gridinfo_t *);
+			float *, float *, int *, gridinfo_t *);
 extern float  pslangs (char *, SuperMatrix *, gridinfo_t *);
 extern void    pslaqgs (SuperMatrix *, float *, float *, float,
 			float, float, char *);
@@ -984,11 +984,11 @@ extern void validateInput_psgssvx3d(superlu_dist_options_t *, SuperMatrix *A,
        int ldb, int nrhs, gridinfo3d_t *, int *info);
 extern void sallocScalePermstruct_RC(sScalePermstruct_t *, int_t m, int_t n);
 extern void sscaleMatrixDiagonally(fact_t Fact, sScalePermstruct_t *, SuperMatrix *,
-       	    		SuperLUStat_t *, gridinfo_t *, int *rowequ, int *colequ, int_t*iinfo);
+       	    		SuperLUStat_t *, gridinfo_t *, int *rowequ, int *colequ, int *iinfo);
 extern void sperform_row_permutation(superlu_dist_options_t *, fact_t Fact,
            sScalePermstruct_t *, sLUstruct_t *LUstruct, int_t m, int_t n,
 	       gridinfo_t *, SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *,
-	       int job, int Equil, int_t *rowequ, int *colequ, int *iinfo);
+	       int job, int Equil, int *rowequ, int *colequ, int *iinfo);
 extern float scomputeA_Norm(int notran, SuperMatrix *, gridinfo_t *);
 extern int strs_compute_communication_structure(superlu_dist_options_t *options,
        int_t n, sLUstruct_t *, sScalePermstruct_t * ScalePermstruct,
@@ -1537,10 +1537,10 @@ extern int_t ssparseTreeFactor_ASYNC(
 );
 extern sLUValSubBuf_t** sLluBufInitArr(int_t numLA, sLUstruct_t *LUstruct);
 extern int sLluBufFreeArr(int_t numLA, sLUValSubBuf_t **LUvsbs);
-extern sdiagFactBufs_t** sinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
-extern sdiagFactBufs_t** sinitDiagFactBufsArrMod(int_t mxLeafNode, int_t* ldts, gridinfo_t* grid);
-extern int sfreeDiagFactBufsArr(int_t mxLeafNode, sdiagFactBufs_t** dFBufs);
-extern int_t sinitDiagFactBufs(int_t ldt, sdiagFactBufs_t* dFBuf);
+extern sdiagFactBufs_t** sinitDiagFactBufsArr(int mxLeafNode, int ldt, gridinfo_t* grid);
+extern sdiagFactBufs_t** sinitDiagFactBufsArrMod(int mxLeafNode, int* ldts, gridinfo_t* grid);
+extern int sfreeDiagFactBufsArr(int mxLeafNode, sdiagFactBufs_t** dFBufs);
+extern int sinitDiagFactBufs(int ldt, sdiagFactBufs_t* dFBuf);
 extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 			    gridinfo_t *grid, SCT_t *SCT);
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);

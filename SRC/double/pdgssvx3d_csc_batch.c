@@ -37,7 +37,7 @@ int file_dPrint_CompRowLoc_to_Triples(SuperMatrix *A)
     printf("print to triples: m %d, n %d, nnz %d\n", m, n, nnz);
     for (i = 0; i < m; ++i) {
 	for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
-	    fprintf(fp, "%8d %8d %16.8e\n", i, Astore->colind[j], dp[j]);
+	    fprintf(fp, "%8d %8d %16.8e\n", i, (int) Astore->colind[j], dp[j]);
 	}
     }
     fclose(fp);

@@ -255,10 +255,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int_t **Lsub_buf_2, **Usub_buf_2;
     doublecomplex **Lval_buf_2, **Uval_buf_2;          /* pointers to starts of bufs */
     doublecomplex *lusup, *lusup1, *uval, *Uval_buf;   /* pointer to current buf     */
-    int_t fnz, i, ib, ijb, ilst, it, iukp, jb, jj, klst, knsupc,
-        lb, lib, ldv, ljb, lptr, lptr0, lptrj, luptr, luptr0, luptrj,
-        nlb, nub, nsupc, rel, rukp, il, iu;
-    int_t Pc, Pr;
+    int_t fnz, i, ib, ijb, ilst, it, iukp, jj, klst,
+          ldv, lptr, lptr0, lptrj, luptr, luptr0, luptrj,
+          nlb, nub, rel, rukp, il, iu;
+    int jb, ljb, nsupc, knsupc, lb, lib;	
+    int Pc, Pr;
     int iam, kcol, krow, yourcol, mycol, myrow, pi, pj;
     int j, k, lk, nsupers;  /* k - current panel to work on */
     int k0;        /* counter of the next supernode to be factored */

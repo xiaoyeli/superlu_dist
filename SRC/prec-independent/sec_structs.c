@@ -713,7 +713,7 @@ void printTRStimer(xtrsTimer_t *xtrsTimer, gridinfo3d_t *grid3d)
     DistPrint3D("forwardSolve-compute ",  xtrsTimer->tfs_compute, "seconds", grid3d);
     DistPrint3D("forwardSolve-comm    ",  xtrsTimer->tfs_comm, "seconds", grid3d);
 
-    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+    int maxLvl = log2i(grid3d->zscp.Np) + 1;
     char funName[100];
     for (int i = maxLvl-1; i >-1; --i)
     {

@@ -535,8 +535,8 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int_t   *perm_c; /* column permutation vector */
     int_t   *etree;  /* elimination tree */
     int_t   *rowptr, *colind;  /* Local A in NR*/
-    int_t   nnz_loc, nnz, iinfo;
-    int     m_loc, fst_row, icol;
+    int_t   nnz_loc, nnz;
+    int     m_loc, fst_row, icol, iinfo;
     int     colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t   i, j, irow, m, n;
     int     permc_spec;
@@ -812,7 +812,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        iinfo = sldperm_dist(job, m, nnz, colptr, rowind, a_GA,
 		                perm_r, R1, C1);
 
-                        MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
+                        MPI_Bcast( &iinfo, 1, MPI_INT, 0, grid->comm );
 		        if ( iinfo == 0 ) {
 		            MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
 		            if ( job == 5 && Equil ) {
@@ -821,7 +821,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
                             }
 		        }
 	            } else {
-		        MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
+		        MPI_Bcast( &iinfo, 1, MPI_INT, 0, grid->comm );
 			if ( iinfo == 0 ) {
 		            MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
 		            if ( job == 5 && Equil ) {
@@ -1068,12 +1068,13 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    	/* Every process does this.
 		   returned value (-iinfo) is the size of lsub[], incuding pruned graph.*/
-	    	iinfo = symbfact(options, iam, &GAC, perm_c, etree,
+		int_t linfo;
+	    	linfo = symbfact(options, iam, &GAC, perm_c, etree,
 			     	 Glu_persist, Glu_freeable);
 		nnzLU = Glu_freeable->nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
-	    	if ( iinfo <= 0 ) { /* Successful return */
-		    QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
+	    	if ( linfo <= 0 ) { /* Successful return */
+		    QuerySpace_dist(n, -linfo, Glu_freeable, &symb_mem_usage);
 #if ( PRNTlevel>=1 )
 		    if ( !iam ) {
 		    	printf("\tNo of supers " IFMT "\n", Glu_persist->supno[n-1]+1);
@@ -1091,8 +1092,8 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 	    	} else { /* symbfact out of memory */
 		    if ( !iam )
-		        fprintf(stderr,"symbfact() error returns " IFMT "\n",iinfo);
-		    *info = iinfo;
+		        fprintf(stderr,"symbfact() error returns " IFMT "\n", linfo);
+		    *info = linfo;
 		    return;
 	        }
 	    } /* end serial symbolic factorization */

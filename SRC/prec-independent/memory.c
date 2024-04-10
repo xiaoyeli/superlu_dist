@@ -190,7 +190,6 @@ user_bcopy(char *src, char *dest, int_t bytes)
 }
 
 
-
 int *int32Malloc_dist(int n)
 {
     int *buf;
@@ -468,9 +467,8 @@ int_t symbfact_SubXpand
  * factorization routines.
  * </pre>
  */
-
-int_t symbfact_SubFree(Glu_freeable_t *Glu_freeable)
 /************************************************************************/
+int symbfact_SubFree(Glu_freeable_t *Glu_freeable)
 {
 #if ( DEBUGlevel>=1 )
     int iam;

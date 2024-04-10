@@ -153,7 +153,8 @@ get_perm_c_batch(
 		for (i = 0; i <= n; ++i) ++b_colptr[i];
 		for (i = 0; i < bnz; ++i) ++b_rowind[i];
 
-		genmmd_dist_(&n, b_colptr, b_rowind, perm_c, invp, &delta, dhead, 
+		int_t ln = n;
+		genmmd_dist_(&ln, b_colptr, b_rowind, perm_c, invp, &delta, dhead, 
 			     qsize, llist, marker, &maxint, &nofsub);
 
 		/* Transform perm_c into 0-based indexing. */
@@ -164,7 +165,7 @@ get_perm_c_batch(
 
 		SUPERLU_FREE(b_colptr);  /* TODO: repeated malloc/free for the batch */
 		SUPERLU_FREE(b_rowind);
-		printf("\tafter free b_rowind bnz %d\n", bnz);
+		//printf("\tafter free b_rowind bnz %lld\n", (long long)bnz);
 		
 	    } else { /* Empty adjacency structure */
 		for (i = 0; i < n; ++i) perm_c[i] = i;

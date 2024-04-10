@@ -119,7 +119,7 @@ void zscalePrecomputed(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct) {
 
 void zscaleFromScratch(
     SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
-    gridinfo_t *grid, int_t *rowequ, int_t *colequ, int_t*iinfo)
+    gridinfo_t *grid, int *rowequ, int *colequ, int *iinfo)
 {
     NRformat_loc *Astore = (NRformat_loc *)A->Store;
     int_t m_loc = Astore->m_loc;
@@ -161,7 +161,7 @@ void zscaleFromScratch(
 
 void zscaleMatrixDiagonally(fact_t Fact, zScalePermstruct_t *ScalePermstruct,
                            SuperMatrix *A, SuperLUStat_t *stat, gridinfo_t *grid,
-                            int *rowequ, int *colequ, int_t*iinfo)
+                            int *rowequ, int *colequ, int *iinfo)
 {
     int iam = grid->iam;
 
@@ -211,7 +211,7 @@ void zfindRowPerm_MC64(gridinfo_t* grid, int_t job,
                       int_t* perm_r,
                       double* R1,
                       double* C1,
-                      int_t* iinfo) {
+                      int* iinfo) {
     #if ( DEBUGlevel>=1 )
     LOG_FUNC_ENTER();
     #endif
@@ -230,7 +230,7 @@ void zfindRowPerm_MC64(gridinfo_t* grid, int_t job,
     }
 
     // Broadcast the status code to all other nodes in the communicator
-    MPI_Bcast(iinfo, 1, mpi_int_t, root, grid->comm);
+    MPI_Bcast(iinfo, 1, MPI_INT, root, grid->comm);
 
     // If the computation was successful
     if (*iinfo == 0) {
@@ -264,7 +264,7 @@ void zfindRowPerm_MC64(gridinfo_t* grid, int_t job,
  * @param[in,out] R1    Pointer to the array holding the new row scaling factors.
  * @param[in,out] C1    Pointer to the array holding the new column scaling factors.
  */
-void zscale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
+void zscale_distributed_matrix(int rowequ, int colequ, int_t m, int_t n,
  int_t m_loc, int_t *rowptr, int_t *colind, int_t fst_row, doublecomplex *a,
   double *R, double *C, double *R1, double *C1)
 {
@@ -370,7 +370,7 @@ void zperform_LargeDiag_MC64(
     zScalePermstruct_t *ScalePermstruct, zLUstruct_t *LUstruct,
     int_t m, int_t n, gridinfo_t *grid,
     SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *stat, int_t job,
-    int_t Equil, int_t *rowequ, int_t *colequ, int_t *iinfo) {
+    int Equil, int *rowequ, int *colequ, int *iinfo) {
     double *R1 = NULL;
     double *C1 = NULL;
 
@@ -474,7 +474,7 @@ void zperform_row_permutation(
     SuperLUStat_t *stat,
     int job,
     int Equil,
-    int_t *rowequ,
+    int *rowequ,
     int *colequ,
     int *iinfo)
 {
@@ -533,7 +533,7 @@ void zperform_row_permutation(
 #if (PRNTlevel >= 1)
             if (!iam)
             {
-                printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
+                printf(".. LDPERM job %d\t time: %.2f\n", job, t);
                 fflush(stdout);
             }
 #endif
@@ -634,222 +634,4 @@ int zDistributePermutedMatrix(const superlu_dist_options_t *options,
 
 
 #endif // REFACTOR_DistributePermutedMatrix
-#if 0
-// this function is refactored below
-void dperform_LargeDiag_MC64(
-    superlu_dist_options_t* options,
-    fact_t Fact,
-    zScalePermstruct_t *ScalePermstruct,
-    zLUstruct_t *LUstruct,
-    int_t m, int_t n,
-    gridinfo_t* grid,
-    int_t* perm_r,
-    SuperMatrix* A,
-    SuperMatrix* GA,
-    SuperLUStat_t* stat,
-    int_t job,
-    int_t Equil,
-    int_t rowequ,
-    int_t colequ)
-{
-    /* Note: R1 and C1 are now local variables */
-    double* R1 = NULL;
-    double* C1 = NULL;
-
-    /* Extract necessary data from the input arguments */
-    // zScalePermstruct_t* ScalePermstruct = A->ScalePermstruct;
-    // zLUstruct_t* LUstruct = A->LUstruct;
-    perm_r = ScalePermstruct->perm_r;
-    int_t* perm_c = ScalePermstruct->perm_c;
-    int_t* etree = LUstruct->etree;
-    double* R = ScalePermstruct->R;
-    double* C = ScalePermstruct->C;
-    int iam = grid->iam;
-
-    /* Get NR format Data*/
-    #warning need to chanck the following code
-    NRformat_loc *Astore = (NRformat_loc *)A->Store;
-    int_t nnz_loc = Astore->nnz_loc;
-    int_t m_loc = Astore->m_loc;
-    int_t fst_row = Astore->fst_row;
-    doublecomplex *a = (doublecomplex *)Astore->nzval;
-    int_t *rowptr = Astore->rowptr;
-    int_t *colind = Astore->colind;
-
-
-    /* Get NC format data from SuperMatrix GA */
-    NCformat* GAstore = (NCformat *)GA->Store;
-    int_t* colptr = GAstore->colptr;
-    int_t* rowind = GAstore->rowind;
-    int_t nnz = GAstore->nnz;
-    doublecomplex* a_GA = (doublecomplex *)GAstore->nzval;
-    /* Rest of the code goes here... */
-
-    /* Get a new perm_r[] */
-    if (job == 5)
-    {
-        /* Allocate storage for scaling factors. */
-        if (!(R1 = doubleMalloc_dist(m)))
-            ABORT("SUPERLU_MALLOC fails for R1[]");
-        if (!(C1 = doubleMalloc_dist(n)))
-            ABORT("SUPERLU_MALLOC fails for C1[]");
-    }
-
-    int iinfo;
-    if (iam == 0)
-    {
-        /* Process 0 finds a row permutation */
-        iinfo = zldperm_dist(job, m, nnz, colptr, rowind, a_GA,
-                             perm_r, R1, C1);
-        MPI_Bcast(&iinfo, 1, mpi_int_t, 0, grid->comm);
-        if (iinfo == 0)
-        {
-            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-            if (job == 5 && Equil)
-            {
-                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-            }
-        }
-    }
-    else
-    {
-        MPI_Bcast(&iinfo, 1, mpi_int_t, 0, grid->comm);
-        if (iinfo == 0)
-        {
-            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-            if (job == 5 && Equil)
-            {
-                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-            }
-        }
-    }
-
-    if (iinfo && job == 5)
-    { /* Error return */
-        SUPERLU_FREE(R1);
-        SUPERLU_FREE(C1);
-    }
-#if (PRNTlevel >= 2)
-    double dmin = damch_dist("Overflow");
-    double dsum = 0.0;
-    double dprod = 1.0;
-#endif
-    if (iinfo == 0)
-    {
-        if (job == 5)
-        {
-            if (Equil)
-            {
-                for (int i = 0; i < n; ++i)
-                {
-                    R1[i] = exp(R1[i]);
-                    C1[i] = exp(C1[i]);
-                }
-
-                /* Scale the distributed matrix further.
-                   A <-- diag(R1)*A*diag(C1)            */
-                int irow = fst_row;
-                for (int j = 0; j < m_loc; ++j)
-                {
-                    for (int i = rowptr[j]; i < rowptr[j + 1]; ++i)
-                    {
-                        int icol = colind[i];
-                        zd_mult(&a[i], &a[i], R1[irow]);
-                        zd_mult(&a[i], &a[i], C1[icol]);
-#if (PRNTlevel >= 2)
-                        if (perm_r[irow] == icol)
-                        {
-                            /* New diagonal */
-                            if (job == 2 || job == 3)
-                                dmin = SUPERLU_MIN(dmin, slud_z_abs1(&a[i]));
-                            else if (job == 4)
-                                dsum += slud_z_abs1(&a[i]);
-                            else if (job == 5)
-                                dprod *= slud_z_abs1(&a[i]);
-                        }
-#endif
-                    }
-                    ++irow;
-                }
-
-                /* Multiply together the scaling factors --
-                   R/C from simple scheme, R1/C1 from MC64. */
-                if (rowequ)
-                    for (int i = 0; i < m; ++i)
-                        R[i] *= R1[i];
-                else
-                    for (int i = 0; i < m; ++i)
-                        R[i] = R1[i];
-                if (colequ)
-                    for (int i = 0; i < n; ++i)
-                        C[i] *= C1[i];
-                else
-                    for (int i = 0; i < n; ++i)
-                        C[i] = C1[i];
-
-                ScalePermstruct->DiagScale = BOTH;
-                rowequ = colequ = 1;
-
-            } /* end if Equil */
-
-            /* Now permute global A to prepare for symbfact() */
-            for (int j = 0; j < n; ++j)
-            {
-                for (int i = colptr[j]; i < colptr[j + 1]; ++i)
-                {
-                    int irow = rowind[i];
-                    rowind[i] = perm_r[irow];
-                }
-            }
-            SUPERLU_FREE(R1);
-            SUPERLU_FREE(C1);
-        }
-        else
-        { /* job = 2,3,4 */
-            for (int j = 0; j < n; ++j)
-            {
-                for (int i = colptr[j]; i < colptr[j + 1]; ++i)
-                {
-                    int irow = rowind[i];
-                    rowind[i] = perm_r[irow];
-                } /* end for i ... */
-            }	  /* end for j ... */
-        }		  /* end else job ... */
-    }
-}
-
-
-void zfindRowPerm_MC64(gridinfo_t *grid, int_t job,
-    int_t m, int_t n,
-    int_t nnz,
-    int_t* colptr,
-    int_t* rowind,
-    doublecomplex* a_GA,
-    int_t Equil, int_t *perm_r,
-    double *R1, double *C1, int_t*iinfo)
-{
-    if (grid->iam == 0) {
-        *iinfo = zldperm_dist(job, m, nnz, colptr, rowind, a_GA, perm_r, R1, C1);
-        MPI_Bcast(iinfo, 1, mpi_int_t, 0, grid->comm);
-        if (*iinfo == 0) {
-            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-            if (job == 5 && Equil) {
-                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-            }
-        }
-    } else {
-        MPI_Bcast(iinfo, 1, mpi_int_t, 0, grid->comm);
-        if (*iinfo == 0) {
-            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-            if (job == 5 && Equil) {
-                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-            }
-        }
-    }
-}
-#endif
 

@@ -84,7 +84,7 @@ at the top-level directory.
 
 void
 pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
-	double *colcnd, double *amax, int_t *info, gridinfo_t *grid)
+	double *colcnd, double *amax, int *info, gridinfo_t *grid)
 {
 
     /* Local variables */

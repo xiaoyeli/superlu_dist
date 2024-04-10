@@ -219,20 +219,20 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         if (sforest){
             int_t maxTopoLevel = sforest->topoInfo.numLvl;
             int_t *perm_c_supno = sforest->nodeList ;
-            for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
+            for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
             {
                 /* code */
-                int_t k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
-                int_t k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
-                for (int_t k0 = k_st; k0 < k_end; ++k0)
+                int k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
+                int k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
+                for (int k0 = k_st; k0 < k_end; ++k0)
                 {
-                    int_t offset = k0 - k_st;
-                    int_t k = perm_c_supno[k0];
-                    int_t nsupc = SuperSize (k);
-                    int_t krow = PROW (k, grid);
-                    int_t kcol = PCOL (k, grid);
-                    int_t myrow = MYROW(grid->iam, grid);
-                    int_t mycol = MYCOL(grid->iam, grid);
+                    int offset = k0 - k_st;
+                    int k = perm_c_supno[k0];
+                    int nsupc = SuperSize (k);
+                    int krow = PROW (k, grid);
+                    int kcol = PCOL (k, grid);
+                    int myrow = MYROW(grid->iam, grid);
+                    int mycol = MYCOL(grid->iam, grid);
                     if (myrow == krow || mycol == kcol)
                     {
                         ldts[offset] = SUPERLU_MAX(ldts[offset],nsupc);

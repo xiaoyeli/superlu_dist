@@ -1,3 +1,4 @@
+
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -38,7 +39,7 @@ int_t sLluBufInit(sLUValSubBuf_t* LUvsb, sLUstruct_t *LUstruct)
 
 /* Allocate an array of buffers for the diagonal blocks on a level of the tree.
    The sizes are uniform: ldt is the maximum among all the nodes.    */
-sdiagFactBufs_t** sinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
+sdiagFactBufs_t** sinitDiagFactBufsArr(int mxLeafNode, int ldt, gridinfo_t* grid)
 {
     sdiagFactBufs_t** dFBufs;
 
@@ -58,7 +59,7 @@ sdiagFactBufs_t** sinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* 
 
     return dFBufs;
 }
-sdiagFactBufs_t** sinitDiagFactBufsArrMod(int_t mxLeafNode, int_t* ldts, gridinfo_t* grid)
+sdiagFactBufs_t** sinitDiagFactBufsArrMod(int mxLeafNode, int* ldts, gridinfo_t* grid)
 {
     sdiagFactBufs_t** dFBufs;
 
@@ -80,7 +81,7 @@ sdiagFactBufs_t** sinitDiagFactBufsArrMod(int_t mxLeafNode, int_t* ldts, gridinf
 }
 
 // sherry added
-int sfreeDiagFactBufsArr(int_t mxLeafNode, sdiagFactBufs_t** dFBufs)
+int sfreeDiagFactBufsArr(int mxLeafNode, sdiagFactBufs_t** dFBufs)
 {
     for (int i = 0; i < mxLeafNode; ++i) {
 	SUPERLU_FREE(dFBufs[i]->BlockUFactor);
@@ -148,7 +149,7 @@ int sfreeScuBufs(sscuBufs_t* scuBufs)
     return 0;
 }
 
-int_t sinitDiagFactBufs(int_t ldt, sdiagFactBufs_t* dFBuf)
+int sinitDiagFactBufs(int ldt, sdiagFactBufs_t* dFBuf)
 {
     dFBuf->BlockUFactor = floatMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
     dFBuf->BlockLFactor = floatMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);

@@ -155,6 +155,7 @@ dequil_batch(
 		double amax, anorm, colcnd, rowcnd;
 		
 		/* Compute the row and column scalings. */
+
 		dgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
 		
 		if (iinfo > 0) {

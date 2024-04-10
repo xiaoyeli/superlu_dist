@@ -37,7 +37,7 @@ int file_sPrint_CompRowLoc_to_Triples(SuperMatrix *A)
     printf("print to triples: m %d, n %d, nnz %d\n", m, n, nnz);
     for (i = 0; i < m; ++i) {
 	for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
-	    fprintf(fp, "%8d %8d %16.8e\n", i, Astore->colind[j], dp[j]);
+	    fprintf(fp, "%8d %8d %16.8e\n", i, (int) Astore->colind[j], dp[j]);
 	}
     }
     fclose(fp);
@@ -53,7 +53,7 @@ int file_sPrint_CompRowLoc_to_Triples(SuperMatrix *A)
  * @param[in]      batchCount number of matrices in the batch
  * @param[in]      m row dimension of the matrices
  * @param[in]      n column dimension of the matrices
- * @param[in]      nnz number of non-zero entries in each matrix 
+ * @param[in]      nnz number of non-zero entries in each matrix
  * @param[in]      nrhs number of right-hand-sides
  * @param[in,out]  SparseMatrix_handles  array of sparse matrix handles, of size 'batchCount', each pointing to the actual storage in CSC format, see 'NCformat' in SuperMatix structure
  *      Each A is overwritten by row/col scaling R*A*C
@@ -67,7 +67,7 @@ int file_sPrint_CompRowLoc_to_Triples(SuperMatrix *A)
  * @param[in,out]  RpivPtr array of pointers to row permutation vectors, each of size m
  * @param[in,out]  CpivPtr array of pointers to column permutation vectors, each of size n
  * @param[in,out]  DiagScale array of indicators how equilibration is done for each matrix
- * @param[out]     F array of handles pointing to the factored matrices 
+ * @param[out]     F array of handles pointing to the factored matrices
  * @param[out]     Xptr array of pointers to dense storage of solution
  * @param[in]      ldX array of leading dimensions of X
  * @param[out]     Berrs array of poiniters to backward errors
@@ -134,7 +134,7 @@ psgssvx3d_csc_batch(
     *info = 0;
     SuperMatrix *A0 = (SuperMatrix *) SparseMatrix_handles[0];
     fact_t Fact = options->Fact;
-    
+
     if (Fact < 0 || Fact > FACTORED)
 	*info = -1;
     else if (options->RowPerm < 0 || options->RowPerm > MY_PERMR)
@@ -161,7 +161,7 @@ psgssvx3d_csc_batch(
 	pxerr_dist("psgssvx3d_csc_batch", &(grid3d->grid2d), -(*info));
 	return -1;
     }
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid3d->iam, "Enter psgssvx3d_csc_batch()");
 #endif
@@ -180,12 +180,12 @@ psgssvx3d_csc_batch(
     /**** equilibration (LAPACK style) ****/
     /* ReqPtr[] and CeqPtr[] are allocated internally */
     /* Each A may be overwritten by R*A*C */
-    sequil_batch(options, batchCount, m, n, SparseMatrix_handles, 
+    sequil_batch(options, batchCount, m, n, SparseMatrix_handles,
 		 ReqPtr, CeqPtr, DiagScale);
 
     stat->utime[EQUIL] = SuperLU_timer_() - t;
     t = SuperLU_timer_();
-    
+
     /**** numerical pivoting (e.g., MC64) ****/
     /* If MC64(job=5 is invoked, further equilibration is done,
      * DiagScale[] will be BOTH, and each A is modified,
@@ -196,7 +196,7 @@ psgssvx3d_csc_batch(
 		 ReqPtr, CeqPtr, DiagScale, RpivPtr);
 
     stat->utime[ROWPERM] = SuperLU_timer_() - t;
-    
+
 #if 0
     for (d = 0; d < batchCount; ++d) {
 	printf("DiagScale[%d] %d\n", d, DiagScale[d]);
@@ -213,11 +213,11 @@ psgssvx3d_csc_batch(
      * A may be overwritten as Pr*R*A*C from previous steps, but is not modified in this routine.
      */
     t = SuperLU_timer_();
-    
+
     get_perm_c_batch(options, batchCount, SparseMatrix_handles, CpivPtr);
-    
+
     stat->utime[COLPERM] = SuperLU_timer_() - t;
-#if 0    
+#if 0
     for (d = 0; d < batchCount; ++d) {
 	PrintInt32("CpivPtr[d]", m, CpivPtr[d]);
     }
@@ -241,7 +241,7 @@ psgssvx3d_csc_batch(
 	NCformat *Astore = (NCformat *) A->Store;
 	nnz_big += Astore->nnz;
     }
-    
+
     /* Allocate storage in CSR containing all matrices in the batch */
     // TO-DELETE: dallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
     float *a_big = (float *) floatMalloc_dist(nnz_big);
@@ -252,16 +252,16 @@ psgssvx3d_csc_batch(
     int_t *rowptr_d;
     int_t nnz_d, col, row;
     int *perm_c, *perm_r;
-    
+
     /* B_big */
     float *b;
     if ( !(b = floatMalloc_dist(m_big * nrhs)) ) ABORT("Malloc fails for b[:,nrhs]");
-    
+
     j = 0;   /* running sum of total nnz */
     row = 0;
     col = 0;
     float alpha = -1.0, beta = 1.0;
-    
+
     for (d = 0; d < batchCount; ++d) {
 
 	A = (SuperMatrix *) SparseMatrix_handles[d];
@@ -273,18 +273,18 @@ psgssvx3d_csc_batch(
 	/* Apply perm_c[] to row of A to preserve diagonal: A <= Pc*A */
 	for (i = 0; i < nnz_d; ++i)
 	    Astore->rowind[i] = perm_c[Astore->rowind[i]];
-	
+
 	/* Convert to CSR format. */
 	sCompCol_to_CompRow_dist(m, n, Astore->nnz, Astore->nzval, Astore->colptr,
 				 Astore->rowind, &nzval_d, &rowptr_d, &colind_d);
 
 	//PrintInt32("rowptr_d", m+1, rowptr_d);
-	
+
 	/* Copy this CSR matrix to a diagonal block of A_big.
 	   Apply each perm_c[] to each matrix by column.
 	   Now, diagonal block is permuted by Pc*A*Pc'
 	*/
-	
+
 	/* Apply perm_c[] to columns of A (out-of-place) */
 	for (i = 0; i < m; ++i) {
 	    rowptr[row++] = j;
@@ -296,7 +296,7 @@ psgssvx3d_csc_batch(
 		++j;
 	    }
 	}
-	
+
 	/* move to next block */
 	col += n;
 
@@ -308,7 +308,7 @@ psgssvx3d_csc_batch(
 	float *rhs;
 
 	// NEED TO SAVE A COPY OF RHS ??
-	
+
 	rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
 	//printf("  before transform RHS: rowequ %d\n", rowequ);
 	if ( rowequ ) { /* Scale RHS by R[] */
@@ -319,7 +319,7 @@ psgssvx3d_csc_batch(
 		rhs += ldRHS[d]; /* move to next RHS */
 	    }
 	}
-	
+
 #if ( DEBUGlevel>=1 )
 	printf("System %d, next row %d, next col %d, next j %d\n", d, row, col, j);
 	//Printfloat5("big-RHS", m, RHSptr[d]);
@@ -335,7 +335,7 @@ psgssvx3d_csc_batch(
 	//Printdouble5("big-RHS-permuted", m, &b[(k-1) * m_big + d * m]);
 
     } /* end for d ... batchCount */
-    
+
     // assert(j == nnz_big);
     // assert(row == m_big);
     rowptr[row] = nnz_big;  /* +1 as an end marker */
@@ -351,7 +351,7 @@ psgssvx3d_csc_batch(
 				   a_big, colind, rowptr, SLU_NR_loc, SLU_S, SLU_GE);
 
     //file_dPrint_CompRowLoc_to_Triples(&A_big);
-    
+
     superlu_dist_options_t options_big;
     set_default_options_dist(&options_big);
     options_big.Equil  = NO;
@@ -379,7 +379,7 @@ psgssvx3d_csc_batch(
     /* Need to create a grid of size 1 */
     int nprow = 1, npcol = 1, npdep = 1;
     superlu_gridinit3d (comm, nprow, npcol, npdep, &grid);
-    
+
     /* Initialize ScalePermstruct and LUstruct. */
     sScalePermstructInit (m_big, n_big, &ScalePermstruct);
     sLUstructInit (n_big, &LUstruct);
@@ -392,14 +392,14 @@ psgssvx3d_csc_batch(
     /*---------------------
      **** Call the linear equation solver
      ----------------------*/
-    
+
     /*!!!! CHECK SETTING: TO BE SURE TO USE GPU VERSIONS !!!!
        gpu3dVersion
        superlu_acc_offload
     */
     /* perm_c_big may not be Identity due to etree postordering, however,
      * since b[] is transormed back to the solution of the original BIG system,
-     * we do not need to consider perm_c_big outside psgssvx3d(). 
+     * we do not need to consider perm_c_big outside psgssvx3d().
      */
     psgssvx3d (&options_big, &A_big, &ScalePermstruct, b, m_big, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, stat, info);
@@ -416,7 +416,7 @@ psgssvx3d_csc_batch(
 	    printf("ERROR: INFO = %d returned from psgssvx3d()\n", *info);
 	    fflush(stdout);
 	}
-    } 
+    }
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
@@ -426,9 +426,9 @@ psgssvx3d_csc_batch(
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	    PStatPrint (options, stat, &(grid3d->grid2d)); /* Print 2D statistics.*/
     }
-    
+
     sSolveFinalize (&options_big, &SOLVEstruct);
-    
+
     Destroy_CompRowLoc_Matrix_dist (&A_big);
     sScalePermstructFree (&ScalePermstruct);
     sLUstructFree (&LUstruct);
@@ -437,11 +437,11 @@ psgssvx3d_csc_batch(
     float bn, rn;  // inf-norm of B and R
     float *x;
     for (d = 0; d < batchCount; ++d) {
-	
+
 	A = (SuperMatrix *) SparseMatrix_handles[d];
 	perm_c = CpivPtr[d];
         perm_r = RpivPtr[d];
-	
+
 	/* Permute the solution matrix z <= Pc'*y */
 	//PrintInt32("prepare Pc'*y: perm_c", n, perm_c);
 	x = Xptr[d];
@@ -450,10 +450,10 @@ psgssvx3d_csc_batch(
 		x[i] = b[k* m_big + d * m + perm_c[i]];
 	    x += ldX[d]; /* move to next x */
 	}
-	
+
 	//Printdouble5("Permuted-solution after iperm_c", n, Xptr[d]);
-	
-	/* Compute residual: Pc*Pr*(R*b) - (Pc*Pr*R*A*C)*z 
+
+	/* Compute residual: Pc*Pr*(R*b) - (Pc*Pr*R*A*C)*z
 	 * Now x = Pc'*y, where y is computed from pdgssvx3d()
 	 */
 	x = Xptr[d];
@@ -462,18 +462,18 @@ psgssvx3d_csc_batch(
 	    rn = 0.; // norm of R
 	    for (i = 0; i < m; ++i) {
 		bn = SUPERLU_MAX( bn, fabs(RHSptr[d][k*m + i]) );
-		
+
 		/* permute RHS by Pc*Pr, use b[] as temporary storage */
 		b[k*m_big + d*m + perm_c[perm_r[i]]] = RHSptr[d][k*ldRHS[d] + i];
 	    }
-	    
+
 	    sp_sgemv_dist("N", alpha, A, x, 1, beta, &b[k*m_big + d*m], 1);
-	    
+
 	    for (i = 0; i < m; ++i) rn = SUPERLU_MAX( rn, fabs(b[k*m_big + d*m + i]) );
 	    Berrs[d][k] = rn / bn;
 	    x += ldX[d]; /* move to next x */
 	} /* end for k ... */
-	
+
 	/* Transform the solution matrix X to the solution of the
 	 * original system before equilibration: x <= C*z
 	 */
@@ -486,12 +486,12 @@ psgssvx3d_csc_batch(
 		x += ldX[d]; /* move to next x */
 	    }
 	}
-	    
+
     } /* end for d ... batchCount */
 
     SUPERLU_FREE (b);
     SUPERLU_FREE (berr);
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid3d->iam, "Exit psgssvx3d_csc_batch()");
 #endif

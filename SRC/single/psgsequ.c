@@ -1,3 +1,4 @@
+
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -84,7 +85,7 @@ at the top-level directory.
 
 void
 psgsequ(SuperMatrix *A, float *r, float *c, float *rowcnd,
-	float *colcnd, float *amax, int_t *info, gridinfo_t *grid)
+	float *colcnd, float *amax, int *info, gridinfo_t *grid)
 {
 
     /* Local variables */

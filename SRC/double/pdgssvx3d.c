@@ -741,9 +741,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     int_t *etree;			/* elimination tree */
     int_t *rowptr, *colind; /* Local A in NR */
     int colequ, Equil, factored, job, notran, rowequ, need_value;
-    int_t i, iinfo, j, irow, m, n, nnz, permc_spec;
+    int_t i, j, irow, m, n, nnz;
     int_t nnz_loc, m_loc, fst_row, icol;
-    int iam;
+    int iam, iinfo, permc_spec;
     int ldx; /* LDA for matrix X (local). */
     char equed[1], norm[1];
     double *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
@@ -1035,8 +1035,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end if not Factored */
     } /* end 2D process layer 0 */
 
-    MPI_Bcast(&rowequ, 1, mpi_int_t, 0, grid3d->zscp.comm);
-    MPI_Bcast(&colequ, 1, mpi_int_t, 0, grid3d->zscp.comm);
+    MPI_Bcast(&rowequ, 1, MPI_INT, 0, grid3d->zscp.comm);
+    MPI_Bcast(&colequ, 1, MPI_INT, 0, grid3d->zscp.comm);
 
     /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid*/
     if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this

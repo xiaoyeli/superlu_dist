@@ -497,8 +497,8 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
     int_t    *etree;  /* elimination tree */
     int_t    *colptr, *rowind;
     int_t    Equil, factored, job, notran, colequ, rowequ;
-    int_t    i, iinfo, j, irow, m, n, nnz, permc_spec, dist_mem_use;
-    int      iam;
+    int_t    i, j, irow, m, n, nnz, permc_spec, dist_mem_use;
+    int      iam, iinfo;
     int      ldx;  /* LDA for matrix X (global). */
     char     equed[1], norm[1];
     double   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
@@ -643,7 +643,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		    if ( iinfo > 0 ) {
 			if ( iinfo <= m ) {
 #if ( PRNTlevel>=1 )
-			    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n",
+			    fprintf(stderr, "The %d-th row of A is exactly zero\n",
 				    iinfo);
 #endif
 			} else {
@@ -908,7 +908,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    } else { /* symbfact out of memory */
 #if ( PRNTlevel>=1 )
 		if ( !iam )
-		    fprintf(stderr, "symbfact() error returns " IFMT "\n", iinfo);
+		    fprintf(stderr, "symbfact() error returns %d\n", iinfo);
 #endif
                 *info = iinfo;
                 return;
