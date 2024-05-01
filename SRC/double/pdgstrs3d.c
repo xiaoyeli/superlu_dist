@@ -4786,7 +4786,7 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
 	double *d_lsum = NULL;
-    int_t  *d_bmod = NULL;
+    int  *d_bmod = NULL;
 #endif
 
 

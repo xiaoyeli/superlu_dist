@@ -84,27 +84,27 @@ __device__ doublecomplex z_atomicAdd(doublecomplex* a, doublecomplex b){
 /******************************************************************************/
 static __device__
 void gemm_device_zlsum_fmod(
-        int_t M, int_t N, int_t K,
-        int_t blx, int_t bly,
-        const doublecomplex* __restrict__ A, int_t LDA,
-        const doublecomplex* __restrict__ B, int_t LDB,
+        int M, int N, int K,
+        int blx, int bly,
+        const doublecomplex* __restrict__ A, int LDA,
+        const doublecomplex* __restrict__ B, int LDB,
         doublecomplex rC[THR_N][THR_M],
         doublecomplex alpha, doublecomplex beta)
 {
     // #if (__CUDA_ARCH__ >= 200)
-    int_t idx = threadIdx_x;  // thread's m dimension
-    int_t idy = threadIdx_y;  // thread's n dimension
+    int idx = threadIdx_x;  // thread's m dimension
+    int idy = threadIdx_y;  // thread's n dimension
 
-    int_t idt = DIM_X * idy + idx;    // thread's global number
+    int idt = DIM_X * idy + idx;    // thread's global number
 
-    int_t idxA = idt % DIM_XA;    // idx within A
-    int_t idyA = idt / DIM_XA;    // idy within A
+    int idxA = idt % DIM_XA;    // idx within A
+    int idyA = idt / DIM_XA;    // idy within A
 
-    int_t idxB = idt % DIM_XB;    // idx within B
-    int_t idyB = idt / DIM_XB;    // idy within B
+    int idxB = idt % DIM_XB;    // idx within B
+    int idyB = idt / DIM_XB;    // idy within B
 
-    // int_t blx = blockIdx_x;   // block's m dimension
-    // int_t bly = blockIdx_y;   // block's n dimension
+    // int blx = blockIdx_x;   // block's m dimension
+    // int bly = blockIdx_y;   // block's n dimension
 
     __shared__ doublecomplex sA[BLK_K][BLK_M+1];      // +1 only required if A is transposed
     __shared__ doublecomplex sB[BLK_N][BLK_K+1];      // +1 always required
@@ -118,10 +118,10 @@ void gemm_device_zlsum_fmod(
 
     const doublecomplex *offs_dA = A + blx*BLK_M     + idyA*LDA + idxA;
     const doublecomplex *offs_dB = B + bly*BLK_N*LDB + idyB*LDB + idxB;
-    int_t boundA = (LDA*(K-1) + M) - ( blx*BLK_M  + idyA*LDA + idxA ) -1;
-    int_t boundB = (LDB*(N-1) + K) - ( bly*BLK_N*LDB + idyB*LDB + idxB ) -1;
+    int boundA = (LDA*(K-1) + M) - ( blx*BLK_M  + idyA*LDA + idxA ) -1;
+    int boundB = (LDB*(N-1) + K) - ( bly*BLK_N*LDB + idyB*LDB + idxB ) -1;
 
-    int_t m, n, k, kk;
+    int m, n, k, kk;
     doublecomplex zero = {0.0, 0.0};
 
     // Zero C
@@ -306,28 +306,28 @@ void gemm_device_zlsum_fmod(
 /******************************************************************************/
 static __device__
 void gemm_device_zlsum_bmod_stridedB(
-        int_t M, int_t N, int_t K,
-        int_t blx, int_t bly,
-        const doublecomplex* __restrict__ A, int_t LDA,
-        const doublecomplex* __restrict__ B, int_t LDB,
+        int M, int N, int K,
+        int blx, int bly,
+        const doublecomplex* __restrict__ A, int LDA,
+        const doublecomplex* __restrict__ B, int LDB,
         doublecomplex rC[THR_N][THR_M],
         doublecomplex alpha, doublecomplex beta,
         int_t lptr, int_t rel, int_t *usub)
 {
     // #if (__CUDA_ARCH__ >= 200)
-    int_t idx = threadIdx_x;  // thread's m dimension
-    int_t idy = threadIdx_y;  // thread's n dimension
+    int idx = threadIdx_x;  // thread's m dimension
+    int idy = threadIdx_y;  // thread's n dimension
 
-    int_t idt = DIM_X * idy + idx;    // thread's global number
+    int idt = DIM_X * idy + idx;    // thread's global number
 
-    int_t idxA = idt % DIM_XA;    // idx within A
-    int_t idyA = idt / DIM_XA;    // idy within A
+    int idxA = idt % DIM_XA;    // idx within A
+    int idyA = idt / DIM_XA;    // idy within A
 
-    int_t idxB = idt % DIM_XB;    // idx within B
-    int_t idyB = idt / DIM_XB;    // idy within B
+    int idxB = idt % DIM_XB;    // idx within B
+    int idyB = idt / DIM_XB;    // idy within B
 
-    // int_t blx = blockIdx_x;   // block's m dimension
-    // int_t bly = blockIdx_y;   // block's n dimension
+    // int blx = blockIdx_x;   // block's m dimension
+    // int bly = blockIdx_y;   // block's n dimension
 
     __shared__ doublecomplex sA[BLK_K][BLK_M+1];      // +1 only required if A is transposed
     __shared__ doublecomplex sB[BLK_N][BLK_K+1];      // +1 always required
@@ -341,10 +341,10 @@ void gemm_device_zlsum_bmod_stridedB(
 
     const doublecomplex *offs_dA = A + blx*BLK_M     + idyA*LDA + idxA;
     // const doublecomplex *offs_dB = B + bly*BLK_N*LDB + idyB*LDB + idxB;
-    int_t boundA = (LDA*(K-1) + M) - ( blx*BLK_M  + idyA*LDA + idxA ) -1;
-    // int_t boundB = (K*N) - ( bly*BLK_N*K + idyB*K + idxB ) -1;
+    int boundA = (LDA*(K-1) + M) - ( blx*BLK_M  + idyA*LDA + idxA ) -1;
+    // int boundB = (K*N) - ( bly*BLK_N*K + idyB*K + idxB ) -1;
 
-    int_t m, n, k, kk;
+    int m, n, k, kk;
     doublecomplex zero = {0.0, 0.0};
 
     // Zero C
@@ -363,8 +363,8 @@ void gemm_device_zlsum_bmod_stridedB(
     for (n = 0; n < BLK_N; n += DIM_YB)
 #pragma unroll
             for (m = 0; m < BLK_K; m += DIM_XB){
-                int_t nn = min(n+idyB,N-1);
-                int_t mm = min(m+idxB,K-1);
+                int nn = min(n+idyB,N-1);
+                int mm = min(m+idxB,K-1);
                 int_t icol = usub[lptr+mm] - rel; /* Relative col. */
                 sB[n+idyB][m+idxB] = B[bly*BLK_N*LDB + nn*LDB+icol];
             }
@@ -389,8 +389,8 @@ void gemm_device_zlsum_bmod_stridedB(
         for (n = 0; n < BLK_N/DIM_YB; n++)
 #pragma unroll
                 for (m = 0; m < BLK_K/DIM_XB; m++){
-                    int_t nn = min(n*DIM_YB+idyB,N-1);
-                    int_t mm = min(m*DIM_XB+idxB+kk+BLK_K,K-1);
+                    int nn = min(n*DIM_YB+idyB,N-1);
+                    int mm = min(m*DIM_XB+idxB+kk+BLK_K,K-1);
                     int_t icol = usub[lptr+mm] - rel; /* Relative col. */
                     rb[n][m] = B[nn*LDB+icol+bly*BLK_N*LDB];
                 }
@@ -823,7 +823,7 @@ __global__ void zwait_bcrd
 #endif
         //if (tid==0) printf("RD---(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecvmod[1]);
        int j, iam, lib, myrow, k, knsupc, il, cnt;
-       int_t fmod_tmp, aln_i;
+       int fmod_tmp, aln_i;
 
        aln_i = 1;
     //   doublecomplex temp;
@@ -1692,8 +1692,8 @@ __inline__ __device__  int blockReduceMin(int val,int bid, int tid, int mype)
 __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 /************************************************************************/
         (
-                int_t nbcol_loc,
-                int_t nblock_ex,
+                int nbcol_loc,
+                int nblock_ex,
                 doublecomplex *lsum,    /* Sum of local modifications.                        */
                 doublecomplex *x,       /* X array (local)                                    */
                 int   nrhs,      /* Number of right-hand sides.                        */
@@ -1744,14 +1744,14 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
     int   knsupc;    /* Size of supernode k.                               */
     int_t nlb;       /* Number of L blocks.                                */
 
-    int_t bid=blockIdx_x;
+    int bid=blockIdx_x;
     int_t tmp;
-    int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
+    int tid = threadIdx_x + threadIdx_y * blockDim_x;
 // int_t lock = 0;
     const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
     doublecomplex rC[THR_N][THR_M];
-    int_t idx = threadIdx_x;  // thread's m dimension
-    int_t idy = threadIdx_y;  // thread's n dimension
+    int idx = threadIdx_x;  // thread's m dimension
+    int idy = threadIdx_y;  // thread's n dimension
     int_t ni,mi;
     int cnt;
 
@@ -1853,17 +1853,17 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
             __syncthreads();
         } else {
             __syncthreads();
-            for (int_t blx = 0; blx * BLK_M < knsupc; blx++) {
-                for (int_t bly = 0; bly * BLK_N < nrhs; bly++) {
+            for (int blx = 0; blx * BLK_M < knsupc; blx++) {
+                for (int bly = 0; bly * BLK_N < nrhs; bly++) {
                     gemm_device_zlsum_fmod(knsupc, nrhs, knsupc, blx, bly,
                                            Linv, knsupc, &x[ii], knsupc, rC,
                                            alpha, beta);
 #pragma unroll
                     for (ni = 0; ni < THR_N; ni++) {
-                        int_t coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
+                        int coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
 #pragma unroll
                         for (mi = 0; mi < THR_M; mi++) {
-                            int_t coord_dCm = blx * BLK_M + mi * DIM_X + idx;
+                            int coord_dCm = blx * BLK_M + mi * DIM_X + idx;
                             if (coord_dCm < knsupc && coord_dCn < nrhs) {
                                 doublecomplex &regC = rC[ni][mi];
                                 lsum[coord_dCm + il + coord_dCn *
@@ -2068,17 +2068,17 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 
                 iknsupc = SuperSize(ik);
                 il = LSUM_BLK(lk);
-                for (int_t blx = 0; blx * BLK_M < nbrow1; blx++) {
-                    for (int_t bly = 0; bly * BLK_N < nrhs; bly++) {
+                for (int blx = 0; blx * BLK_M < nbrow1; blx++) {
+                    for (int bly = 0; bly * BLK_N < nrhs; bly++) {
                         gemm_device_zlsum_fmod(nbrow1, nrhs, knsupc, blx, bly,
                                                &lusup[luptr_tmp1], nsupr, &zready_x[maxrecvsz * keep_lk], knsupc, rC,
                                                alpha, beta);
 #pragma unroll
                         for (ni = 0; ni < THR_N; ni++) {
-                            int_t coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
+                            int coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
 #pragma unroll
                             for (mi = 0; mi < THR_M; mi++) {
-                                int_t coord_dCm = blx * BLK_M + mi * DIM_X + idx;
+                                int coord_dCm = blx * BLK_M + mi * DIM_X + idx;
                                 if (coord_dCm < nbrow1 && coord_dCn < nrhs) {
                                     irow = lsub[lptr + coord_dCm] - rel; /* Relative row. */
                                     doublecomplex &regC = rC[ni][mi];
@@ -2106,8 +2106,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 __global__ void zlsum_fmod_inv_gpu_mrhs
 /************************************************************************/
 (
- int_t nbcol_loc,
- int_t nblock_ex,
+ int nbcol_loc,
+ int nblock_ex,
  doublecomplex *lsum,    /* Sum of local modifications.                        */
  doublecomplex *x,       /* X array (local)                                    */
  int   nrhs,      /* Number of right-hand sides.                        */
@@ -2144,28 +2144,28 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
    //  __shared__ doublecomplex rtemp_loc[128];
     doublecomplex temp1;
     int_t lptr;      /* Starting position in lsub[*].                      */
-   //  int_t iword = sizeof(int_t);
-   //  int_t dword = sizeof (doublecomplex);
-    int_t aln_i;
+   //  int iword = sizeof(int_t);
+   //  int dword = sizeof (doublecomplex);
+    int aln_i;
    //  aln_d = 1;//ceil(CACHELINE/(double)dword);
     aln_i = 1;//ceil(CACHELINE/(double)iword);
     int   knsupc;    /* Size of supernode k.                               */
-    int_t nlb;       /* Number of L blocks.                                */
+    int nlb;       /* Number of L blocks.                                */
 
-    int_t bid;
+    int bid;
     int_t tmp;
-    int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
-   //  int_t ready = 0;
-    // int_t lock = 0;
+    int tid = threadIdx_x + threadIdx_y * blockDim_x;
+   //  int ready = 0;
+    // int lock = 0;
     const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
 
 
     doublecomplex rC[THR_N][THR_M];
 
     bid= blockIdx_x;
-    int_t idx = threadIdx_x;  // thread's m dimension
-    int_t idy = threadIdx_y;  // thread's n dimension
-    int_t ni,mi;
+    int idx = threadIdx_x;  // thread's m dimension
+    int idy = threadIdx_y;  // thread's n dimension
+    int ni,mi;
 
 
     // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
@@ -2294,17 +2294,17 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
 
                     }else{
                         __syncthreads();
-                        for (int_t blx = 0; blx*BLK_M < knsupc; blx++){
-                            for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+                        for (int blx = 0; blx*BLK_M < knsupc; blx++){
+                            for (int bly = 0; bly*BLK_N < nrhs; bly++){
                                 gemm_device_zlsum_fmod(knsupc, nrhs, knsupc, blx, bly,
                                 Linv, knsupc, &x[ii], knsupc, rC,
                                 alpha, beta);
                                     #pragma unroll
                                 for (ni = 0; ni < THR_N; ni++) {
-                                    int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+                                    int coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
                                     #pragma unroll
                                     for (mi = 0; mi < THR_M; mi++) {
-                                        int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+                                        int coord_dCm = blx*BLK_M + mi*DIM_X + idx;
                                         if (coord_dCm < knsupc && coord_dCn < nrhs) {
                                             doublecomplex &regC = rC[ni][mi];
                                             lsum[coord_dCm + il + coord_dCn*knsupc ]=regC;  //reuse lsum as temporary output as it's no longer accessed
@@ -2467,17 +2467,17 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                                 // }
                         // }else{
 
-                            for (int_t blx = 0; blx*BLK_M < nbrow1; blx++){
-                                for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+                            for (int blx = 0; blx*BLK_M < nbrow1; blx++){
+                                for (int bly = 0; bly*BLK_N < nrhs; bly++){
                                     gemm_device_zlsum_fmod(nbrow1, nrhs, knsupc, blx, bly,
                                     &lusup[luptr_tmp1], nsupr, &x[ii], knsupc, rC,
                                     alpha, beta);
                                         #pragma unroll
                                     for (ni = 0; ni < THR_N; ni++) {
-                                        int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+                                        int coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
                                         #pragma unroll
                                         for (mi = 0; mi < THR_M; mi++) {
-                                            int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+                                            int coord_dCm = blx*BLK_M + mi*DIM_X + idx;
                                             if (coord_dCm < nbrow1 && coord_dCn < nrhs) {
                                                 irow = lsub[lptr+coord_dCm] - rel; /* Relative row. */
                                                 doublecomplex &regC = rC[ni][mi];
@@ -2524,8 +2524,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
 __global__ void zlsum_fmod_inv_gpu_1rhs_warp
 /************************************************************************/
 (
- int_t nbcol_loc,
- int_t nblock_ex,
+ int nbcol_loc,
+ int nblock_ex,
  doublecomplex *lsum,    /* Sum of local modifications.                        */
  doublecomplex *x,       /* X array (local)                                    */
  int   nrhs,      /* Number of right-hand sides.                        */
@@ -2561,34 +2561,34 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
    //  __shared__ doublecomplex rtemp_loc[128];
     doublecomplex temp1;
     int_t lptr;      /* Starting position in lsub[*].                      */
-   //  int_t iword = sizeof(int_t);
-   //  int_t dword = sizeof (doublecomplex);
-    int_t aln_i;
+   //  int iword = sizeof(int_t);
+   //  int dword = sizeof (doublecomplex);
+    int aln_i;
    //  aln_d = 1;//ceil(CACHELINE/(double)dword);
     aln_i = 1;//ceil(CACHELINE/(double)iword);
     int   knsupc;    /* Size of supernode k.                               */
-    int_t nlb;       /* Number of L blocks.                                */
+    int nlb;       /* Number of L blocks.                                */
 
-    // int_t bid;
+    // int bid;
     int_t tmp;
-    int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
-   //  int_t ready = 0;
-    // int_t lock = 0;
+    int tid = threadIdx_x + threadIdx_y * blockDim_x;
+   //  int ready = 0;
+    // int lock = 0;
     const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
 
 
-    int_t wrp;
-    int_t lne;
+    int wrp;
+    int lne;
     wrp= tid + blockIdx_x*block_size;
     lne=wrp%WARP_SIZE;
 	// printf("  Entering kernel:   %i %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,wrp/WARP_SIZE,tid);
 	wrp/=WARP_SIZE;
 
 
-    // int_t wrp;
-    // int_t lne = threadIdx_x & 0x1f ;
-    // // int_t ready = 0;
-    // // int_t lock = 0;
+    // int wrp;
+    // int lne = threadIdx_x & 0x1f ;
+    // // int ready = 0;
+    // // int lock = 0;
     // wrp= threadIdx_x + blockIdx_x * blockDim_x;
     // wrp/=WARP_SIZE;
 
@@ -2804,10 +2804,10 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
 
 void zlsum_fmod_inv_gpu_wrap
         (
-                int_t nbcol_loc,    /*number of local supernode columns*/
-                int_t nbrow_loc,    /*number of local supernode rows*/
-                int_t nthread_x,     /*kernel launch parameter*/
-                int_t nthread_y,     /*kernel launch parameter*/
+                int nbcol_loc,    /*number of local supernode columns*/
+                int nbrow_loc,    /*number of local supernode rows*/
+                int nthread_x,     /*kernel launch parameter*/
+                int nthread_y,     /*kernel launch parameter*/
                 doublecomplex *lsum,    /* Sum of local modifications.                        */
                 doublecomplex *x,       /* X array (local)                                    */
                 int   nrhs,      /* Number of right-hand sides.                        */
@@ -2854,7 +2854,7 @@ void zlsum_fmod_inv_gpu_wrap
                 int procs
         ) {
 
-    int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
+    int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
 
     int mype;
 
@@ -2970,7 +2970,7 @@ void zlsum_fmod_inv_gpu_wrap
 __global__ void zlsum_bmod_inv_gpu_mrhs
 /************************************************************************/
 (
- int_t nbcol_loc,
+ int nbcol_loc,
  doublecomplex *lsum,    /* Sum of local modifications.                        */
  doublecomplex *x,       /* X array (local)                                    */
  int   nrhs,      /* Number of right-hand sides.                        */
@@ -2999,23 +2999,23 @@ gridinfo_t *grid
 	int_t gik, rel, lptr, ncol, icol;
 	doublecomplex temp1;
      __shared__ doublecomplex temp2[MAXSUPER];
-	int_t aln_i;
+	int aln_i;
 	aln_i = 1;//ceil(CACHELINE/(double)iword);
 	int   knsupc;    /* Size of supernode k.                               */
-	int_t nub;       /* Number of L blocks.                                */
+	int nub;       /* Number of L blocks.                                */
 
-	int_t bid;
+	int bid;
 	int_t tmp;
-	// int_t bmod_tmp;
-	int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
+	// int bmod_tmp;
+	int tid = threadIdx_x + threadIdx_y * blockDim_x;
 	const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
 	doublecomplex rC[THR_N][THR_M];
 	// __shared__ doublecomplex x_share[DIM_X*DIM_Y];
 
 	bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
-	int_t idx = threadIdx_x;  // thread's m dimension
-	int_t idy = threadIdx_y;  // thread's n dimension
-	int_t ni,mi;
+	int idx = threadIdx_x;  // thread's m dimension
+	int idy = threadIdx_y;  // thread's n dimension
+	int ni,mi;
 	int_t  *usub, *lloc;
 	doublecomplex *lusup;
 	int_t nrow, nnz_offset, offset;
@@ -3113,17 +3113,17 @@ gridinfo_t *grid
 						__syncthreads();
 					}else{
 						__syncthreads();
-						for (int_t blx = 0; blx*BLK_M < knsupc; blx++){
-							for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+						for (int blx = 0; blx*BLK_M < knsupc; blx++){
+							for (int bly = 0; bly*BLK_N < nrhs; bly++){
 								gemm_device_zlsum_fmod(knsupc, nrhs, knsupc, blx, bly,
 								Uinv, knsupc, &x[ii], knsupc, rC,
 								alpha, beta);
 									#pragma unroll
 								for (ni = 0; ni < THR_N; ni++) {
-									int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+									int coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
 									#pragma unroll
 									for (mi = 0; mi < THR_M; mi++) {
-										int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+										int coord_dCm = blx*BLK_M + mi*DIM_X + idx;
 										if (coord_dCm < knsupc && coord_dCn < nrhs) {
 											doublecomplex &regC = rC[ni][mi];
 											lsum[coord_dCm + il + coord_dCn*knsupc ]=regC;  //reuse lsum as temporary output as it's no longer accessed
@@ -3240,8 +3240,8 @@ gridinfo_t *grid
                         il = LSUM_BLK( ik );
 
 
-                        for (int_t blx = 0; blx*BLK_M < iknsupc; blx++){
-                            for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+                        for (int blx = 0; blx*BLK_M < iknsupc; blx++){
+                            for (int bly = 0; bly*BLK_N < nrhs; bly++){
 
                                 gemm_device_zlsum_bmod_stridedB(iknsupc, nrhs, ncol, blx, bly,
                                 &lusup[luptr_tmp1], iknsupc, &x[ii], knsupc, rC,
@@ -3249,10 +3249,10 @@ gridinfo_t *grid
 
                                 #pragma unroll
                                 for (ni = 0; ni < THR_N; ni++) {
-                                    int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+                                    int coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
                                     #pragma unroll
                                     for (mi = 0; mi < THR_M; mi++) {
-                                        int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+                                        int coord_dCm = blx*BLK_M + mi*DIM_X + idx;
                                         if (coord_dCm < iknsupc && coord_dCn < nrhs) {
                                             doublecomplex &regC = rC[ni][mi];
                                             doublecomplex tempm;
@@ -3295,7 +3295,7 @@ gridinfo_t *grid
   __global__ void zlsum_bmod_inv_gpu_1rhs_new
   /************************************************************************/
   (
-   int_t nbrow_loc,
+   int nbrow_loc,
    doublecomplex *lsum,    /* Sum of local modifications.                        */
    doublecomplex *x,       /* X array (local)                                    */
    int   nrhs,      /* Number of right-hand sides.                        */
@@ -3328,14 +3328,14 @@ gridinfo_t *grid
       __shared__ doublecomplex s_lsum[MAXSUPER];
       // volatile __shared__ doublecomplex temp2[MAXSUPER];
       volatile __shared__ int s_bmod;
-      int_t aln_i;
+      int aln_i;
       aln_i = 1;//ceil(CACHELINE/(double)iword);
-      int_t nub;       /* Number of U blocks.                                */
+      int nub;       /* Number of U blocks.                                */
 
-      int_t bid;
+      int bid;
       int_t tmp;
-      // int_t bmod_tmp;
-      int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
+      // int bmod_tmp;
+      int tid = threadIdx_x + threadIdx_y * blockDim_x;
       const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
       doublecomplex zero = {0.0, 0.0};
     //   doublecomplex rC[THR_N][THR_M];
@@ -3346,8 +3346,8 @@ gridinfo_t *grid
       doublecomplex *lusup;
       int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
 
-      int_t wrp;
-      int_t lne;
+      int wrp;
+      int lne;
       wrp= tid;
       lne=wrp%WARP_SIZE;
       wrp/=WARP_SIZE;
@@ -3564,7 +3564,7 @@ gridinfo_t *grid
 __global__ void zlsum_bmod_inv_gpu_1rhs_new_rowdata
 /************************************************************************/
 (
- int_t nbrow_loc,
+ int nbrow_loc,
  doublecomplex *lsum,    /* Sum of local modifications.                        */
  doublecomplex *x,       /* X array (local)                                    */
  int   nrhs,      /* Number of right-hand sides.                        */
@@ -3593,12 +3593,12 @@ gridinfo_t *grid
     __shared__ doublecomplex s_lsum[MAXSUPER];
     // volatile __shared__ doublecomplex temp2[MAXSUPER];
     volatile __shared__ int s_bmod;
-    int_t aln_i;
+    int aln_i;
     aln_i = 1;//ceil(CACHELINE/(double)iword);
 
-    int_t bid;
+    int bid;
     int_t tmp;
-    int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
+    int tid = threadIdx_x + threadIdx_y * blockDim_x;
     const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
     doublecomplex zero = {0.0, 0.0};
   //   doublecomplex rC[THR_N][THR_M];
@@ -3607,10 +3607,10 @@ gridinfo_t *grid
     bid= nbrow_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
     int_t  *usub;
     doublecomplex *lusup;
-    int_t  LDA;
+    int  LDA;
 
-    int_t wrp;
-    int_t lne;
+    int wrp;
+    int lne;
     wrp= tid;
     lne=wrp%WARP_SIZE;
     wrp/=WARP_SIZE;
@@ -3821,7 +3821,7 @@ gridinfo_t *grid
 __global__ void zlsum_bmod_inv_gpu_1rhs_warp
 /************************************************************************/
 (
- int_t nbcol_loc,
+ int nbcol_loc,
  doublecomplex *lsum,    /* Sum of local modifications.                        */
  doublecomplex *x,       /* X array (local)                                    */
  int   nrhs,      /* Number of right-hand sides.                        */
@@ -3849,31 +3849,31 @@ gridinfo_t *grid
 	int_t gik, rel, lptr, ncol, icol;
 	doublecomplex temp1;
 	// __shared__ doublecomplex temp2[MAXSUPER];
-	int_t aln_i;
+	int aln_i;
 	aln_i = 1;//ceil(CACHELINE/(double)iword);
 	int   knsupc;    /* Size of supernode k.                               */
-	int_t nub;       /* Number of L blocks.                                */
+	int nub;       /* Number of L blocks.                                */
 
-	// int_t bid;
+	// int bid;
 	int_t tmp;
-	// int_t bmod_tmp;
-	int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
+	// int bmod_tmp;
+	int tid = threadIdx_x + threadIdx_y * blockDim_x;
 	const int block_size = blockDim_x*blockDim_y; /* number of threads per block*/
 	// doublecomplex rC[THR_N][THR_M];
 	// __shared__ doublecomplex x_share[DIM_X*DIM_Y];
 
 	// bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
-	// int_t idx = threadIdx_x;  // thread's m dimension
-	//int_t idy = threadIdx_y;  // thread's n dimension
+	// int idx = threadIdx_x;  // thread's m dimension
+	//int idy = threadIdx_y;  // thread's n dimension
 	int_t  *usub, *lloc;
 	doublecomplex *lusup;
 	int_t nrow, nnz_offset, offset;
 	int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
 
-    int_t wrp;
-    int_t lne;
-    // int_t ready = 0;
-    // int_t lock = 0;
+    int wrp;
+    int lne;
+    // int ready = 0;
+    // int lock = 0;
     wrp= tid + blockIdx_x*block_size;
     lne=wrp%WARP_SIZE;
 	// printf("  Entering kernel:   %i %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,wrp/WARP_SIZE,tid);
@@ -4083,7 +4083,7 @@ gridinfo_t *grid
  __global__ void zlsum_bmod_inv_gpu_mrhs_nvshmem
  /************************************************************************/
          (
-                 int_t nbcol_loc,
+                 int nbcol_loc,
                  doublecomplex *lsum,    /* Sum of local modifications.                        */
                  doublecomplex *x,       /* X array (local)                                    */
                  int   nrhs,      /* Number of right-hand sides.                        */
@@ -4113,7 +4113,7 @@ gridinfo_t *grid
                  int* d_nfrecv,
                  volatile int* d_status,
                  volatile int* d_statusmod,
-                 int_t nblock_ex,
+                 int nblock_ex,
                  int maxsuper,
          int* d_flag_mod_u
          )
@@ -4126,23 +4126,23 @@ gridinfo_t *grid
      int_t gik, rel, lptr, ncol, icol;
      doublecomplex temp1;
      __shared__ doublecomplex temp2[MAXSUPER];
-     int_t aln_i;
+     int aln_i;
      aln_i = 1;//ceil(CACHELINE/(double)iword);
      int   knsupc;    /* Size of supernode k.                               */
-     int_t nub;       /* Number of L blocks.                                */
+     int nub;       /* Number of L blocks.                                */
 
-     int_t bid;
+     int bid;
      int_t tmp;
-     int_t bmod_tmp;
-     int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
+     int bmod_tmp;
+     int tid = threadIdx_x + threadIdx_y * blockDim_x;
      const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
      doublecomplex rC[THR_N][THR_M];
      // __shared__ doublecomplex x_share[DIM_X*DIM_Y];
 
      bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
-     int_t idx = threadIdx_x;  // thread's m dimension
-     int_t idy = threadIdx_y;  // thread's n dimension
-     int_t ni,mi;
+     int idx = threadIdx_x;  // thread's m dimension
+     int idy = threadIdx_y;  // thread's n dimension
+     int ni,mi;
      int_t  *usub, *lloc;
      doublecomplex *lusup;
      int_t nrow, nnz_offset, offset;
@@ -4241,17 +4241,17 @@ gridinfo_t *grid
              __syncthreads();
          }else{
              __syncthreads();
-             for (int_t blx = 0; blx*BLK_M < knsupc; blx++){
-                 for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+             for (int blx = 0; blx*BLK_M < knsupc; blx++){
+                 for (int bly = 0; bly*BLK_N < nrhs; bly++){
                      gemm_device_zlsum_fmod(knsupc, nrhs, knsupc, blx, bly,
                                             Uinv, knsupc, &x[ii], knsupc, rC,
                                             alpha, beta);
  #pragma unroll
                      for (ni = 0; ni < THR_N; ni++) {
-                         int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+                         int coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
  #pragma unroll
                          for (mi = 0; mi < THR_M; mi++) {
-                             int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+                             int coord_dCm = blx*BLK_M + mi*DIM_X + idx;
                              if (coord_dCm < knsupc && coord_dCn < nrhs) {
                                  doublecomplex &regC = rC[ni][mi];
                                  lsum[coord_dCm + il + coord_dCn*knsupc ]=regC;  //reuse lsum as temporary output as it's no longer accessed
@@ -4376,8 +4376,8 @@ gridinfo_t *grid
                  il = LSUM_BLK( ik );
 
 
-                 for (int_t blx = 0; blx*BLK_M < iknsupc; blx++){
-                     for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+                 for (int blx = 0; blx*BLK_M < iknsupc; blx++){
+                     for (int bly = 0; bly*BLK_N < nrhs; bly++){
 
                          gemm_device_zlsum_bmod_stridedB(iknsupc, nrhs, ncol, blx, bly,
                          &lusup[luptr_tmp1], iknsupc, &x[ii], knsupc, rC,
@@ -4385,10 +4385,10 @@ gridinfo_t *grid
 
                          #pragma unroll
                          for (ni = 0; ni < THR_N; ni++) {
-                             int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+                             int coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
                              #pragma unroll
                              for (mi = 0; mi < THR_M; mi++) {
-                                 int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+                                 int coord_dCm = blx*BLK_M + mi*DIM_X + idx;
                                  if (coord_dCm < iknsupc && coord_dCn < nrhs) {
                                      doublecomplex &regC = rC[ni][mi];
                                     doublecomplex tempm;
@@ -4460,10 +4460,10 @@ gridinfo_t *grid
 void zlsum_bmod_inv_gpu_wrap
 (
     superlu_dist_options_t *options,
-    int_t nbcol_loc,    /*number of local supernode columns*/
-    int_t nbrow_loc,    /*number of local supernode rows*/
-    int_t nthread_x,     /*kernel launch parameter*/
-    int_t nthread_y,     /*kernel launch parameter*/
+    int nbcol_loc,    /*number of local supernode columns*/
+    int nbrow_loc,    /*number of local supernode rows*/
+    int nthread_x,     /*kernel launch parameter*/
+    int nthread_y,     /*kernel launch parameter*/
     doublecomplex *lsum,    /* Sum of local modifications.                        */
     doublecomplex *x,       /* X array (local)                                    */
     int   nrhs,      /* Number of right-hand sides.                        */
@@ -4517,7 +4517,7 @@ void zlsum_bmod_inv_gpu_wrap
 
 //printf("pinv %d\n",Llu->inv);
 //fflush(stdout);
-int_t maxsuper = sp_ienv_dist(3, options);
+int maxsuper = sp_ienv_dist(3, options);
 if (MAXSUPER < maxsuper) {
 printf("increase MAXSUPER\n");
 exit(1);
@@ -4545,9 +4545,9 @@ if(procs==1){
     gpuDeviceSynchronize();
 }else{
     #ifdef HAVE_NVSHMEM
-    int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
-    //int_t nblock_ex = nbrow_loc; //CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
-    //int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 64)); //32 (warp) * 8 =256
+    int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
+    //int nblock_ex = nbrow_loc; //CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
+    //int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 64)); //32 (warp) * 8 =256
     cudaStream_t stream[2];
     for (int i = 0; i < 2; ++i) {
     //cudaStreamCreate(&stream[i]);

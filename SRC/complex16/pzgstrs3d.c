@@ -4795,7 +4795,7 @@ void zBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
 	gridinfo_t *d_grid = NULL;
 	doublecomplex *d_x = NULL;
 	doublecomplex *d_lsum = NULL;
-    int_t  *d_bmod = NULL;
+    int  *d_bmod = NULL;
 #endif
 
 
