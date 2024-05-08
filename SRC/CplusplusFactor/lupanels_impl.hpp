@@ -292,8 +292,9 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
     }
         
     tGPU = SuperLU_timer_() -tGPU;
+#if ( PRNTlevel >= 1 )    
     printf("Time to intialize GPU DS= %g\n",tGPU );
-    //
+#endif
 
     // if (superluAccOffload)
 

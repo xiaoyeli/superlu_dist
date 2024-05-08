@@ -44,7 +44,6 @@ int Cmpfunc_R_info (const void * a, const void * b)
 }
 
   
-
 int Cmpfunc_U_info (const void * a, const void * b)
 {
     return ( ((Ublock_info_t*)a)->ncols - ((Ublock_info_t*)b)->ncols );
@@ -164,7 +163,7 @@ double getFreq(void)
 #endif
 
 /* Initialize various counters. */
-void SCT_init(SCT_t* SCT)
+void slu_SCT_init(SCT_t* SCT)
 {
 #if 1
     // CPU_CLOCK_RATE = getFreq() * 1e-3;
@@ -291,9 +290,9 @@ void SCT_init(SCT_t* SCT)
 
     SCT->commVolFactor =0.0;
     SCT->commVolRed =0.0;
-} /* SCT_init */
+} /* slu_SCT_init */
 
-void SCT_free(SCT_t* SCT)
+void slu_SCT_free(SCT_t* SCT)
 {
 #ifdef SCATTER_PROFILE
     free(SCT->Host_TheadScatterMOP);
@@ -432,7 +431,7 @@ Displays as function_name  \t value \t units;
 
 /*for mkl_get_blocks_frequency*/
 // #include "mkl.h"
-void SCT_print(gridinfo_t *grid, SCT_t* SCT)
+void slu_SCT_print(gridinfo_t *grid, SCT_t* SCT)
 {
     int num_threads = 1;
 
@@ -507,7 +506,7 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
 
 }
 
-void SCT_print3D(gridinfo3d_t *grid3d, SCT_t* SCT)
+void slu_SCT_print3D(gridinfo3d_t *grid3d, SCT_t* SCT)
 {
 
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -562,7 +561,7 @@ void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT)
 }
 
 
-void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT)
+void slu_SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT)
 {
     //
     double cvolFactor;
@@ -593,13 +592,9 @@ get_acc_offload (superlu_dist_options_t *options)
 int
 get_acc_solve ()
 {
-    char *ttemp;
-    ttemp = getenv ("SUPERLU_ACC_SOLVE");
+    superlu_dist_options_t *options = NULL; // not accessed 
 #ifdef GPU_ACC
-    if (ttemp)
-        return atoi (ttemp);
-    else
-        return 0;  // default
+    sp_ienv_dist(11, options);
 #else
     return 0;  
 #endif        
@@ -743,7 +738,7 @@ void printTRStimer(xtrsTimer_t *xtrsTimer, gridinfo3d_t *grid3d)
     DistPrint3D("TRS-Z_CommVolume     ",  trsZComm*1e-6, "Mwords", grid3d);
     DistPrint3D("TRS-XYZ_CommVolume   ",  trsXYZComm*1e-6, "Mwords", grid3d);
 
-
+    return;
 }
 
 
@@ -774,5 +769,6 @@ void initTRStimer(xtrsTimer_t *xtrsTimer, gridinfo_t *grid)
         
     }
 
+    return;
 }
 

@@ -700,7 +700,6 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     /*Mapping to device*/
     int deviceCount;
     cudaGetDeviceCount(&deviceCount); // How many GPUs?
-    printf("deviceCount=%d\n", deviceCount);
     int device_id = grid3d->iam % deviceCount;
     cudaSetDevice(device_id);
 
@@ -776,7 +775,7 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     // print the time taken to estimate memory on GPU
     if (grid3d->iam == 0)
     {
-        printf("Time taken to estimate memory on GPU: %f\n", tRegion[0]);
+        printf("GPU deviceCount=%d\n", deviceCount);
 	printf("\t.. totalNzvalSize %ld, gemmBufferSize %ld\n",
 	       (long) totalNzvalSize, (long) A_gpu.gemmBufferSize);
     }
@@ -794,9 +793,11 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
                   MPI_INT, MPI_MIN, grid3d->comm);
     A_gpu.numCudaStreams = rNumberOfStreams;
 
+#if ( PRNTlevel>=1 )    
     if (!grid3d->iam)
         printf("Using %d CUDA LookAhead streams\n", rNumberOfStreams);
     // size_t totalMemoryRequired = memReqData + numberOfStreams * dataPerStream;
+#endif    
 
 #if 0 /**** Old code ****/
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
@@ -903,9 +904,6 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     tUsend = SuperLU_timer_() - tUsend;
 #endif
     tRegion[1] = SuperLU_timer_() - tRegion[1];
-    printf("TRegion L,U send: \t %g\n", tRegion[1]);
-    printf("Time to send Lpanel=%g  and U panels =%g \n", tLsend, tUsend);
-    fflush(stdout);
 
     gpuErrchk(cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(xlpanelGPU_t<Ftype>)));
     gpuErrchk(cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
@@ -926,10 +924,10 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     cusolverDnDgetrf_bufferSize(cusolverH, ldt, ldt, NULL, ldt, &dfactBufSize);
     
     cusolverDnDestroy(cusolverH);
+#if ( PRNTlevel >= 1 )    
     printf("Size of dfactBuf is %d\n", dfactBufSize);
+#endif    
     tRegion[2] = SuperLU_timer_() - tRegion[2];
-    printf("TRegion dfactBuf: \t %g\n", tRegion[2]);
-    fflush(stdout);
     
     tRegion[3] = SuperLU_timer_();
 
@@ -996,7 +994,10 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     num_dfbufs = A_gpu.numCudaStreams;
     }
     int num_gemmbufs = num_dfbufs;
-    printf(".. setLUstrut_GPU: num_dfbufs %d, num_gemmbufs %d\n", num_dfbufs, num_gemmbufs); fflush(stdout);
+#if ( PRNTlevel >= 1 )    
+    printf(".. setLUstrut_GPU: num_dfbufs %d, num_gemmbufs %d\n", num_dfbufs, num_gemmbufs);
+    fflush(stdout);
+#endif
 
     A_gpu.dFBufs = (Ftype **) SUPERLU_MALLOC(num_dfbufs * sizeof(Ftype *));
     A_gpu.gpuGemmBuffs = (Ftype **) SUPERLU_MALLOC(num_gemmbufs * sizeof(Ftype *));
@@ -1050,7 +1051,6 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
         cusolverDnCreate(&A_gpu.cuSolveHandles[stream]);
     }
     tcuStream = SuperLU_timer_() - tcuStream;
-    printf("Time to create cublas streams: %g\n", tcuStream);
 
     double tcuStreamCreate=SuperLU_timer_();
     for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
@@ -1075,15 +1075,24 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
 #endif
     }
     tcuStreamCreate = SuperLU_timer_() - tcuStreamCreate;
-    printf("Time to create CUDA streams: %g\n", tcuStreamCreate);
-
     tRegion[3] = SuperLU_timer_() - tRegion[3];
+    
+#if ( PRNTlevel >= 1 )
+    printf("Time to create cublas streams: %g\n", tcuStream);
+    printf("Time to create CUDA streams: %g\n", tcuStreamCreate);
+    printf("Time taken to estimate memory on GPU: %f\n", tRegion[0]);
+    printf("TRegion L,U send: \t %g\n", tRegion[1]);
+    printf("Time to send Lpanel=%g  and U panels =%g \n", tLsend, tUsend);
+    printf("TRegion dfactBuf: \t %g\n", tRegion[2]);
     printf("TRegion stream: \t %g\n", tRegion[3]);
+    fflush(stdout);
+#endif
+
     // allocate
     gpuErrchk(cudaMalloc(&dA_gpu, sizeof(xLUstructGPU_t<Ftype>)));
     gpuErrchk(cudaMemcpy(dA_gpu, &A_gpu, sizeof(xLUstructGPU_t<Ftype>), cudaMemcpyHostToDevice));
 
-#endif
+#endif /* match #if 0 ... #else ... */
     
     // cudaCheckError();
     

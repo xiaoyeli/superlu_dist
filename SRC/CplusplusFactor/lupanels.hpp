@@ -479,7 +479,7 @@ struct LUstruct_v100
 	/* Sherry added the following, which comes from batch setup */
 	superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();    
     if (superlu_acc_offload){
-	printf(".. free batch buffers\n"); fflush(stdout);
+	//printf(".. free batch buffers\n"); fflush(stdout);
 	SUPERLU_FREE(A_gpu.dFBufs);
 	SUPERLU_FREE(A_gpu.gpuGemmBuffs);
 

@@ -32,11 +32,11 @@ extern "C"
 
     void dDestroyLUgpuHandle(dLUgpu_Handle LuH)
     {
-        printf("\t... before delete luH\n");
-        fflush(stdout);
+	// printf("\t... before delete luH\n"); fflush(stdout);
+
         delete reinterpret_cast<xLUstruct_t<double> *>(LuH);
-        printf("\t... after delete luH\n");
-        fflush(stdout);
+	
+        // printf("\t... after delete luH\n"); fflush(stdout);
     }
 
     // I think the following is not used 
@@ -57,8 +57,9 @@ extern "C"
 
         LU_v1->packedU2skyline(LUstruct);
         tXferGpu2Host = SuperLU_timer_() - tXferGpu2Host;
+#if ( PRNTlevel >= 1 )	
         printf("Time to send data back= %g\n", tXferGpu2Host);
-
+#endif
         return 0;
     }
 
@@ -90,11 +91,10 @@ extern "C"
 
     void sDestroyLUgpuHandle(sLUgpu_Handle LuH)
     {
-        printf("\t... before delete luH\n");
-        fflush(stdout);
+        //printf("\t... before delete luH\n"); fflush(stdout);
         delete reinterpret_cast<xLUstruct_t<float> *>(LuH);
-        printf("\t... after delete luH\n");
-        fflush(stdout);
+	
+	// printf("\t... after delete luH\n"); fflush(stdout);
     }
 
     // I think the following is not used
@@ -115,8 +115,9 @@ extern "C"
 
         LU_v1->packedU2skyline(LUstruct);
         tXferGpu2Host = SuperLU_timer_() - tXferGpu2Host;
+#if ( PRNTlevel >= 1 )
         printf("Time to send data back= %g\n", tXferGpu2Host);
-
+#endif
         return 0;
     }
 
@@ -149,11 +150,11 @@ extern "C"
 
     void zDestroyLUgpuHandle(zLUgpu_Handle LuH)
     {
-        printf("\t... before delete luH\n");
-        fflush(stdout);
+        // printf("\t... before delete luH\n");  fflush(stdout);
+	
         delete reinterpret_cast<xLUstruct_t<doublecomplex> *>(LuH);
-        printf("\t... after delete luH\n");
-        fflush(stdout);
+	
+        // printf("\t... after delete luH\n"); fflush(stdout);
     }
 
     // I think the following is not used
@@ -174,8 +175,9 @@ extern "C"
 
         LU_v1->packedU2skyline(LUstruct);
         tXferGpu2Host = SuperLU_timer_() - tXferGpu2Host;
+#if ( PRNTlevel >= 1 )
         printf("Time to send data back= %g\n", tXferGpu2Host);
-
+#endif
         return 0;
     }
 

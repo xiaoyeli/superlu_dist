@@ -57,7 +57,8 @@ at the top-level directory.
 		 If this is too small, the Schur complement update will be
 		 done in multiple partitions, may be slower.
 	    = 9: number of GPU streams
-	    = 10: whether to offload work to GPU or not
+	    = 10: whether to offload computations to GPU or not
+	    = 11: whether to offload triangular solve to GPU or not
 
    options (input) superlu_dist_options_t*
            The structure defines the input parameters to control
@@ -146,6 +147,12 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
 	    if (ttemp) 
 		return atoi (ttemp);
 	    else return (options->superlu_acc_offload);
+         case 11:
+	    ttemp = getenv ("SUPERLU_ACC_SOLVE");
+            if (ttemp)
+                return atoi (ttemp);
+            else
+                return 0;  // default
     }
 
     /* Invalid value for ISPEC */

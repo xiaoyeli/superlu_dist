@@ -2747,9 +2747,9 @@ void allocBcastLargeArray(void **array, int64_t size, int root, MPI_Comm comm)
     // Then broadcast the array from the root to all other processes
     int chunk = size / INT_MAX;
     for (int i = 0; i < chunk; i++) {
-        MPI_Bcast(&((*array)[i*INT_MAX]), INT_MAX, MPI_BYTE, root, comm);
+        MPI_Bcast(&( ((char*) *array)[i*INT_MAX] ), INT_MAX, MPI_BYTE, root, comm);
     }
-    MPI_Bcast(&((*array)[chunk*INT_MAX]), size-chunk*INT_MAX, MPI_BYTE, root, comm);
+    MPI_Bcast(&( ((char*) *array)[chunk*INT_MAX] ), size-chunk*INT_MAX, MPI_BYTE, root, comm);
 }
 
 sForest_t **compute_sForests(int_t nsupers,  Glu_persist_t *Glu_persist, int_t *etree, gridinfo3d_t *grid3d)

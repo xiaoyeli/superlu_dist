@@ -484,9 +484,11 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
     int_t winSize = SUPERLU_MIN(numLA / 2, eTreeTopLims[1]);
 
     // printf(". lookahead winSize %d\n", winSize);
+#if ( PRNTlevel >= 1 )    
     printf(". lookahead winSize %" PRIdMAX "\n", static_cast<intmax_t>(winSize));
     fflush(stdout);
-
+#endif
+    
     for (int k0 = k_st; k0 < winSize; ++k0)
     {
         int_t k = perm_c_supno[k0];

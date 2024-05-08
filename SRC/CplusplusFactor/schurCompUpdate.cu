@@ -686,7 +686,6 @@ int_t LUstruct_v100::setLUstruct_GPU()
     /*Mapping to device*/
     int deviceCount;
     cudaGetDeviceCount(&deviceCount); // How many GPUs?
-    printf("deviceCount=%d\n", deviceCount);
     int device_id = (int)(grid3d->iam/get_mpi_process_per_gpu ()); //YL: allow multiple MPIs per GPU
     
     char *ttemp;
@@ -765,6 +764,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     // print the time taken to estimate memory on GPU
     if (grid3d->iam == 0)
     {
+        printf("GPU deviceCount=%d\n", deviceCount);
         printf("Time taken to estimate memory on GPU: %f\n", tRegion[0]);
 	printf("\t.. totalNzvalSize %ld, gemmBufferSize %ld\n",
 	       (long) totalNzvalSize, (long) A_gpu.gemmBufferSize);

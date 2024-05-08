@@ -2975,9 +2975,11 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	// fflush(stdout);
 	// }
 
+
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
+
     if (get_acc_solve()) /* GPU trisolve*/
     {
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 // #if 0 /* CPU trisolve*/
 
 // #if HAVE_CUDA
@@ -3042,8 +3044,11 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #endif
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*8; // YL: this is a rough estimate
-#endif
-    }else{/* CPU trisolve */
+
+    } else
+    
+#endif /* match #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) */
+    { /* CPU trisolve */
 
 tx = SuperLU_timer_();
 
@@ -6933,17 +6938,16 @@ pzgstrs3d (superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
 
     MPI_Barrier (grid->comm);
 
-
+#if ( PRNTlevel >= 1)
     printTRStimer(&xtrsTimer, grid3d);
+#endif
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Exit pzgstrs3d()");
 #endif
 
     return;
-}                               /* PZGSTRS */
-
-
-
+}                               /* pzgstrs3d */
 
 
 void
@@ -7310,14 +7314,15 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 }
     // MPI_Barrier (grid->comm);
 
-
+#if ( PRNTlevel >= 1 )
     printTRStimer(&xtrsTimer, grid3d);
+#endif    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Exit pdgstrs3d_newsolve()");
 #endif
 
     return;
-}                               /* PZGSTRS */
+}                               /* pzgstrs3d_newsolve */
 
 
 

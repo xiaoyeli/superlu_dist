@@ -1,4 +1,3 @@
-
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -760,7 +759,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
     strf3Dpartition_t *trf3Dpartition=LUstruct->trf3Dpart;
-    int gpu3dVersion = 0;
+    int gpu3dVersion = 1;  // default is to use C++ code in CplusplusFactor/ directory
 #ifdef GPU_ACC
     if (getenv("GPU3DVERSION")) {
        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
@@ -1178,12 +1177,12 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 
 		SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
-		SCT_init(SCT);
+		slu_SCT_init(SCT);
 
 #if (PRNTlevel >= 1)
 		if (grid3d->iam == 0)
 		{
-			printf("after 3D initialization.\n");
+			printf("After 3D initialization.\n");
 			fflush(stdout);
 		}
 #endif
@@ -1199,10 +1198,13 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		// get environment variable TRF3DVERSION
 #ifdef GPU_ACC
 		if (gpu3dVersion == 1)
-		{ /* this is the new C++ code in TRF3dV100/ directory */
+		{ /* this is the new C++ code in CplusplusFactor/ directory */
 
+#if (PRNTlevel >= 1)
 			if (!grid3d->iam)
-				printf("Using psgstrf3d+gpu version 1 for Summit\n");
+			    printf("Using psgstrf3d+gpu version 1 in CplusplusFactor/\n");
+#endif
+				
 #if 0
 			psgstrf3d_upacked(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
@@ -1307,13 +1309,13 @@ sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 				scheckLUFromDisk(nsupers, LUstruct->Glu_persist->xsup, LUstruct);
 		}
 
-#if (PRNTlevel >= 0)
+#if (PRNTlevel >= 1)
 		if (!grid3d->zscp.Iam)
 		{
-			SCT_print(grid, SCT);
-			SCT_print3D(grid3d, SCT);
+			slu_SCT_print(grid, SCT);
+			slu_SCT_print3D(grid3d, SCT);
 		}
-		SCT_printComm3D(grid3d, SCT);
+		slu_SCT_printComm3D(grid3d, SCT);
 
 		/*print memory usage*/
 		s3D_printMemUse(trf3Dpartition, LUstruct, grid3d);
@@ -1325,7 +1327,7 @@ sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 		/*reduces stat from all the layers*/
 #endif
 
-		SCT_free(SCT);
+		slu_SCT_free(SCT);
 
 	} /* end if not Factored ... factor on all process layers */
 
