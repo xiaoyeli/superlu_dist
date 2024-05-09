@@ -35,12 +35,14 @@ module load cudatoolkit/12.2
 # module load cray-libsci/22.11.1.2
 # module load cray-libsci/23.02.1.1
 module unload cray-libsci
+module use /global/common/software/nersc/pe/modulefiles/latest
+module load nvshmem/2.11.0
 
 # avoid bug in cudatoolkit
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.2\/compat:/}
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
 
-NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+# NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 #NVSHMEM_HOME=${CRAY_NVIDIA_PREFIX}/comm_libs/nvshmem/
 cmake .. \
   -DCMAKE_C_FLAGS="-O2   -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \

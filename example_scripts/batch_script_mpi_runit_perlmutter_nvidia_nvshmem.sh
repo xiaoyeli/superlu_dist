@@ -11,6 +11,8 @@ module load PrgEnv-nvidia
 module load cudatoolkit
 module load cray-libsci
 module load cmake
+module use /global/common/software/nersc/pe/modulefiles/latest
+module load nvshmem/2.11.0
 
 #OpenMP settings:
 export OMP_NUM_THREADS=1
@@ -32,7 +34,7 @@ export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
 export SUPERLU_ACC_SOLVE=1
 
 ##NVSHMEM settings:
-NVSHMEM_HOME=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/nvshmem_src_2.8.0-3/build/
+# NVSHMEM_HOME=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}

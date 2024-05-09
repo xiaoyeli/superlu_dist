@@ -6,6 +6,8 @@ module load PrgEnv-gnu
 module load cmake
 module load cudatoolkit/12.2
 module unload cray-libsci
+module use /global/common/software/nersc/pe/modulefiles/latest
+module load nvshmem/2.11.0
 
 #MPI settings:
 export MPICH_GPU_SUPPORT_ENABLED=1
@@ -38,7 +40,7 @@ export SUPERLU_MPI_PROCESS_PER_GPU=1 # 2: this can better saturate GPU
 export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 
 ##NVSHMEM settings:
-NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+# NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
