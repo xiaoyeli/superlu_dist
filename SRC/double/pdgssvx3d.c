@@ -1080,7 +1080,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (symb_comm != MPI_COMM_NULL)
 			MPI_Comm_free(&symb_comm);
 		if ( Fact != SamePattern_SameRowPerm){
-			LUstruct->trf3Dpart = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
+			LUstruct->trf3Dpart = (dtrf3Dpartition_t *)SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 			// computes the new partition for 3D factorization here
 			trf3Dpartition=LUstruct->trf3Dpart;
 			dnewTrfPartitionInit(nsupers, LUstruct, grid3d);
