@@ -73,11 +73,12 @@ typedef struct cLUstruct_t cLUstruct_t;
                                      SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                                      float thresh_, int *info_);
 
-    extern void sdestroyLUgpuHandle(sLUgpu_Handle LuH);
+    void sdestroyLUgpuHandle(sLUgpu_Handle LuH);
 
     extern int sgatherFactoredLU3Dto2D(sLUgpu_Handle LuH);
 
-    extern int scopyLUGPU2Host(sLUgpu_Handle LuH, sLUstruct_t *LUstruct);
+    int scopyLUGPU2Host(sLUgpu_Handle LuH, sLUstruct_t *LUstruct);
+    int psgstrf3d_LUv1(sLUgpu_Handle LUHand);
 
     extern int psgstrf3d_LUpackedInterface(sLUgpu_Handle LUHand);
 
@@ -105,12 +106,12 @@ typedef struct cLUstruct_t cLUstruct_t;
                                            SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                                            double thresh_, int *info_);
 
-    extern void zdestroyLUgpuHandle(zLUgpu_Handle LuH);
+    void zdestroyLUgpuHandle(zLUgpu_Handle LuH);
 
     extern int zgatherFactoredLU3Dto2D(zLUgpu_Handle LuH);
 
-    extern int zcopyLUGPU2Host(zLUgpu_Handle LuH, zLUstruct_t *LUstruct);
-
+    int zcopyLUGPU2Host(zLUgpu_Handle LuH, zLUstruct_t *LUstruct);
+    int pzgstrf3d_LUv1(zLUgpu_Handle LUHand);
     extern int pzgstrf3d_LUpackedInterface(zLUgpu_Handle LUHand);
 
     struct BatchFactorizeWorkspace;
