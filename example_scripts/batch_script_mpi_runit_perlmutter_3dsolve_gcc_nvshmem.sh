@@ -8,7 +8,7 @@ module load cudatoolkit/12.2
 # avoid bug in cray-libsci/21.08.1.2
 # module load cray-libsci/22.11.1.2
 module load cray-libsci/23.12.5
-module use /global/common/software/nersc/pe/modulefiles/latest
+# module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/2.11.0
 ulimit -s unlimited
 #MPI settings:
@@ -70,7 +70,7 @@ else
   exit $EXIT_HOST
 fi
 
-nprows=(2)
+nprows=(1)
 npcols=(1)
 npz=(1)
 nrhs=(1)
@@ -102,7 +102,7 @@ fi
 
 # NODE_VAL=2
 # NCORE_VAL_TOT=`expr $NODE_VAL_TOT \* $CORES_PER_NODE / $NTH`
-batch=0 # whether to do batched test
+batch=4 # whether to do batched test
 NCORE_VAL_TOT=`expr $NROW \* $NCOL \* $NPZ `
 NCORE_VAL_TOT2D=`expr $NROW \* $NCOL `
 
@@ -148,7 +148,7 @@ do
 # srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}_nmpipergpu${nmpipergpu}
 
 SUPERLU_ACC_OFFLOAD=1
-export GPU3DVERSION=0
+export GPU3DVERSION=1
 export SUPERLU_ACC_SOLVE=1
 echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
 srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}

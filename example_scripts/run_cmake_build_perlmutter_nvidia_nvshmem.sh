@@ -30,7 +30,7 @@ module load cmake
 module load PrgEnv-nvidia
 module load cudatoolkit
 module load cray-libsci
-module use /global/common/software/nersc/pe/modulefiles/latest
+# module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/2.11.0
 # avoid bug in cudatoolkit
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.2\/compat:/}

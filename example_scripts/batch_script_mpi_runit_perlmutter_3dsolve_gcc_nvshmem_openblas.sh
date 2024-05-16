@@ -6,7 +6,7 @@ module load PrgEnv-gnu
 module load cmake
 module load cudatoolkit/12.2
 module unload cray-libsci
-module use /global/common/software/nersc/pe/modulefiles/latest
+# module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/2.11.0
 
 #MPI settings:

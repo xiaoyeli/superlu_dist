@@ -11,7 +11,7 @@ module load PrgEnv-nvidia
 module load cudatoolkit
 module load cray-libsci
 module load cmake
-module use /global/common/software/nersc/pe/modulefiles/latest
+# module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/2.11.0
 
 #OpenMP settings:

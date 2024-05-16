@@ -35,7 +35,7 @@ module load cudatoolkit/12.2
 # module load cray-libsci/22.11.1.2
 # module load cray-libsci/23.02.1.1
 module unload cray-libsci
-module use /global/common/software/nersc/pe/modulefiles/latest
+# module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/2.11.0
 
 # avoid bug in cudatoolkit
