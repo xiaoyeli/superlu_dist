@@ -2730,7 +2730,9 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                 }while(tmp>0);
 
             }
+            #ifdef HAVE_CUDA
             __syncwarp();
+            #endif
 
 
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
@@ -3460,7 +3462,9 @@ gridinfo_t *grid
                     __threadfence();
                 }while(tmp>-1);
             }
+            #ifdef HAVE_CUDA
             __syncwarp();
+            #endif
 
 
             ii = X_BLK( ljb );
@@ -3495,7 +3499,9 @@ gridinfo_t *grid
                 // temp=d_atomicSub(&lsum[il+i],temp1);
                 d_atomicAdd((double *)&s_lsum[i], -temp1);
             }
+            #ifdef HAVE_CUDA
             __syncwarp();
+            #endif
 
             /*only the first thread in a warp modify bmod */
             if(lne==0)atomicSub((int *)&s_bmod,1);
@@ -3515,7 +3521,9 @@ gridinfo_t *grid
                         // __threadfence();
                     }while(s_bmod>0);
                 }
+                #ifdef HAVE_CUDA
                 __syncwarp();
+                #endif
 
                 // if(lne==0)printf("  jibaba kernel:   %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,tid,uind_br[0],bmod[lk*aln_i]);
 
@@ -3527,7 +3535,9 @@ gridinfo_t *grid
 
                 }
 
+                #ifdef HAVE_CUDA
                 __syncwarp();
+                #endif
 
                 // Uinv = &Uinv_bc_dat[Uinv_bc_offset[jk]];
 
@@ -3540,14 +3550,18 @@ gridinfo_t *grid
                         }
                         s_lsum[i]=temp1; //reuse lsum as temporary output as it's no longer accessed
                     }
+                    #ifdef HAVE_CUDA
                     __syncwarp();
+                    #endif
 
                     for (i = lne; i < iknsupc; i+=WARP_SIZE){
                         x[i + ii] = s_lsum[i];
                         // // if(lk==69)
                         // printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
                         }
+                    #ifdef HAVE_CUDA
                     __syncwarp();
+                    #endif
                     // if(lne==0)bmod_tmp=atomicSub(&bmod[lk*aln_i],1); // set bmod[lk*aln_i] to -1
                     if(lne==0)bmod[lk*aln_i]=-1; // set bmod[lk*aln_i] to -1
                 }
@@ -3710,7 +3724,9 @@ gridinfo_t *grid
                   __threadfence();
               }while(tmp>-1);
           }
+          #ifdef HAVE_CUDA
           __syncwarp();
+          #endif
 
 
           ii = X_BLK( ljb );
@@ -3734,7 +3750,9 @@ gridinfo_t *grid
                 d_atomicAdd((double *)&s_lsum[i+iknsupc-LDA], -temp1);
 
           }
+          #ifdef HAVE_CUDA
           __syncwarp();
+          #endif
 
           /*only the first thread in a warp modify bmod */
           if(lne==0)tmp=atomicSub((int *)&s_bmod,1);
@@ -3754,7 +3772,9 @@ gridinfo_t *grid
                       // __threadfence();
                   }while(s_bmod>0);
               }
+              #ifdef HAVE_CUDA
               __syncwarp();
+              #endif
 
               // if(lne==0)printf("  jibaba kernel:   %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,tid,uind_br[0],bmod[lk*aln_i]);
 
@@ -3765,7 +3785,9 @@ gridinfo_t *grid
                 x[i + ii ] += s_lsum[i  ];
               }
 
+              #ifdef HAVE_CUDA
               __syncwarp();
+              #endif
 
               Uinv = &Uinv_bc_dat[Uinv_bc_offset[jk]];
 
@@ -3777,14 +3799,18 @@ gridinfo_t *grid
                       }
                       s_lsum[i]=temp1; //reuse lsum as temporary output as it's no longer accessed
                   }
+                  #ifdef HAVE_CUDA
                   __syncwarp();
+                  #endif
 
                   for (i = lne; i < iknsupc; i+=WARP_SIZE){
                       x[i + ii] = s_lsum[i];
                       // // if(lk==69)
                       // printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
                       }
-                  __syncwarp();
+                #ifdef HAVE_CUDA
+                __syncwarp();
+                #endif
                   // if(lne==0)bmod_tmp=atomicSub(&bmod[lk*aln_i],1); // set bmod[lk*aln_i] to -1
                   if(lne==0)bmod[lk*aln_i]=-1; // set bmod[lk*aln_i] to -1
               }
@@ -3947,7 +3973,9 @@ gridinfo_t *grid
 				}while(tmp>0);
 
 			}
-			__syncwarp();
+            #ifdef HAVE_CUDA
+            __syncwarp();
+            #endif
 		  //   if(tid==0)
 		  //   printf("spin: %d %d \n",threadIdx_x, blockIdx_x);
 
@@ -3964,8 +3992,9 @@ gridinfo_t *grid
 						// // printf("lib %5d %5d %lf\n",lib,i, x[i + ii + j*knsupc]);
 						// }
 					}
+                #ifdef HAVE_CUDA
                 __syncwarp();
-
+                #endif
 
 
 			   //  if(Llu->inv == 1){
@@ -3980,14 +4009,18 @@ gridinfo_t *grid
 							}
 							lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
 						}
-						__syncwarp();
+                        #ifdef HAVE_CUDA
+                        __syncwarp();
+                        #endif
 
 						for (i = lne; i < knsupc; i+=WARP_SIZE){
 							x[i + ii] = lsum[il+i];
 							// // if(lk==69)
 							// printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
 							}
+                            #ifdef HAVE_CUDA
                             __syncwarp();
+                            #endif
 					}//if(nrhs==1)
 			   //  }
 
@@ -3995,7 +4028,9 @@ gridinfo_t *grid
 			  //   for (i = tid; i < knsupc; i+=block_size)
 			  // 	  recvbuf_BC_gpu[i + maxrecvsz*lk + j*knsupc ] = x[i + ii + j*knsupc];
 
+              #ifdef HAVE_CUDA
               __syncwarp();
+              #endif
 		}else{   /* off-diagonal block forward the message*/
 			/* waiting for the x subvector and forward*/
 		}
@@ -4061,7 +4096,9 @@ gridinfo_t *grid
                         d_atomicAdd(&lsum[il+offset], -temp1);
 
                     }
+                    #ifdef HAVE_CUDA
                     __syncwarp();
+                    #endif
 
                     for (ub = lne; ub < nub; ub+=WARP_SIZE){
                         ik = lloc[ub];
@@ -4069,7 +4106,9 @@ gridinfo_t *grid
                         // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
                     }
 				}//if(nrhs==1)
+                #ifdef HAVE_CUDA
                 __syncwarp();
+                #endif
 			// } /*if tid<Nchunk*/
 		} /* if nlb>0*/
 

@@ -1218,14 +1218,18 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 #define TEMPLATED_VERSION
 #ifdef TEMPLATED_VERSION
+#ifdef HAVE_CUDA
 				dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 							SCT, options, stat, thresh, info);
 
-				/* call pdgstrf3d() in C++ code */
+				/* call pdgstrf3d() in C++ code */			
 				pdgstrf3d_LUv1(dLUgpu);
-
 				dCopyLUGPU2Host(dLUgpu, LUstruct);
 				dDestroyLUgpuHandle(dLUgpu);
+#else
+				ABORT("CplusplusFactor has not yet been supported for HIP! Set GPU3DVERSION=0 instead. \n");
+#endif
+
 				//TODO: dCreateLUgpuHandle,pdgstrf3d_LUpackedInterface,dCopyLUGPU2Host,dDestroyLUgpuHandle haven't been created
 #else
 				/* call constructor in C++ code */
