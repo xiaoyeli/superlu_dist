@@ -81,51 +81,51 @@
 
     }
 
-void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision){
-    assert(msgSize>0);
+// void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision){
+//     assert(msgSize>0);
 
-    int nprocs = 0;
-    MPI_Comm_size(comm, &nprocs);
-    tree->comm_=comm;
-    tree->msgSize_=msgSize;
-    MPI_Comm_rank(comm,&tree->myRank_);
-    tree->myRoot_= -1;
-    tree->tag_=-1;
-    tree->destCnt_=0;
-    tree->myDests_[0]=-1;
-    tree->myDests_[1]=-1;
-    tree->sendRequests_[0]=MPI_REQUEST_NULL;
-    tree->sendRequests_[1]=MPI_REQUEST_NULL;
-    tree->empty_= NO;  // non-empty if rank_cnt>1
-    if(precision=='d'){
-        MPI_Type_contiguous( sizeof(double), MPI_BYTE, &tree->type_ );
-    }
-    if(precision=='z'){
-        MPI_Type_contiguous( sizeof(doublecomplex), MPI_BYTE, &tree->type_ );
-    }
-    MPI_Type_commit( &tree->type_ );
+//     int nprocs = 0;
+//     MPI_Comm_size(comm, &nprocs);
+//     tree->comm_=comm;
+//     tree->msgSize_=msgSize;
+//     MPI_Comm_rank(comm,&tree->myRank_);
+//     tree->myRoot_= -1;
+//     tree->tag_=-1;
+//     tree->destCnt_=0;
+//     tree->myDests_[0]=-1;
+//     tree->myDests_[1]=-1;
+//     tree->sendRequests_[0]=MPI_REQUEST_NULL;
+//     tree->sendRequests_[1]=MPI_REQUEST_NULL;
+//     tree->empty_= NO;  // non-empty if rank_cnt>1
+//     if(precision=='d'){
+//         MPI_Type_contiguous( sizeof(double), MPI_BYTE, &tree->type_ );
+//     }
+//     if(precision=='z'){
+//         MPI_Type_contiguous( sizeof(doublecomplex), MPI_BYTE, &tree->type_ );
+//     }
+//     MPI_Type_commit( &tree->type_ );
 
-    tree->myIdx = 0;
-    int ii=0;
-    int child,root;
-    for (ii=0;ii<rank_cnt;ii++)
-        if(tree->myRank_ == ranks[ii]){
-            tree->myIdx = ii;
-            break;
-        }
-    for (ii=0;ii<DEG_TREE;ii++){
-        if(tree->myIdx*DEG_TREE+1+ii<rank_cnt){
-            child = ranks[tree->myIdx*DEG_TREE+1+ii];
-            tree->myDests_[tree->destCnt_++]=child;
-        }
-    }
-    if(tree->myIdx!=0){
-        tree->myRoot_ = ranks[(int)floor((double)(tree->myIdx-1.0)/(double)DEG_TREE)];
-    }else{
-        tree->myRoot_ = tree->myRank_;
-    }
+//     tree->myIdx = 0;
+//     int ii=0;
+//     int child,root;
+//     for (ii=0;ii<rank_cnt;ii++)
+//         if(tree->myRank_ == ranks[ii]){
+//             tree->myIdx = ii;
+//             break;
+//         }
+//     for (ii=0;ii<DEG_TREE;ii++){
+//         if(tree->myIdx*DEG_TREE+1+ii<rank_cnt){
+//             child = ranks[tree->myIdx*DEG_TREE+1+ii];
+//             tree->myDests_[tree->destCnt_++]=child;
+//         }
+//     }
+//     if(tree->myIdx!=0){
+//         tree->myRoot_ = ranks[(int)floor((double)(tree->myIdx-1.0)/(double)DEG_TREE)];
+//     }else{
+//         tree->myRoot_ = tree->myRank_;
+//     }
 
-}
+// }
 
 	void C_BcTree_Nullify(C_Tree* tree){
 	  tree->msgSize_=-1;
@@ -172,58 +172,58 @@ void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int 
         } // for (iProc)
 	}
 	
-	void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision){
-		assert(msgSize>0);
+	// void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision){
+	// 	assert(msgSize>0);
 
-      int nprocs = 0;
-      MPI_Comm_size(comm, &nprocs);
-	  tree->comm_=comm;
-	  tree->msgSize_=msgSize;
-	  MPI_Comm_rank(comm,&tree->myRank_);
-      tree->myRoot_= -1; 
-      tree->tag_=-1;
-      tree->destCnt_=0;
-      tree->myDests_[0]=-1;
-      tree->myDests_[1]=-1;
-	  tree->sendRequests_[0]=MPI_REQUEST_NULL;
-	  tree->sendRequests_[1]=MPI_REQUEST_NULL;
-      tree->empty_= NO;  // non-empty if rank_cnt>1
-	  if(precision=='d'){
-		  tree->type_=MPI_DOUBLE;
-	  }
-	  if(precision=='c'){
-	      //MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
-	      tree->type_=MPI_C_COMPLEX;
-	  }
-	  if(precision=='z'){
-	      tree->type_=MPI_C_DOUBLE_COMPLEX;
-	  }
-	  if(precision=='s'){
-	      tree->type_=MPI_FLOAT;
-	  }	  
-      int myIdx = 0;
-      int ii=0; 
-	  int child,root;
-	  for (ii=0;ii<rank_cnt;ii++)
-		  if(tree->myRank_ == ranks[ii]){
-              tree->myIdx = ii;
-			  break;
-		  }
+    //   int nprocs = 0;
+    //   MPI_Comm_size(comm, &nprocs);
+	//   tree->comm_=comm;
+	//   tree->msgSize_=msgSize;
+	//   MPI_Comm_rank(comm,&tree->myRank_);
+    //   tree->myRoot_= -1; 
+    //   tree->tag_=-1;
+    //   tree->destCnt_=0;
+    //   tree->myDests_[0]=-1;
+    //   tree->myDests_[1]=-1;
+	//   tree->sendRequests_[0]=MPI_REQUEST_NULL;
+	//   tree->sendRequests_[1]=MPI_REQUEST_NULL;
+    //   tree->empty_= NO;  // non-empty if rank_cnt>1
+	//   if(precision=='d'){
+	// 	  tree->type_=MPI_DOUBLE;
+	//   }
+	//   if(precision=='c'){
+	//       //MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
+	//       tree->type_=MPI_C_COMPLEX;
+	//   }
+	//   if(precision=='z'){
+	//       tree->type_=MPI_C_DOUBLE_COMPLEX;
+	//   }
+	//   if(precision=='s'){
+	//       tree->type_=MPI_FLOAT;
+	//   }	  
+    //   int myIdx = 0;
+    //   int ii=0; 
+	//   int child,root;
+	//   for (ii=0;ii<rank_cnt;ii++)
+	// 	  if(tree->myRank_ == ranks[ii]){
+    //           tree->myIdx = ii;
+	// 		  break;
+	// 	  }
 
 		  
-	  for (ii=0;ii<DEG_TREE;ii++){
-		  if(tree->myIdx*DEG_TREE+1+ii<rank_cnt){
-			   child = ranks[tree->myIdx*DEG_TREE+1+ii];
-			   tree->myDests_[tree->destCnt_++]=child;
-		  }		
-	  }		  
+	//   for (ii=0;ii<DEG_TREE;ii++){
+	// 	  if(tree->myIdx*DEG_TREE+1+ii<rank_cnt){
+	// 		   child = ranks[tree->myIdx*DEG_TREE+1+ii];
+	// 		   tree->myDests_[tree->destCnt_++]=child;
+	// 	  }		
+	//   }		  
 		  
-	  if(tree->myIdx!=0){
-		  tree->myRoot_ = ranks[(int)floor((double)(tree->myIdx-1.0)/(double)DEG_TREE)];
-	  }else{
-		  tree->myRoot_ = tree->myRank_;
-	  }
-    }
+	//   if(tree->myIdx!=0){
+	// 	  tree->myRoot_ = ranks[(int)floor((double)(tree->myIdx-1.0)/(double)DEG_TREE)];
+	//   }else{
+	// 	  tree->myRoot_ = tree->myRank_;
+	//   }
+    // }
 
 void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* needrecvrd,int* needsendrd){
     assert(msgSize>0);
@@ -244,9 +244,6 @@ void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, i
     
 	if(precision=='d'){
 	    tree->type_=MPI_DOUBLE;
-	}
-	if(precision=='s'){
-        MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
 	}
 	if(precision=='z'){
 	    tree->type_=MPI_DOUBLE_COMPLEX;
