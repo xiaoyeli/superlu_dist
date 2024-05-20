@@ -1215,7 +1215,8 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 #define TEMPLATED_VERSION
 #ifdef TEMPLATED_VERSION
-sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+#ifdef HAVE_CUDA
+			sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 
 			/* call psgstrf3d() in C++ code */
@@ -1224,6 +1225,11 @@ sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			sCopyLUGPU2Host(sLUgpu, LUstruct);
 			sDestroyLUgpuHandle(sLUgpu);
 		    //TODO: sCreateLUgpuHandle,psgstrf3d_LUpackedInterface,sCopyLUGPU2Host,sDestroyLUgpuHandle haven't been created
+#else
+			ABORT("CplusplusFactor has not yet been supported for HIP! Set GPU3DVERSION=0 instead. \n");
+#endif
+
+
 #else
 			/* call constructor in C++ code */
 			LUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,

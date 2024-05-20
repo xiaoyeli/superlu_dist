@@ -1216,15 +1216,20 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 #define TEMPLATED_VERSION
 #ifdef TEMPLATED_VERSION
-zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-						  SCT, options, stat, thresh, info);
+#ifdef HAVE_CUDA
+		zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						SCT, options, stat, thresh, info);
 
-			/* call pzgstrf3d() in C++ code */
-			pzgstrf3d_LUv1(zLUgpu);
+		/* call pzgstrf3d() in C++ code */
+		pzgstrf3d_LUv1(zLUgpu);
 
-			zCopyLUGPU2Host(zLUgpu, LUstruct);
-			zDestroyLUgpuHandle(zLUgpu);
-		    //TODO: zCreateLUgpuHandle,pzgstrf3d_LUpackedInterface,zCopyLUGPU2Host,zDestroyLUgpuHandle haven't been created
+		zCopyLUGPU2Host(zLUgpu, LUstruct);
+		zDestroyLUgpuHandle(zLUgpu);
+		//TODO: zCreateLUgpuHandle,pzgstrf3d_LUpackedInterface,zCopyLUGPU2Host,zDestroyLUgpuHandle haven't been created
+#else
+			ABORT("CplusplusFactor has not yet been supported for HIP! Set GPU3DVERSION=0 instead. \n");
+#endif
+
 #else
 			/* call constructor in C++ code */
 			LUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
