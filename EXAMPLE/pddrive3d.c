@@ -154,15 +154,7 @@ int main (int argc, char *argv[])
         }
     }
 
-    /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID.
-       ------------------------------------------------------------ */
-    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
-    iam = grid.iam;
 
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter main()");
-#endif
 
 
     /* Parse command line argv[]. */
@@ -255,12 +247,25 @@ int main (int argc, char *argv[])
     if (ir != -1) options.IterRefine = ir;
     if (lookahead != -1) options.num_lookaheads = lookahead;
 
+    
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------ */
+    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
+    iam = grid.iam;
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (iam, "Enter main()");
+#endif
+
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
 	fflush(stdout);
     }
-    
+
+
+
 #ifdef GPU_ACC
     int superlu_acc_offload = sp_ienv_dist(10, &options); //get_acc_offload();
     if (superlu_acc_offload) {

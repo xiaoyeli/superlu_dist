@@ -154,16 +154,6 @@ int main (int argc, char *argv[])
         }
     }
 
-    /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID.
-       ------------------------------------------------------------ */
-    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
-    iam = grid.iam;
-
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter main()");
-#endif
-
 
     /* Parse command line argv[]. */
     for (cpp = argv + 1; *cpp; ++cpp)
@@ -254,6 +244,17 @@ int main (int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (ir != -1) options.IterRefine = ir;
     if (lookahead != -1) options.num_lookaheads = lookahead;
+
+
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------ */
+    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
+    iam = grid.iam;
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (iam, "Enter main()");
+#endif
 
     if (!iam) {
 	print_sp_ienv_dist(&options);

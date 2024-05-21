@@ -36,23 +36,23 @@ export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 nmpipergpu=1
 export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # 2: this can better saturate GPU
 
-##NVSHMEM settings:
-# NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
-export NVSHMEM_USE_GDRCOPY=1
-export NVSHMEM_MPI_SUPPORT=1
-export MPI_HOME=${MPICH_DIR}
-export NVSHMEM_LIBFABRIC_SUPPORT=1
-export LIBFABRIC_HOME=/opt/cray/libfabric/1.15.2.0
-export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
-export NVSHMEM_DISABLE_CUDA_VMM=1
-export FI_CXI_OPTIMIZED_MRS=false
-export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
-export NVSHMEM_BOOTSTRAP=MPI
-export NVSHMEM_REMOTE_TRANSPORT=libfabric
+# ##NVSHMEM settings:
+# # NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+# export NVSHMEM_USE_GDRCOPY=1
+# export NVSHMEM_MPI_SUPPORT=1
+# export MPI_HOME=${MPICH_DIR}
+# export NVSHMEM_LIBFABRIC_SUPPORT=1
+# export LIBFABRIC_HOME=/opt/cray/libfabric/1.15.2.0
+# export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
+# export NVSHMEM_DISABLE_CUDA_VMM=1
+# export FI_CXI_OPTIMIZED_MRS=false
+# export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
+# export NVSHMEM_BOOTSTRAP=MPI
+# export NVSHMEM_REMOTE_TRANSPORT=libfabric
 
-#export NVSHMEM_DEBUG=TRACE
-#export NVSHMEM_DEBUG_SUBSYS=ALL
-#export NVSHMEM_DEBUG_FILE=nvdebug_success
+# #export NVSHMEM_DEBUG=TRACE
+# #export NVSHMEM_DEBUG_SUBSYS=ALL
+# #export NVSHMEM_DEBUG_FILE=nvdebug_success
 
 if [[ $NERSC_HOST == edison ]]; then
   CORES_PER_NODE=24
@@ -70,7 +70,7 @@ else
   exit $EXIT_HOST
 fi
 
-nprows=(1)
+nprows=(4)
 npcols=(1)
 npz=(1)
 nrhs=(1)
@@ -102,7 +102,7 @@ fi
 
 # NODE_VAL=2
 # NCORE_VAL_TOT=`expr $NODE_VAL_TOT \* $CORES_PER_NODE / $NTH`
-batch=4 # whether to do batched test
+batch=0 # whether to do batched test
 NCORE_VAL_TOT=`expr $NROW \* $NCOL \* $NPZ `
 NCORE_VAL_TOT2D=`expr $NROW \* $NCOL `
 
@@ -144,8 +144,9 @@ do
 # SUPERLU_ACC_OFFLOAD=0
 # srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
 
-# SUPERLU_ACC_OFFLOAD=1
-# srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}_nmpipergpu${nmpipergpu}
+SUPERLU_ACC_OFFLOAD=1
+export SUPERLU_ACC_SOLVE=1
+srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}_nmpipergpu${nmpipergpu}
 
 SUPERLU_ACC_OFFLOAD=1
 export GPU3DVERSION=1
