@@ -12,7 +12,7 @@ to run accurately and efficiently on large numbers of processors.
 SuperLU_DIST is a parallel extension to the serial SuperLU library.
 It is targeted for the distributed memory parallel machines.
 SuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism
-and MPI for off-node communications. We are actively developing GPU
+and MPI for off-node communications. We are actively developing multi-GPU
 acceleration capabilities.
 <!-- Currently, the LU factorization and triangular solution routines, -->
 <!-- which are the most time-consuming part of the solution process,-->
@@ -543,5 +543,5 @@ July 5, 2022        Version 8.1.0
 October 1, 2022     Version 8.1.1
 Novembe 9, 2023     Version 8.2.0
 Novembe 17, 2023    Version 8.2.1
-May 8, 2023         Version 9.0.0
+May 8, 2024         Version 9.0.0
 ```
