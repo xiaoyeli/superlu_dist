@@ -639,7 +639,7 @@ __device__ void dC_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile ui
     int data_ofset=my_flag_bc[0]*maxrecvsz;
     for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ) {
         int iProc = tree->myDests_[idxRecv];
-        nvshmemx_double_put_signal_nbi_block((double*)&dready_x[data_ofset], (double*)&dready_x[data_ofset], my_flag_bc[1]*2,(uint64_t*)(flag_bc_q + my_flag_bc[0]), sig, NVSHMEM_SIGNAL_SET,iProc);
+        nvshmemx_double_put_signal_nbi_block((double*)&dready_x[data_ofset], (double*)&dready_x[data_ofset], my_flag_bc[1],(uint64_t*)(flag_bc_q + my_flag_bc[0]), sig, NVSHMEM_SIGNAL_SET,iProc);
     }
 #endif
 }
@@ -654,7 +654,7 @@ __device__ void dC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
             sig_ofset = my_flag_rd[0] * 2 + 1;
             data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
         }
-        nvshmem_double_put_signal_nbi((double*)&dready_lsum[data_ofset],(double*)&dready_lsum[data_ofset],my_flag_rd[1],(uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
+        nvshmem_double_put_signal_nbi((double*)&dready_lsum[data_ofset],(double*)&dready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],(uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
 
 
     // ////forward to my root if I have received everything
