@@ -654,7 +654,7 @@ __device__ void sC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
             sig_ofset = my_flag_rd[0] * 2 + 1;
             data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
         }
-        nvshmem_float_put_signal_nbi((float*)&sready_lsum[data_ofset],(float*)&sready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1]*2,(uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
+        nvshmem_float_put_signal_nbi((float*)&sready_lsum[data_ofset],(float*)&sready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],(uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
 
 
     // ////forward to my root if I have received everything
