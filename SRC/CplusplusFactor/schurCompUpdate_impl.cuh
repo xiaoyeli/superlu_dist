@@ -1,4 +1,4 @@
-ss#pragma once 
+#pragma once 
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/system/cuda/execution_policy.h>
