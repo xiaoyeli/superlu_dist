@@ -406,11 +406,9 @@ void zperform_LargeDiag_MC64(
     }
 
     // int iinfo;
-    zfindRowPerm_MC64(grid, job, m, n,
-    nnz,
-    colptr,
-    rowind,
-     a_GA, Equil, perm_r, R1, C1, iinfo);
+    zfindRowPerm_MC64(grid, job, m, n, nnz,
+		      colptr, rowind,
+		      a_GA, Equil, perm_r, R1, C1, iinfo);
 
     if (*iinfo && job == 5) {
         SUPERLU_FREE(R1);
@@ -508,12 +506,11 @@ void zperform_row_permutation(
             else if (options->RowPerm == LargeDiag_MC64)
             {
 
-                zperform_LargeDiag_MC64(
-                options, Fact,
-                ScalePermstruct, LUstruct,
-                m, n, grid,
-                A, GA, stat, job,
-                Equil, rowequ, colequ, iinfo);
+                zperform_LargeDiag_MC64(options, Fact,
+					ScalePermstruct, LUstruct,
+					m, n, grid,
+					A, GA, stat, job,
+					Equil, rowequ, colequ, iinfo);
             }
             else // LargeDiag_HWPM
             {

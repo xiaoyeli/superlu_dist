@@ -1,3 +1,10 @@
+//
+// Solve-only setup
+//  turn off: equil, rowperm, colperm, 
+//  options->ilu_level = 0;
+//    1. DOFACT -> distribution
+//    2. FACTORED -> solve
+//
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -507,207 +514,6 @@ at the top-level directory.
  * </pre>
  */
 
-// Sherry: TODO - this should be moved to a utility file.
-int zwriteLUtoDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct)
-{
-
-	if (getenv("LUFILE"))
-	{
-		FILE *fp = fopen(getenv("LUFILE"), "w");
-		printf("writing to %s", getenv("LUFILE"));
-		for (int i = 0; i < nsupers; i++)
-		{
-			if (LUstruct->Llu->Lrowind_bc_ptr[i])
-			{
-				int_t *lsub = LUstruct->Llu->Lrowind_bc_ptr[i];
-				doublecomplex *nzval = LUstruct->Llu->Lnzval_bc_ptr[i];
-
-				int_t len = lsub[1]; /* LDA of the nzval[] */
-				int_t len2 = SuperSize(i) * len;
-				fwrite(nzval, sizeof(doublecomplex), len2, fp); // assume fp will be incremented
-			}
-
-			if (LUstruct->Llu->Ufstnz_br_ptr[i])
-			{
-				int_t *usub = LUstruct->Llu->Ufstnz_br_ptr[i];
-				doublecomplex *nzval = LUstruct->Llu->Unzval_br_ptr[i];
-				int_t lenv = usub[1];
-
-				fwrite(nzval, sizeof(doublecomplex), lenv, fp); // assume fp will be incremented
-			}
-		}
-
-		fclose(fp);
-	}
-	else
-	{
-		printf("Please set environment variable LUFILE to write\n..bye bye");
-		exit(0);
-	}
-
-	return 0;
-}
-
-#define EPSILON 1e-3
-
-// Sherry: TODO - this is used for debugging
-static int zcheckArr(doublecomplex *A, doublecomplex *B, int n)
-{
-	for (int i = 0; i < n; i++)
-	{
-		doublecomplex temp;
-        z_sub(&temp, &A[i], &B[i]);
-		assert(slud_z_abs(&temp) <= EPSILON * SUPERLU_MIN(slud_z_abs(&A[i]), slud_z_abs(&B[i])));
-	}
-
-	return 0;
-}
-
-// Sherry: TODO - this should be moved to a utility file.
-int zcheckLUFromDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct)
-{
-	zLocalLU_t *Llu = LUstruct->Llu;
-
-	doublecomplex *Lval_buf = doublecomplexMalloc_dist(Llu->bufmax[1]); // DOUBLE_ALLOC(Llu->bufmax[1]);
-	doublecomplex *Uval_buf = doublecomplexMalloc_dist(Llu->bufmax[3]); // DOUBLE_ALLOC(Llu->bufmax[3]);
-
-	if (getenv("LUFILE"))
-	{
-		FILE *fp = fopen(getenv("LUFILE"), "r");
-		printf("reading from %s", getenv("LUFILE"));
-		for (int i = 0; i < nsupers; i++)
-		{
-			if (LUstruct->Llu->Lrowind_bc_ptr[i])
-			{
-				int_t *lsub = LUstruct->Llu->Lrowind_bc_ptr[i];
-				doublecomplex *nzval = LUstruct->Llu->Lnzval_bc_ptr[i];
-
-				int_t len = lsub[1]; /* LDA of the nzval[] */
-				int_t len2 = SuperSize(i) * len;
-				fread(Lval_buf, sizeof(doublecomplex), len2, fp); // assume fp will be incremented
-				zcheckArr(nzval, Lval_buf, len2);
-			}
-
-			if (LUstruct->Llu->Ufstnz_br_ptr[i])
-			{
-				int_t *usub = LUstruct->Llu->Ufstnz_br_ptr[i];
-				doublecomplex *nzval = LUstruct->Llu->Unzval_br_ptr[i];
-				int_t lenv = usub[1];
-
-				fread(Uval_buf, sizeof(doublecomplex), lenv, fp); // assume fp will be incremented
-				zcheckArr(nzval, Uval_buf, lenv);
-			}
-		}
-		printf("CHecking LU from  %s is succesful ", getenv("LUFILE"));
-		fclose(fp);
-	}
-	else
-	{
-		printf("Please set environment variable LUFILE to read\n..bye bye");
-		exit(0);
-	}
-
-	return 0;
-}
-
-// Sherry: TODO - this should be moved to a utility file.
-/*! \brief Dump the factored matrix L using matlab triple-let format
- */
-void zDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
-		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
-{
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    int k, mycol, r, n, nmax;
-    int_t nnzL;
-    int_t *xsup = Glu_persist->xsup;
-    int_t *index;
-    doublecomplex *nzval;
-	char filename[256];
-	FILE *fp, *fopen();
-	gridinfo_t *grid = &(grid3d->grid2d);
-	int iam = grid->iam;
-	int iam3d = grid3d->iam;
-
-	// assert(grid->npcol*grid->nprow==1);
-
-	// count nonzeros in the first pass
-	nnzL = 0;
-	n = 0;
-    ncb = nsupers / grid->npcol;
-    extra = nsupers % grid->npcol;
-    mycol = MYCOL( iam, grid );
-    if ( mycol < extra ) ++ncb;
-    for (lb = 0; lb < ncb; ++lb) {
-	index = Llu->Lrowind_bc_ptr[lb];
-	if ( index ) { /* Not an empty column */
-	    nzval = Llu->Lnzval_bc_ptr[lb];
-	    nb = index[0];
-	    nsupr = index[1];
-	    gb = lb * grid->npcol + mycol;
-	    nsupc = SuperSize( gb );
-	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
-		len = index[k+1];
-
-		for (j = 0; j < nsupc; ++j) {
-		for (i=0; i<len; ++i){
-
-		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
-			nnzL ++;
-			nmax = SUPERLU_MAX(n,index[k+LB_DESCRIPTOR+i]+1);
-			n = nmax;
-		}
-
-		}
-		}
-		k += LB_DESCRIPTOR + len;
-		r += len;
-	    }
-	}
-    }
-	MPI_Allreduce(MPI_IN_PLACE,&nnzL,1,mpi_int_t,MPI_SUM,grid->comm);
-	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
-
-	snprintf(filename, sizeof(filename), "%s-%d", "L", iam3d);
-    printf("Dumping L factor to --> %s\n", filename);
- 	if ( !(fp = fopen(filename, "w")) ) {
-			ABORT("File open failed");
-		}
-
-	if(grid->iam==0){
-		fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
-	}
-
-     ncb = nsupers / grid->npcol;
-    extra = nsupers % grid->npcol;
-    mycol = MYCOL( iam, grid );
-    if ( mycol < extra ) ++ncb;
-    for (lb = 0; lb < ncb; ++lb) {
-	index = Llu->Lrowind_bc_ptr[lb];
-	if ( index ) { /* Not an empty column */
-	    nzval = Llu->Lnzval_bc_ptr[lb];
-	    nb = index[0];
-	    nsupr = index[1];
-	    gb = lb * grid->npcol + mycol;
-	    nsupc = SuperSize( gb );
-	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
-		len = index[k+1];
-
-		for (j = 0; j < nsupc; ++j) {
-		for (i=0; i<len; ++i){
-			fprintf(fp, IFMT IFMT " %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr].r,nzval[r +i+ j*nsupr].i);
-		}
-		}
-		k += LB_DESCRIPTOR + len;
-		r += len;
-	    }
-	}
-    }
- 	fclose(fp);
-
-} /* zDumpLblocks3D */
-
-
-
 void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			   zScalePermstruct_t *ScalePermstruct,
 			   doublecomplex B[], int ldb, int nrhs, gridinfo3d_t *grid3d,
@@ -777,6 +583,14 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
     /* Test the options choices. */
     *info = 0;
+
+    if ( options->SolveOnly == YES ) {
+	options->Fact = DOFACT;
+	options->Equil = NO;
+	options->RowPerm = NOROWPERM;
+	options->ColPerm = NATURAL;
+	options->ILU_level = 0;
+    }
     Fact = options->Fact;
 
     validateInput_pzgssvx3d(options, A, ldb, nrhs, grid3d, info);
@@ -887,8 +701,10 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	if (Equil) {
 	    zscaleMatrixDiagonally(Fact, ScalePermstruct,
 				  A, stat, grid, &rowequ, &colequ, &iinfo);
-	    if (iinfo < 0)
-		return; // Sherry: TOO - return a number in INFO
+	    if (iinfo < 0) {
+		*info = -20 - iinfo;
+		return;
+	    }
 
 	} /* end if Equil ... LAPACK style, not involving MC64 */
 
@@ -897,12 +713,12 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	     * Gather A from the distributed compressed row format to
 	     * global A in compressed column format.
 	     * Numerical values are gathered only when a row permutation
-	     ** for large diagonal is sought after.
+	     * for large diagonal is sought after.
 	     */
 	    if (Fact != SamePattern_SameRowPerm &&
 			(parSymbFact == NO || options->RowPerm != NO))
 	    {
-		int_t need_value = (options->RowPerm == LargeDiag_MC64);
+		int need_value = (options->RowPerm == LargeDiag_MC64);
 		pzCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
 		GAstore = (NCformat *)GA.Store;
 		nnz = GAstore->nnz;
@@ -1045,15 +861,15 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (Glu_freeable == NULL)
 		{
 		    if (!(Glu_freeable = (Glu_freeable_t *)
-				SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
+			  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
 			ABORT("Malloc fails for Glu_freeable.");
 		}
 		zbcastPermutedSparseA(A, ScalePermstruct, Glu_freeable,
-				     LUstruct, grid3d);
-		} else {
-		    //TODO: need a parmetis version of zbcastPermutedSparseA broadcasting Pslu_freeable
-		}
+				      LUstruct, grid3d);
+	} else {
+	    ; /*TODO: need a parmetis version of zbcastPermutedSparseA broadcasting Pslu_freeable*/
 	}
+    }
 
 	perm_r = ScalePermstruct->perm_r;
 	perm_c = ScalePermstruct->perm_c;
@@ -1102,7 +918,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			t = SuperLU_timer_();
 
 			dist_mem_use = pzdistribute3d_Yang(options, n, A, ScalePermstruct,
-											Glu_freeable, LUstruct, grid3d);
+							   Glu_freeable, LUstruct, grid3d);
 			stat->utime[DIST] = SuperLU_timer_() - t;
 
 			/* Deallocate storage used in symbolic factorization. */
@@ -1174,9 +990,6 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		#endif
 
 
-
-
-
 		SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
 		slu_SCT_init(SCT);
 
@@ -1187,9 +1000,6 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			fflush(stdout);
 		}
 #endif
-
-
-
 
 
 		t = SuperLU_timer_();
@@ -1427,18 +1237,18 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			} /* end printing stats */
 
 		} /* end if not Factored */
-    }
+	} /* end if grid-0 */
 
 		if(Solve3D){
 
 			if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
-			/* Need to reset the solve's communication pattern,
-			because perm_r[] and/or perm_c[] is changed.    */
-			if ( options->SolveInitialized == YES ) { /* Initialized before */
+			    /* Need to reset the solve's communication pattern,
+			       because perm_r[] and/or perm_c[] is changed.    */
+			    if ( options->SolveInitialized == YES ) { /* Initialized before */
 				zSolveFinalize(options, SOLVEstruct); /* Clean up structure */
 				pzgstrs_delete_device_lsum_x(SOLVEstruct);
 				options->SolveInitialized = NO;   /* Reset the solve state */
-			}
+			    }
 			}
 
 			if (get_new3dsolve()){
@@ -2011,9 +1821,8 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 			{
 				if (colequ)
 				{
-					b_col = B;
-					for (j = 0; j < nrhs; ++j)
-					{
+				    b_col = B;
+				    for (j = 0; j < nrhs; ++j) {
 						irow = fst_row;
 						for (i = 0; i < m_loc; ++i)
 						{

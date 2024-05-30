@@ -7,9 +7,6 @@
 #ifdef HAVE_CUDA
   #include <cuda_runtime.h>
   #include <cusolverDn.h>
-#ifdef HAVE_MAGMA
-  #include "magma.h"
-#endif 
 #endif
 
 #include "lu_common.hpp"
@@ -412,15 +409,6 @@ struct xLUstructGPU_t
     cudaStream_t cuStreams[MAX_CUDA_STREAMS];
     cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
     
-    // Magma is needed for non-uniform batched execution 
-#ifdef HAVE_MAGMA
-    magma_queue_t magma_queue;
-#endif
-#if 0  ////////////////////////////
-    LUMarshallData marshall_data;
-    xSCUMarshallData<Ftype> sc_marshall_data;
-#endif
-
     int* dperm_c_supno;
 
     /* Sherry: Allocate an array of buffers for the diagonal blocks

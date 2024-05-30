@@ -2157,9 +2157,11 @@ symbfact_vtx
 	/* TEST available memory */
 	if (next >= x_aind_end) {	
 	  if (domain_symb) {
+	      int mem_type = (computeL ? LSUB : USUB);  // Sherry fix 5/26/24 
 	      if ( (mem_error =
 		    psymbfact_LUXpandMem (iam, n, vtx, next, 0,
-					  computeL, DOMAIN_SYMB, 1, 
+					  //computeL, DOMAIN_SYMB, 1, 
+					  mem_type, DOMAIN_SYMB, 1, 
 					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 		  return (mem_error);
 	  } else if ( (mem_error =
@@ -4009,9 +4011,11 @@ dnsCurSep_symbfact
 	  j = x_newelts[vtx_lid_x+1] + lstVtx - vtx;
 	  if ((computeL && next+j >= MEM_LSUB(Llu_symbfact, VInfo)) ||
 	      (computeU && next+j >= MEM_USUB(Llu_symbfact, VInfo))) {
+	      int mem_type = (computeL ? LSUB : USUB);  // Sherry fix 5/26/24 
 	      if ( (mem_error =
 		    psymbfact_LUXpandMem (iam, n, vtx, next, next + j,
-					  computeL, DNS_CURSEP, 1,
+					  //computeL, DNS_CURSEP, 1,
+					  mem_type, DNS_CURSEP, 1,
 					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	      return (mem_error);
 	    if (computeL) sub = Llu_symbfact->lsub;

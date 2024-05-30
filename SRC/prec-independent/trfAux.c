@@ -2534,15 +2534,16 @@ void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n) {
  * its memory usage information is fetched.
  * 
  * @param options The options for the SuperLU distribution.
+ * @param n Dimension of the global matrix A.
  * @param GA A pointer to the global matrix A.
  * @param perm_c The column permutation vector.
  * @param etree The elimination tree of Pc*Pr*A*Pc'.
- * @param iam The processor number (0 <= iam < Pr*Pc).
  * @param Glu_persist Pointer to the structure which tracks the symbolic factorization information.
  * @param Glu_freeable Pointer to the structure which tracks the space used to store L/U data structures.
  * @param stat Information on program execution.
+ * @param grid3d The 3D process grid. 
  */
-void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, SuperMatrix *GA, int_t *perm_c, int_t *etree, 
+void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA, int_t *perm_c, int_t *etree, 
                            Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
 						   superlu_dist_mem_usage_t*symb_mem_usage,
 						   gridinfo3d_t* grid3d)
@@ -2577,7 +2578,13 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, SuperMatri
 #endif
 
     t = SuperLU_timer_();
-    iinfo = symbfact(options, iam, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
+
+    if ( options->ILU_level != SLU_EMPTY ) {
+	iinfo = ilu_level_symbfact(options, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
+    } else {
+	iinfo = symbfact(options, iam, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
+    }
+    
     stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 
     if (iinfo < 0)

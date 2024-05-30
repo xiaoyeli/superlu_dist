@@ -549,7 +549,7 @@ get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 	      if ( !pnum ) printf(".. Use METIS ordering on A'+A\n");
 #endif
 	      return;
-#endif
+#endif /* matching ifdef HAVE_PARMETIS */
 
         default:
 	      ABORT("Invalid ISPEC");
