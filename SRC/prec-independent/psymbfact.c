@@ -2156,17 +2156,16 @@ symbfact_vtx
 
 	/* TEST available memory */
 	if (next >= x_aind_end) {	
+	  int mem_type = (computeL ? LSUB : USUB);  // Sherry fix 5/26/24
 	  if (domain_symb) {
-	      int mem_type = (computeL ? LSUB : USUB);  // Sherry fix 5/26/24 
 	      if ( (mem_error =
 		    psymbfact_LUXpandMem (iam, n, vtx, next, 0,
-					  //computeL, DOMAIN_SYMB, 1, 
-					  mem_type, DOMAIN_SYMB, 1, 
+					  mem_type, DOMAIN_SYMB, 1,
 					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 		  return (mem_error);
 	  } else if ( (mem_error =
 		       psymbfact_LUXpand (iam, n, SLU_EMPTY, vtx, &next, 0, 
-					  computeL, LL_SYMB, 1, 
+					  mem_type, LL_SYMB, 1,
 					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	    return (mem_error);
 
@@ -3317,10 +3316,13 @@ expand_RL
   }
 
   nextl = xlsub[vtxXp_lid+1];  
-  if ( (mem_error = 
-	psymbfact_LUXpand_RL (iam, n, vtxXp, nextl, len_texp, 
-			      computeL, Pslu_freeable, Llu_symbfact, VInfo, PS)) )
-      return (mem_error);
+  {
+		int mem_type = (computeL ? LSUB : USUB);  // Sherry fix 5/26/24
+		if ( (mem_error =
+		psymbfact_LUXpand_RL (iam, n, vtxXp, nextl, len_texp,
+				      mem_type, Pslu_freeable, Llu_symbfact, VInfo, PS)) )
+		    return (mem_error);
+  }
 
   return 0;
 }
@@ -4014,7 +4016,6 @@ dnsCurSep_symbfact
 	      int mem_type = (computeL ? LSUB : USUB);  // Sherry fix 5/26/24 
 	      if ( (mem_error =
 		    psymbfact_LUXpandMem (iam, n, vtx, next, next + j,
-					  //computeL, DNS_CURSEP, 1,
 					  mem_type, DNS_CURSEP, 1,
 					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	      return (mem_error);
