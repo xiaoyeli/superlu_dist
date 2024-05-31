@@ -1611,6 +1611,15 @@ extern int zpivot_batch(
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
 
+    
+extern int zwriteLUtoDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct);
+extern int zcheckArr(doublecomplex *A, doublecomplex *B, int n);
+extern int zcheckLUFromDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct);
+extern void zDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
+			   Glu_persist_t *Glu_persist, zLocalLU_t *Llu);
+extern void zDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
+			   Glu_persist_t *Glu_persist, zLocalLU_t *Llu);
+    
 /*== end 3D prototypes ===================*/
 
 extern doublecomplex *zready_x;

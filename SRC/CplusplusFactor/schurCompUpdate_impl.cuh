@@ -1063,16 +1063,6 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
         cublasCreate(&A_gpu.lookAheadUHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
 
-        // Wajih: Need to create at least one magma queue
-#ifdef HAVE_MAGMA
-        if(stream == 0)
-        {
-            magma_queue_create_from_cuda(
-                device_id, A_gpu.cuStreams[stream], A_gpu.cuHandles[stream], 
-                NULL, &A_gpu.magma_queue
-            );
-        }
-#endif
     }
     tcuStreamCreate = SuperLU_timer_() - tcuStreamCreate;
     tRegion[3] = SuperLU_timer_() - tRegion[3];

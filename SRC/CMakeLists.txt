@@ -63,6 +63,7 @@ set(sources
   prec-independent/pxerr_dist.c
   prec-independent/superlu_timer.c
   prec-independent/symbfact.c
+  prec-independent/ilu_level_symbfact.c
   prec-independent/psymbfact.c
   prec-independent/psymbfact_util.c
   prec-independent/get_perm_c_parmetis.c

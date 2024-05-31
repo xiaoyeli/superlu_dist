@@ -720,97 +720,6 @@ void xLUstruct_t<Ftype>::marshallBatchedBufferCopyData(int k_st, int k_end, int_
 #endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename Ftype>
-void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
-{
-#if 0//def HAVE_MAGMA
-    //#ifdef HAVE_MAGMA
-    // Marshall the data for the leaf level batched LU decomposition
-    LUMarshallData &mdata = A_gpu.marshall_data;
-    cudaStream_t stream = A_gpu.cuStreams[0];
-    marshallBatchedLUData(k_st, k_end, perm_c_supno);
-
-    int info = magma_dgetrf_vbatched(
-        mdata.dev_diag_dim_array, mdata.dev_diag_dim_array,
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array,
-        NULL, mdata.dev_info_array, mdata.batchsize,
-        A_gpu.magma_queue);
-
-    // Hackathon change: assuming individual matrices in a local batch are not distributed
-    // so we don't do the buffer copies anymore
-    // // Copy the diagonal block data over to the bcast buffers
-    // marshallBatchedBufferCopyData(k_st, k_end, perm_c_supno);
-
-    // copyBlock_vbatch(
-    //     stream, mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, mdata.max_diag, mdata.max_panel,
-    //     mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
-    //     mdata.batchsize
-    // );
-
-    // Upper panel triangular solves
-    marshallBatchedTRSMUData(k_st, k_end, perm_c_supno);
-
-    magmablas_dtrsm_vbatched(
-        MagmaLeft, MagmaLower, MagmaNoTrans, MagmaUnit,
-        mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, 1.0,
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array,
-        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
-        mdata.batchsize, A_gpu.magma_queue);
-
-    // Lower panel triangular solves
-    marshallBatchedTRSMLData(k_st, k_end, perm_c_supno);
-
-    magmablas_dtrsm_vbatched(
-        MagmaRight, MagmaUpper, MagmaNoTrans, MagmaNonUnit,
-        mdata.dev_panel_dim_array, mdata.dev_diag_dim_array, 1.0,
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array,
-        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
-        mdata.batchsize, A_gpu.magma_queue);
-
-    // Wajih: This should be converted to a single bcast if possible
-    // Hackathon change: assuming individual matrices in a local batch are not distributed
-    // for (int k0 = k_st; k0 < k_end; k0++)
-    // {
-    //     int k = perm_c_supno[k0];
-    //     int offset = 0;
-    //     /*======= Panel Broadcast  ======*/
-    //     dPanelBcastGPU(k, offset);
-    // }
-
-    // Initialize the schur complement update marshall data
-    initSCUMarshallData(k_st, k_end, perm_c_supno);
-    xSCUMarshallData &sc_mdata = A_gpu.sc_marshall_data;
-
-    // Keep marshalling while there are batches to be processed
-    int done_i = 0;
-    int total_batches = 0;
-    while (done_i == 0)
-    {
-        done_i = marshallSCUBatchedDataOuter(k_st, k_end, perm_c_supno);
-        int done_j = 0;
-        while (done_i == 0 && done_j == 0)
-        {
-            done_j = marshallSCUBatchedDataInner(k_st, k_end, perm_c_supno);
-            if (done_j != 1)
-            {
-                total_batches++;
-                magmablas_dgemm_vbatched_max_nocheck(
-                    MagmaNoTrans, MagmaNoTrans, sc_mdata.dev_m_array, sc_mdata.dev_n_array, sc_mdata.dev_k_array,
-                    1.0, sc_mdata.dev_A_ptrs, sc_mdata.dev_lda_array, sc_mdata.dev_B_ptrs, sc_mdata.dev_ldb_array,
-                    0.0, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, sc_mdata.batchsize,
-                    sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, A_gpu.magma_queue);
-
-                scatterGPU_batchDriver(
-                    sc_mdata.dev_ist, sc_mdata.dev_iend, sc_mdata.dev_jst, sc_mdata.dev_jend,
-                    sc_mdata.max_ilen, sc_mdata.max_jlen, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array,
-                    A_gpu.maxSuperSize, ldt, sc_mdata.dev_gpu_lpanels, sc_mdata.dev_gpu_upanels,
-                    dA_gpu, sc_mdata.batchsize, A_gpu.cuStreams[0]);
-            }
-        }
-    }
-    // printf("SCU batches = %d\n", total_batches);
-#endif
-}
 
 #if 0
 //// This is not used anymore //////
@@ -821,7 +730,6 @@ int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int tag_ub)
 {
-#if 0// def HAVE_MAGMA
     int nnodes = sforest->nNodes; // number of nodes in the tree
     int topoLvl, k_st, k_end, k0, k, offset, ksupc;
     if (nnodes < 1)
@@ -848,8 +756,7 @@ int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
     printf("level %d: k_st %d, k_end %d\n", topoLvl, k_st, k_end);
     fflush(stdout);
 
-#if 0
-    //ToDo: make this batched 
+    //ToDo: make this batched -- may use this when MAGMA is not available
     for (k0 = k_st; k0 < k_end; k0++)
     {
         k = perm_c_supno[k0];
@@ -920,40 +827,17 @@ n                cudaStreamSynchronize(cuStream);
             // MPI_Barrier(grid3d->comm);
         } /* end for k0= k_st:k_end */
     } /* end for topoLvl = 0:maxTopoLevel */
-#else
-    printf("Using batched code\n");
-    double t0 = SuperLU_timer_();
-
-    // Copy the nodelist to the GPU
-    gpuErrchk(cudaMemcpy(A_gpu.dperm_c_supno, perm_c_supno, sizeof(int) * sforest->nNodes, cudaMemcpyHostToDevice));
-
-    // Solve level by level
-    dFactBatchSolve(k_st, k_end, perm_c_supno);
-    for (topoLvl = 1; topoLvl < maxTopoLevel; ++topoLvl)
-    {
-
-        k_st = eTreeTopLims[topoLvl];
-        k_end = eTreeTopLims[topoLvl + 1];
-        dFactBatchSolve(k_st, k_end, perm_c_supno);
-    }
-    printf("Batch time = %.3f\n", SuperLU_timer_() - t0);
-#endif
 
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorBatchGPU()");
 #endif
 
-#else
-    printf("MAGMA is required for batched execution!\n");
-    fflush(stdout);
-    exit(0);
-
-#endif /* match ifdef have_magma */
-
     return 0;
 } /* end dsparseTreeFactorBatchGPU */
 
 #endif /* match #if 0 */
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

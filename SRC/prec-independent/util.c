@@ -1,3 +1,4 @@
+
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required 
@@ -209,6 +210,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
 {
     options->Fact = DOFACT;
     options->Equil = YES;
+    options->ILU_level = SLU_EMPTY;
     options->ParSymbFact = NO;
 #ifdef HAVE_PARMETIS
     options->ColPerm = METIS_AT_PLUS_A;
