@@ -1399,7 +1399,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,d_flag_mod,procs);
 #if ( PROFlevel>=1 )
 		t = SuperLU_timer_() - t;
-		stat->utime[SOL_TOT] += t;
+		// stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
 			printf(".. L-solve (kernel) time\t%8.4f\n", t);
 			fflush(stdout);
@@ -1897,6 +1897,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 		fflush(stdout);
 	}
 	t = SuperLU_timer_();
+	t3 = SuperLU_timer_();
 #endif
 
 #if ( DEBUGlevel==2 )
@@ -2161,7 +2162,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 
 #if ( PROFlevel>=1 )
 		t = SuperLU_timer_() - t;
-		stat->utime[SOL_TOT] += t;
+		// stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
 			printf(".. U-solve (kernel) time\t%8.4f\n", t);
 			fflush(stdout);
