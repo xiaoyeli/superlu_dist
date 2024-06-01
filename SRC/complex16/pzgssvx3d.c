@@ -585,7 +585,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     *info = 0;
 
     if ( options->SolveOnly == YES ) {
-	options->Fact = DOFACT;
+	options->Fact = DOFACT;       // this is set to enable distribution 
 	options->Equil = NO;
 	options->RowPerm = NOROWPERM;
 	options->ColPerm = NATURAL;
@@ -824,6 +824,8 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    if (!(Glu_freeable = (Glu_freeable_t *)
 			  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
 				ABORT("Malloc fails for Glu_freeable.");
+		    
+		    /* compute symbolic LU or ILU */
 		    permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
 					   Glu_persist, Glu_freeable, stat,
 					   &symb_mem_usage,
@@ -854,7 +856,11 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     MPI_Bcast(&rowequ, 1, MPI_INT, 0, grid3d->zscp.comm);
     MPI_Bcast(&colequ, 1, MPI_INT, 0, grid3d->zscp.comm);
 
-    /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid*/
+    /* Now all processes in 3D grid participate */
+    
+    /* Broadcast permuted A and symbolic factorization data from 2d to 3d grid*/
+    /* Sherry Q: original input A, not permuted yet */
+
     if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
     {
 	if (parSymbFact == NO) {
@@ -883,7 +889,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	colind = Astore->colind;
 	Glu_persist = LUstruct->Glu_persist;
 
-	// perform the  3D distribution
+	// perform the 3D distribution
 	if (!factored)
 	{
 		/* Apply column permutation to the original distributed A */
@@ -910,7 +916,6 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		if (parSymbFact == NO || Fact == SamePattern_SameRowPerm)
 		{
-
 
 			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
 				NOTE: the row permutation Pc*Pr is applied internally in the
@@ -1002,6 +1007,8 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
 
+	if ( options->SolveOnly != YES ) { // Now we need factorization
+		
 		t = SuperLU_timer_();
 
 		/*factorize in grid 1*/
@@ -1040,7 +1047,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			ABORT("CplusplusFactor has not yet been supported for HIP! Set GPU3DVERSION=0 instead. \n");
 #endif
 
-#else
+#else // non-templated version (not used anymore)
 			/* call constructor in C++ code */
 			LUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
@@ -1070,6 +1077,10 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		}
 
+	} // matching if not SolveOnly ... end Factorization
+
+
+	/* Now proceed with the Solve setup */
 		if (get_new3dsolve()){
 			zbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
 		}
@@ -1148,7 +1159,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end if not Factored ... factor on all process layers */
 
 	if (grid3d->zscp.Iam == 0 )
-	{ // only process layer 0
+	{ // only process layer 0 ... print Factor stats
 		if (!factored)
 		{
 			if (options->PrintStat)
@@ -1237,7 +1248,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			} /* end printing stats */
 
 		} /* end if not Factored */
-	} /* end if grid-0 */
+	} /* end if grid-0 ... print Fact stats */
 
 		if(Solve3D){
 

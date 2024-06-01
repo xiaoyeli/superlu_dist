@@ -180,7 +180,7 @@ void znewTrfPartitionInit(int_t nsupers,  zLUstruct_t *LUstruct, gridinfo3d_t *g
 }
 
 
-// function to broad permuted sparse matrix and symbolic factorization data from
+// function to broadcast permuted sparse matrix and symbolic factorization data from
 // 2d to 3d grid
 
 void zbcastPermutedSparseA(SuperMatrix *A,
@@ -189,7 +189,7 @@ void zbcastPermutedSparseA(SuperMatrix *A,
                           zLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
     int_t m = A->nrow;
-	int_t n = A->ncol;
+    int_t n = A->ncol;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     zLocalLU_t *Llu = LUstruct->Llu;
     NRformat_loc *Astore   = (NRformat_loc *) A->Store;
@@ -208,8 +208,8 @@ void zbcastPermutedSparseA(SuperMatrix *A,
         MPI_Bcast( etree, n, mpi_int_t, 0,  grid3d->zscp.comm);
 
 
-    // list of all the arrays to be broadcasted
-    // A, ScalePermstruct, Glu_freeable, LUstruct
+    // list of all the arrays to be broadcasted:
+    //   A, ScalePermstruct, Glu_freeable, LUstruct
     int_t nsupers;
 
     if (!grid3d->zscp.Iam)
