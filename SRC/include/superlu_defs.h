@@ -1121,7 +1121,7 @@ extern int_t symbfact_SubInit(superlu_dist_options_t *options,
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
 extern int symbfact_SubFree(Glu_freeable_t *);
-extern int ilu_level_symbfact(superlu_dist_options_t *, SuperMatrix *, int_t *,
+extern int_t ilu_level_symbfact(superlu_dist_options_t *, SuperMatrix *, int_t *,
 			      int_t *, Glu_persist_t *, Glu_freeable_t *);
 extern void    countnz_dist (const int_t, int_t *, int_t *, int_t *,
 			     Glu_persist_t *, Glu_freeable_t *);

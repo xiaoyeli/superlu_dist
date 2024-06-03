@@ -245,6 +245,13 @@ int main (int argc, char *argv[])
     if (ir != -1) options.IterRefine = ir;
     if (lookahead != -1) options.num_lookaheads = lookahead;
 
+    //////* this test SolveOnly*/
+    // options.SolveOnly = YES;
+	
+    //////* this test everything in SolveOnly except ILU_level = 0*/
+    // options.Equil = NO;
+	// options.RowPerm = NOROWPERM;
+	// options.ColPerm = NATURAL;
 
     /* ------------------------------------------------------------
        INITIALIZE THE SUPERLU PROCESS GRID.

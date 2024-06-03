@@ -34,7 +34,7 @@ at the top-level directory.
  * @param stat Information on program execution.
  */
 
-int ilu_level_symbfact
+int_t ilu_level_symbfact
 /************************************************************************/
 (
  superlu_dist_options_t *options, /* input options */
@@ -48,7 +48,7 @@ int ilu_level_symbfact
     
     if ( options->ILU_level != 0 ) {
 	printf("ERROR: ILU(k>0) is not implemented yet\n");
-	return (-1);
+	return (0);
     }
 
     /* Now, do ILU(0) */
@@ -56,7 +56,8 @@ int ilu_level_symbfact
     int_t iinfo;
     int i, n = A->ncol;
     double t;
-    
+    int_t lsub_size;
+
     /* Set up supernode partition */
     Glu_persist->supno = (int_t *) SUPERLU_MALLOC(n * sizeof(int_t));
     Glu_persist->xsup = (int_t *) SUPERLU_MALLOC((n+1) * sizeof(int_t));
@@ -87,10 +88,10 @@ int ilu_level_symbfact
 	    irow = rowind[i];
 	    if ( irow < j ) { // in U
 		nnzU++;
-		Glu_freeable->xusub[j] += 1;
+		Glu_freeable->xusub[j+1] += 1;
 	    } else { // in L, including diagonal of U
 		nnzL++;
-		Glu_freeable->xlsub[j] += 1;
+		Glu_freeable->xlsub[j+1] += 1;
 	    }
 	}
     }
@@ -98,13 +99,41 @@ int ilu_level_symbfact
     Glu_freeable->nnzLU = nnzU + nnzL;
     Glu_freeable->lsub = (int_t *) SUPERLU_MALLOC(nnzL * sizeof(int_t));
     Glu_freeable->usub = (int_t *) SUPERLU_MALLOC(nnzU * sizeof(int_t));
-    
+    Glu_freeable->nzlmax = nnzL;
+    Glu_freeable->nzumax = nnzU;
+    /* YL: Assign lsub & usub */
+    nnzL=0;
+    nnzU=0;
+    for (int j = 0; j < n; ++j) {
+	for (i = colbeg[j]; i < colend[j]; ++i) { // (j,j) is diagonal
+	    irow = rowind[i];
+        if(j==0){
+            printf("irow %5d \n",irow);
+        }
+	    if ( irow < j ) { // in U
+        Glu_freeable->usub[nnzU] = irow;
+		nnzU++;
+	    } else { // in L, including diagonal of U
+        // printf("%5d %5d\n",j,irow);
+        Glu_freeable->lsub[nnzL] = irow;
+		nnzL++;
+	    }
+	}
+    }
+
+
+
+
+
     /* Do prefix sum to set up column pointers */
     for(i = 1; i <= n; i++) {
 	Glu_freeable->xlsub[i] += Glu_freeable->xlsub[i-1];	
 	Glu_freeable->xusub[i] += Glu_freeable->xusub[i-1];
     }
 
-    return 0;
+    lsub_size = Glu_freeable->xlsub[n];
+
+
+    return -lsub_size;
 }
 
