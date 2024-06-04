@@ -34,6 +34,12 @@ at the top-level directory.
  * @param stat Information on program execution.
  */
 
+/* 
+ * Return value
+ * ============
+ *   < 0, number of bytes needed for LSUB and USUB.
+ *   = 0, Error condition
+ */
 int_t ilu_level_symbfact
 /************************************************************************/
 (
@@ -56,7 +62,6 @@ int_t ilu_level_symbfact
     int_t iinfo;
     int i, n = A->ncol;
     double t;
-    int_t lsub_size;
 
     /* Set up supernode partition */
     Glu_persist->supno = (int_t *) SUPERLU_MALLOC(n * sizeof(int_t));
@@ -101,29 +106,26 @@ int_t ilu_level_symbfact
     Glu_freeable->usub = (int_t *) SUPERLU_MALLOC(nnzU * sizeof(int_t));
     Glu_freeable->nzlmax = nnzL;
     Glu_freeable->nzumax = nnzU;
+    
     /* YL: Assign lsub & usub */
     nnzL=0;
     nnzU=0;
     for (int j = 0; j < n; ++j) {
 	for (i = colbeg[j]; i < colend[j]; ++i) { // (j,j) is diagonal
 	    irow = rowind[i];
-        if(j==0){
-            printf("irow %5d \n",irow);
-        }
+	    //if(j==0){
+	    //printf("irow %5d \n",irow);
+	    //}
 	    if ( irow < j ) { // in U
-        Glu_freeable->usub[nnzU] = irow;
+		Glu_freeable->usub[nnzU] = irow;
 		nnzU++;
 	    } else { // in L, including diagonal of U
-        // printf("%5d %5d\n",j,irow);
-        Glu_freeable->lsub[nnzL] = irow;
+		// printf("%5d %5d\n",j,irow);
+		Glu_freeable->lsub[nnzL] = irow;
 		nnzL++;
 	    }
 	}
     }
-
-
-
-
 
     /* Do prefix sum to set up column pointers */
     for(i = 1; i <= n; i++) {
@@ -131,9 +133,6 @@ int_t ilu_level_symbfact
 	Glu_freeable->xusub[i] += Glu_freeable->xusub[i-1];
     }
 
-    lsub_size = Glu_freeable->xlsub[n];
-
-
-    return -lsub_size;
+    return ( -(Glu_freeable->xlsub[n] + Glu_freeable->xusub[n]) );
 }
 
