@@ -60,8 +60,9 @@ int_t ilu_level_symbfact
     /* Now, do ILU(0) */
 
     int_t iinfo;
-    int i, n = A->ncol;
+    int i, n = A->ncol, m=A->nrow;
     double t;
+    int min_mn = SUPERLU_MIN(m, n);
 
     /* Set up supernode partition */
     Glu_persist->supno = (int_t *) SUPERLU_MALLOC(n * sizeof(int_t));
@@ -106,6 +107,7 @@ int_t ilu_level_symbfact
     Glu_freeable->usub = (int_t *) SUPERLU_MALLOC(nnzU * sizeof(int_t));
     Glu_freeable->nzlmax = nnzL;
     Glu_freeable->nzumax = nnzU;
+    Glu_freeable->nnzLU = nnzL + nnzU - min_mn;	
     
     /* YL: Assign lsub & usub */
     nnzL=0;
