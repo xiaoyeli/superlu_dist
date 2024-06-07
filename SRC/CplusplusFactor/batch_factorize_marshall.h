@@ -6,14 +6,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "superlu_defs.h"
 
-struct MarshallLUFunc_flat {
+template<class T>
+struct TMarshallLUFunc {
     BatchDim_t *ld_batch, *dim_batch;
-    double** diag_ptrs, **Lnzval_bc_ptr;
+    T** diag_ptrs, **Lnzval_bc_ptr;
     int_t k_st, **Lrowind_bc_ptr, *xsup, *dperm_c_supno;
     
-    MarshallLUFunc_flat(
-        int_t k_st, double** diag_ptrs, BatchDim_t *ld_batch, BatchDim_t *dim_batch, 
-        double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, int_t *xsup
+    TMarshallLUFunc(
+        int_t k_st, T** diag_ptrs, BatchDim_t *ld_batch, BatchDim_t *dim_batch, 
+        T** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, int_t *xsup
     )
     {
         this->k_st = k_st;
@@ -31,7 +32,7 @@ struct MarshallLUFunc_flat {
     {   
         int_t k = dperm_c_supno[k_st + i];
         int_t *Lrowind_bc = Lrowind_bc_ptr[k];
-        double* Lnzval = Lnzval_bc_ptr[k];
+        T* Lnzval = Lnzval_bc_ptr[k];
 
         if(Lnzval && Lrowind_bc)
         {
@@ -48,15 +49,16 @@ struct MarshallLUFunc_flat {
     }
 };
 
-struct MarshallTRSMUFunc_flat {
+template<class T>
+struct TMarshallTRSMUFunc {
     BatchDim_t *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
-    double** diag_ptrs, **panel_ptrs, **Unzval_br_new_ptr, **Lnzval_bc_ptr;
+    T** diag_ptrs, **panel_ptrs, **Unzval_br_new_ptr, **Lnzval_bc_ptr;
     int_t k_st, **Ucolind_br_ptr, **Lrowind_bc_ptr, *xsup, *dperm_c_supno;
 
-    MarshallTRSMUFunc_flat(
-        int_t k_st, double** diag_ptrs, BatchDim_t *diag_ld_batch, BatchDim_t *diag_dim_batch, double** panel_ptrs,
-        BatchDim_t *panel_ld_batch, BatchDim_t *panel_dim_batch, double **Unzval_br_new_ptr, int_t** Ucolind_br_ptr, 
-        double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, int_t *xsup
+    TMarshallTRSMUFunc(
+        int_t k_st, T** diag_ptrs, BatchDim_t *diag_ld_batch, BatchDim_t *diag_dim_batch, T** panel_ptrs,
+        BatchDim_t *panel_ld_batch, BatchDim_t *panel_dim_batch, T **Unzval_br_new_ptr, int_t** Ucolind_br_ptr, 
+        T** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, int_t *xsup
     )
     {
         this->k_st = k_st;
@@ -80,9 +82,9 @@ struct MarshallTRSMUFunc_flat {
         int_t ksupc = SuperSize(k);
 
         int_t *Ucolind_br = Ucolind_br_ptr[k];
-        double* Unzval = Unzval_br_new_ptr[k];
+        T* Unzval = Unzval_br_new_ptr[k];
         int_t *Lrowind_bc = Lrowind_bc_ptr[k];
-        double* Lnzval = Lnzval_bc_ptr[k];
+        T* Lnzval = Lnzval_bc_ptr[k];
 
         if(Ucolind_br && Unzval && Lrowind_bc && Lnzval)
         {
@@ -106,14 +108,15 @@ struct MarshallTRSMUFunc_flat {
     }
 };
 
-struct MarshallTRSMLFunc_flat {
+template<class T>
+struct TMarshallTRSMLFunc {
     BatchDim_t *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
-    double** diag_ptrs, **panel_ptrs, **Lnzval_bc_ptr;
+    T** diag_ptrs, **panel_ptrs, **Lnzval_bc_ptr;
     int_t k_st, **Lrowind_bc_ptr, *xsup,  *dperm_c_supno;
 
-    MarshallTRSMLFunc_flat(
-        int_t k_st, double** diag_ptrs, BatchDim_t *diag_ld_batch, BatchDim_t *diag_dim_batch, double** panel_ptrs,
-        BatchDim_t *panel_ld_batch, BatchDim_t *panel_dim_batch, double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, 
+    TMarshallTRSMLFunc(
+        int_t k_st, T** diag_ptrs, BatchDim_t *diag_ld_batch, BatchDim_t *diag_dim_batch, T** panel_ptrs,
+        BatchDim_t *panel_ld_batch, BatchDim_t *panel_dim_batch, T** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, 
         int_t *dperm_c_supno, int_t *xsup
     )
     {
@@ -136,7 +139,7 @@ struct MarshallTRSMLFunc_flat {
         int_t k = dperm_c_supno[k_st + i];
         int_t ksupc = SuperSize(k);
         int_t *Lrowind_bc = Lrowind_bc_ptr[k];
-        double* Lnzval = Lnzval_bc_ptr[k];
+        T* Lnzval = Lnzval_bc_ptr[k];
 
         if(Lnzval && Lrowind_bc)
         {
@@ -160,19 +163,20 @@ struct MarshallTRSMLFunc_flat {
     }
 };
 
-struct MarshallSCUFunc_flat {
-    double** A_ptrs, **B_ptrs, **C_ptrs;
+template<class T>
+struct TMarshallSCUFunc {
+    T** A_ptrs, **B_ptrs, **C_ptrs;
     BatchDim_t* lda_array, *ldb_array, *ldc_array, *m_array, *n_array, *k_array;
-    double **Unzval_br_new_ptr, **Lnzval_bc_ptr, **dgpuGemmBuffs;
+    T **Unzval_br_new_ptr, **Lnzval_bc_ptr, **dgpuGemmBuffs;
     int_t** Ucolind_br_ptr, **Lrowind_bc_ptr, *xsup, *dperm_c_supno, k_st;
     BatchDim_t *ist, *iend, *jst, *jend;
 
-    MarshallSCUFunc_flat(
-        int_t k_st, double** A_ptrs, BatchDim_t* lda_array, double** B_ptrs, BatchDim_t* ldb_array, 
-        double **C_ptrs, BatchDim_t *ldc_array, BatchDim_t *m_array, BatchDim_t *n_array, BatchDim_t *k_array, 
-        BatchDim_t *ist, BatchDim_t *iend, BatchDim_t *jst, BatchDim_t *jend, double **Unzval_br_new_ptr, 
-        int_t** Ucolind_br_ptr, double** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, 
-        int_t *xsup, double** dgpuGemmBuffs
+    TMarshallSCUFunc(
+        int_t k_st, T** A_ptrs, BatchDim_t* lda_array, T** B_ptrs, BatchDim_t* ldb_array, 
+        T **C_ptrs, BatchDim_t *ldc_array, BatchDim_t *m_array, BatchDim_t *n_array, BatchDim_t *k_array, 
+        BatchDim_t *ist, BatchDim_t *iend, BatchDim_t *jst, BatchDim_t *jend, T **Unzval_br_new_ptr, 
+        int_t** Ucolind_br_ptr, T** Lnzval_bc_ptr, int_t** Lrowind_bc_ptr, int_t *dperm_c_supno, 
+        int_t *xsup, T** dgpuGemmBuffs
     )
     {
         this->k_st = k_st;
@@ -204,9 +208,9 @@ struct MarshallSCUFunc_flat {
         
         int_t ksupc = SuperSize(k);
         int_t *Ucolind_br = Ucolind_br_ptr[k];
-        double* Unzval = Unzval_br_new_ptr[k];
+        T* Unzval = Unzval_br_new_ptr[k];
         int_t *Lrowind_bc = Lrowind_bc_ptr[k];
-        double* Lnzval = Lnzval_bc_ptr[k];
+        T* Lnzval = Lnzval_bc_ptr[k];
 
         if(Ucolind_br && Unzval && Lrowind_bc && Lnzval)
         {
@@ -273,10 +277,11 @@ inline void generateOffsetPointers(T *base_mem, offT *offsets, T **ptrs, size_t 
     );
 }
 
-template<typename T>
+template<class T>
 struct element_diff : public thrust::unary_function<T,T>
 {
     T* st, *end;
+    
     element_diff(T* st, T *end) 
     {
         this->st = st;

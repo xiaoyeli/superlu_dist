@@ -1247,7 +1247,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			{
 #ifdef HAVE_MAGMA
 				double tic = SuperLU_timer_();
-				BatchFactorize_Handle batch_ws = getBatchFactorizeWorkspace(
+				dBatchFactorize_Handle batch_ws = dgetBatchFactorizeWorkspace(
 					nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info
 				);
 
@@ -1268,8 +1268,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				double factor_time = SuperLU_timer_() - tic;
 
 				tic = SuperLU_timer_();
-				copyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
-				freeBatchFactorizeWorkspace(batch_ws);
+				dcopyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
+				dfreeBatchFactorizeWorkspace(batch_ws);
 				double transfer_time = SuperLU_timer_() - tic;
 				double total_time = transfer_time + factor_time + setup_time;
 #if ( PRNTlevel >= 1 )

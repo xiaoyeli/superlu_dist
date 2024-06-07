@@ -1,34 +1,37 @@
 #pragma once 
 #include <mpi.h>
 #include "superlu_defs.h"
+#include "superlu_sdefs.h"
+#include "superlu_ddefs.h"
 #include "superlu_zdefs.h"
+
 template<typename Ftype>
 struct diagFactBufs_t {
     Ftype* BlockLFactor;
     Ftype* BlockUFactor;
     // Add other members as needed
 };
-struct complex; 
+// struct complex; 
 template <typename T>
-MPI_Datatype get_mpi_type()
+inline MPI_Datatype get_mpi_type()
 {
     throw std::runtime_error("Unsupported type");
 }
 
 template <>
-MPI_Datatype get_mpi_type<int>()
+inline MPI_Datatype get_mpi_type<int>()
 {
     return MPI_INT;
 }
 
 template <>
-MPI_Datatype get_mpi_type<float>()
+inline MPI_Datatype get_mpi_type<float>()
 {
     return MPI_FLOAT;
 }
 
 template <>
-MPI_Datatype get_mpi_type<double>()
+inline MPI_Datatype get_mpi_type<double>()
 {
     return MPI_DOUBLE;
 }
@@ -40,7 +43,7 @@ MPI_Datatype get_mpi_type<double>()
 // }
 
 template <>
-MPI_Datatype get_mpi_type<doublecomplex>()
+inline MPI_Datatype get_mpi_type<doublecomplex>()
 {
     return MPI_C_DOUBLE_COMPLEX;
 }
@@ -149,69 +152,69 @@ using diagFactBufs_type = typename std::conditional<
 // Define one<T> for different types double(1.0), float(1.0f), doublecomplex(1.0, 0.0), complex(1.0f, 0.0f)
 // Generic template for one
 template<typename T>
-T one();
+inline T one();
 
 // Specialization for double
 template<>
-double one<double>() {
+inline double one<double>() {
     return 1.0;
 }
 
 // Specialization for float
 template<>
-float one<float>() {
+inline float one<float>() {
     return 1.0f;
 }
 
 // Specialization for std::complex<double>
 template<>
-doublecomplex one<doublecomplex>() {
+inline doublecomplex one<doublecomplex>() {
     doublecomplex z = {1.0, 0.0};
     return z;
 }
 
 
 template<typename T>
-T zeroT();
+inline T zeroT();
 
 // Specialization for double
 template<>
-double zeroT<double>() {
+inline double zeroT<double>() {
     return 0.0;
 }
 
 // Specialization for float
 template<>
-float zeroT<float>() {
+inline float zeroT<float>() {
     return 0.0f;
 }
 
 // Specialization for std::complex<double>
 template<>
-doublecomplex zeroT<doublecomplex>() {
+inline doublecomplex zeroT<doublecomplex>() {
     doublecomplex z = {0.0, 0.0};
     return z;
 }
 
 template <typename T>
 __device__
-T atomicAddT(T* address, T val);
+inline T atomicAddT(T* address, T val);
 
 // Specialization for double
 template<>
-double atomicAddT<double>(double* address, double val) {
+inline double atomicAddT<double>(double* address, double val) {
     return atomicAdd(address, val);
 }
 
 // Specialization for float
 template<>
-float atomicAddT<float>(float* address, float val) {
+inline float atomicAddT<float>(float* address, float val) {
     return atomicAdd(address, val);
 }
 
 // Specialization for std::complex<double>
 template<>
-doublecomplex atomicAddT<doublecomplex>(doublecomplex* address, doublecomplex val) {
+inline doublecomplex atomicAddT<doublecomplex>(doublecomplex* address, doublecomplex val) {
     // doublecomplex out = *address;
     
     atomicAdd (&address->r, val.r);
@@ -222,25 +225,25 @@ doublecomplex atomicAddT<doublecomplex>(doublecomplex* address, doublecomplex va
 
 // External Operator Overload for '-'
 __host__ __device__
-doublecomplex operator-(const doublecomplex& a, const doublecomplex& b) {
+inline doublecomplex operator-(const doublecomplex& a, const doublecomplex& b) {
     return {a.r - b.r, a.i - b.i};
 }
 
 // External Operator Overload for '=='
 __host__ __device__
-bool operator==(const doublecomplex& a, const doublecomplex& b) {
+inline bool operator==(const doublecomplex& a, const doublecomplex& b) {
     return (a.r == b.r) && (a.i == b.i);
 }
 
 // External Operator Overload for '/'
 __host__ __device__
-doublecomplex operator/(const doublecomplex& a, const doublecomplex& b) {
+inline doublecomplex operator/(const doublecomplex& a, const doublecomplex& b) {
     double denom = b.r * b.r + b.i * b.i;
     return {(a.r * b.r + a.i * b.i) / denom, (a.i * b.r - a.r * b.i) / denom};
 }
 
 __host__ __device__
-doublecomplex operator-(const doublecomplex& a) {
+inline doublecomplex operator-(const doublecomplex& a) {
     return {-a.r, -a.i};
 }
 
@@ -249,7 +252,7 @@ doublecomplex operator-(const doublecomplex& a) {
 
 // External Operator Overload for '*='
 __host__ __device__
-doublecomplex& operator*=(doublecomplex& a, const doublecomplex& b) {
+inline doublecomplex& operator*=(doublecomplex& a, const doublecomplex& b) {
     double tr = a.r * b.r - a.i * b.i;
     double ti = a.r * b.i + a.i * b.r;
     a.r = tr;
@@ -259,7 +262,7 @@ doublecomplex& operator*=(doublecomplex& a, const doublecomplex& b) {
 
 // External Operator Overload for '-='
 __host__ __device__
-doublecomplex& operator-=(doublecomplex& a, const doublecomplex& b) {
+inline doublecomplex& operator-=(doublecomplex& a, const doublecomplex& b) {
     a.r -= b.r;
     a.i -= b.i;
     return a;
@@ -272,19 +275,19 @@ doublecomplex& operator-=(doublecomplex& a, const doublecomplex& b) {
 
 // // Specialization for float
 // template<>
-double sqnorm(float value) {
+inline double sqnorm(float value) {
     return (double) value * (double) value;
 }
 
 // Specialization for double
 // template<>
-double sqnorm(double value) {
+inline double sqnorm(double value) {
     return value * value;
 }
 
 // Specialization for doublecomplex
 // template<>
-double sqnorm(doublecomplex value) {
+inline double sqnorm(doublecomplex value) {
     return value.r * value.r + value.i * value.i;
 }
 
@@ -294,7 +297,7 @@ double sqnorm(doublecomplex value) {
 
 
 // template <>
-void setDiagToThreshold(double* diagptr, double thresh) {
+inline void setDiagToThreshold(double* diagptr, double thresh) {
     if (*diagptr < 0)
         *diagptr = -thresh;
     else
@@ -302,7 +305,7 @@ void setDiagToThreshold(double* diagptr, double thresh) {
 }
 
 // template <>
-void setDiagToThreshold(float* diagptr, float thresh) {
+inline void setDiagToThreshold(float* diagptr, float thresh) {
     if (*diagptr < 0)
         *diagptr = -thresh;
     else
@@ -311,7 +314,7 @@ void setDiagToThreshold(float* diagptr, float thresh) {
 }
 
 
-void setDiagToThreshold(doublecomplex* diagptr, double thresh) {
+inline void setDiagToThreshold(doublecomplex* diagptr, double thresh) {
     doublecomplex z = {thresh, 0.0};
     if (diagptr->r < 0)
         *diagptr = -z;

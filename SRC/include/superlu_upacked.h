@@ -73,11 +73,11 @@ typedef struct cLUstruct_t cLUstruct_t;
                                      SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                                      float thresh_, int *info_);
 
-    void sdestroyLUgpuHandle(sLUgpu_Handle LuH);
+    void sDestroyLUgpuHandle(sLUgpu_Handle LuH);
 
     extern int sgatherFactoredLU3Dto2D(sLUgpu_Handle LuH);
 
-    int scopyLUGPU2Host(sLUgpu_Handle LuH, sLUstruct_t *LUstruct);
+    int sCopyLUGPU2Host(sLUgpu_Handle LuH, sLUstruct_t *LUstruct);
     int psgstrf3d_LUv1(sLUgpu_Handle LUHand);
 
     extern int psgstrf3d_LUpackedInterface(sLUgpu_Handle LUHand);
@@ -106,31 +106,66 @@ typedef struct cLUstruct_t cLUstruct_t;
                                            SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                                            double thresh_, int *info_);
 
-    void zdestroyLUgpuHandle(zLUgpu_Handle LuH);
+    void zDestroyLUgpuHandle(zLUgpu_Handle LuH);
 
     extern int zgatherFactoredLU3Dto2D(zLUgpu_Handle LuH);
 
-    int zcopyLUGPU2Host(zLUgpu_Handle LuH, zLUstruct_t *LUstruct);
+    int zCopyLUGPU2Host(zLUgpu_Handle LuH, zLUstruct_t *LUstruct);
     int pzgstrf3d_LUv1(zLUgpu_Handle LUHand);
     extern int pzgstrf3d_LUpackedInterface(zLUgpu_Handle LUHand);
 
-    struct BatchFactorizeWorkspace;
-    typedef struct BatchFactorizeWorkspace* BatchFactorize_Handle;
+    // Forward declaration for batched interface
+    // Single 
+    struct sBatchFactorizeWorkspace;
+    typedef struct sBatchFactorizeWorkspace* sBatchFactorize_Handle;
 
-    extern int dsparseTreeFactorBatchGPU(BatchFactorize_Handle ws, sForest_t *sforest);
+    extern int ssparseTreeFactorBatchGPU(sBatchFactorize_Handle ws, sForest_t *sforest);
 
-    extern BatchFactorize_Handle getBatchFactorizeWorkspace(
+    extern sBatchFactorize_Handle sgetBatchFactorizeWorkspace(
+        int_t nsupers, int_t ldt, strf3Dpartition_t *trf3Dpartition, sLUstruct_t *LUstruct, 
+        gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info
+    );
+
+    extern void scopyGPULUDataToHost(
+        sBatchFactorize_Handle ws, sLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+        SCT_t *SCT_, superlu_dist_options_t *options, SuperLUStat_t *stat
+    );
+
+    extern void sfreeBatchFactorizeWorkspace(sBatchFactorize_Handle ws);struct dBatchFactorizeWorkspace;
+
+    // Double 
+    typedef struct dBatchFactorizeWorkspace* dBatchFactorize_Handle;
+
+    extern int dsparseTreeFactorBatchGPU(dBatchFactorize_Handle ws, sForest_t *sforest);
+
+    extern dBatchFactorize_Handle dgetBatchFactorizeWorkspace(
         int_t nsupers, int_t ldt, dtrf3Dpartition_t *trf3Dpartition, dLUstruct_t *LUstruct, 
         gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info
     );
 
-    extern void copyGPULUDataToHost(
-        BatchFactorize_Handle ws, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+    extern void dcopyGPULUDataToHost(
+        dBatchFactorize_Handle ws, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
         SCT_t *SCT_, superlu_dist_options_t *options, SuperLUStat_t *stat
     );
 
-    extern void freeBatchFactorizeWorkspace(BatchFactorize_Handle ws);
+    extern void dfreeBatchFactorizeWorkspace(dBatchFactorize_Handle ws);
 
+    // Double complex
+    typedef struct zBatchFactorizeWorkspace* zBatchFactorize_Handle;
+
+    extern int zsparseTreeFactorBatchGPU(zBatchFactorize_Handle ws, sForest_t *sforest);
+
+    extern zBatchFactorize_Handle zgetBatchFactorizeWorkspace(
+        int_t nsupers, int_t ldt, ztrf3Dpartition_t *trf3Dpartition, zLUstruct_t *LUstruct, 
+        gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info
+    );
+
+    extern void zcopyGPULUDataToHost(
+        zBatchFactorize_Handle ws, zLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+        SCT_t *SCT_, superlu_dist_options_t *options, SuperLUStat_t *stat
+    );
+
+    extern void zfreeBatchFactorizeWorkspace(zBatchFactorize_Handle ws);
 #ifdef __cplusplus
 }
 #endif
