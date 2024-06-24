@@ -1609,6 +1609,14 @@ extern int dpivot_batch(
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
 
+extern int dwriteLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct);
+extern int dcheckArr(double *A, double *B, int n);
+extern int dcheckLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct);
+extern void dDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
+			   Glu_persist_t *Glu_persist, dLocalLU_t *Llu);
+extern void dDumpUblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
+			   Glu_persist_t *Glu_persist, dLocalLU_t *Llu);
+    
 /*== end 3D prototypes ===================*/
 
 extern double *dready_x;

@@ -1908,6 +1908,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 		fflush(stdout);
 	}
 	t = SuperLU_timer_();
+	t3 = SuperLU_timer_();
 #endif
 
 #if ( DEBUGlevel==2 )

@@ -351,6 +351,9 @@ pzgssvx3d_csc_batch(
 
     //file_dPrint_CompRowLoc_to_Triples(&A_big);
 
+    /* Modify the input options.
+     * Turn off preprocessing options for the big system.
+     */
     superlu_dist_options_t options_big;
     set_default_options_dist(&options_big);
     options_big.Equil  = NO;
@@ -359,7 +362,7 @@ pzgssvx3d_csc_batch(
     options_big.ParSymbFact = NO;
     options_big.batchCount = batchCount;
 
-    /* Copy most of the other options */
+    /* Copy the other options */
     options_big.Fact = options->Fact;
     options_big.ReplaceTinyPivot = options->ReplaceTinyPivot;
     options_big.IterRefine = options->IterRefine;

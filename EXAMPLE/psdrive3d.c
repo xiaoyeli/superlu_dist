@@ -154,7 +154,6 @@ int main (int argc, char *argv[])
         }
     }
 
-
     /* Parse command line argv[]. */
     for (cpp = argv + 1; *cpp; ++cpp)
     {
@@ -245,7 +244,20 @@ int main (int argc, char *argv[])
     if (ir != -1) options.IterRefine = ir;
     if (lookahead != -1) options.num_lookaheads = lookahead;
 
+    //////* this test SolveOnly*/
+    // options.SolveOnly = YES;
+	
+    //////* this test everything in SolveOnly except ILU_level = 0*/
+    // options.Equil = NO;
+	// options.RowPerm = NOROWPERM;
+	// options.ColPerm = NATURAL;
 
+    if (!iam) {
+	print_sp_ienv_dist(&options);
+	print_options_dist(&options);
+	fflush(stdout);
+    }
+    
     /* ------------------------------------------------------------
        INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
@@ -256,13 +268,11 @@ int main (int argc, char *argv[])
     CHECK_MALLOC (iam, "Enter main()");
 #endif
 
-    if (!iam) {
-	print_sp_ienv_dist(&options);
-	print_options_dist(&options);
-	fflush(stdout);
-    }
-    
+
 #ifdef GPU_ACC
+    /* ------------------------------------------------------------
+       INITIALIZE GPU ENVIRONMENT
+       ------------------------------------------------------------ */
     int superlu_acc_offload = sp_ienv_dist(10, &options); //get_acc_offload();
     if (superlu_acc_offload) {
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
@@ -276,6 +286,7 @@ int main (int argc, char *argv[])
         gpublasDestroy(hb);
 	}
 #endif
+
     if(grid.iam==0) {
 	MPI_Query_thread(&omp_mpi_level);
 	switch (omp_mpi_level) {
