@@ -1053,7 +1053,9 @@ dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			copyLUGPU2Host(LUgpu, LUstruct);
 			destroyLUgpuHandle(LUgpu);
 #endif /* end if TEMPLATED_VERSION */
+
        	      	 } else { /* batched version */
+		 
 #ifdef HAVE_MAGMA
 			double tic = SuperLU_timer_();
 			dBatchFactorize_Handle batch_ws = dgetBatchFactorizeWorkspace(
@@ -1068,14 +1070,14 @@ dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			    if (!trf3Dpartition->myZeroTrIdxs[ilvl]) {
 				sForest_t *sforest = trf3Dpartition->sForests[trf3Dpartition->myTreeIdxs[ilvl]];
 				if (sforest)
-					dparseTreeFactorBatchGPU(batch_ws, sforest);
+					dsparseTreeFactorBatchGPU(batch_ws, sforest);
 			     }
 			}
 			double factor_time = SuperLU_timer_() - tic;
 
 			tic = SuperLU_timer_();
-			dopyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
-			dreeBatchFactorizeWorkspace(batch_ws);
+			dcopyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
+			dfreeBatchFactorizeWorkspace(batch_ws);
 			double transfer_time = SuperLU_timer_() - tic;
 			double total_time = transfer_time + factor_time + setup_time;
 #if ( PRNTlevel >= 1 )
