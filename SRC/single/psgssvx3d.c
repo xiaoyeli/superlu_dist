@@ -23,6 +23,14 @@ at the top-level directory.
  * Last update: November 8, 2021  v7.2.0
  */
 
+/*
+ Solve-only setup
+  turn off: equil, rowperm, colperm, 
+  options->ilu_level = 0;
+   1. DOFACT -> distribution
+   2. FACTORED -> solve
+*/
+
 #include "superlu_sdefs.h"
 //#include "TRF3dV100/superlu_summit.h"
 #include "superlu_upacked.h"
@@ -508,205 +516,6 @@ at the top-level directory.
  * </pre>
  */
 
-// Sherry: TODO - this should be moved to a utility file.
-int swriteLUtoDisk(int nsupers, int_t *xsup, sLUstruct_t *LUstruct)
-{
-
-	if (getenv("LUFILE"))
-	{
-		FILE *fp = fopen(getenv("LUFILE"), "w");
-		printf("writing to %s", getenv("LUFILE"));
-		for (int i = 0; i < nsupers; i++)
-		{
-			if (LUstruct->Llu->Lrowind_bc_ptr[i])
-			{
-				int_t *lsub = LUstruct->Llu->Lrowind_bc_ptr[i];
-				float *nzval = LUstruct->Llu->Lnzval_bc_ptr[i];
-
-				int_t len = lsub[1]; /* LDA of the nzval[] */
-				int_t len2 = SuperSize(i) * len;
-				fwrite(nzval, sizeof(float), len2, fp); // assume fp will be incremented
-			}
-
-			if (LUstruct->Llu->Ufstnz_br_ptr[i])
-			{
-				int_t *usub = LUstruct->Llu->Ufstnz_br_ptr[i];
-				float *nzval = LUstruct->Llu->Unzval_br_ptr[i];
-				int_t lenv = usub[1];
-
-				fwrite(nzval, sizeof(float), lenv, fp); // assume fp will be incremented
-			}
-		}
-
-		fclose(fp);
-	}
-	else
-	{
-		printf("Please set environment variable LUFILE to write\n..bye bye");
-		exit(0);
-	}
-
-	return 0;
-}
-
-#define EPSILON 1e-3
-
-// Sherry: TODO - this is used for debugging
-static int scheckArr(float *A, float *B, int n)
-{
-	for (int i = 0; i < n; i++)
-	{
-	assert(fabs(A[i] - B[i]) <= EPSILON * SUPERLU_MIN(fabs(A[i]), fabs(B[i])));
-	}
-
-	return 0;
-}
-
-// Sherry: TODO - this should be moved to a utility file.
-int scheckLUFromDisk(int nsupers, int_t *xsup, sLUstruct_t *LUstruct)
-{
-	sLocalLU_t *Llu = LUstruct->Llu;
-
-	float *Lval_buf = floatMalloc_dist(Llu->bufmax[1]); // DOUBLE_ALLOC(Llu->bufmax[1]);
-	float *Uval_buf = floatMalloc_dist(Llu->bufmax[3]); // DOUBLE_ALLOC(Llu->bufmax[3]);
-
-	if (getenv("LUFILE"))
-	{
-		FILE *fp = fopen(getenv("LUFILE"), "r");
-		printf("reading from %s", getenv("LUFILE"));
-		for (int i = 0; i < nsupers; i++)
-		{
-			if (LUstruct->Llu->Lrowind_bc_ptr[i])
-			{
-				int_t *lsub = LUstruct->Llu->Lrowind_bc_ptr[i];
-				float *nzval = LUstruct->Llu->Lnzval_bc_ptr[i];
-
-				int_t len = lsub[1]; /* LDA of the nzval[] */
-				int_t len2 = SuperSize(i) * len;
-				fread(Lval_buf, sizeof(float), len2, fp); // assume fp will be incremented
-				scheckArr(nzval, Lval_buf, len2);
-			}
-
-			if (LUstruct->Llu->Ufstnz_br_ptr[i])
-			{
-				int_t *usub = LUstruct->Llu->Ufstnz_br_ptr[i];
-				float *nzval = LUstruct->Llu->Unzval_br_ptr[i];
-				int_t lenv = usub[1];
-
-				fread(Uval_buf, sizeof(float), lenv, fp); // assume fp will be incremented
-				scheckArr(nzval, Uval_buf, lenv);
-			}
-		}
-		printf("CHecking LU from  %s is succesful ", getenv("LUFILE"));
-		fclose(fp);
-	}
-	else
-	{
-		printf("Please set environment variable LUFILE to read\n..bye bye");
-		exit(0);
-	}
-
-	return 0;
-}
-
-// Sherry: TODO - this should be moved to a utility file.
-/*! \brief Dump the factored matrix L using matlab triple-let format
- */
-void sDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
-		  Glu_persist_t *Glu_persist, sLocalLU_t *Llu)
-{
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    int k, mycol, r, n, nmax;
-    int_t nnzL;
-    int_t *xsup = Glu_persist->xsup;
-    int_t *index;
-    float *nzval;
-	char filename[256];
-	FILE *fp, *fopen();
-	gridinfo_t *grid = &(grid3d->grid2d);
-	int iam = grid->iam;
-	int iam3d = grid3d->iam;
-
-	// assert(grid->npcol*grid->nprow==1);
-
-	// count nonzeros in the first pass
-	nnzL = 0;
-	n = 0;
-    ncb = nsupers / grid->npcol;
-    extra = nsupers % grid->npcol;
-    mycol = MYCOL( iam, grid );
-    if ( mycol < extra ) ++ncb;
-    for (lb = 0; lb < ncb; ++lb) {
-	index = Llu->Lrowind_bc_ptr[lb];
-	if ( index ) { /* Not an empty column */
-	    nzval = Llu->Lnzval_bc_ptr[lb];
-	    nb = index[0];
-	    nsupr = index[1];
-	    gb = lb * grid->npcol + mycol;
-	    nsupc = SuperSize( gb );
-	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
-		len = index[k+1];
-
-		for (j = 0; j < nsupc; ++j) {
-		for (i=0; i<len; ++i){
-
-		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
-			nnzL ++;
-			nmax = SUPERLU_MAX(n,index[k+LB_DESCRIPTOR+i]+1);
-			n = nmax;
-		}
-
-		}
-		}
-		k += LB_DESCRIPTOR + len;
-		r += len;
-	    }
-	}
-    }
-	MPI_Allreduce(MPI_IN_PLACE,&nnzL,1,mpi_int_t,MPI_SUM,grid->comm);
-	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
-
-	snprintf(filename, sizeof(filename), "%s-%d", "L", iam3d);
-    printf("Dumping L factor to --> %s\n", filename);
- 	if ( !(fp = fopen(filename, "w")) ) {
-			ABORT("File open failed");
-		}
-
-	if(grid->iam==0){
-		fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
-	}
-
-     ncb = nsupers / grid->npcol;
-    extra = nsupers % grid->npcol;
-    mycol = MYCOL( iam, grid );
-    if ( mycol < extra ) ++ncb;
-    for (lb = 0; lb < ncb; ++lb) {
-	index = Llu->Lrowind_bc_ptr[lb];
-	if ( index ) { /* Not an empty column */
-	    nzval = Llu->Lnzval_bc_ptr[lb];
-	    nb = index[0];
-	    nsupr = index[1];
-	    gb = lb * grid->npcol + mycol;
-	    nsupc = SuperSize( gb );
-	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
-		len = index[k+1];
-
-		for (j = 0; j < nsupc; ++j) {
-		for (i=0; i<len; ++i){
-			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
-		}
-		}
-		k += LB_DESCRIPTOR + len;
-		r += len;
-	    }
-	}
-    }
- 	fclose(fp);
-
-} /* sDumpLblocks3D */
-
-
-
 void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			   sScalePermstruct_t *ScalePermstruct,
 			   float B[], int ldb, int nrhs, gridinfo3d_t *grid3d,
@@ -759,7 +568,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
     strf3Dpartition_t *trf3Dpartition=LUstruct->trf3Dpart;
-    int gpu3dVersion = 1;  // default is to use C++ code in CplusplusFactor/ directory
+    int gpu3dVersion = 1; // default is to use C++ code in CplusplusFactor/ directory
 #ifdef GPU_ACC
     if (getenv("GPU3DVERSION")) {
        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
@@ -776,6 +585,15 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
     /* Test the options choices. */
     *info = 0;
+
+    if ( options->SolveOnly == YES ) {
+	options->Fact = DOFACT;       // this is set to enable distribution 
+	options->Equil = NO;
+	options->RowPerm = NOROWPERM;
+	options->ColPerm = NATURAL;
+	options->ILU_level = 0;
+    }
+
     Fact = options->Fact;
 
     validateInput_psgssvx3d(options, A, ldb, nrhs, grid3d, info);
@@ -886,8 +704,10 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	if (Equil) {
 	    sscaleMatrixDiagonally(Fact, ScalePermstruct,
 				  A, stat, grid, &rowequ, &colequ, &iinfo);
-	    if (iinfo < 0)
-		return; // Sherry: TOO - return a number in INFO
+	    if (iinfo < 0) {
+    		*info = -20 - iinfo;
+		return;
+	    }
 
 	} /* end if Equil ... LAPACK style, not involving MC64 */
 
@@ -896,12 +716,12 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	     * Gather A from the distributed compressed row format to
 	     * global A in compressed column format.
 	     * Numerical values are gathered only when a row permutation
-	     ** for large diagonal is sought after.
+	     * for large diagonal is sought after.
 	     */
 	    if (Fact != SamePattern_SameRowPerm &&
 			(parSymbFact == NO || options->RowPerm != NO))
 	    {
-		int_t need_value = (options->RowPerm == LargeDiag_MC64);
+		int need_value = (options->RowPerm == LargeDiag_MC64);
 		psCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
 		GAstore = (NCformat *)GA.Store;
 		nnz = GAstore->nnz;
@@ -1007,6 +827,8 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    if (!(Glu_freeable = (Glu_freeable_t *)
 			  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
 				ABORT("Malloc fails for Glu_freeable.");
+
+		    /* compute symbolic LU or ILU */
 		    permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
 					   Glu_persist, Glu_freeable, stat,
 					   &symb_mem_usage,
@@ -1037,7 +859,11 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     MPI_Bcast(&rowequ, 1, MPI_INT, 0, grid3d->zscp.comm);
     MPI_Bcast(&colequ, 1, MPI_INT, 0, grid3d->zscp.comm);
 
-    /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid*/
+    /* Now all processes in 3D grid participate */
+    
+    /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid */
+    /* Sherry Q: original input A, not permuted yet */
+    
     if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
     {
 	if (parSymbFact == NO) {
@@ -1050,7 +876,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		sbcastPermutedSparseA(A, ScalePermstruct, Glu_freeable,
 				     LUstruct, grid3d);
 		} else {
-		    //TODO: need a parmetis version of sbcastPermutedSparseA broadcasting Pslu_freeable
+		    ; //TODO: need a parmetis version of sbcastPermutedSparseA broadcasting Pslu_freeable
 		}
 	}
 
@@ -1080,7 +906,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (symb_comm != MPI_COMM_NULL)
 			MPI_Comm_free(&symb_comm);
 		if ( Fact != SamePattern_SameRowPerm){
-		        LUstruct->trf3Dpart = (strf3Dpartition_t *)SUPERLU_MALLOC(sizeof(strf3Dpartition_t));
+			LUstruct->trf3Dpart = (strf3Dpartition_t *)SUPERLU_MALLOC(sizeof(strf3Dpartition_t));
 			// computes the new partition for 3D factorization here
 			trf3Dpartition=LUstruct->trf3Dpart;
 			snewTrfPartitionInit(nsupers, LUstruct, grid3d);
@@ -1173,23 +999,18 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		#endif
 
 
-
-
-
 		SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
 		slu_SCT_init(SCT);
 
 #if (PRNTlevel >= 1)
 		if (grid3d->iam == 0)
 		{
-			printf("After 3D initialization.\n");
+			printf("after 3D initialization.\n");
 			fflush(stdout);
 		}
 #endif
 
-
-
-
+        if ( options->SolveOnly != YES ) { // Now we need factorization
 
 		t = SuperLU_timer_();
 
@@ -1199,24 +1020,20 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #ifdef GPU_ACC
 		if (gpu3dVersion == 1)
 		{ /* this is the new C++ code in CplusplusFactor/ directory */
-
-#if (PRNTlevel >= 1)
+#ifdef (PRNTlevel>=1)
 			if (!grid3d->iam)
-			    printf("Using psgstrf3d+gpu version 1 in CplusplusFactor/\n");
+				printf("Using psgstrf3d+gpu version 1\n");
 #endif
-				
-#if 0
-			psgstrf3d_upacked(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
-				  grid3d, stat, info);
-#else
-			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
+
+			int ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
-
+			
+			if(options->batchCount == 0)
+			{
 #define TEMPLATED_VERSION
 #ifdef TEMPLATED_VERSION
-#ifdef HAVE_CUDA
-			sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 
 			/* call psgstrf3d() in C++ code */
@@ -1225,12 +1042,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			sCopyLUGPU2Host(sLUgpu, LUstruct);
 			sDestroyLUgpuHandle(sLUgpu);
 		    //TODO: sCreateLUgpuHandle,psgstrf3d_LUpackedInterface,sCopyLUGPU2Host,sDestroyLUgpuHandle haven't been created
-#else
-			ABORT("CplusplusFactor has not yet been supported for HIP! Set GPU3DVERSION=0 instead. \n");
-#endif
-
-
-#else
+#else // non-templated version (not used anymore)
 			/* call constructor in C++ code */
 			LUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
@@ -1240,15 +1052,50 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			copyLUGPU2Host(LUgpu, LUstruct);
 			destroyLUgpuHandle(LUgpu);
-#endif /* TEMPLATED_VERSION */
+#endif /* end if TEMPLATED_VERSION */
+       	      	 } else { /* batched version */
+#ifdef HAVE_MAGMA
+			double tic = SuperLU_timer_();
+			sBatchFactorize_Handle batch_ws = sgetBatchFactorizeWorkspace(
+			    nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info);
 
-			// print other stuff
-			// if (!grid3d->zscp.Iam)
-			// 	SCT_printSummary(grid, SCT);
-			reduceStat(FACT, stat, grid3d);
-#endif /* matching #if 0 #else */
+			double setup_time = SuperLU_timer_() - tic;
+
+			int maxLvl = log2i(grid3d->zscp.Np) + 1;
+
+			tic = SuperLU_timer_();
+			for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
+			    if (!trf3Dpartition->myZeroTrIdxs[ilvl]) {
+				sForest_t *sforest = trf3Dpartition->sForests[trf3Dpartition->myTreeIdxs[ilvl]];
+				if (sforest)
+					sparseTreeFactorBatchGPU(batch_ws, sforest);
+			     }
+			}
+			double factor_time = SuperLU_timer_() - tic;
+
+			tic = SuperLU_timer_();
+			sopyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
+			sreeBatchFactorizeWorkspace(batch_ws);
+			double transfer_time = SuperLU_timer_() - tic;
+			double total_time = transfer_time + factor_time + setup_time;
+#if ( PRNTlevel >= 1 )
+			printf("Batch Setup time = %.4f (%.2f %% of total)\n", setup_time, 100 * setup_time / total_time);
+			printf("Batch Factorization time = %.4f (%.2f %% of total)\n", factor_time, 100 * factor_time / total_time);
+			printf("Transfer time = %.4f (%.2f %% of total)\n", transfer_time, 100 * transfer_time / total_time);
+			printf("Total time = %.4f\n", total_time);
+#endif
+#else // no MAGMA
+			// TODO: How should we handle this?
+			ABORT("Fatal error: Batched mode requires magma support!\n");
+#endif 
+	      	   } /* end if batchCount == 0 */
+		 
+		    // print other stuff
+		    // if (!grid3d->zscp.Iam)
+		    // 	SCT_printSummary(grid, SCT);
+		    reduceStat(FACT, stat, grid3d);
 		}
-		else /* this is the old C code, with less GPU offload */
+		else /* gpu3dVersion==0, this is the old C code, with less GPU offload */
 #endif /* matching ifdef GPU_ACC */
 		{
 
@@ -1256,10 +1103,10 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					  grid3d, stat, info);
 
 			// sDumpLblocks3D(nsupers, grid3d, LUstruct->Glu_persist, LUstruct->Llu);
-
-
 		}
+	} // matching if not SolveOnly ... end Factorization
 
+	/* Now proceed with the Solve setup */
 		if (get_new3dsolve()){
 			sbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
 		}
@@ -1337,8 +1184,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	} /* end if not Factored ... factor on all process layers */
 
-	if (grid3d->zscp.Iam == 0 )
-	{ // only process layer 0
+	if (grid3d->zscp.Iam == 0 ) { // only process layer 0 ... print Factor stats
 		if (!factored)
 		{
 			if (options->PrintStat)
@@ -1426,8 +1272,8 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				}
 			} /* end printing stats */
 
-		} /* end if not Factored */
-    }
+		} /* end if !factored */
+        } /* end if grid-0 ... print Factor stats */
 
 		if(Solve3D){
 
@@ -1519,7 +1365,7 @@ if (get_acc_solve()){
 }
 			}
 			}
-		}else{ /* if(Solve3D) */
+		} else { /* else if(Solve3D) */
 
 			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
 

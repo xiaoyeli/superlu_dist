@@ -1,10 +1,3 @@
-//
-// Solve-only setup
-//  turn off: equil, rowperm, colperm, 
-//  options->ilu_level = 0;
-//    1. DOFACT -> distribution
-//    2. FACTORED -> solve
-//
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -28,6 +21,14 @@ at the top-level directory.
  * October 5, 2021
  * Last update: November 8, 2021  v7.2.0
  */
+
+/*
+ Solve-only setup
+  turn off: equil, rowperm, colperm, 
+  options->ilu_level = 0;
+   1. DOFACT -> distribution
+   2. FACTORED -> solve
+*/
 
 #include "superlu_zdefs.h"
 //#include "TRF3dV100/superlu_summit.h"
@@ -566,7 +567,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
     ztrf3Dpartition_t *trf3Dpartition=LUstruct->trf3Dpart;
-    int gpu3dVersion = 1;  // default is to use C++ code in CplusplusFactor/ directory
+    int gpu3dVersion = 1; // default is to use C++ code in CplusplusFactor/ directory
 #ifdef GPU_ACC
     if (getenv("GPU3DVERSION")) {
        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
@@ -591,6 +592,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	options->ColPerm = NATURAL;
 	options->ILU_level = 0;
     }
+
     Fact = options->Fact;
 
     validateInput_pzgssvx3d(options, A, ldb, nrhs, grid3d, info);
@@ -702,7 +704,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    zscaleMatrixDiagonally(Fact, ScalePermstruct,
 				  A, stat, grid, &rowequ, &colequ, &iinfo);
 	    if (iinfo < 0) {
-		*info = -20 - iinfo;
+    		*info = -20 - iinfo;
 		return;
 	    }
 
@@ -824,7 +826,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    if (!(Glu_freeable = (Glu_freeable_t *)
 			  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
 				ABORT("Malloc fails for Glu_freeable.");
-		    
+
 		    /* compute symbolic LU or ILU */
 		    permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
 					   Glu_persist, Glu_freeable, stat,
@@ -858,24 +860,24 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
     /* Now all processes in 3D grid participate */
     
-    /* Broadcast permuted A and symbolic factorization data from 2d to 3d grid*/
+    /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid */
     /* Sherry Q: original input A, not permuted yet */
-
+    
     if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
     {
 	if (parSymbFact == NO) {
 		if (Glu_freeable == NULL)
 		{
 		    if (!(Glu_freeable = (Glu_freeable_t *)
-			  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
+				SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
 			ABORT("Malloc fails for Glu_freeable.");
 		}
 		zbcastPermutedSparseA(A, ScalePermstruct, Glu_freeable,
-				      LUstruct, grid3d);
-	} else {
-	    ; /*TODO: need a parmetis version of zbcastPermutedSparseA broadcasting Pslu_freeable*/
+				     LUstruct, grid3d);
+		} else {
+		    ; //TODO: need a parmetis version of zbcastPermutedSparseA broadcasting Pslu_freeable
+		}
 	}
-    }
 
 	perm_r = ScalePermstruct->perm_r;
 	perm_c = ScalePermstruct->perm_c;
@@ -889,7 +891,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	colind = Astore->colind;
 	Glu_persist = LUstruct->Glu_persist;
 
-	// perform the 3D distribution
+	// perform the  3D distribution
 	if (!factored)
 	{
 		/* Apply column permutation to the original distributed A */
@@ -903,7 +905,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (symb_comm != MPI_COMM_NULL)
 			MPI_Comm_free(&symb_comm);
 		if ( Fact != SamePattern_SameRowPerm){
-		        LUstruct->trf3Dpart = (ztrf3Dpartition_t *)SUPERLU_MALLOC(sizeof(ztrf3Dpartition_t));
+			LUstruct->trf3Dpart = (ztrf3Dpartition_t *)SUPERLU_MALLOC(sizeof(ztrf3Dpartition_t));
 			// computes the new partition for 3D factorization here
 			trf3Dpartition=LUstruct->trf3Dpart;
 			znewTrfPartitionInit(nsupers, LUstruct, grid3d);
@@ -917,13 +919,14 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (parSymbFact == NO || Fact == SamePattern_SameRowPerm)
 		{
 
+
 			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
 				NOTE: the row permutation Pc*Pr is applied internally in the
 				distribution routine. */
 			t = SuperLU_timer_();
 
 			dist_mem_use = pzdistribute3d_Yang(options, n, A, ScalePermstruct,
-							   Glu_freeable, LUstruct, grid3d);
+											Glu_freeable, LUstruct, grid3d);
 			stat->utime[DIST] = SuperLU_timer_() - t;
 
 			/* Deallocate storage used in symbolic factorization. */
@@ -1001,14 +1004,13 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #if (PRNTlevel >= 1)
 		if (grid3d->iam == 0)
 		{
-			printf("After 3D initialization.\n");
+			printf("after 3D initialization.\n");
 			fflush(stdout);
 		}
 #endif
 
+        if ( options->SolveOnly != YES ) { // Now we need factorization
 
-	if ( options->SolveOnly != YES ) { // Now we need factorization
-		
 		t = SuperLU_timer_();
 
 		/*factorize in grid 1*/
@@ -1017,36 +1019,28 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #ifdef GPU_ACC
 		if (gpu3dVersion == 1)
 		{ /* this is the new C++ code in CplusplusFactor/ directory */
-
-#if (PRNTlevel >= 1)
+#ifdef (PRNTlevel>=1)
 			if (!grid3d->iam)
-			    printf("Using pzgstrf3d+gpu version 1 in CplusplusFactor/\n");
+				printf("Using pzgstrf3d+gpu version 1\n");
 #endif
-				
-#if 0
-			pzgstrf3d_upacked(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
-				  grid3d, stat, info);
-#else
-			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
+
+			int ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
-
+			
+			if(options->batchCount == 0)
+			{
 #define TEMPLATED_VERSION
 #ifdef TEMPLATED_VERSION
-#ifdef HAVE_CUDA
-		zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-						SCT, options, stat, thresh, info);
+zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
 
-		/* call pzgstrf3d() in C++ code */
-		pzgstrf3d_LUv1(zLUgpu);
+			/* call pzgstrf3d() in C++ code */
+			pzgstrf3d_LUv1(zLUgpu);
 
-		zCopyLUGPU2Host(zLUgpu, LUstruct);
-		zDestroyLUgpuHandle(zLUgpu);
-		//TODO: zCreateLUgpuHandle,pzgstrf3d_LUpackedInterface,zCopyLUGPU2Host,zDestroyLUgpuHandle haven't been created
-#else
-			ABORT("CplusplusFactor has not yet been supported for HIP! Set GPU3DVERSION=0 instead. \n");
-#endif
-
+			zCopyLUGPU2Host(zLUgpu, LUstruct);
+			zDestroyLUgpuHandle(zLUgpu);
+		    //TODO: zCreateLUgpuHandle,pzgstrf3d_LUpackedInterface,zCopyLUGPU2Host,zDestroyLUgpuHandle haven't been created
 #else // non-templated version (not used anymore)
 			/* call constructor in C++ code */
 			LUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
@@ -1057,15 +1051,50 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			copyLUGPU2Host(LUgpu, LUstruct);
 			destroyLUgpuHandle(LUgpu);
-#endif /* TEMPLATED_VERSION */
+#endif /* end if TEMPLATED_VERSION */
+       	      	 } else { /* batched version */
+#ifdef HAVE_MAGMA
+			double tic = SuperLU_timer_();
+			zBatchFactorize_Handle batch_ws = zgetBatchFactorizeWorkspace(
+			    nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info);
 
-			// print other stuff
-			// if (!grid3d->zscp.Iam)
-			// 	SCT_printSummary(grid, SCT);
-			reduceStat(FACT, stat, grid3d);
-#endif /* matching #if 0 #else */
+			double setup_time = SuperLU_timer_() - tic;
+
+			int maxLvl = log2i(grid3d->zscp.Np) + 1;
+
+			tic = SuperLU_timer_();
+			for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
+			    if (!trf3Dpartition->myZeroTrIdxs[ilvl]) {
+				sForest_t *sforest = trf3Dpartition->sForests[trf3Dpartition->myTreeIdxs[ilvl]];
+				if (sforest)
+					zparseTreeFactorBatchGPU(batch_ws, sforest);
+			     }
+			}
+			double factor_time = SuperLU_timer_() - tic;
+
+			tic = SuperLU_timer_();
+			zopyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
+			zreeBatchFactorizeWorkspace(batch_ws);
+			double transfer_time = SuperLU_timer_() - tic;
+			double total_time = transfer_time + factor_time + setup_time;
+#if ( PRNTlevel >= 1 )
+			printf("Batch Setup time = %.4f (%.2f %% of total)\n", setup_time, 100 * setup_time / total_time);
+			printf("Batch Factorization time = %.4f (%.2f %% of total)\n", factor_time, 100 * factor_time / total_time);
+			printf("Transfer time = %.4f (%.2f %% of total)\n", transfer_time, 100 * transfer_time / total_time);
+			printf("Total time = %.4f\n", total_time);
+#endif
+#else // no MAGMA
+			// TODO: How should we handle this?
+			ABORT("Fatal error: Batched mode requires magma support!\n");
+#endif 
+	      	   } /* end if batchCount == 0 */
+		 
+		    // print other stuff
+		    // if (!grid3d->zscp.Iam)
+		    // 	SCT_printSummary(grid, SCT);
+		    reduceStat(FACT, stat, grid3d);
 		}
-		else /* this is the old C code, with less GPU offload */
+		else /* gpu3dVersion==0, this is the old C code, with less GPU offload */
 #endif /* matching ifdef GPU_ACC */
 		{
 
@@ -1073,12 +1102,8 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					  grid3d, stat, info);
 
 			// zDumpLblocks3D(nsupers, grid3d, LUstruct->Glu_persist, LUstruct->Llu);
-
-
 		}
-
 	} // matching if not SolveOnly ... end Factorization
-
 
 	/* Now proceed with the Solve setup */
 		if (get_new3dsolve()){
@@ -1158,8 +1183,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	} /* end if not Factored ... factor on all process layers */
 
-	if (grid3d->zscp.Iam == 0 )
-	{ // only process layer 0 ... print Factor stats
+	if (grid3d->zscp.Iam == 0 ) { // only process layer 0 ... print Factor stats
 		if (!factored)
 		{
 			if (options->PrintStat)
@@ -1247,19 +1271,19 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				}
 			} /* end printing stats */
 
-		} /* end if not Factored */
-	} /* end if grid-0 ... print Fact stats */
+		} /* end if !factored */
+        } /* end if grid-0 ... print Factor stats */
 
 		if(Solve3D){
 
 			if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
-			    /* Need to reset the solve's communication pattern,
-			       because perm_r[] and/or perm_c[] is changed.    */
-			    if ( options->SolveInitialized == YES ) { /* Initialized before */
+			/* Need to reset the solve's communication pattern,
+			because perm_r[] and/or perm_c[] is changed.    */
+			if ( options->SolveInitialized == YES ) { /* Initialized before */
 				zSolveFinalize(options, SOLVEstruct); /* Clean up structure */
 				pzgstrs_delete_device_lsum_x(SOLVEstruct);
 				options->SolveInitialized = NO;   /* Reset the solve state */
-			    }
+			}
 			}
 
 			if (get_new3dsolve()){
@@ -1340,7 +1364,7 @@ if (get_acc_solve()){
 }
 			}
 			}
-		}else{ /* if(Solve3D) */
+		} else { /* else if(Solve3D) */
 
 			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
 
@@ -1832,8 +1856,9 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 			{
 				if (colequ)
 				{
-				    b_col = B;
-				    for (j = 0; j < nrhs; ++j) {
+					b_col = B;
+					for (j = 0; j < nrhs; ++j)
+					{
 						irow = fst_row;
 						for (i = 0; i < m_loc; ++i)
 						{

@@ -562,7 +562,7 @@ zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
 	  printf(".. zGenXtrue: xmax %e, xmin %e\n", xmax, xmin);
 	  fflush(stdout);
 	}
-#endif	
+#endif
     } /* for j ... */
 } /* end zGenXtrue_dist */
 
@@ -705,14 +705,14 @@ double zMaxAbsUij(int iam, int n, Glu_persist_t *Glu_persist,
 	        jb = index[k];    /* block number */
 		len = index[k+1]; /* number of nonzeros in the block */
 		nsupc = SuperSize( jb );
-		for (j = r; j < r + len; ++j) 
+		for (j = r; j < r + len; ++j)
 		    umax_loc = SUPERLU_MAX(umax_loc, slud_z_abs1(&nzval[j]));
 		k += UB_DESCRIPTOR + nsupc;
 		r += len;
 	    }
 	}
     }
-    
+
     /* Reduce max(abs(Uij)) from all processes, to process 0 */
     MPI_Reduce (&umax_loc, &umax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
 
@@ -995,6 +995,37 @@ zprint_gsmv_comm(FILE *fp, int_t m_loc, pzgsmv_comm_t *gsmv_comm,
   return 0;
 }
 
+
+/* cg5.cua
+            b = A*x           y = L\b
+   0        1 + 4.0000i       1.0000 + 4.0000i
+   1        0 + 5.0000i	      1.3529 + 5.4118i
+   2        1 + 4.0000i	      1.0000 + 4.0000i
+   3        2 + 3.0000i	      2.0000 + 3.0000i
+   4        1 + 4.0000i	      3.5882 + 4.3529i
+   5        1 + 4.0000i	      4.1250 + 3.3202i
+   6          + 5.0000i	      4.4640 + 3.8632i
+   7        2 + 3.0000i	      2.0000 + 3.0000i
+   8        2 + 3.0000i	      2.0000 + 3.0000i
+   9        1 + 4.0000i	      1.0000 + 4.0000i
+  10        1 + 4.0000i	      3.5882 + 4.3529i
+  11          + 5.0000i	           0 + 5.0000i
+  12        1 + 4.0000i	      5.1793 + 4.6604i
+  13        2 + 3.0000i	      2.0000 + 3.0000i
+  14        1 + 4.0000i	      1.0000 + 4.0000i
+  15          + 5.0000i	      1.3529 + 5.4118i
+  16        1 + 4.0000i	      4.0045 + 3.8950i
+  17          + 5.0000i	      3.0338 + 4.6248i
+  18        1 + 4.0000i	      5.4495 + 2.2703i
+  19          + 5.0000i	      4.0980 + 3.7290i
+  20          + 5.0000i	      4.2680 + 3.7739i
+  21          + 5.0000i	      5.3514 + 2.9480i
+  22        1 + 4.0000i	      4.4178 + 2.0476i
+  23        1 + 4.0000i	      3.5615 + 2.8322i
+  24          + 5.0000i	      4.7526 + 2.2605i
+*/
+
+
 int zwriteLUtoDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct)
 {
 
@@ -1033,7 +1064,7 @@ int zwriteLUtoDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct)
 	}
 
 	return 0;
-}
+} /* end zwriteLUtoDisk */
 
 #define EPSILON 1e-3
 
@@ -1049,7 +1080,6 @@ int zcheckArr(doublecomplex *A, doublecomplex *B, int n)
 	return 0;
 }
 
-// Sherry: TODO - this should be moved to a utility file.
 int zcheckLUFromDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct)
 {
 	zLocalLU_t *Llu = LUstruct->Llu;
@@ -1094,9 +1124,8 @@ int zcheckLUFromDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct)
 	}
 
 	return 0;
-}
+} /* end zcheckLUFromDisk */
 
-// Sherry: TODO - this should be moved to a utility file.
 /*! \brief Dump the factored matrix L using matlab triple-let format
  */
 void zDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
@@ -1190,34 +1219,6 @@ void zDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
     }
  	fclose(fp);
 
-} /* zDumpLblocks3D */
+} /* end zDumpLblocks3D */
 
 
-/* cg5.cua
-            b = A*x           y = L\b
-   0        1 + 4.0000i       1.0000 + 4.0000i
-   1        0 + 5.0000i	      1.3529 + 5.4118i
-   2        1 + 4.0000i	      1.0000 + 4.0000i
-   3        2 + 3.0000i	      2.0000 + 3.0000i
-   4        1 + 4.0000i	      3.5882 + 4.3529i
-   5        1 + 4.0000i	      4.1250 + 3.3202i
-   6          + 5.0000i	      4.4640 + 3.8632i
-   7        2 + 3.0000i	      2.0000 + 3.0000i
-   8        2 + 3.0000i	      2.0000 + 3.0000i
-   9        1 + 4.0000i	      1.0000 + 4.0000i
-  10        1 + 4.0000i	      3.5882 + 4.3529i
-  11          + 5.0000i	           0 + 5.0000i
-  12        1 + 4.0000i	      5.1793 + 4.6604i
-  13        2 + 3.0000i	      2.0000 + 3.0000i
-  14        1 + 4.0000i	      1.0000 + 4.0000i
-  15          + 5.0000i	      1.3529 + 5.4118i
-  16        1 + 4.0000i	      4.0045 + 3.8950i
-  17          + 5.0000i	      3.0338 + 4.6248i
-  18        1 + 4.0000i	      5.4495 + 2.2703i
-  19          + 5.0000i	      4.0980 + 3.7290i
-  20          + 5.0000i	      4.2680 + 3.7739i
-  21          + 5.0000i	      5.3514 + 2.9480i
-  22        1 + 4.0000i	      4.4178 + 2.0476i
-  23        1 + 4.0000i	      3.5615 + 2.8322i
-  24          + 5.0000i	      4.7526 + 2.2605i
-*/
