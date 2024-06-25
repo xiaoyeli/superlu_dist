@@ -1019,7 +1019,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #ifdef GPU_ACC
 		if (gpu3dVersion == 1)
 		{ /* this is the new C++ code in CplusplusFactor/ directory */
-#ifdef (PRNTlevel>=1)
+#if (PRNTlevel>=1)
 			if (!grid3d->iam)
 				printf("Using pzgstrf3d+gpu version 1\n");
 #endif
