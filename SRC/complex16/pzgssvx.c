@@ -561,6 +561,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
 	LUstruct->dt = 'z';
+	LUstruct->trf3Dpart= NULL;
 
     /* Structures needed for parallel symbolic factorization */
     int_t *sizes, *fstVtxSep, parSymbFact;
