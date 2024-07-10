@@ -414,7 +414,9 @@ void zLUstructInit(const int_t n, zLUstruct_t *LUstruct)
     if ( !(LUstruct->Llu = (zLocalLU_t *)
 	   SUPERLU_MALLOC(sizeof(zLocalLU_t))) )
 	ABORT("Malloc fails for LocalLU_t.");
-	LUstruct->Llu->inv = 0;
+    LUstruct->Llu->inv = 0;
+    LUstruct->dt = 'z';
+    LUstruct->trf3Dpart = NULL;
 }
 
 /*! \brief Deallocate LUstruct */

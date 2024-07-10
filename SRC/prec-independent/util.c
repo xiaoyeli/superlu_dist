@@ -1,5 +1,3 @@
-
-
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required 
@@ -228,7 +226,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->lookahead_etree = NO;
     options->num_lookaheads = 10;
     options->superlu_maxsup = 256;
-    options->superlu_relax = 60;
+    options->superlu_relax = 30;
     strcpy(options->superlu_rankorder, "Z"); 
     strcpy(options->superlu_lbs, "GD");
     options->superlu_acc_offload = 1;
