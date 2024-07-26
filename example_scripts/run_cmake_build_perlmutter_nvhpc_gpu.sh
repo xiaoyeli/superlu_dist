@@ -1,5 +1,5 @@
 module load PrgEnv-nvidia
-module load cmake/3.22.0
+module load cmake
 module load cudatoolkit
 
 cmake .. \
@@ -14,13 +14,13 @@ cmake .. \
      -DCMAKE_C_COMPILER=cc \
      -DCMAKE_CXX_COMPILER=CC \
      -DXSDK_ENABLE_Fortran=ON \
+     -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=/opt/cray/pe/craype/2.7.30/bin/CC" \
      -DCMAKE_CUDA_ARCHITECTURES=80 \
-     -DCMAKE_CUDA_FLAGS="-I${MPICH_DIR}/include" \
      -DTPL_ENABLE_CUDALIB=TRUE \
-     -DTPL_CUDA_LIBRARIES="/global/common/software/nersc/cos1.3/cuda/11.3.0/targets/x86_64-linux/lib/libcublas.so;/global/common/software/nersc/cos1.3/cuda/11.3.0/targets/x86_64-linux/lib/libcudart.so" \
+     -DTPL_CUDA_LIBRARIES="/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/targets/x86_64-linux/lib/libcudart.so" \
      -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/21.08.1.2/NVIDIA/20.7/x86_64/lib/libsci_nvidia_mpi_mp.a \
+     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/23.12.5/NVIDIA/23.3/x86_64/lib/libsci_nvidia_mp.a \
      -DBUILD_SHARED_LIBS=OFF \
      -DCMAKE_BUILD_TYPE=Release \
      -DCMAKE_INSTALL_PREFIX=. \
@@ -29,3 +29,5 @@ cmake .. \
      -DMPIEXEC_MAX_NUMPROCS=16
      
 make f_pddrive
+make pddrive
+make pddrive3d
