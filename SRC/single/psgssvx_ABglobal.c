@@ -508,8 +508,6 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
-	LUstruct->dt = 's';
-	LUstruct->trf3Dpart= NULL;
 
     /* Test input parameters. */
     *info = 0;
