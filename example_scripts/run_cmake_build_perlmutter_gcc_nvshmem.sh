@@ -36,7 +36,7 @@ module load cudatoolkit/12.2
 module load cray-libsci/23.12.5
 # module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/2.11.0
-
+export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_nopiv
 # avoid bug in cudatoolkit
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.2\/compat:/}
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
@@ -61,8 +61,8 @@ cmake .. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
   -DCMAKE_BUILD_TYPE=Debug \
   -DTPL_ENABLE_MAGMALIB=ON \
-  -DTPL_MAGMA_INCLUDE_DIRS="/global/cfs/cdirs/m2957/lib/magma-2.7.1/include" \
-  -DTPL_MAGMA_LIBRARIES="/global/cfs/cdirs/m2957/lib/magma-2.7.1/lib/libmagma.so" \
+  -DTPL_MAGMA_INCLUDE_DIRS="${MAGMA_ROOT}/include" \
+  -DTPL_MAGMA_LIBRARIES="${MAGMA_ROOT}/lib/libmagma.so" \
   -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
   -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
   -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \
