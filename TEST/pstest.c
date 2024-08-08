@@ -12,7 +12,7 @@ at the top-level directory.
 
 
 /*! @file
- * \brief Driver program for testing PDGSSVX.
+ * \brief Driver program for testing PSGSSVX.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 9.0) --
@@ -21,7 +21,7 @@ at the top-level directory.
  * </pre>
  */
 /*
- * File name:		pdtest.c
+ * File name:		pstest.c
  * Purpose:             MAIN test program
  */
  
@@ -37,7 +37,7 @@ at the top-level directory.
 #endif
 #include <math.h>
 #include "superlu_dist_config.h"
-#include "superlu_ddefs.h"
+#include "superlu_sdefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
 #define NTRAN  2
@@ -54,13 +54,13 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		   int *nrhs, FILE **fp);
 
 extern int
-pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
-		double *x, int ldx, double *b, int ldb,
-		gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct, double *resid);
+pscompute_resid(int m, int n, int nrhs, SuperMatrix *A,
+		float *x, int ldx, float *b, int ldb,
+		gridinfo_t *grid, sSOLVEstruct_t *SOLVEstruct, double *resid);
 
 /*! \brief Copy matrix A into matrix B, in distributed compressed row format. */
 void
-dCopy_CompRowLoc_NoAllocation(SuperMatrix *A, SuperMatrix *B)
+sCopy_CompRowLoc_NoAllocation(SuperMatrix *A, SuperMatrix *B)
 {
     NRformat_loc *Astore;
     NRformat_loc *Bstore;
@@ -78,7 +78,7 @@ dCopy_CompRowLoc_NoAllocation(SuperMatrix *A, SuperMatrix *B)
     Bstore->m_loc = Astore->m_loc;
     m_loc = Astore->m_loc;
     Bstore->fst_row = Astore->fst_row;
-    memcpy(Bstore->nzval, Astore->nzval, nnz_loc * sizeof(double));
+    memcpy(Bstore->nzval, Astore->nzval, nnz_loc * sizeof(float));
     memcpy(Bstore->colind, Astore->colind, nnz_loc * sizeof(int_t));
     memcpy(Bstore->rowptr, Astore->rowptr, (m_loc+1) * sizeof(int_t));
 }
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
  * Purpose
  * =======
  *
- * PDTEST is the main test program for the DOUBLE linear
- * equation driver routines PDGSSVX.
+ * PSTEST is the main test program for the FLOAT linear
+ * equation driver routines PSGSSVX.
  *
  * The program is invoked by a shell script file -- dtest.csh.
  * The output from the tests are written into a file -- dtest.out.
@@ -114,14 +114,14 @@ int main(int argc, char *argv[])
     SuperLUStat_t stat;
     SuperMatrix A, Asave;
     NRformat_loc *Astore;
-    dScalePermstruct_t ScalePermstruct;
-    dLUstruct_t LUstruct;
-    dSOLVEstruct_t SOLVEstruct;
+    sScalePermstruct_t ScalePermstruct;
+    sLUstruct_t LUstruct;
+    sSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
-    double   *nzval_save;
+    float   *nzval_save;
     int_t    *colind_save, *rowptr_save;
-    double   *berr, *R, *C;
-    double   *b, *bsave, *xtrue, *solx;
+    float   *berr, *R, *C;
+    float   *b, *bsave, *xtrue, *solx;
     int    i, j, m, n, izero = 0;
     int    nprow, npcol;
     int    iam, info, ldb, ldx, nrhs, iinfo;
@@ -133,8 +133,8 @@ int main(int argc, char *argv[])
     int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat=0;
     int    nimat=1;  /* Currently only test a sparse matrix read from a file. */
     fact_t fact;
-    double rowcnd, colcnd, amax;
-    double result[NTESTS];
+    float rowcnd, colcnd, amax;
+    float result[NTESTS];
 
     /* Fixed set of parameters */
     int     iseed[]  = {1988, 1989, 1990, 1991};
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
     maxsuper = sp_ienv_dist(3, &options);
     fill_ratio = sp_ienv_dist(6, &options);
 
-    if ( !(berr = doubleMalloc_dist(nrhs)) )
+    if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
 
     /* Loop through all the input options. */
@@ -197,12 +197,12 @@ int main(int argc, char *argv[])
 	/* ------------------------------------------------------------
 	   GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
 	   ------------------------------------------------------------*/
-	dcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+	screate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
 
 	m = A.nrow;
 	n = A.ncol;
 
-	if ( !(bsave = doubleMalloc_dist(ldb * nrhs)) )
+	if ( !(bsave = floatMalloc_dist(ldb * nrhs)) )
 	    ABORT("Malloc fails for bsave[]");
 	for (j = 0; j < nrhs; ++j)
 	    for (i = 0; i < ldb; ++i) bsave[i+j*ldb] = b[i+j*ldb];
@@ -211,13 +211,13 @@ int main(int argc, char *argv[])
 	Astore = (NRformat_loc *) A.Store;
 	int_t nnz_loc = Astore->nnz_loc;
 	int_t m_loc = Astore->m_loc;
-	nzval_save = (double *) doubleMalloc_dist(nnz_loc);
+	nzval_save = (float *) floatMalloc_dist(nnz_loc);
 	colind_save = (int_t *) intMalloc_dist(nnz_loc);
 	rowptr_save = (int_t *) intMalloc_dist(m_loc + 1);
-	dCreate_CompRowLoc_Matrix_dist(&Asave, m, n, nnz_loc, m_loc, Astore->fst_row,
+	sCreate_CompRowLoc_Matrix_dist(&Asave, m, n, nnz_loc, m_loc, Astore->fst_row,
 				       nzval_save, colind_save, rowptr_save,
 				       SLU_NR_loc, SLU_D, SLU_GE);
-	dCopy_CompRowLoc_NoAllocation(&A, &Asave);
+	sCopy_CompRowLoc_NoAllocation(&A, &Asave);
 
 	for (iequed = 0; iequed < 4; ++iequed) {
 	    int what_equil = equils[iequed];
@@ -247,22 +247,22 @@ int main(int argc, char *argv[])
 				     options.Fact == SamePattern_SameRowPerm );
 
 		        /* Restore the matrix A. */
-		        dCopy_CompRowLoc_NoAllocation(&Asave, &A);
+		        sCopy_CompRowLoc_NoAllocation(&Asave, &A);
 
 		        /* Initialize ScalePermstruct and LUstruct. */
-		        dScalePermstructInit(m, n, &ScalePermstruct);
-		        dLUstructInit(n, &LUstruct);
+		        sScalePermstructInit(m, n, &ScalePermstruct);
+		        sLUstructInit(n, &LUstruct);
 
 		        if ( prefact ) {
 
-			    R = (double *) SUPERLU_MALLOC(m*sizeof(double));
-			    C = (double *) SUPERLU_MALLOC(n*sizeof(double));
+			    R = (float *) SUPERLU_MALLOC(m*sizeof(float));
+			    C = (float *) SUPERLU_MALLOC(n*sizeof(float));
 
-			    /* Later call to PDGSSVX only needs to solve. */
+			    /* Later call to PSGSSVX only needs to solve. */
                             if ( equil || iequed ) {
 			        /* Compute row and column scale factors to
 			           equilibrate matrix A.    */
-			        pdgsequ(&A, R, C, &rowcnd, &colcnd, &amax,
+			        psgsequ(&A, R, C, &rowcnd, &colcnd, &amax,
                                     &iinfo,&grid);
 
 			        /* Force equilibration. */
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 			        }
 
 			        /* Equilibrate the matrix. */
-			    	pdlaqgs(&A, R, C, rowcnd, colcnd, amax, equed);
+			    	pslaqgs(&A, R, C, rowcnd, colcnd, amax, equed);
 			    	// printf("after pdlaqgs: *equed %c\n", *equed);
 
 			    	/* Not equilibrate anymore when calling
@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
 			    PStatInit(&stat);
 
 			    int nrhs1 = 0; /* Only performs factorization */
-			    pdgssvx(&options, &A, &ScalePermstruct, b,
+			    psgssvx(&options, &A, &ScalePermstruct, b,
                                 ldb, nrhs1, &grid, &LUstruct, &SOLVEstruct,
 				berr, &stat, &info);
 
@@ -324,38 +324,37 @@ int main(int argc, char *argv[])
 			    options.Fact = fact;
 			    if ( fact == SamePattern ) {
 			        // {L,U} not re-used in subsequent call to PDGSSVX.
-			        dDestroy_LU(n, &grid, &LUstruct);
+			        sDestroy_LU(n, &grid, &LUstruct);
 			    } else if (fact == SamePattern_SameRowPerm) {
 			        // {L,U} structure is re-used in subsequent call to PDGSSVX.
-				dZeroLblocks(iam, n, &grid, &LUstruct);
+				sZeroLblocks(iam, n, &grid, &LUstruct);
                             }
 
 		        } /* end if .. first time factor */
 
 		        /*----------------
-		     	 * Test pdgssvx
+		     	 * Test psgssvx
 		         *----------------*/
 
 		        if ( options.Fact != FACTORED ) {
 			    /* Restore the matrix A. */
-			    dCopy_CompRowLoc_NoAllocation(&Asave, &A);
+			    sCopy_CompRowLoc_NoAllocation(&Asave, &A);
 			    if (fact == SamePattern_SameRowPerm && iam == 0) {
                                 /* Perturb the 1st diagonal of the matrix
                                    to larger value, so to have a different A. */
-                                ((double *) Astore->nzval)[0] += 1.0e-12; //1.0e-8;
                              }
 
 		        }
 
 		        /* Set the right-hand side. */
-		        dCopy_Dense_Matrix_dist(m_loc, nrhs, bsave, ldb, b, ldb);
+		        sCopy_Dense_Matrix_dist(m_loc, nrhs, bsave, ldb, b, ldb);
 
 		        PStatInit(&stat);
 
 		    /*if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n",
 		      nrun, iequed, equil, options.Fact);*/
 		        /* Testing PDGSSVX: solve and compute the error bounds. */
-		        pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
+		        psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
 			    &grid, &LUstruct, &SOLVEstruct,
 			    berr, &stat, &info);
 
@@ -365,14 +364,14 @@ int main(int argc, char *argv[])
 				     nrhs, b, ldb, xtrue, ldx, grid.comm);
 #endif
 		        if ( info ) {
-			    printf(FMT3, "pdgssvx",info,izero,n,nrhs,imat,nfail);
+			    printf(FMT3, "psgssvx",info,izero,n,nrhs,imat,nfail);
 		        } else {
 			    /* Restore the matrix A. */
-			    dCopy_CompRowLoc_NoAllocation(&Asave, &A);
+			    sCopy_CompRowLoc_NoAllocation(&Asave, &A);
 
 			    /* Compute residual of the computed solution.*/
 			    solx = b;
-			    pdcompute_resid(m, n, nrhs, &A, solx, ldx,
+			    pscompute_resid(m, n, nrhs, &A, solx, ldx,
                                         bsave, ldb, &grid, &SOLVEstruct, &result[0]);
 
 #if 0  /* how to get RCOND? */
@@ -388,7 +387,7 @@ int main(int argc, char *argv[])
 			    int k1 = 0;
 			    for (i = k1; i < NTESTS; ++i) {
 			        if ( result[i] >= THRESH ) {
-				    printf(FMT2, "pdgssvx", options.Fact,
+				    printf(FMT2, "psgssvx", options.Fact,
 				       ScalePermstruct.DiagScale,
 				       n, imat, i, result[i], berr[0]);
 				    ++nfail;
@@ -405,11 +404,11 @@ int main(int argc, char *argv[])
 			    SUPERLU_FREE(C);
 			    ScalePermstruct.DiagScale = NOEQUIL; /* Avoid free R/C again. */
 		        }
-		        dScalePermstructFree(&ScalePermstruct);
-		        dDestroy_LU(n, &grid, &LUstruct);
-		        dLUstructFree(&LUstruct);
+		        sScalePermstructFree(&ScalePermstruct);
+		        sDestroy_LU(n, &grid, &LUstruct);
+		        sLUstructFree(&LUstruct);
 		        if ( options.SolveInitialized ) {
-			    dSolveFinalize(&options, &SOLVEstruct);
+			    sSolveFinalize(&options, &SOLVEstruct);
 		        }
 
 		    } /* end for equil ... */
@@ -426,7 +425,7 @@ int main(int argc, char *argv[])
 	   ------------------------------------------------------------*/
 	Destroy_CompRowLoc_Matrix_dist(&A);
 	Destroy_CompRowLoc_Matrix_dist(&Asave);
-	//	dScalePermstructFree(&ScalePermstruct);
+	//	sScalePermstructFree(&ScalePermstruct);
 	SUPERLU_FREE(b);
 	SUPERLU_FREE(bsave);
 	SUPERLU_FREE(xtrue);
