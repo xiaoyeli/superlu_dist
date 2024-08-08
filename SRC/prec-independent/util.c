@@ -309,8 +309,8 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**    estimated fill ratio       : %d\n", sp_ienv_dist(6, options));
     printf("**    min GEMM m*k*n to use GPU  : %d\n", sp_ienv_dist(7, options));
     printf(".. parallel environment:\n");
-    printf("**    OpenMP threads            : %4d\n", num_threads);
-    printf("**    GPU enable?               : %4d\n", gpu_enabled);
+    printf("**    OpenMP threads             : %4d\n", num_threads);
+    printf("**    GPU enabled?               : %4d\n", gpu_enabled);
     printf("**************************************************\n");
 }
 
