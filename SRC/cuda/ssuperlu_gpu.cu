@@ -759,6 +759,7 @@ int sfree_LUstruct_gpu (
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Ublock_info_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_L_buff_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].bigU_host));
+	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].usub_IndirectJ3_host));
 
 	checkGPU(gpuFreeHost(A_gpu->acc_L_buff));
 	checkGPU(gpuFreeHost(A_gpu->acc_U_buff));
@@ -773,21 +774,27 @@ int sfree_LUstruct_gpu (
 	SUPERLU_FREE(stat->ePCIeH2D);
 	SUPERLU_FREE(stat->ePCIeD2H_Start);
 	SUPERLU_FREE(stat->ePCIeD2H_End);
+	SUPERLU_FREE(sluGPU->isNodeInMyGrid);
+	SUPERLU_FREE(A_gpu->perm_c_supno);
 
 	/* Free the U data structure on GPU */
 	checkGPU(gpuFree(A_gpu->UrowindVec));
 	checkGPU(gpuFree(A_gpu->UrowindPtr));
 
+	free(A_gpu->UnzvalPtr_host);
 	//free(A_gpu->UrowindPtr_host); // Sherry: this is NOT allocated
 
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
 	checkGPU(gpuFree(A_gpu->UnzvalPtr));
+	checkGPU(gpuFree(sluGPU->dA_gpu));
+
 
 	//checkGPU(gpuFree(A_gpu->grid)); // Sherry: this is not used
 
 	/* Free the Schur complement structure on GPU */
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigV));
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigU));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].usub_IndirectJ3));
 
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].Remain_L_buff));
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].Ublock_info));
@@ -815,7 +822,7 @@ int sfree_LUstruct_gpu (
 	    gpuStreamDestroy(sluGPU->funCallStreams[streamId]);
 	    gpublasDestroy(sluGPU->gpublasHandles[streamId]);
     	}
-    
+	free(A_gpu);
 	return 0;
 } /* end sfree_LUstruct_gpu */
 

@@ -759,6 +759,7 @@ int dfree_LUstruct_gpu (
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Ublock_info_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_L_buff_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].bigU_host));
+	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].usub_IndirectJ3_host));
 
 	checkGPU(gpuFreeHost(A_gpu->acc_L_buff));
 	checkGPU(gpuFreeHost(A_gpu->acc_U_buff));
@@ -785,12 +786,15 @@ int dfree_LUstruct_gpu (
 
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
 	checkGPU(gpuFree(A_gpu->UnzvalPtr));
+	checkGPU(gpuFree(sluGPU->dA_gpu));
+
 
 	//checkGPU(gpuFree(A_gpu->grid)); // Sherry: this is not used
 
 	/* Free the Schur complement structure on GPU */
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigV));
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigU));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].usub_IndirectJ3));
 
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].Remain_L_buff));
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].Ublock_info));
