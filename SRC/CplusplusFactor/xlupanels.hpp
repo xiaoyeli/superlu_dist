@@ -333,6 +333,10 @@ public:
 template <typename Ftype>
 struct xLUstruct_t
 {
+#ifdef HAVE_CUDA
+    xlpanelGPU_t<Ftype> *lPanelVec_GPU;
+    xupanelGPU_t<Ftype> *uPanelVec_GPU;
+#endif
     xlpanel_t<Ftype> *lPanelVec;
     xupanel_t<Ftype> *uPanelVec;
     gridinfo3d_t *grid3d;
@@ -441,6 +445,7 @@ struct xLUstruct_t
 
     ~xLUstruct_t()
     {
+        superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();
 
         /* Yang: Deallocate the lPanelVec[i] and uPanelVec[i] here instead of using destructors ~lpanel_t or ~upanel_t,
         as xlpanel_t/upanel_t is used for holding temporary communication buffers as well. Note that lPanelVec[i].val is not deallocated here as it's pointing to the L data in the C code*/
@@ -448,22 +453,50 @@ struct xLUstruct_t
         for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
             if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
             {
-                if (lPanelVec[i].index)
+                if (lPanelVec[i].index){
                     SUPERLU_FREE(lPanelVec[i].index);
-                // SUPERLU_FREE(lPanelVec[i].val);
+                    #ifdef HAVE_CUDA
+                    if (superlu_acc_offload){
+                        gpuErrchk(cudaFree(lPanelVec_GPU[i].index));
+                    }
+                    #endif
+                }
+                if (lPanelVec[i].val){
+                    // SUPERLU_FREE(lPanelVec[i].val);
+                    #ifdef HAVE_CUDA
+                    if (superlu_acc_offload){
+                        gpuErrchk(cudaFree(lPanelVec_GPU[i].val));
+                    }
+                    #endif
+                }
             }
 
         for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
             if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
             {
-                if (uPanelVec[i].index)
+                if (uPanelVec[i].index){
                     SUPERLU_FREE(uPanelVec[i].index);
-                if (uPanelVec[i].val)
+                    #ifdef HAVE_CUDA
+                    if (superlu_acc_offload){
+                        gpuErrchk(cudaFree(uPanelVec_GPU[i].index));
+                    }
+                    #endif                   
+                }
+                if (uPanelVec[i].val){
                     SUPERLU_FREE(uPanelVec[i].val);
+                    #ifdef HAVE_CUDA
+                    if (superlu_acc_offload){
+                        gpuErrchk(cudaFree(uPanelVec_GPU[i].val));
+                    }
+                    #endif                    
+                }
             }
 
         delete[] lPanelVec;
         delete[] uPanelVec;
+        delete [] uPanelVec_GPU;
+        delete [] lPanelVec_GPU;
+
 
         /* free diagonal L and U blocks */
         // dfreeDiagFactBufsArr(maxLeafNodes, dFBufs);
@@ -486,13 +519,21 @@ struct xLUstruct_t
         for (i = 0; i < numDiagBufs; i++)
             SUPERLU_FREE(diagFactBufs[i]);
 
-        /* Sherry added the following, which comes from batch setup */
-        superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();
+        /* Sherry added the following and Yang modified it */
+#ifdef HAVE_CUDA
         if (superlu_acc_offload)
         {
-            // printf(".. free batch buffers\n");  fflush(stdout);
+            if ( options->batchCount > 0 ) { /* use batch code */
+                ABORT("batchCount>0 should not reach this point!!\n");
+            }
+            for (i = 0; i < A_gpu.numCudaStreams; ++i) {
+                gpuErrchk(cudaFree(A_gpu.dFBufs[i]));
+                gpuErrchk(cudaFree(A_gpu.gpuGemmBuffs[i]));
+            }
             SUPERLU_FREE(A_gpu.dFBufs);
             SUPERLU_FREE(A_gpu.gpuGemmBuffs);
+            gpuErrchk(cudaFree((A_gpu.dgpuGemmBuffs)));
+
 
             for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
             {
@@ -501,7 +542,31 @@ struct xLUstruct_t
                 cublasDestroy(A_gpu.lookAheadLHandle[stream]);
                 cublasDestroy(A_gpu.lookAheadUHandle[stream]);
             }
+
+
+            for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+            {
+                gpuErrchk(cudaFree(A_gpu.LvalRecvBufs[stream]));
+                gpuErrchk(cudaFree(A_gpu.UvalRecvBufs[stream]));
+                gpuErrchk(cudaFree(A_gpu.LidxRecvBufs[stream]));
+                gpuErrchk(cudaFree(A_gpu.UidxRecvBufs[stream]));
+                // the space for diagonal factor on GPU
+                gpuErrchk(cudaFree(A_gpu.diagFactWork[stream]));
+                gpuErrchk(cudaFree(A_gpu.diagFactInfo[stream]));
+                /*lookAhead buffers and stream*/
+                gpuErrchk(cudaFree(A_gpu.lookAheadLGemmBuffer[stream]));
+                gpuErrchk(cudaFree(A_gpu.lookAheadUGemmBuffer[stream]));
+            }
+
+            gpuErrchk(cudaFree(A_gpu.xsup));
+            gpuErrchk(cudaFree(A_gpu.lPanelVec));
+            gpuErrchk(cudaFree(A_gpu.uPanelVec));
+
+            gpuErrchk(cudaFree(dA_gpu));
+
+
         }
+#endif
 
         SUPERLU_FREE(isNodeInMyGrid);
 

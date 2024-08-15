@@ -769,7 +769,7 @@ int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
         //donePanelSolve[k0]=1;
 
         /*======= Schurcomplement Update ======*/
-        /* UidxSendCounts are computed in LUstruct_v100 constructor in LUpanels.cpp */
+        /* UidxSendCounts are computed in xLUstruct_t constructor in LUpanels_impl.hpp */
         if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0) {
             // k_upanel.checkCorrectness();
             int streamId = 0;
@@ -948,9 +948,9 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
             }
 
             /*=======   Panel Broadcast             ======*/
-            upanel_t k_upanel(UidxRecvBufs[0], UvalRecvBufs[0],
+            xupanel_t<Ftype> k_upanel(UidxRecvBufs[0], UvalRecvBufs[0],
                               A_gpu.UidxRecvBufs[0], A_gpu.UvalRecvBufs[0]);
-            lpanel_t k_lpanel(LidxRecvBufs[0], LvalRecvBufs[0],
+            xlpanel_t<Ftype> k_lpanel(LidxRecvBufs[0], LvalRecvBufs[0],
                               A_gpu.LidxRecvBufs[0], A_gpu.LvalRecvBufs[0]);
             if (myrow == krow(k))
             {

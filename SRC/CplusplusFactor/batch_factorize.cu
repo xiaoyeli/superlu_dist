@@ -754,6 +754,9 @@ void freeBatchFactorizeWorkspaceT(TBatchFactorizeWorkspace<T>* ws)
 #endif
     cublasDestroy( ws->cuhandle );
     gpuErrchk( cudaStreamDestroy(ws->stream) );
+    //YL: not sure why the destructor TBatchLUMarshallData and TBatchSCUMarshallData are not called. Calling them explicitly here. 
+    ws->marshall_data.DeleteTBatchLUMarshallData();
+    ws->sc_marshall_data.DeleteTBatchSCUMarshallData();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

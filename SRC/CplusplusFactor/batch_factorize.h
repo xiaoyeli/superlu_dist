@@ -17,7 +17,7 @@ struct TBatchLUMarshallData
         dev_panel_ld_array = dev_panel_dim_array = NULL;
     }
 
-    ~TBatchLUMarshallData()
+    void DeleteTBatchLUMarshallData()
     {
         gpuErrchk(cudaFree(dev_diag_ptrs));
         gpuErrchk(cudaFree(dev_panel_ptrs));
@@ -67,7 +67,7 @@ struct TBatchSCUMarshallData
         dev_ist = dev_iend = dev_jst = dev_jend = NULL;
     }
 
-    ~TBatchSCUMarshallData()
+    void DeleteTBatchSCUMarshallData()
     {
         gpuErrchk(cudaFree(dev_A_ptrs));
         gpuErrchk(cudaFree(dev_B_ptrs));

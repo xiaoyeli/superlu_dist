@@ -885,8 +885,8 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     xlpanelGPU_t<Ftype> *lPanelVec_GPU = copyLpanelsToGPU();
     tUsend = SuperLU_timer_() - tUsend;
 #else 
-    xupanelGPU_t<Ftype> *uPanelVec_GPU = new xupanelGPU_t<Ftype>[CEILING(nsupers, Pr)];
-    xlpanelGPU_t<Ftype> *lPanelVec_GPU = new xlpanelGPU_t<Ftype>[CEILING(nsupers, Pc)];
+    uPanelVec_GPU = new xupanelGPU_t<Ftype>[CEILING(nsupers, Pr)];
+    lPanelVec_GPU = new xlpanelGPU_t<Ftype>[CEILING(nsupers, Pc)];
     tLsend = SuperLU_timer_();
     for (i = 0; i < CEILING(nsupers, Pc); ++i)
     {
@@ -912,8 +912,8 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     gpuErrchk(cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(xupanelGPU_t<Ftype>), cudaMemcpyHostToDevice));
 
-    delete [] uPanelVec_GPU;
-    delete [] lPanelVec_GPU;
+    // delete [] uPanelVec_GPU;
+    // delete [] lPanelVec_GPU;
 
     tRegion[2] = SuperLU_timer_();
     int dfactBufSize = 0;
