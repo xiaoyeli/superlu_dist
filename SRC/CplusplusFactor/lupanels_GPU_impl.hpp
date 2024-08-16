@@ -12,7 +12,7 @@
 #include "cublas_v2.h"
 
 
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 
 #include <cmath>
 #include <complex>
@@ -126,6 +126,7 @@ xupanelGPU_t<T> xupanel_t<T>::copyToGPU()
     gpuErrchk(cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice));
     return gpuPanel;
 }
+
 
 template <typename T>
 xupanelGPU_t<T> xupanel_t<T>::copyToGPU(void* basePtr)

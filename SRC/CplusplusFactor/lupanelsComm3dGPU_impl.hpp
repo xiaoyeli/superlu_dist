@@ -1,6 +1,6 @@
 #include "mpi.h"
 // #include "cublasDefs.hhandle, "
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "cublas_cusolver_wrappers.hpp"
 
 #ifdef HAVE_CUDA

@@ -13,7 +13,7 @@ set(headers
     include/superlu_dist_config.h
     include/superlu_FortranCInterface.h
     include/oneside.h
-    CplusplusFactor/lupanels.hpp
+    # CplusplusFactor/lupanels.hpp
     CplusplusFactor/commWrapper.hpp
     CplusplusFactor/lupanels_GPU.cuh
     CplusplusFactor/batch_block_copy.h
@@ -34,7 +34,7 @@ set(headers
     CplusplusFactor/l_panels_impl.hpp
     CplusplusFactor/u_panels_impl.hpp
     CplusplusFactor/luAuxStructTemplated.hpp
-    CplusplusFactor/xlupanels.hpp
+    # CplusplusFactor/xlupanels.hpp
     CplusplusFactor/lu_common.hpp
     CplusplusFactor/xlupanels_GPU.cuh
     CplusplusFactor/schurCompUpdate_impl.cuh
@@ -176,12 +176,12 @@ if (TPL_ENABLE_CUDALIB)
 #       CplusplusFactor/dsparseTreeFactor_upacked.cpp
 ##      CplusplusFactor/dsparseTreeFactorGPU.cpp 
 ##       CplusplusFactor/lupanels.cpp
-       CplusplusFactor/lupanels_comm3d.cpp
-       CplusplusFactor/lupanelsComm3dGPU.cpp
+      #  CplusplusFactor/lupanels_comm3d.cpp
+      #  CplusplusFactor/lupanelsComm3dGPU.cpp
        CplusplusFactor/commWrapper.cpp 
 ##       CplusplusFactor/l_panels.cpp
 ##       CplusplusFactor/u_panels.cpp
-       CplusplusFactor/lupanels_GPU.cpp
+      #  CplusplusFactor/lupanels_GPU.cpp
 ##       CplusplusFactor/anc25d.cpp 
 ##       CplusplusFactor/anc25d-GPU.cpp 
 ##       CplusplusFactor/LUgpuCHandle_interface.cpp

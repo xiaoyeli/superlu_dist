@@ -1,7 +1,7 @@
 #pragma once 
 #include <cstdio>
 #include "superlu_ddefs.h"
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "lupanels_GPU.cuh"
 #include "luAuxStructTemplated.hpp"
 #include "schurCompUpdate_impl.cuh"

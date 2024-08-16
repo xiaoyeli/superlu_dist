@@ -1,6 +1,6 @@
 #pragma once
 #include "superlu_ddefs.h"
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "superlu_blas.hpp"
 #include "luAuxStructTemplated.hpp"
 

@@ -1,7 +1,7 @@
 #pragma once 
 #include "mpi.h"
 #include "superlu_defs.h"
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "luAuxStructTemplated.hpp"
 #include "superlu_blas.hpp"
 

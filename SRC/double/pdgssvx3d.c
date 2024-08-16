@@ -574,7 +574,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
     }
 
-    LUgpu_Handle LUgpu;
+
 #endif
 
     LUstruct->dt = 'd';
@@ -1031,8 +1031,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			
 			if(options->batchCount == 0)
 			{
-#define TEMPLATED_VERSION
-#ifdef TEMPLATED_VERSION
 dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 
@@ -1041,18 +1039,6 @@ dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 
 			dCopyLUGPU2Host(dLUgpu, LUstruct);
 			dDestroyLUgpuHandle(dLUgpu);
-		    //TODO: dCreateLUgpuHandle,pdgstrf3d_LUpackedInterface,dCopyLUGPU2Host,dDestroyLUgpuHandle haven't been created
-#else // non-templated version (not used anymore)
-			/* call constructor in C++ code */
-			LUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-						  SCT, options, stat, thresh, info);
-
-			/* call pdgstrf3d() in C++ code */
-			pdgstrf3d_LUpackedInterface(LUgpu);
-
-			copyLUGPU2Host(LUgpu, LUstruct);
-			destroyLUgpuHandle(LUgpu);
-#endif /* end if TEMPLATED_VERSION */
 
        	      	 } else { /* batched version */
 		 

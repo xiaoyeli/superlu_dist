@@ -8,7 +8,7 @@
 #include <thrust/functional.h>
 #include "superlu_ddefs.h"
 #include "lupanels_GPU.cuh"
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "gpuCommon.hpp"
 #include "cublas_cusolver_wrappers.hpp"
 

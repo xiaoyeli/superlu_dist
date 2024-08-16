@@ -10,7 +10,7 @@
 #endif
 
 #include "lu_common.hpp"
-#include "lupanels.hpp"  //unneeded?
+// #include "lupanels.hpp"  //unneeded?
 #include "lupanels_GPU.cuh" 
 
 #ifdef __CUDACC__

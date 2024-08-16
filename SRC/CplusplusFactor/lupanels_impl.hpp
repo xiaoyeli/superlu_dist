@@ -8,7 +8,7 @@
 #include "lupanels_GPU.cuh"
 #include "xlupanels_GPU.cuh"
 #endif
-#include "lupanels.hpp"  //unneeded??
+// #include "lupanels.hpp"  //unneeded??
 #include "xlupanels.hpp"
 #include "superlu_blas.hpp"
 

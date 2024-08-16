@@ -573,8 +573,6 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     if (getenv("GPU3DVERSION")) {
        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
     }
-
-    LUgpu_Handle LUgpu;
 #endif
 
     LUstruct->dt = 's';
@@ -1031,8 +1029,6 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			
 			if(options->batchCount == 0)
 			{
-#define TEMPLATED_VERSION
-#ifdef TEMPLATED_VERSION
 sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 
@@ -1041,20 +1037,8 @@ sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 
 			sCopyLUGPU2Host(sLUgpu, LUstruct);
 			sDestroyLUgpuHandle(sLUgpu);
-		    //TODO: sCreateLUgpuHandle,psgstrf3d_LUpackedInterface,sCopyLUGPU2Host,sDestroyLUgpuHandle haven't been created
-#else // non-templated version (not used anymore)
-			/* call constructor in C++ code */
-			LUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-						  SCT, options, stat, thresh, info);
 
-			/* call psgstrf3d() in C++ code */
-			psgstrf3d_LUpackedInterface(LUgpu);
-
-			copyLUGPU2Host(LUgpu, LUstruct);
-			destroyLUgpuHandle(LUgpu);
-#endif /* end if TEMPLATED_VERSION */
-
-       	      	 } else { /* batched version */
+			} else { /* batched version */
 		 
 #ifdef HAVE_MAGMA
 			double tic = SuperLU_timer_();

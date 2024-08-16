@@ -1,5 +1,5 @@
 #pragma once 
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 
 template <typename Ftype>
 xupanel_t<Ftype>::xupanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup)

@@ -11,7 +11,7 @@
 #endif
 
 
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "superlu_upacked.h"
 #include "luAuxStructTemplated.hpp"
 #include "anc25d-GPU_impl.hpp"

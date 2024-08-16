@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cinttypes>
 #include "superlu_ddefs.h"
-#include "lupanels.hpp"
+// #include "lupanels.hpp"
 #include "xlupanels.hpp"
 
 #ifdef HAVE_CUDA
