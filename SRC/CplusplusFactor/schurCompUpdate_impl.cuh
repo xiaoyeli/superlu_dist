@@ -696,12 +696,12 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     A_gpu.Pc = Pc;
     A_gpu.maxSuperSize = ldt;
 
-    /* Sherry: this mapping may be inefficient on Frontier */
+    /* Sherry: this mapping may be inefficient on Frontier. Yang: I commented it out as the mapping can be set by env SUPERLU_BIND_MPI_GPU in superlu_gridinit3d */
     /*Mapping to device*/
     int deviceCount;
     cudaGetDeviceCount(&deviceCount); // How many GPUs?
-    int device_id = grid3d->iam % deviceCount;
-    cudaSetDevice(device_id);
+    // int device_id = grid3d->iam % deviceCount;
+    // cudaSetDevice(device_id);
 
     double tRegion[5];
     size_t useableGPUMem = getGPUMemPerProcs(grid3d->comm);
