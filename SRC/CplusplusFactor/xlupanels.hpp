@@ -607,16 +607,16 @@ struct xLUstruct_t
 
     diagFactBufs_type<Ftype>** initDiagFactBufsArr(int_t mxLeafNode, int_t ldt);
 
-    // Helper routine to marshall batch LU data into the device data in A_gpu
-    void marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno);
-    void marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno);
-    void marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_supno);
-    void marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_supno);
-    void marshallBatchedSCUData(int k_st, int k_end, int_t *perm_c_supno);
-    void initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno);
-    int marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_c_supno);
-    int marshallSCUBatchedDataOuter(int k_st, int k_end, int_t *perm_c_supno);
-    void dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno);
+    // // Helper routine to marshall batch LU data into the device data in A_gpu
+    // void marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno);
+    // void marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno);
+    // void marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_supno);
+    // void marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_supno);
+    // void marshallBatchedSCUData(int k_st, int k_end, int_t *perm_c_supno);
+    // void initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno);
+    // int marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_c_supno);
+    // int marshallSCUBatchedDataOuter(int k_st, int k_end, int_t *perm_c_supno);
+    // void dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno);
 
     //
     int_t dDiagFactorPanelSolve(int_t k, int_t offset, diagFactBufs_type<Ftype>** dFBufs);

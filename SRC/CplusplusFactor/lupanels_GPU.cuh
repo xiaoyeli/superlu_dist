@@ -385,9 +385,3 @@ void scatterGPU_driver(
     LUstructGPU_t *dA, cudaStream_t cuStream
 );
 
-void scatterGPU_batchDriver(
-    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
-    int max_ilen, int max_jlen, double **gemmBuff_ptrs, int *LDgemmBuff_batch, 
-    int maxSuperSize, int ldt, lpanelGPU_t *lpanels, upanelGPU_t *upanels, 
-    LUstructGPU_t *dA, int batchCount, cudaStream_t cuStream
-);
