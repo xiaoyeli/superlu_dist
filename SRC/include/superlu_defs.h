@@ -440,7 +440,7 @@ typedef struct {
  *
  * (xsup,supno) describes mapping between supernode and column:
  *	xsup[s] is the leading column of the s-th supernode.
- *      supno[i] is the supernode no to which column i belongs;
+ *      supno[j] is the supernode number to which column j belongs;
  *	e.g.   supno 0 1 2 2 3 3 3 4 4 4 4 4   (n=12)
  *	        xsup 0 1 2 4 7 12
  *	Note: dfs will be performed on supernode rep. relative to the new
