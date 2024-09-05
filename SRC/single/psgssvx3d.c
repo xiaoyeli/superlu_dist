@@ -1029,6 +1029,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			
 			if(options->batchCount == 0)
 			{
+#ifdef HAVE_CUDA
 sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 
@@ -1037,7 +1038,7 @@ sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 
 			sCopyLUGPU2Host(sLUgpu, LUstruct);
 			sDestroyLUgpuHandle(sLUgpu);
-
+#endif
 			} else { /* batched version */
 		 
 #ifdef HAVE_MAGMA

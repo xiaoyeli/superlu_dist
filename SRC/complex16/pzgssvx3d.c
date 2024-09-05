@@ -1028,6 +1028,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			
 			if(options->batchCount == 0)
 			{
+#ifdef HAVE_CUDA
 zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 
@@ -1036,6 +1037,7 @@ zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 
 			zCopyLUGPU2Host(zLUgpu, LUstruct);
 			zDestroyLUgpuHandle(zLUgpu);
+#endif
 			} else { /* batched version */
 		 
 #ifdef HAVE_MAGMA
