@@ -579,6 +579,8 @@ endif()
 
 include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
 include_directories(${CMAKE_SOURCE_DIR}/SRC/include)
+include_directories(${CMAKE_SOURCE_DIR}/SRC/cuda)
+include_directories(${CMAKE_SOURCE_DIR}/SRC/hip)
 if (TPL_PARMETIS_INCLUDE_DIRS)
   include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
 endif ()

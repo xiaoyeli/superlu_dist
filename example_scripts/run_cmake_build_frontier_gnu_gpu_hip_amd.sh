@@ -1,10 +1,11 @@
 #!/bin/bash
 # module load parmetis/4.0.3
 module load PrgEnv-gnu
-module load gcc/11.2.0
-module load cray-mpich/8.1.23                                   # version recommended in Jan 30 email
+# module load gcc/11.2.0
+# module load cray-mpich/8.1.23                                   
 module load craype-accel-amd-gfx90a                                                # for GPU aware MPI
-module load rocm/5.2.0                                             # version recommended in Jan 30 email
+# module load rocm/6.2.0                        
+module load rrocm/5.7.1                     
 export MPICH_GPU_SUPPORT_ENABLED=1
 module load cmake
 
@@ -29,17 +30,17 @@ rm -rf DartConfiguration.tcl
 
 cmake .. \
 	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;${OLCF_ROCM_ROOT}/lib/libroctx64.so;${OLCF_ROCM_ROOT}/lib/libroctracer64.so" \
+	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;${CRAY_ROCM_DIR}/lib/libroctx64.so;${CRAY_ROCM_DIR}/lib/libroctracer64.so" \
 	-DBUILD_SHARED_LIBS=OFF \
 	-DCMAKE_Fortran_COMPILER=ftn \
 	-DCMAKE_C_COMPILER=cc \
 	-DCMAKE_CXX_COMPILER=CC \
 	-DCMAKE_INSTALL_PREFIX=. \
-	-DTPL_BLAS_LIBRARIES="${CRAY_LIBSCI_PREFIX_DIR}/lib/libsci_gnu_82_mp.so" \
-	-DTPL_LAPACK_LIBRARIES="${CRAY_LIBSCI_PREFIX_DIR}/lib/libsci_gnu_82_mp.so" \
+	-DTPL_BLAS_LIBRARIES="${CRAY_LIBSCI_PREFIX_DIR}/lib/libsci_gnu_123_mp.so" \
+	-DTPL_LAPACK_LIBRARIES="${CRAY_LIBSCI_PREFIX_DIR}/lib/libsci_gnu_123_mp.so" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DTPL_ENABLE_HIPLIB=TRUE \
-	-DHIP_HIPCC_FLAGS="--amdgpu-target=gfx90a -I${CRAY_MPICH_DIR}/include" \
+	-DHIP_HIPCC_FLAGS="--offload-arch=gfx90a -I${CRAY_MPICH_DIR}/include" \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 " \
 	-DCMAKE_C_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 "
