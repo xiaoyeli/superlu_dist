@@ -409,6 +409,7 @@ foreach(target ${targets})
     if (HAVE_COMBBLAS)
         set_target_properties(${target} PROPERTIES
                               CUDA_SEPARABLE_COMPILATION ON
+                              CUDA_RESOLVE_DEVICE_SYMBOLS ON
 							  OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
@@ -417,6 +418,7 @@ foreach(target ${targets})
     else()
         set_target_properties(${target} PROPERTIES
 		                      CUDA_SEPARABLE_COMPILATION ON
+                                      CUDA_RESOLVE_DEVICE_SYMBOLS ON
                               OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
