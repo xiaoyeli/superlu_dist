@@ -1164,6 +1164,7 @@ extern void  quickSort( int_t*, int_t, int_t, int_t);
 extern void  quickSortM( int_t*, int_t, int_t, int_t, int_t, int_t);
 extern int_t partition( int_t*, int_t, int_t, int_t);
 extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
+extern int count_swaps(int_t perm[], int n);
 
 extern int compareInt_t(void *a, void *b);
 extern int compareInt(void *a, void *b);

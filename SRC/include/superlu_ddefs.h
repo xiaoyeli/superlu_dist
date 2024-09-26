@@ -484,6 +484,19 @@ typedef struct dlsumBmod_buff_t
     int_t *indCols; //
 }dlsumBmod_buff_t;
 
+
+typedef struct {
+    superlu_dist_options_t options;
+    SuperLUStat_t stat;
+    SuperMatrix A;
+    dScalePermstruct_t ScalePermstruct;
+    dLUstruct_t LUstruct;
+    dSOLVEstruct_t SOLVEstruct;
+    gridinfo_t grid;
+} slu_handle;
+
+
+
 /*=====================*/
 
 /***********************************************************************
@@ -538,6 +551,8 @@ extern int     dcreate_matrix_dat(SuperMatrix *, int, double **, int *,
 			      double **, int *, FILE *, gridinfo_t *);
 extern int dcreate_matrix_postfix(SuperMatrix *, int, double **, int *,
 				  double **, int *, FILE *, char *, gridinfo_t *);
+extern int dcreate_matrix_from_csc(SuperMatrix *A,
+                   int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr, double   *nzval, gridinfo_t *grid);                  
 
 extern void   dScalePermstructInit(const int_t, const int_t,
                                       dScalePermstruct_t *);
@@ -1621,6 +1636,14 @@ extern void dDumpUblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
 
 extern double *dready_x;
 extern double *dready_lsum;
+
+
+/*== APIs for python caller =======*/
+extern void pdbridge_init(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr, double *nzval, void ** pyobj, int argc, char *argv[]);
+extern void pdbridge_solve(void ** pyobj, int nrhs, double   *b_global);
+extern void pdbridge_free(void ** pyobj);
+extern void pdbridge_factor(void ** pyobj);
+extern void pdbridge_logdet(void ** pyobj, int * sign, double * logdet);
 
 #ifdef __cplusplus
   }

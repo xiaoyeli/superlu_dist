@@ -118,6 +118,8 @@ if(enable_double)
   target_link_libraries(pddrive_spawn ${all_link_libs})
   install(TARGETS pddrive_spawn RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
 
+  install(FILES pddrive.py DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
 endif() #### end enable_double
 
 if(enable_single)
