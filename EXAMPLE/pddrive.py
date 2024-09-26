@@ -75,7 +75,7 @@ if(rank==0):
 
 
 ####################### create the matrix
-INT64 = 1 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
+INT64 = 0 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
 rng = np.random.default_rng()
 n = 1000
 nrhs = 1
