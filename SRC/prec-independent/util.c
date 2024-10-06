@@ -210,6 +210,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->Fact = DOFACT;
     options->Equil = YES;
     options->ILU_level = SLU_EMPTY;
+    options->UserDefineSupernode = NO; /* detect supernodes internally */
     options->ParSymbFact = NO;
 #ifdef HAVE_PARMETIS
     options->ColPerm = METIS_AT_PLUS_A;
@@ -256,6 +257,7 @@ void print_options_dist(superlu_dist_options_t *options)
     printf("**    Fact                      : %4d\n", options->Fact);
     printf("**    Equil                     : %4d\n", options->Equil);
     printf("**    DiagInv                   : %4d\n", options->DiagInv);
+    printf("**    UserDefineSupernode       : %4d\n", options->UserDefineSupernode);
     printf("**    ParSymbFact               : %4d\n", options->ParSymbFact);
     printf("**    ColPerm                   : %4d\n", options->ColPerm);
     printf("**    RowPerm                   : %4d\n", options->RowPerm);

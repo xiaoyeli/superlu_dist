@@ -64,15 +64,6 @@ int_t ilu_level_symbfact
     double t;
     int min_mn = SUPERLU_MIN(m, n);
 
-    /* Set up supernode partition */
-    Glu_persist->supno = (int_t *) SUPERLU_MALLOC(n * sizeof(int_t));
-    Glu_persist->xsup = (int_t *) SUPERLU_MALLOC((n+1) * sizeof(int_t));
-    for (i = 0; i < n; i++) {
-	Glu_persist->supno[i] = i;
-	Glu_persist->xsup[i] = i;
-    }
-    Glu_persist->xsup[n] = n;
-
 
     NCPformat *GACstore = A->Store;
     int_t *colbeg, *colend, *rowind, irow;
@@ -84,6 +75,17 @@ int_t ilu_level_symbfact
     Glu_freeable->xusub = (int_t *) intCalloc_dist(n+1);
     int_t nnzL = 0, nnzU = 0;
     
+    /* Set up supernode partition */
+    Glu_persist->supno = (int_t *) SUPERLU_MALLOC(n * sizeof(int_t));
+    Glu_persist->xsup = (int_t *) SUPERLU_MALLOC((n+1) * sizeof(int_t));
+    if ( options->UserDefineSupernode == NO ) {
+	for (i = 0; i < n; i++) { /* set up trivial supernode for now. */
+	    Glu_persist->supno[i] = i;
+	    Glu_persist->xsup[i] = i;
+	}
+	Glu_persist->xsup[n] = n;
+    }
+
     /* Count nonzeros per column for L & U */
     for (int j = 0; j < n; ++j) {
 #if 0	
@@ -134,6 +136,7 @@ int_t ilu_level_symbfact
 	Glu_freeable->xlsub[i] += Glu_freeable->xlsub[i-1];	
 	Glu_freeable->xusub[i] += Glu_freeable->xusub[i-1];
     }
+
 
     return ( -(Glu_freeable->xlsub[n] + Glu_freeable->xusub[n]) );
 }

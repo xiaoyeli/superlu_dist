@@ -746,6 +746,7 @@ typedef struct {
     double	  ILU_FillTol;    /* threshold for zero pivot perturbation */
     milu_t	  ILU_MILU;
     double	  ILU_MILU_Dim;   /* Dimension of PDE (if available) */
+    yes_no_t      UserDefineSupernode; /* Allow users to define supernodes */
     yes_no_t      ParSymbFact;
     yes_no_t      ReplaceTinyPivot; /* used in SuperLU_DIST */
     yes_no_t      SolveInitialized;
