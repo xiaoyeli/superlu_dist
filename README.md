@@ -186,7 +186,7 @@ OOT}/Applications/BipartiteMatchings" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DCMAKE_CXX_FLAGS="-std=c++11" \
-    -DTPL_ENABLE_BLASLIB=OFF \
+    -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
 
