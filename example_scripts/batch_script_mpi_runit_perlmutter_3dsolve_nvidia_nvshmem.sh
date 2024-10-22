@@ -29,7 +29,7 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 export SUPERLU_LBS=GD  
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
-export GPU3DVERSION=0
+export GPU3DVERSION=1
 export ANC25D=0
 export NEW3DSOLVE=1    
 export NEW3DSOLVETREECOMM=1
@@ -50,7 +50,7 @@ export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
 export NVSHMEM_LIBFABRIC_SUPPORT=1
-export LIBFABRIC_HOME=/opt/cray/libfabric/1.15.2.0
+export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
 export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
 export NVSHMEM_DISABLE_CUDA_VMM=1
 export FI_CXI_OPTIMIZED_MRS=false
@@ -168,7 +168,7 @@ srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c 
 
 # export SUPERLU_ACC_SOLVE=0
 # srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
-# # srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores valgrind --leak-check=yes ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores valgrind --leak-check=yes ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
 
 
 done

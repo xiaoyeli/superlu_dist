@@ -20,7 +20,7 @@ export CC=cc
 export CXX=CC
  
 export NVSHMEM_LIBFABRIC_SUPPORT=1
-export LIBFABRIC_HOME=/opt/cray/libfabric/1.15.2.0
+export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
 #export LD_LIBRARY_PATH /global/cfs/cdirs/m2956/nanding/software/MPI_Bootstrap_For_Nan/:$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
 
 export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
@@ -37,7 +37,7 @@ export CRAY_ACCEL_TARGET=nvidia80
 export MPI_HOME=${MPICH_DIR}
 export NVSHMEM_HOME=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/nvshmem_src_2.8.0-3/build
 export NVSHMEM_LIBFABRIC_SUPPORT=1
-export LIBFABRIC_HOME=/opt/cray/libfabric/1.15.2.0
+export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
 
 export NVSHMEM_DISABLE_CUDA_VMM=1
 export FI_CXI_OPTIMIZED_MRS=false

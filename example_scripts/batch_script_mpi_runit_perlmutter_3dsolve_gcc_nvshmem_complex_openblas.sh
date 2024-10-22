@@ -5,9 +5,7 @@ module load PrgEnv-gnu
 # module load gcc/11.2.0
 module load cmake
 module load cudatoolkit/12.2
-# avoid bug in cray-libsci/21.08.1.2
-# module load cray-libsci/22.11.1.2
-module load cray-libsci/23.12.5
+module unload cray-libsci
 # module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/2.11.0
 ulimit -s unlimited
@@ -28,33 +26,32 @@ export NEW3DSOLVETREECOMM=1
 export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
 
 # the supernode size doesn't need to specified when options.SolveOnly is used
-export SUPERLU_MAXSUP=1 # max supernode size
-export SUPERLU_RELAX=1  # upper bound for relaxed supernode size
-export SUPERLU_MAX_BUFFER_SIZE=10000000 ## 500000000 # buffer size in words on GPU
+export SUPERLU_MAXSUP=256 # max supernode size
+export SUPERLU_RELAX=64  # upper bound for relaxed supernode size
+export SUPERLU_MAX_BUFFER_SIZE=100000000 ## 500000000 # buffer size in words on GPU
 export SUPERLU_NUM_LOOKAHEADS=2   ##4, must be at least 2, see 'lookahead winSize'
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
-nmpipergpu=1
-export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # 2: this can better saturate GPU
-export SUPERLU_RANKORDER='XY'  # Be careful: XY needs to be used when NOROWPERM or SolveOnly is used for 3D grids
+export SUPERLU_MPI_PROCESS_PER_GPU=1 # 2: this can better saturate GPU
+export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 
-# ##NVSHMEM settings:
-# # NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
-# export NVSHMEM_USE_GDRCOPY=1
-# export NVSHMEM_MPI_SUPPORT=1
-# export MPI_HOME=${MPICH_DIR}
-# export NVSHMEM_LIBFABRIC_SUPPORT=1
-# export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
-# export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
-# export NVSHMEM_DISABLE_CUDA_VMM=1
-# export FI_CXI_OPTIMIZED_MRS=false
-# export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
-# export NVSHMEM_BOOTSTRAP=MPI
-# export NVSHMEM_REMOTE_TRANSPORT=libfabric
+##NVSHMEM settings:
+# NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+export NVSHMEM_USE_GDRCOPY=1
+export NVSHMEM_MPI_SUPPORT=1
+export MPI_HOME=${MPICH_DIR}
+export NVSHMEM_LIBFABRIC_SUPPORT=1
+export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
+export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
+export NVSHMEM_DISABLE_CUDA_VMM=1
+export FI_CXI_OPTIMIZED_MRS=false
+export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
+export NVSHMEM_BOOTSTRAP=MPI
+export NVSHMEM_REMOTE_TRANSPORT=libfabric
 
-# #export NVSHMEM_DEBUG=TRACE
-# #export NVSHMEM_DEBUG_SUBSYS=ALL
-# #export NVSHMEM_DEBUG_FILE=nvdebug_success
+#export NVSHMEM_DEBUG=TRACE
+#export NVSHMEM_DEBUG_SUBSYS=ALL
+#export NVSHMEM_DEBUG_FILE=nvdebug_success
 
 if [[ $NERSC_HOST == edison ]]; then
   CORES_PER_NODE=24
@@ -72,9 +69,9 @@ else
   exit $EXIT_HOST
 fi
 
-nprows=(2)
-npcols=(1)
-npz=(2)
+nprows=(8)
+npcols=(8)
+npz=(1)
 nrhs=(1)
 NTH=1
 NREP=1
@@ -121,12 +118,14 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 # export NSUP=256
 # export NREL=256
-for MAT in cg20.cua
+# for MAT in cg20.cua
 # for MAT in cg4.dat
 # for MAT in Geo_1438.bin
 # for MAT in g20.rua
 # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua
 # for MAT in dielFilterV3real.bin
+for MAT in nimrod_new/nimrodMatrix-Ti.mtx nimrod_new/nimrodMatrix-nc.mtx nimrod_new/nimrodMatrix-nd.mtx nimrod_new/nimrodMatrix-V.mtx nimrod_new/nimrodMatrix-B.mtx nimrod_new/nimrodMatrix-J.mtx 
+# for MAT in cg20.cua
 # for MAT in rma10.mtx 
 # for MAT in raefsky3.mtx
 # for MAT in s2D9pt2048.rua raefsky3.mtx rma10.mtx
@@ -144,18 +143,18 @@ mkdir -p $MAT
 for ii in `seq 1 $NREP`
 do	
 
-# SUPERLU_ACC_OFFLOAD=0
-# srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
+SUPERLU_ACC_OFFLOAD=0
+srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
 
 # SUPERLU_ACC_OFFLOAD=1
 # export SUPERLU_ACC_SOLVE=1
 # srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}_nmpipergpu${nmpipergpu}
 
-SUPERLU_ACC_OFFLOAD=0
-export GPU3DVERSION=0
-export SUPERLU_ACC_SOLVE=0
-echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
-srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
+# SUPERLU_ACC_OFFLOAD=0
+# export GPU3DVERSION=0
+# export SUPERLU_ACC_SOLVE=0
+# echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
 
 # SUPERLU_ACC_OFFLOAD=1
 # export GPU3DVERSION=1
