@@ -76,14 +76,16 @@ int_t ilu_level_symbfact
     int_t nnzL = 0, nnzU = 0;
     
     /* Set up supernode partition */
-    Glu_persist->supno = (int_t *) SUPERLU_MALLOC(n * sizeof(int_t));
-    Glu_persist->xsup = (int_t *) SUPERLU_MALLOC((n+1) * sizeof(int_t));
     if ( options->UserDefineSupernode == NO ) {
+	Glu_persist->supno = (int_t *) SUPERLU_MALLOC(n * sizeof(int_t));
+	Glu_persist->xsup = (int_t *) SUPERLU_MALLOC((n+1) * sizeof(int_t));
 	for (i = 0; i < n; i++) { /* set up trivial supernode for now. */
 	    Glu_persist->supno[i] = i;
 	    Glu_persist->xsup[i] = i;
 	}
 	Glu_persist->xsup[n] = n;
+    } else {
+	/* User alreay allocated and defined the above supernode partition */
     }
 
     /* Count nonzeros per column for L & U */
