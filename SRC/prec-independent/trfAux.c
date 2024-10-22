@@ -2579,9 +2579,9 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
 
     t = SuperLU_timer_();
 
-    if ( options->ILU_level != SLU_EMPTY ) {
+    if ( options->ILU_level != SLU_EMPTY ) { /* for any level-based ILU */
 	iinfo = ilu_level_symbfact(options, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
-    } else {
+    } else { /* for complete LU */
 	iinfo = symbfact(options, iam, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
     }
     
