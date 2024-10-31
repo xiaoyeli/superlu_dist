@@ -7,62 +7,7 @@ import time
 import sys
 import mpi4py
 from mpi4py import MPI
-
-
-
-def setup_pdbridge(sp,INT64):
-    # Define the function signature for pdbridge_init
-    sp.pdbridge_init.restype = None
-    if(INT64==0):
-        sp.pdbridge_init.argtypes = [
-            ctypes.c_int,                                   # int_t m
-            ctypes.c_int,                                   # int_t n
-            ctypes.c_int,                                   # int_t nnz
-            ctypes.POINTER(ctypes.c_int),                   # int_t *rowind
-            ctypes.POINTER(ctypes.c_int),                   # int_t *colptr
-            ctypes.POINTER(ctypes.c_double),                # double *nzval
-            ctypes.POINTER(ctypes.c_void_p),                # void **pyobj
-            ctypes.c_int,                                   # int argc
-            ctypes.POINTER(ctypes.c_char_p)                 # char *argv[]
-        ]
-    else:
-        sp.pdbridge_init.argtypes = [
-            ctypes.c_int64,                                   # int_t m
-            ctypes.c_int64,                                   # int_t n
-            ctypes.c_int64,                                   # int_t nnz
-            ctypes.POINTER(ctypes.c_int64),                   # int_t *rowind
-            ctypes.POINTER(ctypes.c_int64),                   # int_t *colptr
-            ctypes.POINTER(ctypes.c_double),                # double *nzval
-            ctypes.POINTER(ctypes.c_void_p),                # void **pyobj
-            ctypes.c_int,                                   # int argc
-            ctypes.POINTER(ctypes.c_char_p)                 # char *argv[]
-        ]
-
-
-    sp.pdbridge_factor.restype = None
-    sp.pdbridge_factor.argtypes = [
-        ctypes.POINTER(ctypes.c_void_p),                # void **pyobj
-    ]
-
-    sp.pdbridge_solve.restype = None
-    sp.pdbridge_solve.argtypes = [
-        ctypes.POINTER(ctypes.c_void_p),                # void **pyobj
-        ctypes.c_int,                                   # int nrhs
-        ctypes.POINTER(ctypes.c_double),                # double *b_global
-    ]
-    # Define the function signature for pdbridge_logdet
-    sp.pdbridge_logdet.restype = None
-    sp.pdbridge_logdet.argtypes = [
-        ctypes.POINTER(ctypes.c_void_p),                # void **pyobj
-        ctypes.POINTER(ctypes.c_int),                   # int* sign
-        ctypes.POINTER(ctypes.c_double),                # double *logdet
-    ]
-    # Define the function signature for pdbridge_free
-    sp.pdbridge_free.restype = None
-    sp.pdbridge_free.argtypes = [
-        ctypes.POINTER(ctypes.c_void_p),                # void **pyobj
-    ]
-
+import pdbridge
 
 
 comm = MPI.COMM_WORLD
@@ -74,6 +19,8 @@ if(rank==0):
     print('MPI count:', size)
 
 
+####################################################################################################
+####################################################################################################
 ####################### create the matrix
 INT64 = 1 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
 rng = np.random.default_rng()
@@ -101,6 +48,11 @@ else:
     nnz=np.int64(m.nnz)
     n = np.int64(n)
 
+
+
+
+####################################################################################################
+####################################################################################################
 ####################### handle options 
 argv=sys.argv
 if(len(argv)==1): # options are not passed via command line, set them manually here. If they are not set here, default values are used
@@ -121,32 +73,11 @@ argv_ctypes = (ctypes.c_char_p * (argc + 1))(*argv_bytes, None)
 
 
 
-####################### load DLL
-import sys
-from sys import platform
-if platform == "linux" or platform == "linux2":
-    pos='.so'
-elif platform == "darwin":
-    pos='.dylib'
-elif platform == "win32":
-    raise Exception(f"Windows is not yet supported")
 
-DLLFOUND=False
-INSTALLDIR=os.getenv('SUPERLU_PYTHON_LIB_PATH')
-
-DLL = os.path.abspath(__file__ + "/../../")+'/libsuperlu_dist_python%s'%(pos)
-if(os.path.exists(DLL)):
-    DLLFOUND=True
-elif(INSTALLDIR is not None):
-    DLL = INSTALLDIR+'/libsuperlu_dist_python%s'%(pos)
-    if(os.path.exists(DLL)):
-        DLLFOUND=True
-if(DLLFOUND == True):
-    sp = ctypes.cdll.LoadLibrary(DLL)
-    setup_pdbridge(sp,INT64)
-else:
-    raise Exception(f"Cannot find the superlu_dist_python library. Try to set env variable SUPERLU_PYTHON_LIB_PATH correctly.")
-
+####################################################################################################
+####################################################################################################
+####################### call the APIs
+sp = pdbridge.load_library(INT64)
 ####################### initialization
 pyobj = ctypes.c_void_p()
 if(INT64==0):

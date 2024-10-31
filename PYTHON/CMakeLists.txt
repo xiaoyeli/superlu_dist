@@ -29,6 +29,16 @@ add_custom_command(
     COMMENT "Copying pddrive.py to ${CMAKE_BINARY_DIR}/PYTHON"
 )
 
+set(PY_SCRIPT_SOURCE ${CMAKE_SOURCE_DIR}/PYTHON/pdbridge.py)
+set(PY_SCRIPT_DEST ${CMAKE_BINARY_DIR}/PYTHON/pdbridge.py)
+# Create a custom command to copy the Python script
+add_custom_command(
+    OUTPUT ${PY_SCRIPT_DEST}
+    COMMAND ${CMAKE_COMMAND} -E copy ${PY_SCRIPT_SOURCE} ${PY_SCRIPT_DEST}
+    DEPENDS ${PY_SCRIPT_SOURCE}
+    COMMENT "Copying pdbridge.py to ${CMAKE_BINARY_DIR}/PYTHON"
+)
+
 # Create a custom target named 'python' that depends on the output file
 add_custom_target(python
     DEPENDS ${PY_SCRIPT_DEST}
@@ -43,6 +53,7 @@ install(TARGETS superlu_dist_python
     ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
 )
 install(FILES pddrive.py DESTINATION "${INSTALL_LIB_DIR}/PYTHON")
+install(FILES pdbridge.py DESTINATION "${INSTALL_LIB_DIR}/PYTHON")
 
 
 
