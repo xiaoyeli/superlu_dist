@@ -32,7 +32,7 @@ NTH=4 # number of OMP threads
 
 #SUPERLU settings:
 ################################################# 
-export SUPERLU_LIB_PATH=/global/cfs/cdirs/m2957/liuyangz/my_research/superlu_dist_python_09_19_2024/build/SRC/
+export SUPERLU_PYTHON_LIB_PATH=/global/cfs/cdirs/m2957/liuyangz/my_research/superlu_dist_python_09_19_2024/build/PYTHON/
 export SUPERLU_LBS=GD  
 export SUPERLU_ACC_OFFLOAD=1 # whether to do CPU or GPU numerical factorization
 export GPU3DVERSION=0 # whether to do use the latest C++ numerical factorization 
@@ -92,7 +92,6 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 
 
-cd ../EXAMPLE/
-srun -n $NCORE_VAL_TOT2D  -c $TH_PER_RANK --cpu_bind=cores python ./pddrive.py -c $NCOL -r $NROW -s 1 -q 5 -m 1 
+srun -n $NCORE_VAL_TOT2D  -c $TH_PER_RANK --cpu_bind=cores python ../PYTHON/pddrive.py -c $NCOL -r $NROW -s 1 -q 5 -m 1 
 
 

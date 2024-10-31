@@ -88,6 +88,7 @@ cmake .. \
 make pddrive -j16
 make pddrive3d -j16
 make f_pddrive
+make python
 
 ## -DTPL_BLAS_LIBRARIES=/global/cfs/cdirs/m3894/ptlin/tpl/amd_blis/install/amd_blis-20211021-n9-gcc9.3.0/lib/libblis.a \
 MPICC=cc pip install mpi4py==4.0.0

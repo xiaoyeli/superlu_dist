@@ -25,6 +25,7 @@ option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
+option(enable_python "Enable Python" ON)
 
 #-- BLAS
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
@@ -617,6 +618,14 @@ endif()
 
 if (XSDK_ENABLE_Fortran)
   add_subdirectory(FORTRAN)
+endif()
+
+if (enable_python)
+if (BUILD_SHARED_LIBS)
+  add_subdirectory(PYTHON)
+else()
+  message("-- Not building Python interface, which requires shared build.")
+endif()
 endif()
 
 # superlu_dist uses c++11. PUBLIC means that the other codes linking to it need c++11

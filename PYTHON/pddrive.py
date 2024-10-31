@@ -132,20 +132,20 @@ elif platform == "win32":
     raise Exception(f"Windows is not yet supported")
 
 DLLFOUND=False
-INSTALLDIR=os.getenv('SUPERLU_LIB_PATH')
+INSTALLDIR=os.getenv('SUPERLU_PYTHON_LIB_PATH')
 
-DLL = os.path.abspath(__file__ + "/../../")+'/libsuperlu_dist%s'%(pos)
+DLL = os.path.abspath(__file__ + "/../../")+'/libsuperlu_dist_python%s'%(pos)
 if(os.path.exists(DLL)):
     DLLFOUND=True
 elif(INSTALLDIR is not None):
-    DLL = INSTALLDIR+'/libsuperlu_dist%s'%(pos)
+    DLL = INSTALLDIR+'/libsuperlu_dist_python%s'%(pos)
     if(os.path.exists(DLL)):
         DLLFOUND=True
 if(DLLFOUND == True):
     sp = ctypes.cdll.LoadLibrary(DLL)
     setup_pdbridge(sp,INT64)
 else:
-    raise Exception(f"Cannot find the superlu_dist library. Try to set env variable SUPERLU_LIB_PATH correctly.")
+    raise Exception(f"Cannot find the superlu_dist_python library. Try to set env variable SUPERLU_PYTHON_LIB_PATH correctly.")
 
 ####################### initialization
 pyobj = ctypes.c_void_p()

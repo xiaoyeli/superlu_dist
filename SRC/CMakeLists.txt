@@ -166,7 +166,6 @@ if(enable_double)
     double/pdgssvx3d_csc_batch.c # batch in CSC format
     double/dequil_batch.c # batch in CSC format
     double/dpivot_batch.c
-    double/pdbridge.c
   )
   
 if (TPL_ENABLE_CUDALIB)

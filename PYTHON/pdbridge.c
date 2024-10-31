@@ -22,7 +22,7 @@ at the top-level directory.
  * </pre>
  */
 
-#include "superlu_ddefs.h"
+#include "pdbridge.h"
 #include <math.h>
 #include <stdbool.h>
 
