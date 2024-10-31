@@ -32,7 +32,7 @@ void pdbridge_init(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr , d
     double   *berr;
     double   *b, *xtrue;
     int    m1, n1;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, sympattern;
     int      iam, info, ldb, ldx;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
@@ -56,6 +56,7 @@ void pdbridge_init(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr , d
     rowperm = -1;
     ir = -1;
     symbfact = -1;
+    sympattern=0;
     batch = 0;
 
     /* ------------------------------------------------------------
@@ -104,6 +105,7 @@ void pdbridge_init(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr , d
 	    switch (c) {
             case 'h':
                 printf("Options:\n");
+                printf("\t-m <int>: symmetric pattern  (default %4d)\n", sympattern);
                 printf("\t-r <int>: process rows       (default %4d)\n", nprow);
                 printf("\t-c <int>: process columns    (default %4d)\n", npcol);
                 printf("\t-p <int>: row permutation    (default %4d)\n", (slu_obj->options).RowPerm);
@@ -130,6 +132,8 @@ void pdbridge_init(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr , d
                     break;
             case 'b': batch = atoi(*cpp);
                     break;
+            case 'm': sympattern = atoi(*cpp);
+                    break;                    
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -145,6 +149,7 @@ void pdbridge_init(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr , d
     if (lookahead != -1) (slu_obj->options).num_lookaheads = lookahead;
     if (ir != -1) (slu_obj->options).IterRefine = ir;
     if (symbfact != -1) (slu_obj->options).ParSymbFact = symbfact;
+    if (sympattern==1) (slu_obj->options).SymPattern = YES;
 
     int superlu_acc_offload = sp_ienv_dist(10, &(slu_obj->options)); //get_acc_offload();
     

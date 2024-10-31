@@ -75,7 +75,7 @@ if(rank==0):
 
 
 ####################### create the matrix
-INT64 = 0 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
+INT64 = 1 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
 rng = np.random.default_rng()
 n = 1000
 nrhs = 1
@@ -110,6 +110,7 @@ if(len(argv)==1): # options are not passed via command line, set them manually h
     argv.extend(['-q', '2'])  # column permutation 
     argv.extend(['-s', '0'])  # parallel symbolic factorization, needs -q to be 5
     argv.extend(['-i', '0'])  # whether to use iterative refinement 0, 1, 2
+    argv.extend(['-m', '0'])  # whether to use symmetric pattern 0 or 1
 argc = len(argv)
 if(rank==0):    
     print('SuperLU options: ',argv[1:])
