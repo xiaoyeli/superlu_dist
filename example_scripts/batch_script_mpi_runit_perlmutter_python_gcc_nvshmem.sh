@@ -92,6 +92,6 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 
 
-srun -n $NCORE_VAL_TOT2D  -c $TH_PER_RANK --cpu_bind=cores python ../PYTHON/pddrive.py -c $NCOL -r $NROW -s 1 -q 5 -m 1 
+srun -n $NCORE_VAL_TOT2D  -c $TH_PER_RANK --cpu_bind=cores python ../PYTHON/pddrive.py -c $NCOL -r $NROW -s 1 -q 5 -m 1 -p 0 
 
 
