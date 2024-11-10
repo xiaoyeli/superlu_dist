@@ -10,17 +10,12 @@ at the top-level directory.
 */
 
 /*! @file
- * \brief  Distributed SuperLU data types and function prototypes
+ * \brief  Header file for the Python bridge routines
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
- * Lawrence Berkeley National Lab, Univ. of California Berkeley,
- * Georgia Institute of Technology
- * November 1, 2007
- * April 5, 2015
- * September 18, 2018  version 6.0
- * February 8, 2019  version 6.1.1
- * May 10, 2019 version 7.0.0
+ * -- Distributed SuperLU routine (version 9.1.0) --
+ * Lawrence Berkeley National Lab
+ * November 10, 2024
  * </pre>
  */
 

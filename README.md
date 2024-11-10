@@ -24,7 +24,7 @@ acceleration capabilities.
 Table of Contents
 =================
 
-* [SuperLU_DIST (version 9.0.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-81---)
+* [SuperLU_DIST (version 9.1.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-81---)
 * [Directory structure of the source code](#directory-structure-of-the-source-code)
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
@@ -492,7 +492,16 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
  Parallel Processing for Scientific Computing. Feb. 12-15, 2020.   
 **[8]** A. Azad, A. Buluc, X.S. Li, X. Wang, and J. Langguth,
 "A distributed-memory algorithm for computing a heavy-weight perfect matching 
-on bipartite graphs", SIAM J. Sci. Comput., Vol. 42, No. 4, pp. C143-C168, 2020.   
+on bipartite graphs", SIAM J. Sci. Comput., Vol. 42, No. 4, pp. C143-C168, 2020.
+**[9]** X. Li, P. Lin, Y. Liu, P. Sao, “Newly Released Capabilities in Distributed-memory SuperLU Sparse Direct Solver”, submitted to ACM Trans. Math. Software, May 2022.
+**[10]** N. Ding, Y. Liu, S. Williams, X.S. Li,
+"A Message-Driven, Multi-GPU Parallel Sparse Triangular Solver”, Proceedings of SIAM Proceedings of ACDA21 conference, 2021.
+**[11]** Y. Liu, N. Ding, P. Sao, S. Williams, X.S. Li, 
+"Unified Communication Optimization Strategies for Sparse Triangular Solver on CPU and GPU Clusters", Proceedings of SC23, Nov. 2023 
+**[12]** W. Boukaram, Y. Hong Y, Y. Liu, T. Shi, X.S. Li.
+  "Batched sparse direct solver design and evaluation in SuperLU\_DIST".
+  International Journal of High Performance Computing Applications. 2024;38(6):585-598.
+  doi:10.1177/10943420241268200
 
 
 **Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)   
@@ -544,4 +553,5 @@ October 1, 2022     Version 8.1.1
 Novembe 9, 2023     Version 8.2.0
 Novembe 17, 2023    Version 8.2.1
 May 8, 2024         Version 9.0.0
+November 10, 2024   Version 9.1.0
 ```

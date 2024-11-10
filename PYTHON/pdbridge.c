@@ -11,14 +11,12 @@ at the top-level directory.
 
 
 /*! @file
- * \brief Driver program for PDGSSVX example
+ * \brief The bridge routines for the Python interface
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
- * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * November 1, 2007
- * December 6, 2018
- * AUgust 27, 2022  Add batch option
+ * -- Distributed SuperLU routine (version 9.1.0) --
+ * Lawrence Berkeley National Lab
+ * November 10, 2024
  * </pre>
  */
 
