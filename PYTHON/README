@@ -1,0 +1,26 @@
+		Python Interface
+		====================
+
+This directory contains the Python interface routines for SuperLU_DIST.
+The directory contains the following files:
+    pdbridge.h    -  C header file for the Python handle slu_handle and APIs (using pdgssvx): 
+                     initialization pdbridge_init, factorization pdbridge_factor, triangular solve 
+                     pdbridge_solve, log-determinant computation pdbridge_logdet, and deallocation pdbridge_free.
+    pdbridge.c    -  It contains C functions for the APIs.
+    pdbridge.py   -  Utility Python functions. 
+    
+
+To compile the code, use CMake option -Denable_python=ON (the default) and -DBUILD_SHARED_LIBS=ON, 
+then type 'make python'. This will create a shared library called superlu_dist_python. In addition, 
+one need to install mpi4py>=4.0.0, e.g., using:
+MPICC=mpicc pip install mpi4py==4.0.0
+
+There is one example in the directory.
+
+1. pddrive.py: 
+   This example will generate a random SPD matrix, perform the factorization and computes the log-determinant (and compare with log-determinant from numpy.linalg.slogdet)    
+   To run the code, type:
+      python pddrive.py -c 2 -r 1 
+   (The above use 2 MPIs.)
+   Note that if a 64-bit integer interface is needed (assuming -DXSDK_INDEX_SIZE=64 has been used to compile the code), set INT64 = 1 in pddrive.py
+
