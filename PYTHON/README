@@ -12,13 +12,13 @@ The directory contains the following files:
 
 To compile the code, use CMake option -Denable_python=ON (the default) and -DBUILD_SHARED_LIBS=ON, 
 then type 'make python'. This will create a shared library called superlu_dist_python. In addition, 
-one need to install mpi4py>=4.0.0, e.g., using:
+one needs to install mpi4py>=4.0.0, e.g., using:
 MPICC=mpicc pip install mpi4py==4.0.0
 
 There is one example in the directory.
 
 1. pddrive.py: 
-   This example will generate a random SPD matrix, perform the factorization and computes the log-determinant (and compare with log-determinant from numpy.linalg.slogdet)    
+   This example will generate a random SPD matrix, perform the factorization and computes the log-determinant (and compare it with log-determinant from numpy.linalg.slogdet)    
    To run the code, type:
       python pddrive.py -c 2 -r 1 
    (The above use 2 MPIs.)
