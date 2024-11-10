@@ -2593,7 +2593,7 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
 #if (PRNTlevel >= 1)
         if (!iam)
         {
-            printf("\tNo of supers %ld\n", (long)Glu_persist->supno[n - 1] + 1);
+            printf("\tNumber of supers %ld\n", (long)Glu_persist->supno[n - 1] + 1);
             printf("\tSize of G(L) %ld\n", (long)Glu_freeable->xlsub[n]);
             printf("\tSize of G(U) %ld\n", (long)Glu_freeable->xusub[n]);
             printf("\tint %lu, short %lu, float %lu, double %lu\n",

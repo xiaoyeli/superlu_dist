@@ -91,7 +91,7 @@ int_t symbfact
  )
 {
 
-    int_t m, n, min_mn, j, i, k, irep, nseg, pivrow, info;
+    int_t m, n, min_mn, nnz, j, i, k, irep, nseg, pivrow, info;
     int_t *iwork, *perm_r, *segrep, *repfnz;
     int_t *xprune, *marker, *parent, *xplore;
     int_t relax, *desc, *relax_end;
@@ -104,11 +104,11 @@ int_t symbfact
 
     m = A->nrow;
     n = A->ncol;
+    nnz = ((NCPformat*)A->Store)->nnz;
     min_mn = SUPERLU_MIN(m, n);
 
     /* Allocate storage common to the symbolic factor routines */
-    info = symbfact_SubInit(options, DOFACT, NULL, 0, m, n,
-			    ((NCPformat*)A->Store)->nnz,
+    info = symbfact_SubInit(options, DOFACT, NULL, 0, m, n, nnz,
 			    Glu_persist, Glu_freeable);
     if ( info != 0 )
 	return info;
@@ -188,11 +188,13 @@ int_t symbfact
 
     if ( !pnum && (options->PrintStat == YES)) {
 	nnzLU = nnzL + nnzU - min_mn;				   
-	printf("\tMatrix size min_mn  " IFMT "\n", min_mn);
-	printf("\tNonzeros in L       " IFMT "\n", nnzL);
-	printf("\tNonzeros in U       " IFMT "\n", nnzU);
-	printf("\tnonzeros in L+U     " IFMT "\n", nnzLU);
-	printf("\tnonzeros in LSUB    " IFMT "\n", nnzLSUB);
+	printf("\tmatrix dimension  " IFMT "\n", min_mn);
+	printf("\tnonzeros in A     " IFMT "\n", nnz);
+	printf("\tnonzeros in L     " IFMT "\n", nnzL);
+	printf("\tnonzeros in U     " IFMT "\n", nnzU);
+	printf("\tnonzeros in L+U   " IFMT "\n", nnzLU);
+	printf("\tfill ratio        " "%8.1f" "\n", (float)nnzLU/nnz);
+	printf("\tnonzeros in LSUB  " IFMT "\n", nnzLSUB);
     }
     SUPERLU_FREE(iwork);
 
