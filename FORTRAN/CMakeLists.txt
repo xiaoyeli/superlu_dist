@@ -16,7 +16,9 @@ if(enable_complex16)
 endif()  
 
 add_library(superlu_dist_fortran ${sources})
-add_library(superlu_dist_fortran-static STATIC ${sources})
+if(BUILD_STATIC_LIBS)
+  add_library(superlu_dist_fortran-static STATIC ${sources})
+endif()
 # set(targets superlu_dist_fortran)
 get_target_property(superlu_dist_version superlu_dist VERSION)
 get_target_property(superlu_dist_soversion superlu_dist SOVERSION)
@@ -24,15 +26,19 @@ set_target_properties(superlu_dist_fortran PROPERTIES VERSION ${superlu_dist_ver
 set_target_properties(superlu_dist_fortran PROPERTIES SOVERSION ${superlu_dist_soversion})
 target_link_libraries(superlu_dist_fortran superlu_dist)
 
-set_target_properties(superlu_dist_fortran-static PROPERTIES OUTPUT_NAME superlu_dist_fortran)
-set_target_properties(superlu_dist_fortran-static PROPERTIES VERSION ${superlu_dist_version})
-set_target_properties(superlu_dist_fortran-static PROPERTIES SOVERSION ${superlu_dist_soversion})
-target_link_libraries(superlu_dist_fortran-static superlu_dist)
+if (BUILD_STATIC_LIBS)
+  set_target_properties(superlu_dist_fortran-static PROPERTIES OUTPUT_NAME superlu_dist_fortran)
+  set_target_properties(superlu_dist_fortran-static PROPERTIES VERSION ${superlu_dist_version})
+  set_target_properties(superlu_dist_fortran-static PROPERTIES SOVERSION ${superlu_dist_soversion})
+  target_link_libraries(superlu_dist_fortran-static superlu_dist)
+endif()
 
 # depends on FPP defs
 add_dependencies(superlu_dist_fortran config_f)
-add_dependencies(superlu_dist_fortran-static config_f)
-add_dependencies(superlu_dist_fortran-static superlu_dist_fortran)
+if(BUILD_STATIC_LIBS)
+  add_dependencies(superlu_dist_fortran-static config_f)
+  add_dependencies(superlu_dist_fortran-static superlu_dist_fortran)
+endif()
 
 install(TARGETS superlu_dist_fortran
 # DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -40,12 +46,14 @@ install(TARGETS superlu_dist_fortran
     LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
     ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
 )
-install(TARGETS superlu_dist_fortran-static
-# DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
-)
+if (BUILD_STATIC_LIBS)
+  install(TARGETS superlu_dist_fortran-static
+  # DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
+      LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+      ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
+  )
+endif()
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -62,7 +70,9 @@ link_directories(${MPI_Fortran_LIBRARIES})
 
 # Libs to be linked with the Fortran codes
 set(fortran_link_libs superlu_dist_fortran ${MPI_Fortran_LIBRARIES} ${BLAS_LIB} ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
-set(fortran_link_libs superlu_dist_fortran-static ${MPI_Fortran_LIBRARIES} ${BLAS_LIB} ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
+if(BUILD_STATIC_LIBS)
+  set(fortran_link_libs superlu_dist_fortran-static ${MPI_Fortran_LIBRARIES} ${BLAS_LIB} ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
+endif()
 set(all_link_libs ${fortran_link_libs} superlu_dist)
 
 #message("!!! in Fortran: MPI_Fortran_LINK_FLAGS='${MPI_Fortran_LINK_FLAGS}'")
