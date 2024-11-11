@@ -492,16 +492,19 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
  Parallel Processing for Scientific Computing. Feb. 12-15, 2020.   
 **[8]** A. Azad, A. Buluc, X.S. Li, X. Wang, and J. Langguth,
 "A distributed-memory algorithm for computing a heavy-weight perfect matching 
-on bipartite graphs", SIAM J. Sci. Comput., Vol. 42, No. 4, pp. C143-C168, 2020.
-**[9]** X. Li, P. Lin, Y. Liu, P. Sao, “Newly Released Capabilities in Distributed-memory SuperLU Sparse Direct Solver”, submitted to ACM Trans. Math. Software, May 2022.
-**[10]** N. Ding, Y. Liu, S. Williams, X.S. Li,
-"A Message-Driven, Multi-GPU Parallel Sparse Triangular Solver”, Proceedings of SIAM Proceedings of ACDA21 conference, 2021.
-**[11]** Y. Liu, N. Ding, P. Sao, S. Williams, X.S. Li, 
-"Unified Communication Optimization Strategies for Sparse Triangular Solver on CPU and GPU Clusters", Proceedings of SC23, Nov. 2023 
+on bipartite graphs", SIAM J. Sci. Comput., Vol. 42, No. 4, pp. C143-C168, 2020.\
+**[9]** N. Ding, Y. Liu, S. Williams, X.S. Li,
+"A Message-Driven, Multi-GPU Parallel Sparse Triangular Solver”, 
+Proceedings of SIAM Proceedings of ACDA21 conference, 2021.\
+**[10]** Y. Liu, N. Ding, P. Sao, S. Williams, X.S. Li, 
+"Unified Communication Optimization Strategies for Sparse Triangular Solver on CPU and GPU Clusters", Proceedings of SC23, Nov. 2023 \
+**[11]** X. Li, P. Lin, Y. Liu, P. Sao, “Newly Released Capabilities in Distributed-memory SuperLU Sparse Direct Solver”,
+ACM Trans. Math. Software, Volume 49, No. 1, March 2023.
+  https://dl.acm.org/doi/10.1145/3577197 \
 **[12]** W. Boukaram, Y. Hong Y, Y. Liu, T. Shi, X.S. Li.
   "Batched sparse direct solver design and evaluation in SuperLU\_DIST".
   International Journal of High Performance Computing Applications. 2024;38(6):585-598.
-  doi:10.1177/10943420241268200
+  doi:10.1177/10943420241268200 
 
 
 **Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)   
