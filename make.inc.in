@@ -47,6 +47,9 @@ LIBS 	 += ${COMBBLAS_LIB_EXPORT}
 LIBS 	 += ${EXTRA_LIB_EXPORT}
 #LIBS     += ${CUDA_LIB_EXPORT}
 
+# Perlmutter
+# CUDALIBS = /opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/lib64/libcudart.so /opt/nvidia/hpc_sdk/Linux_x86_64/23.9/math_libs/12.2/lib64/libcusolver.so /opt/nvidia/hpc_sdk/Linux_x86_64/23.9/math_libs/12.2/lib64/libcusparse.so
+
 CUDALIBS = ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_CUSOLVER_LIBRARIES} ${CUDA_CUSPARSE_LIBRARIES}
 LIBS     += $(CUDALIBS)
 

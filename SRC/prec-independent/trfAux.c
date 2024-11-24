@@ -237,7 +237,7 @@ int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *options,
 
 {
     /*I do not understand the following code in detail,
-    I have just written a wrapper around it*/
+    I have just written a wrapper around it            (Piyush?) */ 
 
     int_t* perm_c_supno;
     //Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -265,6 +265,12 @@ int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *options,
     nblocks = 0;
     ncb = nsupers / Pc;
     nrb = nsupers / Pr;
+
+   
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Enter getPerm_c_supno()");
+#endif
+    
     /* ================================================== *
      * static scheduling of j-th step of LU-factorization *
      * ================================================== */
@@ -1164,7 +1170,11 @@ int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *options,
      * end of static scheduling *
      * ======================== */
 
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Exit getPerm_c_supno()");
+#endif
     return perm_c_supno;
+    
 } /* getPerm_c_supno */
 
 

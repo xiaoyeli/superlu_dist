@@ -31,7 +31,7 @@ at the top-level directory.
  * @param perm_c The column permutation vector.
  * @param Glu_persist Pointer to the structure which tracks the symbolic factorization information.
  * @param Glu_freeable Pointer to the structure which tracks the space used to store L/U data structures.
- * @param stat Information on program execution.
+n * @param stat Information on program execution.
  */
 
 /* 
@@ -51,22 +51,27 @@ int_t ilu_level_symbfact
  Glu_freeable_t *Glu_freeable /* output */
  )
 {
-    
     if ( options->ILU_level != 0 ) {
 	printf("ERROR: ILU(k>0) is not implemented yet\n");
 	return (0);
     }
-
+    int iam = 0;
+    
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Enter ilu_level_symbfact()");
+#endif
+    
     /* Now, do ILU(0) */
 
     int_t iinfo;
-    int i, n = A->ncol, m=A->nrow;
+    int n = A->ncol, m = A->nrow;
+    int nsuper, i, j, fsupc;
     double t;
-    int min_mn = SUPERLU_MIN(m, n);
+    int min_mn = SUPERLU_MIN(m, n), irow;
 
 
     NCPformat *GACstore = A->Store;
-    int_t *colbeg, *colend, *rowind, irow;
+    int_t *colbeg, *colend, *rowind;
     rowind = GACstore->rowind;
     colbeg = GACstore->colbeg;
     colend = GACstore->colend;
@@ -88,57 +93,95 @@ int_t ilu_level_symbfact
 	/* User alreay allocated and defined the above supernode partition */
     }
 
-    /* Count nonzeros per column for L & U */
-    for (int j = 0; j < n; ++j) {
-#if 0	
-	fscanf(fpU, "%d %d", &col_num, &Glu_freeable.usub[i]);
-	Glu_freeable.xusub[col_num] += 1;
-#endif
-	for (i = colbeg[j]; i < colend[j]; ++i) { // (j,j) is diagonal
-	    irow = rowind[i];
-	    if ( irow < j ) { // in U
-		nnzU++;
-		Glu_freeable->xusub[j+1] += 1;
-	    } else { // in L, including diagonal of U
-		nnzL++;
-		Glu_freeable->xlsub[j+1] += 1;
+    /* Sherry: fix to accommodate supernodes (11/23/24)
+       Need to add an outer loop for supernodes 
+    */
+    int_t *xusub = Glu_freeable->xusub;
+    int_t *xlsub = Glu_freeable->xlsub;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *supno = Glu_persist->supno;
+    int_t k, nextl = 0;
+    nsuper = (Glu_persist->supno)[n-1];
+    
+    /* Count nonzeros per column for L & U;
+       Diagonal block of a supernode is stored in L
+    */
+    for (i = 0; i <= nsuper; ++i) { /* loop through each supernode */
+	fsupc = xsup[i];
+	xlsub[fsupc] = nextl;
+	for (j = fsupc; j < xsup[i+1]; ++j) { // loop through columns in supernode i 
+	    for (k = colbeg[j]; k < colend[j]; ++k) {
+		irow = rowind[k];
+		if ( irow < fsupc ) { // in U
+		    nnzU++;
+		    xusub[j+1] += 1;
+		}
 	    }
 	}
+	
+	/* only check first column of supernode in L;
+	   similar to fixupL_dist()
+	*/
+	for (k = colbeg[fsupc]; k < colend[fsupc]; ++k) {
+	    irow = rowind[k];
+	    if ( irow >= fsupc ) ++nextl; // in L, including diagonal block
+	}
+	for (j = fsupc+1; j < xsup[i+1]; ++j) // loop through columns in supernode i 
+	    xlsub[j] = nextl;
+	nnzL += (nextl - xlsub[fsupc]) * (xsup[i+1]-fsupc);
     }
+    xlsub[n] = nextl;
 
+#if ( PRNTlevel>=1 )    
+    printf(".... nnzL %d, nnzU %d, nextl %d, nsuper %d\n", nnzL, nnzU, nextl, nsuper);
+    fflush(stdout);
+#endif    
+    
+    /* Do prefix sum to set up column pointers */
+    for(i = 1; i <= n; i++) {
+	//Glu_freeable->xlsub[i] += Glu_freeable->xlsub[i-1];	
+	Glu_freeable->xusub[i] += Glu_freeable->xusub[i-1];
+    }
+    
     Glu_freeable->nnzLU = nnzU + nnzL;
-    Glu_freeable->lsub = (int_t *) SUPERLU_MALLOC(nnzL * sizeof(int_t));
-    Glu_freeable->usub = (int_t *) SUPERLU_MALLOC(nnzU * sizeof(int_t));
     Glu_freeable->nzlmax = nnzL;
     Glu_freeable->nzumax = nnzU;
     Glu_freeable->nnzLU = nnzL + nnzU - min_mn;	
-    
-    /* YL: Assign lsub & usub */
-    nnzL=0;
-    nnzU=0;
-    for (int j = 0; j < n; ++j) {
-	for (i = colbeg[j]; i < colend[j]; ++i) { // (j,j) is diagonal
+    Glu_freeable->lsub = (int_t *) intMalloc_dist(nnzL);
+    Glu_freeable->usub = (int_t *) intMalloc_dist(nnzU); 
+
+    /* YL: Assign usub & lsub */
+    nnzU = 0;
+    for (j = 0; j < n; ++j) { // loop through each column 
+	fsupc = xsup[supno[j]];
+	for (i = colbeg[j]; i < colend[j]; ++i) {
 	    irow = rowind[i];
 	    //if(j==0){
 	    //printf("irow %5d \n",irow);
 	    //}
-	    if ( irow < j ) { // in U
-		Glu_freeable->usub[nnzU] = irow;
-		nnzU++;
-	    } else { // in L, including diagonal of U
-		// printf("%5d %5d\n",j,irow);
-		Glu_freeable->lsub[nnzL] = irow;
-		nnzL++;
+	    if ( irow < fsupc ) { // in U
+		Glu_freeable->usub[nnzU++] = irow;
+	    }
+	}
+    }
+    
+    /* only check first column of supernode in L;
+       similar to fixupL_dist()
+    */
+    nnzL = 0;
+    for (i = 0; i <= nsuper; ++i) { // loop through each supernode
+	fsupc = xsup[i];
+	for (k = colbeg[fsupc]; k < colend[fsupc]; ++k) {
+	    irow = rowind[k];
+	    if ( irow >= fsupc ) { // in L, including diagonal block
+		Glu_freeable->lsub[nnzL++] = irow;
 	    }
 	}
     }
 
-    /* Do prefix sum to set up column pointers */
-    for(i = 1; i <= n; i++) {
-	Glu_freeable->xlsub[i] += Glu_freeable->xlsub[i-1];	
-	Glu_freeable->xusub[i] += Glu_freeable->xusub[i-1];
-    }
-
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Exit ilu_level_symbfact()");
+#endif
 
     return ( -(Glu_freeable->xlsub[n] + Glu_freeable->xusub[n]) );
 }

@@ -484,7 +484,6 @@ typedef struct dlsumBmod_buff_t
     int_t *indCols; //
 }dlsumBmod_buff_t;
 
-
 /*=====================*/
 
 /***********************************************************************
@@ -539,8 +538,6 @@ extern int     dcreate_matrix_dat(SuperMatrix *, int, double **, int *,
 			      double **, int *, FILE *, gridinfo_t *);
 extern int dcreate_matrix_postfix(SuperMatrix *, int, double **, int *,
 				  double **, int *, FILE *, char *, gridinfo_t *);
-extern int dcreate_matrix_from_csc(SuperMatrix *A,
-                   int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr, double   *nzval, gridinfo_t *grid);                  
 
 extern void   dScalePermstructInit(const int_t, const int_t,
                                       dScalePermstruct_t *);
@@ -1011,6 +1008,7 @@ extern void  dPrintLblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  dPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 			   dLocalLU_t *);
 extern void  dPrint_CompCol_Matrix_dist(SuperMatrix *);
+extern void  dPrint_CompCol_triplet(SuperMatrix *);
 extern void  dPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   dPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
@@ -1624,7 +1622,6 @@ extern void dDumpUblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
 
 extern double *dready_x;
 extern double *dready_lsum;
-
 
 #ifdef __cplusplus
   }

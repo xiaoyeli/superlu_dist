@@ -1008,6 +1008,7 @@ extern void  sPrintLblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  sPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 			   sLocalLU_t *);
 extern void  sPrint_CompCol_Matrix_dist(SuperMatrix *);
+extern void  sPrint_CompCol_triplet(SuperMatrix *);
 extern void  sPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   sPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern int   file_sPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
