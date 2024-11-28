@@ -54,7 +54,7 @@ zpivot_batch(
     double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
 			each of size N    */
     DiagScale_t *DiagScale, /* How equilibration is done for each matrix. */
-    int **RpivPtr /* array of pointers to row permutation vectors , each of size M */
+    int_t **RpivPtr /* array of pointers to row permutation vectors , each of size M */
     //    DeviceContext context /* device context including queues, events, dependencies */
 		  )
 {
@@ -121,7 +121,7 @@ zpivot_batch(
 
 	if ( !factored ) { /* Skip this if already factored. */
 	    
-	    int *perm_r = RpivPtr[d];
+	    int_t *perm_r = RpivPtr[d];
 
 	    /* ------------------------------------------------------------
 	       Find the row permutation for A.

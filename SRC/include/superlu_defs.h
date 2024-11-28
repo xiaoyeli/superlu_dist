@@ -1102,7 +1102,7 @@ extern int    sp_symetree_dist(int_t *, int_t *, int_t *, int_t, int_t *);
 extern int    sp_coletree_dist (int_t *, int_t *, int_t *, int_t, int_t, int_t *);
 extern void   get_perm_c_dist(int_t, int_t, SuperMatrix *, int_t *);
 extern void   get_perm_c_batch(superlu_dist_options_t *options,	int batchCount,
-			       handle_t  *SparseMatrix_handles, int **CpivPtr);
+			       handle_t  *SparseMatrix_handles, int_t **CpivPtr);
 extern void   at_plus_a_dist(const int_t, const int_t, int_t *, int_t *,
 			     int_t *, int_t **, int_t **);
 extern void   getata_dist(const int_t m, const int_t n, const int_t nz, int_t *colptr, int_t *rowind,
