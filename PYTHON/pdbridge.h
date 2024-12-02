@@ -50,3 +50,5 @@ extern void pdbridge_logdet(void ** pyobj, int * sign, double * logdet);
 #endif
 #endif 
 
+int dcreate_matrix_from_csc(SuperMatrix *A, int_t m, int_t n, int_t nnz, int_t *rowind0, int_t *colptr0, double *nzval0, gridinfo_t *grid);
+int count_swaps(int_t perm[], int n);
