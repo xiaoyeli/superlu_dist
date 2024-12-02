@@ -95,8 +95,8 @@ pdgssvx3d_csc_batch(
 				     each of size M   */
 		double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
 				    each of size N    */
-		int **RpivPtr, /* array of pointers to row permutation vectors , each of size M */
-		int **CpivPtr, /* array of pointers to column permutation vectors , each of size N */
+		int_t **RpivPtr, /* array of pointers to row permutation vectors , each of size M */
+		int_t **CpivPtr, /* array of pointers to column permutation vectors , each of size N */
 		DiagScale_t *DiagScale, /* indicate how equilibration is done for each matrix */
 		handle_t *F, /* array of handles pointing to the factored matrices */
  		double **Xptr, // array of pointers to dense solution storage
@@ -251,7 +251,7 @@ pdgssvx3d_csc_batch(
     int_t *colind_d;
     int_t *rowptr_d;
     int_t nnz_d, col, row;
-    int *perm_c, *perm_r;
+    int_t *perm_c, *perm_r;
 
     /* B_big */
     double *b;
@@ -443,7 +443,7 @@ pdgssvx3d_csc_batch(
 
 	A = (SuperMatrix *) SparseMatrix_handles[d];
 	perm_c = CpivPtr[d];
-        perm_r = RpivPtr[d];
+	perm_r = RpivPtr[d];
 
 	/* Permute the solution matrix z <= Pc'*y */
 	//PrintInt32("prepare Pc'*y: perm_c", n, perm_c);

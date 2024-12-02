@@ -351,8 +351,8 @@ int main (int argc, char *argv[])
 	float **ReqPtr;
 	float **CeqPtr;
 	DiagScale_t *DiagScale;
-	int **RpivPtr;
-	int **CpivPtr;
+	int_t **RpivPtr;
+	int_t **CpivPtr;
 	float **Xptr;
 	int *ldX;
 	float **xtrues;
@@ -376,15 +376,15 @@ int main (int argc, char *argv[])
 	
 	ReqPtr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
 	CeqPtr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
-	RpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
-	CpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
+	RpivPtr = (int_t **) SUPERLU_MALLOC( batchCount * sizeof(int_t *) );
+	CpivPtr = (int_t **) SUPERLU_MALLOC( batchCount * sizeof(int_t *) );
 	DiagScale = (DiagScale_t *) SUPERLU_MALLOC( batchCount * sizeof(DiagScale_t) );
 	Xptr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float*) );
 	Berrs = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
 	for (int d = 0; d < batchCount; ++d) {
 	    DiagScale[d] = NOEQUIL;
-	    RpivPtr[d] = int32Malloc_dist(m);
-	    CpivPtr[d] = int32Malloc_dist(n);
+	    RpivPtr[d] = intMalloc_dist(m);
+	    CpivPtr[d] = intMalloc_dist(n);
 	    Xptr[d] = floatMalloc_dist( n *  nrhs );
 	    Berrs[d] = floatMalloc_dist( nrhs );
 	}

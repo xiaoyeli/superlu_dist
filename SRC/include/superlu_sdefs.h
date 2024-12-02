@@ -1594,7 +1594,7 @@ extern int psgssvx3d_csc_batch(
 		superlu_dist_options_t *, int batchCount, int m, int n,	int nnz,
 		int nrhs, handle_t *, float **RHSptr, int *ldRHS,
 		float **ReqPtr, float **CeqPtr,
-		int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
+		int_t **RpivPtr, int_t **CpivPtr, DiagScale_t *DiagScale,
 		handle_t *F, float **Xptr, int *ldX, float **Berrs,
 		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
 		//DeviceContext context /* device context including queues, events, dependencies */
@@ -1606,7 +1606,7 @@ extern int sequil_batch(
     );
 extern int spivot_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
-    float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr
+    float **ReqPtr, float **CeqPtr, DiagScale_t *, int_t **RpivPtr
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
 

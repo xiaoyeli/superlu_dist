@@ -42,7 +42,7 @@ get_perm_c_batch(
 					  * of size 'batchCount',
 					  * each pointing to the actual storage
 					  */
-	int **CpivPtr /* array of pointers to column permutation vectors , each of size N */
+	int_t **CpivPtr /* array of pointers to column permutation vectors , each of size N */
 		 )
 {
 #if ( DEBUGlevel>=1 )
@@ -90,7 +90,7 @@ get_perm_c_batch(
     for (int d = 0; d < batchCount; ++d) {
 	
 	NCformat *Astore = (NCformat *) A[d]->Store;
-	int *perm_c = CpivPtr[d];
+	int_t *perm_c = CpivPtr[d];
 
 	t = SuperLU_timer_();
 	bnz = 0;
