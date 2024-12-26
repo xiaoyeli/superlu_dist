@@ -530,8 +530,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     fact_t  Fact;
     doublecomplex *a;
     int_t   *colptr, *rowind;
-    int_t   *perm_r; /* row permutations from partial pivoting */
-    int_t   *perm_c; /* column permutation vector */
+    int   *perm_r; /* row permutations from partial pivoting */
+    int   *perm_c; /* column permutation vector */
     int_t   *etree;  /* elimination tree */
     int_t   *rowptr, *colind;  /* Local A in NR*/
     int_t   nnz_loc, nnz;
@@ -812,7 +812,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
                         MPI_Bcast( &iinfo, 1, MPI_INT, 0, grid->comm );
 		        if ( iinfo == 0 ) {
-		            MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+			    //MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+			    MPI_Bcast( perm_r, m, MPI_INT, 0, grid->comm );
 		            if ( job == 5 && Equil ) {
 		                MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
 		                MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
@@ -821,7 +822,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            } else {
 		        MPI_Bcast( &iinfo, 1, MPI_INT, 0, grid->comm );
 			if ( iinfo == 0 ) {
-		            MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+		            //MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+		            MPI_Bcast( perm_r, m, MPI_INT, 0, grid->comm );
 		            if ( job == 5 && Equil ) {
 		                MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
 		                MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
@@ -935,7 +937,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
         }
 
 #if ( DEBUGlevel>=2 )
-        if ( !iam ) PrintInt10("perm_r",  m, perm_r);
+        if ( !iam ) PrintInt32("perm_r",  m, perm_r);
 #endif
     } /* end if (!factored) */
 
@@ -1365,7 +1367,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    int buffer_peak_rank = global_struct.rank;
 	    float buffer_peak = global_struct.val*1e-6;
 
-            if ( iam==0 ) {
+            if ( iam == 0 ) {
                 printf("** Total highmark (MB):\n"
 		       "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
 		       avg * 1e-6,

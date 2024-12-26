@@ -747,7 +747,7 @@ int dcreate_matrix_from_csc(SuperMatrix *A,
 }
 
 
-int count_swaps(int_t perm[], int n) {
+int count_swaps(int perm[], int n) {
     bool visited[n];
     for (int i = 0; i < n; i++) {
         visited[i] = false;

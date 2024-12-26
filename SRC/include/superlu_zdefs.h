@@ -77,8 +77,8 @@ typedef struct {
     DiagScale_t DiagScale;
     double *R;
     double *C;
-    int_t  *perm_r;
-    int_t  *perm_c;
+    int  *perm_r;
+    int  *perm_c;
 } zScalePermstruct_t;
 
 #if 0 // Sherry: move to superlu_defs.h
@@ -370,7 +370,7 @@ typedef struct {
 /*-- Data structure holding the information for the solution phase --*/
 typedef struct {
     int_t *row_to_proc;
-    int_t *inv_perm_c;
+    int *inv_perm_c;
     int_t num_diag_procs, *diag_procs, *diag_len;
     pzgsmv_comm_t *gsmv_comm; /* communication metadata for SpMV,
          	       		      required by IterRefine.          */
@@ -554,7 +554,7 @@ extern void    pzgsequ (SuperMatrix *, double *, double *, double *,
 extern double  pzlangs (char *, SuperMatrix *, gridinfo_t *);
 extern void    pzlaqgs (SuperMatrix *, double *, double *, double,
 			double, double, char *);
-extern int     pzPermute_Dense_Matrix(int_t, int_t, int_t [], int_t[],
+extern int     pzPermute_Dense_Matrix(int_t, int_t, int_t [], int perm[],
 				      doublecomplex [], int, doublecomplex [], int, int,
 				      gridinfo_t *);
 
@@ -589,19 +589,20 @@ extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     int, int, gridinfo_t *, zLUstruct_t *,
 		     zSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
 extern void  pzCompute_Diag_Inv(int_t, zLUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
-extern int  zSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
+extern int  zSolveInit(superlu_dist_options_t *, SuperMatrix *,
+                       int perm_r[], int perm_c[],
 		       int_t, zLUstruct_t *, gridinfo_t *, zSOLVEstruct_t *);
 extern void zSolveFinalize(superlu_dist_options_t *, zSOLVEstruct_t *);
 extern void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t pzgstrs_init(int_t, int_t, int_t, int_t,
-                          int_t [], int_t [], gridinfo_t *grid,
+                          int perm_r[], int perm_c[], gridinfo_t *grid,
 	                  Glu_persist_t *, zSOLVEstruct_t *);
 extern int_t pzgstrs_init_device_lsum_x(superlu_dist_options_t *, int_t , int_t , int_t , gridinfo_t *,
 	     zLUstruct_t *, zSOLVEstruct_t *, int*);
 extern int_t pzgstrs_delete_device_lsum_x(zSOLVEstruct_t *);
 extern void pxgstrs_finalize(pxgstrs_comm_t *);
 extern int  zldperm_dist(int, int, int_t, int_t [], int_t [],
-		    doublecomplex [], int_t *, double [], double []);
+		    doublecomplex [], int *perm, double [], double []);
 extern int  zstatic_schedule(superlu_dist_options_t *, int, int,
 		            zLUstruct_t *, gridinfo_t *, SuperLUStat_t *,
 			    int_t *, int_t *, int *);

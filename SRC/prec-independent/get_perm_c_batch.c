@@ -57,7 +57,8 @@ get_perm_c_batch(
     }
 
     int_t delta, maxint;
-    int_t *dhead, *qsize, *llist, *marker, *invp;
+    int_t *dhead, *qsize, *llist, *marker;
+    int *invp;
     int m = A[0]->nrow;
     int n = A[0]->ncol;
 
@@ -68,7 +69,7 @@ get_perm_c_batch(
 	delta = 0; /* DELTA is a parameter to allow the choice of nodes
 		      whose degree <= min-degree + DELTA. */
 	maxint = 2147483647; /* 2**31 - 1 */
-	invp = (int_t *) SUPERLU_MALLOC((n+delta)*sizeof(int_t));
+	invp = (int *) int32Malloc_dist(n+delta);
 	if ( !invp ) ABORT("SUPERLU_MALLOC fails for invp.");
 	dhead = (int_t *) SUPERLU_MALLOC((n+delta)*sizeof(int_t));
 	if ( !dhead ) ABORT("SUPERLU_MALLOC fails for dhead.");

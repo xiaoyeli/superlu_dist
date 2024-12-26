@@ -517,53 +517,6 @@ typedef struct {
     int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Glu_freeable_t;
 
-#if 0 // Sherry: move to precision-dependent file
-/*
- *-- The structure used to store matrix A of the linear system and
- *   several vectors describing the transformations done to matrix A.
- *
- * A      (SuperMatrix*)
- *        Matrix A in A*X=B, of dimension (A->nrow, A->ncol).
- *        The number of linear equations is A->nrow. The type of A can be:
- *        Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
- *
- * DiagScale  (DiagScale_t)
- *        Specifies the form of equilibration that was done.
- *        = NOEQUIL: No equilibration.
- *        = ROW:  Row equilibration, i.e., A was premultiplied by diag(R).
- *        = COL:  Column equilibration, i.e., A was postmultiplied by diag(C).
- *        = BOTH: Both row and column equilibration, i.e., A was replaced
- *                 by diag(R)*A*diag(C).
- *
- * R      double*, dimension (A->nrow)
- *        The row scale factors for A.
- *        If DiagScale = ROW or BOTH, A is multiplied on the left by diag(R).
- *        If DiagScale = NOEQUIL or COL, R is not defined.
- *
- * C      double*, dimension (A->ncol)
- *        The column scale factors for A.
- *        If DiagScale = COL or BOTH, A is multiplied on the right by diag(C).
- *        If DiagScale = NOEQUIL or ROW, C is not defined.
- *
- * perm_r (int*) dimension (A->nrow)
- *        Row permutation vector which defines the permutation matrix Pr,
- *        perm_r[i] = j means row i of A is in position j in Pr*A.
- *
- * perm_c (int*) dimension (A->ncol)
- *	  Column permutation vector, which defines the
- *        permutation matrix Pc; perm_c[i] = j means column i of A is
- *        in position j in A*Pc.
- *
- */
-typedef struct {
-    DiagScale_t DiagScale;
-    double *R;
-    double *C;
-    int_t  *perm_r;
-    int_t  *perm_c;
-} ScalePermstruct_t;
-#endif
-
 /*-- Data structure for redistribution of B and X --*/
 typedef struct {
     int  *B_to_X_SendCnt;
@@ -1096,38 +1049,38 @@ extern void   Destroy_SuperMatrix_Store_dist(SuperMatrix *);
 extern void   Destroy_CompCol_Permuted_dist(SuperMatrix *);
 extern void   Destroy_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void   Destroy_CompRow_Matrix_dist(SuperMatrix *);
-extern void   sp_colorder (superlu_dist_options_t*, SuperMatrix*, int_t*, int_t*,
+extern void   sp_colorder (superlu_dist_options_t*, SuperMatrix*, int *perm_c, int_t*,
 			   SuperMatrix*);
 extern int    sp_symetree_dist(int_t *, int_t *, int_t *, int_t, int_t *);
 extern int    sp_coletree_dist (int_t *, int_t *, int_t *, int_t, int_t, int_t *);
-extern void   get_perm_c_dist(int_t, int_t, SuperMatrix *, int_t *);
+extern void   get_perm_c_dist(int, int, SuperMatrix *, int *);
 extern void   get_perm_c_batch(superlu_dist_options_t *options,	int batchCount,
 			       handle_t  *SparseMatrix_handles, int **CpivPtr);
 extern void   at_plus_a_dist(const int_t, const int_t, int_t *, int_t *,
 			     int_t *, int_t **, int_t **);
 extern void   getata_dist(const int_t m, const int_t n, const int_t nz, int_t *colptr, int_t *rowind,
 			  int_t *atanz, int_t **ata_colptr, int_t **ata_rowind);
-extern void   get_metis_dist(int_t n, int_t bnz, int_t *b_colptr, int_t *b_rowind, int_t *perm_c);
+extern void   get_metis_dist(int_t n, int_t bnz, int_t *b_colptr, int_t *b_rowind, int *perm_c);
 extern void   get_colamd_dist(const int m, const int n, const int nnz,
-			      int_t *colptr, int_t *rowind, int_t *perm_c);
-extern int    genmmd_dist_(int_t *, int_t *, int_t *a,
-			   int_t *, int_t *, int_t *, int_t *,
+			      int_t *colptr, int_t *rowind, int *perm_c);
+extern int    genmmd_dist_(int_t *, int_t *, int_t *,
+			   int *invp, int *perm, int_t *, int_t *,
 			   int_t *, int_t *, int_t *, int_t *, int_t *);
 extern void  bcast_tree(void *, int, MPI_Datatype, int, int,
 			gridinfo_t *, int, int *);
-extern int_t symbfact(superlu_dist_options_t *, int, SuperMatrix *, int_t *,
-                      int_t *, Glu_persist_t *, Glu_freeable_t *);
+extern int_t symbfact(superlu_dist_options_t *, int, SuperMatrix *, int *perm_c,
+                      int_t *etree, Glu_persist_t *, Glu_freeable_t *);
 extern int_t symbfact_SubInit(superlu_dist_options_t *options,
 			      fact_t, void *, int_t, int_t, int_t, int_t,
 			      Glu_persist_t *, Glu_freeable_t *);
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
 extern int symbfact_SubFree(Glu_freeable_t *);
-extern int_t ilu_level_symbfact(superlu_dist_options_t *, SuperMatrix *, int_t *,
-			      int_t *, Glu_persist_t *, Glu_freeable_t *);
+extern int_t ilu_level_symbfact(superlu_dist_options_t *, SuperMatrix *, int *perm_c,
+			      int_t *etree, Glu_persist_t *, Glu_freeable_t *);
 extern void    countnz_dist (const int_t, int_t *, int_t *, int_t *,
 			     Glu_persist_t *, Glu_freeable_t *);
-extern int64_t fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
+extern int64_t fixupL_dist (const int_t, const int *, Glu_persist_t *,
 				  Glu_freeable_t *);
 extern int_t   *TreePostorder_dist (int_t, int_t *);
 extern float   smach_dist(const char *);
@@ -1148,7 +1101,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 extern double SuperLU_timer_ (void);
 extern void   superlu_abort_and_exit_dist(char *);
 extern int    sp_ienv_dist (int, superlu_dist_options_t *);
-extern void   ifill_dist (int_t *, int_t, int_t);
+extern void   ifill_dist (int *, int, int);
 extern void   super_stats_dist (int_t, int_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,
 			    int_t **, int_t **);
@@ -1166,7 +1119,6 @@ extern void  quickSort( int_t*, int_t, int_t, int_t);
 extern void  quickSortM( int_t*, int_t, int_t, int_t, int_t, int_t);
 extern int_t partition( int_t*, int_t, int_t, int_t);
 extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
-extern int count_swaps(int_t perm[], int n);
 
 extern int compareInt_t(void *a, void *b);
 extern int compareInt(void *a, void *b);
@@ -1178,12 +1130,13 @@ extern int dist_checkArrayEq(void *arr, int length, MPI_Datatype datatype, int s
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
 (superlu_dist_options_t *, int,  int,
- SuperMatrix *, int_t *, int_t *,  int_t *, int_t *,
+ SuperMatrix *, int *perm_c, int *perm_r,  int_t *, int_t *,
  Pslu_freeable_t *, MPI_Comm *, MPI_Comm *,  superlu_dist_mem_usage_t *);
 
 /* Get the column permutation using parmetis */
+
 extern float get_perm_c_parmetis
-(SuperMatrix *, int_t *, int_t *, int, int,
+(SuperMatrix *, int *perm_r, int *perm_c, int, int,
  int_t **, int_t **, gridinfo_t *, MPI_Comm *);
 
 /* Auxiliary routines for memory expansions used during
@@ -1245,7 +1198,7 @@ extern int get_new3dsolvetreecomm(void);
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);
 extern void  check_repfnz_dist(int_t, int_t, int_t, int_t *);
 extern int_t CheckZeroDiagonal(int_t, int_t *, int_t *, int_t *);
-extern int   check_perm_dist(char *what, int_t n, int_t *perm);
+extern int   check_perm_dist(char *what, int n, int *perm);
 extern void  PrintDouble5(char *, int_t, double *);
 extern void  PrintInt10(char *, int_t, int_t *);
 extern void  PrintInt32(char *, int, int *);
@@ -1305,7 +1258,7 @@ extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void slu_SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d);
 extern int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d);
-extern void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA, int_t *perm_c, int_t *etree, 
+extern void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA, int *perm_c, int_t *etree, 
                            Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
 						   superlu_dist_mem_usage_t*symb_mem_usage,
 						   gridinfo3d_t* grid3d);
@@ -1459,7 +1412,7 @@ extern void getSCUweight_allgrid(int_t nsupers, treeList_t* treeList, int_t* xsu
 extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
 			   MPI_Request *L_diag_blk_send_req,
 			   gridinfo_t *grid, SCT_t *SCT);
-extern void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n);
+extern void applyRowPerm(int_t* colptr, int_t* rowind, int * perm_r, int_t n);
 
 
 extern int getNsupers(int n, Glu_persist_t *Glu_persist);

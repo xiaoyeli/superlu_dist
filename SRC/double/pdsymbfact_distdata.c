@@ -784,8 +784,8 @@ ddist_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
 {
   int    iam, p, procs;
   NRformat_loc *Astore;
-  int_t  *perm_r; /* row permutation vector */
-  int_t  *perm_c; /* column permutation vector */
+  int  *perm_r; /* row permutation vector */
+  int  *perm_c; /* column permutation vector */
   int_t  i, it, irow, fst_row, j, jcol, k, gbi, gbj, n, m_loc, jsize, isize;
   int_t  nsupers, nsupers_i, nsupers_j;
   int_t  nnz_loc, nnz_loc_ainf, nnz_loc_asup;    /* number of local nonzeros */

@@ -1178,11 +1178,6 @@ int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *options,
 } /* getPerm_c_supno */
 
 
-
-
-
-
-
 int_t* getPerm_c_supno_allgrid(int_t nsupers, superlu_dist_options_t *options,
 		       int_t *etree, Glu_persist_t *Glu_persist,
 		       int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
@@ -2521,7 +2516,7 @@ void getSCUweight_allgrid(int_t nsupers, treeList_t* treeList, int_t* xsup,
  * @param perm_r The user-provided permutation array for the rows.
  * @param n The number of columns in the sparse matrix.
  */
-void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n) {
+void applyRowPerm(int_t* colptr, int_t* rowind, int* perm_r, int_t n) {
     // Check input parameters
     if (colptr == NULL || rowind == NULL || perm_r == NULL) {
         fprintf(stderr, "Error: NULL input parameter.\n");
@@ -2553,10 +2548,11 @@ void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n) {
  * @param stat Information on program execution.
  * @param grid3d The 3D process grid. 
  */
-void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA, int_t *perm_c, int_t *etree, 
-                           Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
-						   superlu_dist_mem_usage_t*symb_mem_usage,
-						   gridinfo3d_t* grid3d)
+void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA,
+			    int *perm_c, int_t *etree, Glu_persist_t *Glu_persist,
+			    Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
+			    superlu_dist_mem_usage_t*symb_mem_usage,
+			    gridinfo3d_t* grid3d)
 {
     SuperMatrix GAC; /* Global A in NCP format */
     NCPformat *GACstore;
@@ -2640,7 +2636,7 @@ int computeColumnPermutation(const superlu_dist_options_t *options,
                                const SuperMatrix *A,
                                const gridinfo_t *grid,
                                const int parSymbFact,
-                               int_t *perm_c);
+                               int *perm_c);
 
 /**
  * @brief Computes the elimination tree based on the chosen column permutation method.
@@ -2669,7 +2665,7 @@ int ComputeEliminationTree(const superlu_dist_options_t *options,
  */
 int PerformSymbolicFactorization(const superlu_dist_options_t *options,
                                  const SuperMatrix *A,
-                                 const int_t *perm_c,
+                                 const int *perm_c,
                                  const int_t *etree,
                                  Glu_persist_t *Glu_persist,
                                  Glu_freeable_t *Glu_freeable);

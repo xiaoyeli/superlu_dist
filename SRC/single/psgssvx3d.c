@@ -544,8 +544,8 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     fact_t Fact;
     float *a;
     int_t *colptr, *rowind;
-    int_t *perm_r;			/* row permutations from partial pivoting */
-    int_t *perm_c;			/* column permutation vector */
+    int *perm_r;			/* row permutations from partial pivoting */
+    int *perm_c;			/* column permutation vector */
     int_t *etree;			/* elimination tree */
     int_t *rowptr, *colind; /* Local A in NR */
     int colequ, Equil, factored, job, notran, rowequ, need_value;

@@ -44,7 +44,7 @@ void check_accuracy(
 		    SuperMatrix *A, psgsmv_comm_t *gsmv_comm, float R[], //resid
 		    double y_col[], float dy[], float X_col[], int ldx,
 		    float B_col[], float C[], double xtrue[], double ytrue[],
-		    float temp[], int_t inv_perm_c[],
+		    float temp[], int inv_perm_c[],
 		    double converge[7][ITMAX], double ferr[5][ITMAX],
 		    sSOLVEstruct_t *SOLVEstruct, gridinfo_t *grid,
 		    float safe1, float safe2
@@ -236,8 +236,8 @@ psgsrfs_d2(superlu_dist_options_t *options,
 	   )
 {
     float *resid, *dy, *temp, *Res, *B_col, *X_col, *C;
-    int_t *perm_c = ScalePermstruct->perm_c; 
-    int_t *inv_perm_c = SOLVEstruct->inv_perm_c; 
+    int *perm_c = ScalePermstruct->perm_c; 
+    int *inv_perm_c = SOLVEstruct->inv_perm_c; 
     double *ax, *y_col, *ytrue;
     int  iam, count, i, j, nz, m_loc, fst_row, colequ;
     //double eps, lstres;

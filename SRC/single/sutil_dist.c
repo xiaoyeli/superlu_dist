@@ -203,7 +203,7 @@ void sPrint_CompCol_triplet(SuperMatrix *A)
     int_t nnz = Astore->nnz;
     
     printf("\nTriplet matrix:\n");
-    printf("nrow %lld, ncol %lld, nnz %lld\n", n, (long long) A->ncol, nnz);
+    printf("nrow %d, ncol %lld, nnz %lld\n", n, (long long) A->ncol, nnz);
     dp = (float *) Astore->nzval;
     colptr = Astore->colptr;
     rowind = Astore->rowind;
@@ -462,9 +462,9 @@ void sScalePermstructInit(const int_t m, const int_t n,
                          sScalePermstruct_t *ScalePermstruct)
 {
     ScalePermstruct->DiagScale = NOEQUIL;
-    if ( !(ScalePermstruct->perm_r = intMalloc_dist(m)) )
+    if ( !(ScalePermstruct->perm_r = int32Malloc_dist(m)) )
         ABORT("Malloc fails for perm_r[].");
-    if ( !(ScalePermstruct->perm_c = intMalloc_dist(n)) )
+    if ( !(ScalePermstruct->perm_c = int32Malloc_dist(n)) )
         ABORT("Malloc fails for perm_c[].");
 }
 

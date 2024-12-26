@@ -350,7 +350,7 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
     int  *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
     int  *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
     int  *ptr_to_ibuf, *ptr_to_dbuf;
-    int_t  *perm_r, *perm_c; /* row and column permutation vectors */
+    int  *perm_r, *perm_c; /* row and column permutation vectors */
     int_t  *send_ibuf, *recv_ibuf;
     double *send_dbuf, *recv_dbuf;
     int_t  *xsup, *supno;
@@ -1207,9 +1207,9 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     double *Btmp;
     size_t pBufferSizeInBytes = 0;
     void *pBuffer = NULL;
-    int_t *perm_r = ScalePermstruct->perm_r;
-    int_t *perm_c = ScalePermstruct->perm_c;
-	int_t l;
+    int *perm_r = ScalePermstruct->perm_r;
+    int *perm_c = ScalePermstruct->perm_c;
+    int_t l;
 
 
     size_t lworkInBytes = 0;

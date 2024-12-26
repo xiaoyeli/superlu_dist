@@ -45,7 +45,7 @@ int_t ilu_level_symbfact
 (
  superlu_dist_options_t *options, /* input options */
  SuperMatrix *A,      /* original matrix A permuted by columns, GAC from caller (input) */
- int_t       *perm_c, /* column permutation vector (input) */
+ int       *perm_c, /* column permutation vector (input) */
  int_t       *etree,  /* column elimination tree (input) */
  Glu_persist_t *Glu_persist,  /* output */
  Glu_freeable_t *Glu_freeable /* output */
@@ -133,7 +133,8 @@ int_t ilu_level_symbfact
     xlsub[n] = nextl;
 
 #if ( PRNTlevel>=1 )    
-    printf(".... nnzL %d, nnzU %d, nextl %d, nsuper %d\n", nnzL, nnzU, nextl, nsuper);
+    printf(".... nnzL %lld, nnzU %lld, nextl %lld, nsuper %d\n",
+	   (long long) nnzL, (long long) nnzU, (long long) nextl, nsuper);
     fflush(stdout);
 #endif    
     

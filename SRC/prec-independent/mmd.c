@@ -62,7 +62,7 @@ at the top-level directory.
 /* *************************************************************** */
 
 /* Subroutine */ int genmmd_dist_(int_t *neqns, int_t *xadj, int_t *adjncy, 
-	int_t *invp, int_t *perm, int_t *delta, int_t *dhead, 
+	int *invp, int *perm, int_t *delta, int_t *dhead, 
 	int_t *qsize, int_t *llist, int_t *marker, int_t *maxint, 
 	int_t *nofsub)
 {
@@ -72,13 +72,13 @@ at the top-level directory.
     /* Local variables */
     static int_t mdeg, ehead, i, mdlmt, mdnode;
     extern /* Subroutine */ int mmdelm_dist(int_t *, int_t *, int_t *, 
-	    int_t *, int_t *, int_t *, int_t *, int_t *, 
+	    int_t *, int *, int *, int_t *, int_t *, 
 	    int_t *, int_t *, int_t *), mmdupd_dist(int_t *, int_t *, 
-	    int_t *, int_t *, int_t *, int_t *, int_t *, int_t 
-	    *, int_t *, int_t *, int_t *, int_t *, int_t *, 
+	    int_t *, int_t *, int_t *, int_t *, int_t *, int *, int *,
+	    int_t *, int_t *, int_t *, int_t *, 
 	    int_t *), mmdint_dist(int_t *, int_t *, int_t *, int_t *, 
-	    int_t *, int_t *, int_t *, int_t *, int_t *), 
-	    mmdnum_dist(int_t *, int_t *, int_t *, int_t *);
+	    int *, int *, int_t *, int_t *, int_t *), 
+	    mmdnum_dist(int_t *, int *, int *, int_t *);
     static int_t nextmd, tag, num;
 
 
@@ -249,7 +249,7 @@ L1000:
 /* *************************************************************** */
 
 /* Subroutine */ int mmdint_dist(int_t *neqns, int_t *xadj, int_t *adjncy, 
-	int_t *dhead, int_t *dforw, int_t *dbakw, int_t *qsize, 
+	int_t *dhead, int *dforw, int *dbakw, int_t *qsize, 
 	int_t *llist, int_t *marker)
 {
     /* System generated locals */
@@ -333,7 +333,7 @@ L1000:
 /* *************************************************************** */
 
 /* Subroutine */ int mmdelm_dist(int_t *mdnode, int_t *xadj, int_t *adjncy,
-	 int_t *dhead, int_t *dforw, int_t *dbakw, int_t *qsize, 
+	 int_t *dhead, int *dforw, int *dbakw, int_t *qsize, 
  	 int_t *llist, int_t *marker, int_t *maxint, int_t *tag)
 {
     /* System generated locals */
@@ -581,7 +581,7 @@ L1800:
 
 /* Subroutine */ int mmdupd_dist(int_t *ehead, int_t *neqns, int_t *xadj, 
 	int_t *adjncy, int_t *delta, int_t *mdeg, int_t *dhead, 
-	int_t *dforw, int_t *dbakw, int_t *qsize, int_t *llist, 
+	int *dforw, int *dbakw, int_t *qsize, int_t *llist, 
 	int_t *marker, int_t *maxint, int_t *tag)
 {
     /* System generated locals */
@@ -935,7 +935,7 @@ L2300:
 
 /* *************************************************************** */
 
-/* Subroutine */ int mmdnum_dist(int_t *neqns, int_t *perm, int_t *invp,
+/* Subroutine */ int mmdnum_dist(int_t *neqns, int *perm, int *invp,
 				 int_t *qsize)
 {
     /* System generated locals */

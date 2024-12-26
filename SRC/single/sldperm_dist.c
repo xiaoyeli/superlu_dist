@@ -23,7 +23,7 @@ at the top-level directory.
 #include "superlu_sdefs.h"
 
 extern int mc64ad_dist(int *job, int *n, int_t *ne, int_t *ip,
-       int_t *irn, double *a, int *num, int_t *cperm,
+       int_t *irn, double *a, int *num, int *cperm,
        int_t *liw, int_t *iw, int_t *ldw, double *dw,
        int * icntl, int *info);
 
@@ -94,10 +94,10 @@ extern int mc64ad_dist(int *job, int *n, int_t *ne, int_t *ip,
 
 int
 sldperm_dist(int job, int n, int_t nnz, int_t colptr[], int_t adjncy[],
-	float nzval[], int_t *perm, float u[], float v[])
+	float nzval[], int *perm, float u[], float v[])
 {
     int i;
-    int num, icntl[10], info[10]; 
+    int num, icntl[10], info[10];
     int_t liw, ldw;
     int_t *iw;
     double *dw;
@@ -148,12 +148,12 @@ sldperm_dist(int job, int n, int_t nnz, int_t colptr[], int_t adjncy[],
 	        &liw, iw, &ldw, dw, icntl, info);
 
 #if ( DEBUGlevel>=2 )
-    PrintInt10("perm", n, perm);
+    PrintInt32("perm", n, perm);
     printf(".. After MC64AD info %d\tsize of matching %d\n", info[0], num);
 #endif
     if ( info[0] == 1 ) { /* Structurally singular */
         printf(".. The last %d permutations:\n", n-num);
-	PrintInt10("perm", n-num, &perm[num]);
+	PrintInt32("perm", n-num, &perm[num]);
     }
 
     /* Restore to 0-based indexing. */

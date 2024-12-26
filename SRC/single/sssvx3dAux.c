@@ -208,7 +208,7 @@ void sfindRowPerm_MC64(gridinfo_t* grid, int_t job,
                       int_t* rowind,
                       float* a_GA,
                       int_t Equil,
-                      int_t* perm_r,
+                      int* perm_r,
                       float* R1,
                       float* C1,
                       int* iinfo) {
@@ -235,7 +235,8 @@ void sfindRowPerm_MC64(gridinfo_t* grid, int_t job,
     // If the computation was successful
     if (*iinfo == 0) {
         // Broadcast the resulting permutation array to all other nodes
-        MPI_Bcast(perm_r, m, mpi_int_t, root, grid->comm);
+        //MPI_Bcast(perm_r, m, mpi_int_t, root, grid->comm);
+        MPI_Bcast(perm_r, m, MPI_INT, root, grid->comm);
 
         // If job == 5 and Equil == true, broadcast the scaling factors as well
         if (job == 5 && Equil) {
@@ -322,7 +323,7 @@ void sscale_distributed_matrix(int rowequ, int colequ, int_t m, int_t n,
  * @param rowind The row index array of the sparse matrix (CSC format).
  * @param perm_r The permutation array for the rows.
  */
-void spermute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *perm_r) {
+void spermute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int *perm_r) {
     // Check input parameters
     if (colptr == NULL || rowind == NULL || perm_r == NULL) {
         fprintf(stderr, "Error: NULL input parameter to: dpermute_global_A()\n");
@@ -373,8 +374,7 @@ void sperform_LargeDiag_MC64(
     float *R1 = NULL;
     float *C1 = NULL;
 
-    int_t *perm_r = ScalePermstruct->perm_r;
-    int_t *perm_c = ScalePermstruct->perm_c;
+    int *perm_r = ScalePermstruct->perm_r;
     int_t *etree = LUstruct->etree;
     float *R = ScalePermstruct->R;
     float *C = ScalePermstruct->C;
@@ -480,7 +480,7 @@ void sperform_row_permutation(
     #if ( DEBUGlevel>=1 )
     LOG_FUNC_ENTER();
     #endif
-    int_t *perm_r = ScalePermstruct->perm_r;
+    int *perm_r = ScalePermstruct->perm_r;
     /* Get NC format data from SuperMatrix GA */
     NCformat* GAstore = (NCformat *)GA->Store;
     int_t* colptr = GAstore->colptr;
@@ -545,8 +545,7 @@ void sperform_row_permutation(
     }
 
     #if (DEBUGlevel >= 2)
-	if (!grid->iam)
-		PrintInt10("perm_r", m, perm_r);
+	if (!grid->iam) PrintInt32("perm_r", m, perm_r);
     #endif
 }
 

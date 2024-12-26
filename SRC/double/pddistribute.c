@@ -70,8 +70,8 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
                 double *a[])
 {
     NRformat_loc *Astore;
-    int_t  *perm_r; /* row permutation vector */
-    int_t  *perm_c; /* column permutation vector */
+    int  *perm_r; /* row permutation vector */
+    int  *perm_c; /* column permutation vector */
     int_t  i, irow, fst_row, j, jcol, k, gbi, gbj, n, m_loc, jsize,nnz_tot;
     int_t  nnz_loc;    /* number of local nonzeros */
     int_t  SendCnt; /* number of remote nonzeros to be sent */

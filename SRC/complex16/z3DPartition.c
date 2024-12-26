@@ -189,7 +189,7 @@ void zbcastPermutedSparseA(SuperMatrix *A,
                           zLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
     int_t m = A->nrow;
-    int_t n = A->ncol;
+	int_t n = A->ncol;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     zLocalLU_t *Llu = LUstruct->Llu;
     NRformat_loc *Astore   = (NRformat_loc *) A->Store;
@@ -204,12 +204,12 @@ void zbcastPermutedSparseA(SuperMatrix *A,
 
     /* broadcast etree */
     int_t *etree = LUstruct->etree;
-    if(etree)
-        MPI_Bcast( etree, n, mpi_int_t, 0,  grid3d->zscp.comm);
+    if (etree)
+       MPI_Bcast( etree, n, mpi_int_t, 0,  grid3d->zscp.comm);
 
 
-    // list of all the arrays to be broadcasted:
-    //   A, ScalePermstruct, Glu_freeable, LUstruct
+    // list of all the arrays to be broadcast:
+    // A, ScalePermstruct, Glu_freeable, LUstruct
     int_t nsupers;
 
     if (!grid3d->zscp.Iam)
@@ -241,8 +241,8 @@ void zbcastPermutedSparseA(SuperMatrix *A,
 /***** YL: remove the allocation in the following as perm_r/perm_c has been allocated on all grids by dScalePermstructInit
 */
 #if 1
-    MPI_Bcast(ScalePermstruct->perm_r, m*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
-    MPI_Bcast(ScalePermstruct->perm_c, n*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
+    MPI_Bcast(ScalePermstruct->perm_r, m*sizeof(int), MPI_BYTE, 0, grid3d->zscp.comm);
+    MPI_Bcast(ScalePermstruct->perm_c, n*sizeof(int), MPI_BYTE, 0, grid3d->zscp.comm);
 #else
     allocBcastArray ( &(ScalePermstruct->perm_r), m*sizeof(int_t),
         0, grid3d->zscp.comm);
@@ -250,11 +250,11 @@ void zbcastPermutedSparseA(SuperMatrix *A,
         0, grid3d->zscp.comm);
 #endif
     if(ScalePermstruct->DiagScale==ROW || ScalePermstruct->DiagScale==BOTH)
-    allocBcastArray ( (void **) &(ScalePermstruct->R), m*sizeof(double),
-        0, grid3d->zscp.comm);
+        allocBcastArray ( (void **) &(ScalePermstruct->R), m*sizeof(double),
+                          0, grid3d->zscp.comm);
     if(ScalePermstruct->DiagScale==COL || ScalePermstruct->DiagScale==BOTH)
-    allocBcastArray ( (void **) &(ScalePermstruct->C), n*sizeof(double),
-        0, grid3d->zscp.comm);
+        allocBcastArray ( (void **) &(ScalePermstruct->C), n*sizeof(double),
+                          0, grid3d->zscp.comm);
 
 
     /* ==== Broadcasting Glu_freeable ======= */

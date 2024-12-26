@@ -31,6 +31,8 @@ at the top-level directory.
 
 /*
  * Modified by X. S. Li.
+ * Last update:
+ * Dec. 26, 2024: change many int_t[] arrays down to int[]; for version 9.2
  */
 
 #include "superlu_ddefs.h"
@@ -42,19 +44,19 @@ at the top-level directory.
 /*
  * Internal protypes
  */
-static void  relax_snode(int_t, int_t *, int_t, int_t *, int_t *);
-static int_t snode_dfs(SuperMatrix *, const int_t, const int_t, int_t *,
-		       int_t *,	Glu_persist_t *, Glu_freeable_t *);
-static int_t column_dfs(superlu_dist_options_t *, SuperMatrix *,
-			const int_t, int_t *, int_t *, int_t *,
-			int_t *, int_t *, int_t *, int_t *, int_t *,
+static void  relax_snode(const int n, int_t *et, const int relax, int *desc, int *relax_end);
+static int_t snode_dfs(SuperMatrix *A, const int jcol, const int kcol, int_t *xprune,
+		       int *marker, Glu_persist_t *, Glu_freeable_t *);
+static int_t column_dfs(superlu_dist_options_t *, SuperMatrix *A, const int jcol,
+			int *perm_r, int *nseg, int *segrep, int *repfnz,
+			int_t *xprune, int *marker, int *parent, int_t *xplore,
 			Glu_persist_t *, Glu_freeable_t *);
-static int_t pivotL(const int_t, int_t *, int_t *,
+static int_t pivotL(const int jcol, int *perm_r, int *pivrow,
 		    Glu_persist_t *, Glu_freeable_t *);
-static int_t set_usub(const int_t, const int_t, const int_t, int_t *, int_t *,
-		      Glu_persist_t *, Glu_freeable_t *);
-static void  pruneL(const int_t, const int_t *, const int_t, const int_t,
-		    const int_t *, const int_t *, int_t *,
+static int_t set_usub(const int n, const int jcol, const int nseg,
+		      int *segrep, int *repfnz, Glu_persist_t *, Glu_freeable_t *);
+static void  pruneL(const int jcol, const int *perm_r, const int pivrow, const int nseg,
+		    const int *segrep, const int *repfnz, int_t *xprune,
 		    Glu_persist_t *, Glu_freeable_t *);
 
 
@@ -84,17 +86,18 @@ int_t symbfact
  superlu_dist_options_t *options, /* input options */
  int         pnum,     /* process number */
  SuperMatrix *A,       /* original matrix A permuted by columns (input) */
- int_t       *perm_c,  /* column permutation vector (input) */
+ int         *perm_c,  /* column permutation vector (input) */
  int_t       *etree,   /* column elimination tree (input) */
  Glu_persist_t *Glu_persist,  /* output */
  Glu_freeable_t *Glu_freeable /* output */
  )
 {
-
-    int_t m, n, min_mn, nnz, j, i, k, irep, nseg, pivrow, info;
-    int_t *iwork, *perm_r, *segrep, *repfnz;
-    int_t *xprune, *marker, *parent, *xplore;
-    int_t relax, *desc, *relax_end;
+    int_t info;
+    int_t m, n, min_mn, nnz, j, i, k, irep;
+    int nseg, pivrow;
+    int_t *iwork, *xprune, *xplore;
+    int *i32work, *perm_r, *segrep, *repfnz, *marker, *parent;
+    int relax, *desc, *relax_end;
     int_t nnzLU, nnzLSUB;
     int_t nnzL, nnzU;
 
@@ -113,15 +116,18 @@ int_t symbfact
     if ( info != 0 )
 	return info;
 
-    iwork = (int_t *) intMalloc_dist(6*m+2*n);
-    perm_r = iwork;
-    segrep = iwork + m;
+    iwork = (int_t *) intMalloc_dist(m+n);
+    xplore = iwork;
+    xprune = xplore + m;
+    
+    i32work = (int *) int32Malloc_dist(5*m + n);
+    perm_r = i32work;
+    segrep = perm_r + m;
     repfnz = segrep + m;
     marker = repfnz + m;
     parent = marker + m;
-    xplore = parent + m;
-    xprune = xplore + m;
-    relax_end = xprune + n;
+    relax_end = parent + m; // size n
+    
     relax = sp_ienv_dist(2, options);
     ifill_dist(perm_r, m, SLU_EMPTY);
     ifill_dist(repfnz, m, SLU_EMPTY);
@@ -134,7 +140,7 @@ int_t symbfact
     /*for (j = 0; j < n; ++j) iperm_c[perm_c[j]] = j;*/
 
     /* Identify relaxed supernodes. */
-    if ( !(desc = intMalloc_dist(n+1)) )
+    if ( !(desc = int32Malloc_dist(n+1)) )
 	ABORT("Malloc fails for desc[]");;
     relax_snode(n, etree, relax, desc, relax_end);
     SUPERLU_FREE(desc);
@@ -230,11 +236,11 @@ int_t symbfact
 static void relax_snode
 /************************************************************************/
 (
- const int_t n, /* number of columns in the matrix (input) */
+ const int n, /* number of columns in the matrix (input) */
  int_t       *et,   /* column elimination tree (input) */
- const int_t relax, /* max no of columns allowed in a relaxed snode (input) */
- int_t       *desc, /* number of descendants of each etree node. */
- int_t       *relax_end /* last column in a supernode (output) */
+ const int relax, /* max no of columns allowed in a relaxed snode (input) */
+ int       *desc, /* number of descendants of each etree node. */
+ int       *relax_end /* last column in a supernode (output) */
  )
 {
 
@@ -294,11 +300,11 @@ static void relax_snode
 static int_t snode_dfs
 /************************************************************************/
 (
- SuperMatrix *A,       /* original matrix A permuted by columns (input) */
- const int_t jcol,      /* beginning of the supernode (input) */
- const int_t kcol,      /* end of the supernode (input) */
- int_t       *xprune,   /* pruned location in each adjacency list (output) */
- int_t       *marker,   /* working array of size m */
+ SuperMatrix *A,      /* original matrix A permuted by columns (input) */
+ const int jcol,      /* beginning of the supernode (input) */
+ const int kcol,      /* end of the supernode (input) */
+ int_t     *xprune,   /* pruned location in each adjacency list (output) */
+ int       *marker,   /* working array of size m */
  Glu_persist_t *Glu_persist,   /* global LU data structures (modified) */
  Glu_freeable_t *Glu_freeable
  )
@@ -463,15 +469,15 @@ static int_t column_dfs
 (
  superlu_dist_options_t *options,
  SuperMatrix *A,        /* original matrix A permuted by columns (input) */
- const int_t jcol,      /* current column number (input) */
- int_t       *perm_r,   /* row permutation vector (input) */
- int_t       *nseg,     /* number of U-segments in column jcol (output) */
- int_t       *segrep,   /* list of U-segment representatives (output) */
- int_t       *repfnz,   /* list of first nonzeros in the U-segments (output) */
- int_t       *xprune,   /* pruned location in each adjacency list (output) */
- int_t       *marker,   /* working array of size m */
- int_t       *parent,   /* working array of size m */
- int_t       *xplore,   /* working array of size m */
+ const int jcol,      /* current column number (input) */
+ int       *perm_r,   /* row permutation vector (input) */
+ int       *nseg,     /* number of U-segments in column jcol (output) */
+ int       *segrep,   /* list of U-segment representatives (output) */
+ int       *repfnz,   /* list of first nonzeros in the U-segments (output) */
+ int_t     *xprune,   /* pruned location in each adjacency list (output) */
+ int       *marker,   /* working array of size m */
+ int       *parent,   /* working array of size m */
+ int_t     *xplore,   /* working array of size m */
  Glu_persist_t *Glu_persist,   /* global LU data structures (modified) */
  Glu_freeable_t *Glu_freeable
  )
@@ -687,9 +693,9 @@ static int_t column_dfs
 static int_t pivotL
 /************************************************************************/
 (
- const int_t jcol,     /* current column number     (input)    */
- int_t       *perm_r,  /* row permutation vector    (output)   */
- int_t       *pivrow,  /* the pivot row index       (output)   */
+ const int jcol,     /* current column number     (input)    */
+ int       *perm_r,  /* row permutation vector    (output)   */
+ int       *pivrow,  /* the pivot row index       (output)   */
  Glu_persist_t *Glu_persist,   /* global LU data structures (modified) */
  Glu_freeable_t *Glu_freeable
  )
@@ -725,7 +731,7 @@ static int_t pivotL
 
     /* Diagonal pivot exists? */
     if ( diag == SLU_EMPTY ) {
-	printf("At column " IFMT ", ", jcol);
+	printf("At column %d ", jcol);
 	ABORT("pivotL() encounters zero diagonal");
     }
 
@@ -766,11 +772,11 @@ static int_t pivotL
 static int_t set_usub
 /************************************************************************/
 (
- const int_t n,       /* total number of columns (input) */
- const int_t jcol,    /* current column number (input) */
- const int_t nseg,    /* number of supernodal segments in U[*,jcol] (input) */
- int_t       *segrep, /* list of U-segment representatives (output) */
- int_t       *repfnz, /* list of first nonzeros in the U-segments (output) */
+ const int n,       /* total number of columns (input) */
+ const int jcol,    /* current column number (input) */
+ const int nseg,    /* number of supernodal segments in U[*,jcol] (input) */
+ int       *segrep, /* list of U-segment representatives (output) */
+ int       *repfnz, /* list of first nonzeros in the U-segments (output) */
  Glu_persist_t *Glu_persist,   /* global LU data structures (modified) */
  Glu_freeable_t *Glu_freeable
  )
@@ -827,13 +833,13 @@ static int_t set_usub
 static void pruneL
 /************************************************************************/
 (
- const int_t  jcol,    /* in */
- const int_t  *perm_r, /* in */
- const int_t  pivrow,  /* in */
- const int_t  nseg,    /* in */
- const int_t  *segrep, /* in */
- const int_t  *repfnz, /* in */
- int_t  *xprune,       /* out */
+ const int  jcol,    /* in */
+ const int  *perm_r, /* in */
+ const int  pivrow,  /* in */
+ const int  nseg,    /* in */
+ const int  *segrep, /* in */
+ const int  *repfnz, /* in */
+ int_t      *xprune,     /* out */
  Glu_persist_t *Glu_persist,   /* global LU data structures (modified) */
  Glu_freeable_t *Glu_freeable
  )

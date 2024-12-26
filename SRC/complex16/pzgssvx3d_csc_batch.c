@@ -409,7 +409,7 @@ pzgssvx3d_csc_batch(
 #if (PRNTlevel >= 1)
     printf("\tBIG system: berr[0] %e\n", berr[0]);
     printf("after pzgssvx3d: DiagScale %d\n", ScalePermstruct.DiagScale);
-    //PrintInt10("after pdgssvx3d: ScalePermstruct.perm_c", (int_t) m_big, ScalePermstruct.perm_c);
+    //PrintInt32("after pdgssvx3d: ScalePermstruct.perm_c", m_big, ScalePermstruct.perm_c);
     //Printdouble5("big-B-solution", m_big, b);
 #endif
 

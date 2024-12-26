@@ -165,7 +165,7 @@ void countnz_dist(const int_t n, int_t *xprune,
  * </pre>
  */
 int64_t
-fixupL_dist(const int_t n, const int_t *perm_r,
+fixupL_dist(const int_t n, const int *perm_r,
             Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
     register int_t nsuper, fsupc, nextl, i, j, k, jstrt;
@@ -551,11 +551,10 @@ void PStatFree(SuperLUStat_t *stat)
 
 /*! \brief Fills an integer array with a given value.
  */
-void ifill_dist(int_t *a, int_t alen, int_t ival)
+void ifill_dist(int *a, int alen, int ival)
 {
-    register int_t i;
-    for (i = 0; i < alen; i++)
-        a[i] = ival;
+    register int i;
+    for (i = 0; i < alen; i++) a[i] = ival;
 }
 
 void get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,
@@ -609,7 +608,7 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
 {
     register int nsup1 = 0;
     int_t i, isize, whichb, bl, bh;
-    int_t bucket[NBUCKS];
+    int bucket[NBUCKS];
 
     max_sup_size = 0;
 
@@ -643,9 +642,9 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
     {
         bl = (float)i * max_sup_size / NBUCKS;
         bh = (float)(i + 1) * max_sup_size / NBUCKS;
-        printf("\tsnode: %d-%d\t\t%d\n", (int)bl + 1, (int)bh, (int)bucket[i]);
+        printf("\tsnode: %d-%d\t\t%d\n", (int)bl + 1, (int)bh, bucket[i]);
     }
-}
+} /* end super_stats_dist */
 
 /*! \brief Check whether repfnz[] == SLU_EMPTY after reset.
  */

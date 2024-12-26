@@ -119,7 +119,7 @@ static int_t c__2 = 2;
 
 /* ********************************************************************** */
 /* Subroutine */ int mc64ad_dist(int *job, int *n, int_t *ne, int_t *
-	ip, int_t *irn, double *a, int *num, int_t *cperm, 
+	ip, int_t *irn, double *a, int *num, int *cperm, 
 	int_t *liw, int_t *iw, int_t *ldw, double *dw,
 				 int * icntl, int *info)
 {
@@ -136,13 +136,13 @@ static int_t c__2 = 2;
 
     extern /* Subroutine */ int mc21ad_dist(int_t *, int_t *, int_t *, 
 	    int_t *, int_t *, int_t *, int_t *, int_t *),
-	    mc64bd_dist(int *, int_t *, int_t *, int_t *, double *, int_t 
-			*, int *, int_t *, int_t *, int_t *, int_t *, double *),
+	mc64bd_dist(int *, int_t *, int_t *, int_t *, double *, int *iperm,
+		    int *, int_t *, int_t *, int_t *, int_t *, double *),
 	    mc64rd_dist(int *, int_t *, int_t *, int_t *, double *),
             mc64sd_dist(int *, int_t *, int_t *, int_t *,
-			double *, int_t *, int *, int_t *, int_t *, 
+			double *, int *iperm, int *, int_t *, int_t *, 
 			int_t *, int_t *, int_t *, int_t *, int_t *),
-	    mc64wd_dist(int *, int_t *, int_t *, int_t *, double *, int_t *,
+	    mc64wd_dist(int *, int_t *, int_t *, int_t *, double *, int *iperm,
 			int*, int_t *, int_t *, int_t *, int_t *, int_t 
 			*, double *, double *);
 
@@ -239,7 +239,7 @@ static int_t c__2 = 2;
 /*   diagonal of the permuted matrix. */
 /*   If NUM < N, the matrix is structurally singular. */
 
-/* CPERM is an INT_T array of length N that need not be set by the */
+/* CPERM is an INT array of length N that need not be set by the */
 /*   user. On successful exit, CPERM contains the column permutation. */
 /*   Column CPERM(J) of the original matrix is column J in the permuted */
 /*   matrix, J=1..N. */
@@ -668,7 +668,7 @@ L99:
 
 /* ********************************************************************** */
 /* Subroutine */ int mc64bd_dist(int *n, int_t *ne, int_t *ip, int_t *
-	irn, double *a, int_t *iperm, int *num, int_t *jperm, 
+	irn, double *a, int *iperm, int *num, int_t *jperm, 
 	int_t *pr, int_t *q, int_t *l, double *d__)
 {
     /* System generated locals */
@@ -709,7 +709,7 @@ L99:
 /* A is a REAL (DOUBLE PRECISION in the D-version) array of length */
 /*   NE. A(K), K=1..NE, must be set to the value of the entry */
 /*   that corresponds to IRN(K). It is not altered. */
-/* IPERM is an INT_T array of length N. On exit, it contains the */
+/* IPERM is an INT array of length N. On exit, it contains the */
 /*    matching: IPERM(I) = 0 or row I is matched to column IPERM(I). */
 /* NUM is INT_T variable. On exit, it contains the cardinality of the */
 /*    matching stored in IPERM. */
@@ -1554,7 +1554,7 @@ L100:
 
 /* ********************************************************************** */
 /* Subroutine */ int mc64sd_dist(int *n, int_t *ne, int_t *ip, int_t *
-	irn, double *a, int_t *iperm, int *numx, int_t *w, 
+	irn, double *a, int *iperm, int *numx, int_t *w, 
 	int_t *len, int_t *lenl, int_t *lenh, int_t *fc, int_t *iw, 
 	int_t *iw4)
 {
@@ -2169,7 +2169,7 @@ L101:
 
 /* ********************************************************************** */
 /* Subroutine */ int mc64wd_dist(int *n, int_t *ne, int_t *ip, int_t *
-	irn, double *a, int_t *iperm, int *num, int_t *jperm, 
+	irn, double *a, int *iperm, int *num, int_t *jperm, 
 	int_t *out, int_t *pr, int_t *q, int_t *l, double *u, 
 	double *d__)
 {
@@ -2210,7 +2210,7 @@ L101:
 /*   A(K), K=1..NE, must be set to the value of the entry that */
 /*   corresponds to IRN(K). It is not altered. */
 /*   All values A(K) must be non-negative. */
-/* IPERM is an INT_T array of length N. On exit, it contains the */
+/* IPERM is an INT array of length N. On exit, it contains the */
 /*   weighted matching: IPERM(I) = 0 or row I is matched to column */
 /*   IPERM(I). */
 /* NUM is an INT_T variable. On exit, it contains the cardinality of */

@@ -298,7 +298,7 @@ int psPermute_Dense_Matrix
  int_t fst_row,
  int_t m_loc,
  int_t row_to_proc[],
- int_t perm[],
+ int perm[],
  float X[], int ldx,
  float B[], int ldb,
  int nrhs,
@@ -650,7 +650,7 @@ if (get_acc_solve()){
  */
 int_t
 psgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
-	     int_t perm_r[], int_t perm_c[], gridinfo_t *grid,
+	     int perm_r[], int perm_c[], gridinfo_t *grid,
 	     Glu_persist_t *Glu_persist, sSOLVEstruct_t *SOLVEstruct)
 {
 
@@ -1108,11 +1108,12 @@ psgstrs_delete_device_lsum_x(sSOLVEstruct_t *SOLVEstruct)
 /*! \brief Initialize the data structure for the solution phase.
  */
 int sSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
-	       int_t perm_r[], int_t perm_c[], int_t nrhs,
+	       int perm_r[], int perm_c[], int_t nrhs,
 	       sLUstruct_t *LUstruct, gridinfo_t *grid,
 	       sSOLVEstruct_t *SOLVEstruct)
 {
-    int_t *row_to_proc, *inv_perm_c, *itemp;
+    int_t *row_to_proc, *itemp;
+    int *inv_perm_c;
     NRformat_loc *Astore;
     int_t        i, fst_row, m_loc, p;
     int          procs;
@@ -1125,7 +1126,7 @@ int sSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     if ( !(row_to_proc = intMalloc_dist(A->nrow)) )
 	ABORT("Malloc fails for row_to_proc[]");
     SOLVEstruct->row_to_proc = row_to_proc;
-    if ( !(inv_perm_c = intMalloc_dist(A->ncol)) )
+    if ( !(inv_perm_c = int32Malloc_dist(A->ncol)) )
         ABORT("Malloc fails for inv_perm_c[].");
     for (i = 0; i < A->ncol; ++i) inv_perm_c[perm_c[i]] = i;
     SOLVEstruct->inv_perm_c = inv_perm_c;
@@ -1149,7 +1150,7 @@ int sSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     if ( !grid->iam ) {
       printf("fst_row = %d\n", fst_row);
       PrintInt10("row_to_proc", A->nrow, row_to_proc);
-      PrintInt10("inv_perm_c", A->ncol, inv_perm_c);
+      PrintInt32("inv_perm_c", A->ncol, inv_perm_c);
     }
 #endif
     SUPERLU_FREE(itemp);

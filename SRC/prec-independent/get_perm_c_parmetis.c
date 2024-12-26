@@ -36,7 +36,7 @@ at the top-level directory.
 
 static float
 a_plus_at_CompRow_loc
-(int, int_t *, int, int_t *, int_t , int_t *, int_t *,  
+(int, int *perm_r, int, int_t *, int_t , int_t *, int_t *,  
  int, int_t *, int_t *, int_t **,  int_t **, gridinfo_t *);
 
 /*! \brief
@@ -64,7 +64,7 @@ a_plus_at_CompRow_loc
  *         of the linear equations is A->nrow.  Matrix A is distributed
  *         in NRformat_loc format.
  *
- * perm_r  (input) int_t*
+ * perm_r  (input) int*
  *         Row permutation vector of size A->nrow, which defines the 
  *         permutation matrix Pr; perm_r[i] = j means row i of A is in 
  *         position j in Pr*A.
@@ -101,7 +101,7 @@ a_plus_at_CompRow_loc
  * </pre>
  */
 float
-get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
+get_perm_c_parmetis (SuperMatrix *A, int *perm_r, int *perm_c,
 		     int nprocs_i, int noDomains, 
 		     int_t **sizes, int_t **fstVtxSep,
 		     gridinfo_t *grid, MPI_Comm *metis_comm)
@@ -409,7 +409,7 @@ static float
 a_plus_at_CompRow_loc
 (
  int   iam,         /* Input - my processor number */
- int_t *perm_r,     /* Input - row permutation vector Pr */
+ int   *perm_r,     /* Input - row permutation vector Pr */
  int   nprocs_i,    /* Input - number of processors the input matrix
 		       is distributed on */
  int_t *vtxdist_i,  /* Input - index of first row on each processor of the input matrix */

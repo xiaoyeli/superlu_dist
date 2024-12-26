@@ -6288,7 +6288,7 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
     int *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
     int *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
     int *ptr_to_ibuf, *ptr_to_dbuf;
-    int_t *perm_r, *perm_c;     /* row and column permutation vectors */
+    int *perm_r, *perm_c;     /* row and column permutation vectors */
     int_t *send_ibuf, *recv_ibuf;
     doublecomplex *send_dbuf, *recv_dbuf;
     int_t *xsup, *supno;

@@ -132,7 +132,7 @@ symbfact_mapVtcs
 
 static void 
 symbfact_distributeMatrix 
-(int, int, int, SuperMatrix *, int_t *, int_t *, matrix_symbfact_t *, 
+(int, int, int, SuperMatrix *, int *perm_c, int *perm_r, matrix_symbfact_t *, 
  Pslu_freeable_t *, vtcsInfo_symbfact_t *, int_t *, MPI_Comm *);
 
 static int_t
@@ -156,8 +156,8 @@ float symbfact_dist
  int         nprocs_symb, /* Input - no of processors for the symbolic
 			     factorization */
  SuperMatrix *A,          /* Input - distributed input matrix */
- int_t       *perm_c,     /* Input - column permutation */
- int_t       *perm_r,     /* Input - row permutation */
+ int       *perm_c,     /* Input - column permutation */
+ int       *perm_r,     /* Input - row permutation */
  int_t       *sizes,      /* Input - sizes of each node in the separator tree */
  int_t       *fstVtxSep,  /* Input - first vertex of each node in the tree */
  Pslu_freeable_t *Pslu_freeable, /* Output - local L and U structure, 
@@ -201,12 +201,12 @@ float symbfact_dist
  *         distributed in NRformat_loc format.
  *         Matrix A is not yet permuted by perm_c.
  *
- * perm_c  (input) int_t*
+ * perm_c  (input) int*
  *	   Column permutation vector of size A->ncol, which defines the 
  *         permutation matrix Pc; perm_c[i] = j means column i of A is 
  *         in position j in A*Pc.
  *
- * perm_r  (input) int_t*
+ * perm_r  (input) int*
  *	   Row permutation vector of size A->nrow, which defines the 
  *         permutation matrix Pr; perm_r[i] = j means column i of A is 
  *         in position j in Pr*A.
@@ -655,7 +655,7 @@ float symbfact_dist
       printf("\t relax_gen %.2f, relax_curSep %.2f, relax_seps %.2f\n",
 	     PS.relax_gen, PS.relax_curSep, PS.relax_seps);
 #endif
-      printf("INT_T_MAX %ld\n", (long) INT_T_MAX);
+      printf("INT_T_MAX %lld\n", (long long) INT_T_MAX);
       printf("\tParameters: fill mem %ld fill pelt %ld\n",
 	     (long) sp_ienv_dist(6,options), (long) PS.fill_par);
       printf("\tNonzeros in L       %lld\n", nnzL);
@@ -1261,8 +1261,8 @@ symbfact_distributeMatrix
  int   nprocs_symb,     /* Input - number of processors for the
 			   symbolic factorization */
  SuperMatrix *A,        /* Input - input matrix A */
- int_t *perm_c,         /* Input - column permutation */
- int_t *perm_r,         /* Input - row permutation */
+ int *perm_c,         /* Input - column permutation */
+ int *perm_r,         /* Input - row permutation */
  matrix_symbfact_t *AS, /* Output - temporary storage for the
 			   redistributed matrix */
  Pslu_freeable_t *Pslu_freeable, /* Input - global to local information */

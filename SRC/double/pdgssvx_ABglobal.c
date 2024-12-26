@@ -492,8 +492,8 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	      structures are not used.                                  */
     fact_t   Fact;
     double   *a;
-    int_t    *perm_r; /* row permutations from partial pivoting */
-    int_t    *perm_c; /* column permutation vector */
+    int    *perm_r; /* row permutations from partial pivoting */
+    int    *perm_c; /* column permutation vector */
     int_t    *etree;  /* elimination tree */
     int_t    *colptr, *rowind;
     int_t    Equil, factored, job, notran, colequ, rowequ;
@@ -722,7 +722,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 
                 MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
 		if ( iinfo == 0 ) {
-		    MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+		    MPI_Bcast( perm_r, m, MPI_INT, 0, grid->comm );
 		    if ( job == 5 && Equil ) {
 		       MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
 		       MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
@@ -731,7 +731,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    } else {
 		MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
 		if ( iinfo == 0 ) {
-		   MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+		   MPI_Bcast( perm_r, m, MPI_INT, 0, grid->comm );
 		   if ( job == 5 && Equil ) {
 		      MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
 		      MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );

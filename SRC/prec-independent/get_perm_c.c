@@ -35,7 +35,7 @@ get_metis_dist(
 	  int_t bnz,       /* number of nonzeros in matrix A. */
 	  int_t *b_colptr, /* column pointer of size n+1 for matrix B. */
 	  int_t *b_rowind, /* row indices of size bnz for matrix B. */
-	  int_t *perm_c    /* out - the column permutation vector. */
+	  int *perm_c    /* out - the column permutation vector. */
 	  )
 {
 #ifdef HAVE_PARMETIS
@@ -124,7 +124,7 @@ get_colamd_dist(
 	   const int nnz,/* number of nonzeros in matrix A. */
 	   int_t *colptr,  /* column pointer of size n+1 for matrix A. */
 	   int_t *rowind,  /* row indices of size nz for matrix A. */
-	   int_t *perm_c   /* out - the column permutation vector. */
+	   int *perm_c   /* out - the column permutation vector. */
 	   )
 {
 #ifdef HAVE_COLAMD    
@@ -476,17 +476,18 @@ at_plus_a_dist(
  * </pre>
  */
 void
-get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
+get_perm_c_dist(int pnum, int ispec, SuperMatrix *A, int *perm_c)
 
 {
     NCformat *Astore = A->Store;
     int_t m, n, bnz = 0, *b_colptr, *b_rowind, i;
-    int_t delta, maxint, nofsub, *invp;
+    int_t delta, maxint, nofsub;
+    int *invp;
     int_t *dhead, *qsize, *llist, *marker;
     double t, SuperLU_timer_();
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC((int)pnum, "Enter get_perm_c_dist()");
+    CHECK_MALLOC(pnum, "Enter get_perm_c_dist()");
 #endif
 
     m = A->nrow;
@@ -562,7 +563,7 @@ get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 	delta = 0; /* DELTA is a parameter to allow the choice of nodes
 		      whose degree <= min-degree + DELTA. */
 	maxint = 2147483647; /* 2**31 - 1 */
-	invp = (int_t *) SUPERLU_MALLOC((n+delta)*sizeof(int_t));
+	invp = (int *) int32Malloc_dist(n+delta);
 	if ( !invp ) ABORT("SUPERLU_MALLOC fails for invp.");
 	dhead = (int_t *) SUPERLU_MALLOC((n+delta)*sizeof(int_t));
 	if ( !dhead ) ABORT("SUPERLU_MALLOC fails for dhead.");

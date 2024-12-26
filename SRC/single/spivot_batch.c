@@ -70,7 +70,7 @@ spivot_batch(
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Enter dpivot_batch()");
 #endif
-    
+
     /* Decipher the input matrices */
     SuperMatrix **A;
     A = SUPERLU_MALLOC(batchCount * sizeof(SuperMatrix *));
@@ -90,22 +90,22 @@ spivot_batch(
     int_t *rowind;
     float *a, *at;
     int_t nnz;
-    
+
     /* Loop through each matrix in the batch */
     for (int d = 0; d < batchCount; ++d) {
 
 	rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
 	colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
-	
+
 	/* If the matrix type is SLU_NR (CSR), then need to convert to CSC first */
 	if ( A[d]->Stype == SLU_NR ) { /* CSR format */
 	    NRformat *Astore = (NRformat *) A[d]->Store;
 	    a = (float *)Astore->nzval;
-	    
+
 	    sCompRow_to_CompCol_dist(m, n, nnz, a,
 				     Astore->colind, Astore->rowptr,
 				     &at, &rowind, &colptr);
-	    
+
 	    a = at; // now a[] points to at[], stored in CSC format.
 	    nnz = Astore->nnz;
 	} else { /* CSC format */
@@ -121,14 +121,14 @@ spivot_batch(
 	float *C = CeqPtr[d];
 
 	if ( !factored ) { /* Skip this if already factored. */
-	    
+
 	    int *perm_r = RpivPtr[d];
 
 	    /* ------------------------------------------------------------
 	       Find the row permutation for A.
 	       ------------------------------------------------------------ */
 	    if (options->RowPerm != NO)	{
-		
+
 		if (Fact != SamePattern_SameRowPerm) {
 		    if (options->RowPerm == MY_PERMR) { /* Use user's perm_r. */
 			/* Permute the matrix A for symbfact() */
@@ -166,7 +166,7 @@ spivot_batch(
 					for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 					    irow = rowind[i];
 					    a[i] *= R1[irow] * cj;
-					    
+
 					}
 				    }
 
@@ -201,18 +201,18 @@ spivot_batch(
 				    for (i = colptr[j]; i < colptr[j + 1]; ++i)	{
 					irow = rowind[i];
 					rowind[i] = perm_r[irow];
-					
+
 #if (PRNTlevel >= 2)
 					/* New diagonal */
 					if (job == 2 || job == 3)
 					    dmin = SUPERLU_MIN(dmin, fabs(a[i]));
 					else if (job == 4)
 					    dsum += fabs(a[i]);
-#endif					
+#endif
 				    } /* end for i ... */
 				}  /* end for j ... */
 			    }  /* end else job ... */
-			    
+
 			} else	{ /* if iinfo != 0 ... MC64 returns error */
 			    for (i = 0; i < m; ++i) perm_r[i] = i;
 			}
@@ -236,15 +236,15 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
 		    fflush(stdout);
 #endif
 		} /* end if Fact not SamePattern_SameRowPerm ... */
-		
+
 	    } else { /* options->RowPerm == NOROWPERM / NATURAL */
-		
+
 		for (i = 0; i < m; ++i)	perm_r[i] = i;
 	    }
 
 #if ( DEBUGlevel>=1 )
 	    check_perm_dist("perm_r", m, perm_r);
-		PrintInt10("perm_r", m, perm_r);
+            PrintInt32("perm_r", m, perm_r);
 #endif
 	} /* end if (!factored) */
 
@@ -253,7 +253,7 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
 	    SUPERLU_FREE(rowind);
 	    SUPERLU_FREE(colptr);
 	}
-	
+
     } /* end for d ... batchCount */
 
     /* Deallocate storage */
@@ -267,5 +267,5 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
     CHECK_MALLOC(0, "Exit spivot_batch()");
 #endif
     return info;
-    
+
 } /* end spivot_batch */

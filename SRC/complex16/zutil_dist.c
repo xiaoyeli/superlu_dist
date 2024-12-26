@@ -463,9 +463,9 @@ void zScalePermstructInit(const int_t m, const int_t n,
                          zScalePermstruct_t *ScalePermstruct)
 {
     ScalePermstruct->DiagScale = NOEQUIL;
-    if ( !(ScalePermstruct->perm_r = intMalloc_dist(m)) )
+    if ( !(ScalePermstruct->perm_r = int32Malloc_dist(m)) )
         ABORT("Malloc fails for perm_r[].");
-    if ( !(ScalePermstruct->perm_c = intMalloc_dist(n)) )
+    if ( !(ScalePermstruct->perm_c = int32Malloc_dist(n)) )
         ABORT("Malloc fails for perm_c[].");
 }
 

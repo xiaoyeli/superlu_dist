@@ -21,8 +21,6 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 
 
-int check_perm_dist(char *, int_t, int_t *);
-
 /*! \brief
  *
  * <pre>
@@ -78,7 +76,7 @@ int check_perm_dist(char *, int_t, int_t *);
  * </pre>
  */
 void
-sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c, 
+sp_colorder(superlu_dist_options_t *options, SuperMatrix *A, int *perm_c, 
 	    int_t *etree, SuperMatrix *AC)
 {
 
@@ -221,15 +219,15 @@ sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c,
 } /* SP_COLORDER */
 
 int
-check_perm_dist(char *what, int_t n, int_t *perm)
+check_perm_dist(char *what, int n, int *perm)
 {
     register int i;
-    int_t          *marker;
-    marker = (int_t *) intCalloc_dist(n);
+    int          *marker;
+    marker = (int *) int32Calloc_dist(n);
 
     for (i = 0; i < n; ++i) {
 	if ( perm[i] >= n || marker[perm[i]] == 1 ) {
-	    printf("%s: Not a valid PERM[%d] = " IFMT "\n", 
+	    printf("%s: Not a valid PERM[%d] = %d\n", 
 		   what, i, perm[i]);
 	    ABORT("check_perm_dist");
 	} else {

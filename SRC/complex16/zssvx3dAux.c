@@ -208,7 +208,7 @@ void zfindRowPerm_MC64(gridinfo_t* grid, int_t job,
                       int_t* rowind,
                       doublecomplex* a_GA,
                       int_t Equil,
-                      int_t* perm_r,
+                      int* perm_r,
                       double* R1,
                       double* C1,
                       int* iinfo) {
@@ -235,7 +235,8 @@ void zfindRowPerm_MC64(gridinfo_t* grid, int_t job,
     // If the computation was successful
     if (*iinfo == 0) {
         // Broadcast the resulting permutation array to all other nodes
-        MPI_Bcast(perm_r, m, mpi_int_t, root, grid->comm);
+        //MPI_Bcast(perm_r, m, mpi_int_t, root, grid->comm);
+        MPI_Bcast(perm_r, m, MPI_INT, root, grid->comm);
 
         // If job == 5 and Equil == true, broadcast the scaling factors as well
         if (job == 5 && Equil) {
@@ -323,7 +324,7 @@ void zscale_distributed_matrix(int rowequ, int colequ, int_t m, int_t n,
  * @param rowind The row index array of the sparse matrix (CSC format).
  * @param perm_r The permutation array for the rows.
  */
-void zpermute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *perm_r) {
+void zpermute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int *perm_r) {
     // Check input parameters
     if (colptr == NULL || rowind == NULL || perm_r == NULL) {
         fprintf(stderr, "Error: NULL input parameter to: dpermute_global_A()\n");
@@ -374,8 +375,7 @@ void zperform_LargeDiag_MC64(
     double *R1 = NULL;
     double *C1 = NULL;
 
-    int_t *perm_r = ScalePermstruct->perm_r;
-    int_t *perm_c = ScalePermstruct->perm_c;
+    int *perm_r = ScalePermstruct->perm_r;
     int_t *etree = LUstruct->etree;
     double *R = ScalePermstruct->R;
     double *C = ScalePermstruct->C;
@@ -406,9 +406,11 @@ void zperform_LargeDiag_MC64(
     }
 
     // int iinfo;
-    zfindRowPerm_MC64(grid, job, m, n, nnz,
-		      colptr, rowind,
-		      a_GA, Equil, perm_r, R1, C1, iinfo);
+    zfindRowPerm_MC64(grid, job, m, n,
+    nnz,
+    colptr,
+    rowind,
+     a_GA, Equil, perm_r, R1, C1, iinfo);
 
     if (*iinfo && job == 5) {
         SUPERLU_FREE(R1);
@@ -479,7 +481,7 @@ void zperform_row_permutation(
     #if ( DEBUGlevel>=1 )
     LOG_FUNC_ENTER();
     #endif
-    int_t *perm_r = ScalePermstruct->perm_r;
+    int *perm_r = ScalePermstruct->perm_r;
     /* Get NC format data from SuperMatrix GA */
     NCformat* GAstore = (NCformat *)GA->Store;
     int_t* colptr = GAstore->colptr;
@@ -506,11 +508,12 @@ void zperform_row_permutation(
             else if (options->RowPerm == LargeDiag_MC64)
             {
 
-                zperform_LargeDiag_MC64(options, Fact,
-					ScalePermstruct, LUstruct,
-					m, n, grid,
-					A, GA, stat, job,
-					Equil, rowequ, colequ, iinfo);
+                zperform_LargeDiag_MC64(
+                options, Fact,
+                ScalePermstruct, LUstruct,
+                m, n, grid,
+                A, GA, stat, job,
+                Equil, rowequ, colequ, iinfo);
             }
             else // LargeDiag_HWPM
             {
@@ -543,8 +546,7 @@ void zperform_row_permutation(
     }
 
     #if (DEBUGlevel >= 2)
-	if (!grid->iam)
-		PrintInt10("perm_r", m, perm_r);
+	if (!grid->iam) PrintInt32("perm_r", m, perm_r);
     #endif
 }
 
