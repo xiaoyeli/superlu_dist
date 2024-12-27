@@ -3,11 +3,11 @@
 [![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
 
-SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
-A*X=B. It uses Gaussian elimination with static pivoting (GESP). 
+SuperLU_DIST contains a set of subroutines to solve a sparse linear system
+A*X=B. It uses Gaussian elimination with static pivoting (GESP).
 Static pivoting is a technique that combines the numerical stability of
 partial pivoting with the scalability of Cholesky (no pivoting),
-to run accurately and efficiently on large numbers of processors. 
+to run accurately and efficiently on large numbers of processors.
 
 SuperLU_DIST is a parallel extension to the serial SuperLU library.
 It is targeted for the distributed memory parallel machines.
@@ -54,11 +54,11 @@ Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 [![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
 
-SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
-A*X=B. It uses Gaussian elimination with static pivoting (GESP). 
+SuperLU_DIST contains a set of subroutines to solve a sparse linear system
+A*X=B. It uses Gaussian elimination with static pivoting (GESP).
 Static pivoting is a technique that combines the numerical stability of
 partial pivoting with the scalability of Cholesky (no pivoting),
-to run accurately and efficiently on large numbers of processors. 
+to run accurately and efficiently on large numbers of processors.
 
 SuperLU_DIST is a parallel extension to the serial SuperLU library.
 It is targeted for the distributed memory parallel machines.
@@ -99,7 +99,7 @@ SuperLU_DIST/MAKE_INC/ sample machine-specific make.inc files
 # Installation
 
 There are two ways to install the package. The first method is to use
-CMake automatic build system. The other method requires users to 
+CMake automatic build system. The other method requires users to
 The procedures are described below.
 
 ## Installation option 1: Using CMake build system.
@@ -133,7 +133,7 @@ export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 ### Optional external libraries: CombBLAS, LAPACK
 
 In order to use parallel weighted matching HWPM (Heavy Weight
-Perfect Matching) for numerical pre-pivoting, you need to install 
+Perfect Matching) for numerical pre-pivoting, you need to install
 CombBLAS and define the environment variable:
 
 ```
@@ -240,37 +240,37 @@ contains the key CPP definitions used throughout the code.
     -DBUILD_SHARED_LIBS= OFF | ON
     -DCMAKE_INSTALL_PREFIX=<...>.
     -DCMAKE_C_COMPILER=<MPI C compiler>
-    -DCMAKE_C_FLAGS="..." 
+    -DCMAKE_C_FLAGS="..."
     -DCMAKE_CXX_COMPILER=<MPI C++ compiler>
     -DMAKE_CXX_FLAGS="..."
-    -DCMAKE_CUDA_FLAGS="..." 
-    -DHIP_HIPCC_FLAGS="..." 
+    -DCMAKE_CUDA_FLAGS="..."
+    -DHIP_HIPCC_FLAGS="..."
     -DXSDK_ENABLE_Fortran=OFF | ON
     -DCMAKE_Fortran_COMPILER=<MPI F90 compiler>
 ```
 
 ## Installation option 2: Manual installation with makefile.
-Before installing the package, please examine the three things dependent 
+Before installing the package, please examine the three things dependent
 on your system setup:
 
 ### 2.1 Edit the make.inc include file.
 
 This make include file is referenced inside each of the Makefiles
-in the various subdirectories. As a result, there is no need to 
+in the various subdirectories. As a result, there is no need to
 edit the Makefiles in the subdirectories. All information that is
-machine specific has been defined in this include file. 
+machine specific has been defined in this include file.
 
 Sample machine-specific make.inc are provided in the MAKE_INC/
 directory for several platforms, such as Cray XT5, Linux, Mac-OS, and CUDA.
 When you have selected the machine to which you wish to install
-SuperLU_DIST, copy the appropriate sample include file 
+SuperLU_DIST, copy the appropriate sample include file
 (if one is present) into make.inc.
 
 For example, if you wish to run SuperLU_DIST on a Cray XT5,  you can do
 `cp MAKE_INC/make.xt5  make.inc`
 
 For the systems other than listed above, some porting effort is needed
-for parallel factorization routines. Please refer to the Users' Guide 
+for parallel factorization routines. Please refer to the Users' Guide
 for detailed instructions on porting.
 
 The following CPP definitions can be set in CFLAGS.
@@ -283,7 +283,7 @@ printing level to show solver's execution details. (default 0)
 
 -DDEBUGlevel=[0,1,2,...]
 diagnostic printing level for debugging purpose. (default 0)
-```      
+```
 
 ### 2.2. The BLAS library.
 
@@ -299,7 +299,7 @@ the file make.inc:
 BLASDEF = -DUSE_VENDOR_BLAS
 BLASLIB = <BLAS library you wish to link with>
 ```
-The CBLAS/ subdirectory contains the part of the C BLAS (single threaded) 
+The CBLAS/ subdirectory contains the part of the C BLAS (single threaded)
 needed by SuperLU_DIST package. However, these codes are intended for use
 only if there is no faster implementation of the BLAS already
 available on your machine. In this case, you should go to the
@@ -312,7 +312,7 @@ top-level SuperLU_DIST/ directory and do the following:
 to make the BLAS library from the routines in the
 ` CBLAS/ subdirectory.`
 
-### 2.3. External libraries. 
+### 2.3. External libraries.
 
   #### 2.3.1 Metis and ParMetis.
 
@@ -370,8 +370,8 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 
 In the header file SRC/superlu_FCnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
-(Some vendor-supplied BLAS libraries do not have C interfaces. So the 
-re-naming is needed in order for the SuperLU BLAS calls (in C) to 
+(Some vendor-supplied BLAS libraries do not have C interfaces. So the
+re-naming is needed in order for the SuperLU BLAS calls (in C) to
 interface with the Fortran-style BLAS.)
 The possible options for CDEFS are:
 ```
@@ -395,7 +395,7 @@ Add the CUDA library location in make.inc:
 ```
 HAVE_CUDA=TRUE
 INCS += -I<CUDA directory>/include
-LIBS += -L<CUDA directory>/lib64 -lcublas -lcudart 
+LIBS += -L<CUDA directory>/lib64 -lcublas -lcudart
 endif
 ```
 A Makefile is provided in each subdirectory. The installation can be done
@@ -423,7 +423,7 @@ Please consult that file for detailed description of the meanings.
 # Windows Usage
 Prerequisites: CMake, Visual Studio, Microsoft HPC Pack
 This has been tested with Visual Studio 2017, without Parmetis,
-without Fortran, and with OpenMP disabled. 
+without Fortran, and with OpenMP disabled.
 
 The cmake configuration line used was
 ```
@@ -456,7 +456,7 @@ If you wish to test:
 
 # Reading sparse matrix files
 
-The SRC/ directory contains the following routines to read different file 
+The SRC/ directory contains the following routines to read different file
 formats, they all have the similar calling sequence.
 ```
 $ ls -l dread*.c
@@ -471,32 +471,32 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
 
 **[1]** X.S. Li and J.W. Demmel, "SuperLU_DIST: A Scalable Distributed-Memory
  Sparse Direct Solver for Unsymmetric Linear Systems", ACM Trans. on Math.
- Software, Vol. 29, No. 2, June 2003, pp. 110-140.  
+ Software, Vol. 29, No. 2, June 2003, pp. 110-140.
 **[2]** L. Grigori, J. Demmel and X.S. Li, "Parallel Symbolic Factorization
  for Sparse LU with Static Pivoting", SIAM J. Sci. Comp., Vol. 29, Issue 3,
- 1289-1314, 2007.  
+ 1289-1314, 2007.
 **[3]** P. Sao, R. Vuduc and X.S. Li, "A distributed CPU-GPU sparse direct
  solver", Proc. of EuroPar-2014 Parallel Processing, August 25-29, 2014.
- Porto, Portugal.  
+ Porto, Portugal.
 **[4]** P. Sao, X.S. Li, R. Vuduc, “A Communication-Avoiding 3D Factorization
- for Sparse Matrices”, Proc. of IPDPS, May 21–25, 2018, Vancouver.   
+ for Sparse Matrices”, Proc. of IPDPS, May 21–25, 2018, Vancouver.
 **[5]** P. Sao, R. Vuduc, X. Li, "Communication-avoiding 3D algorithm for
  sparse LU factorization on heterogeneous systems", J. Parallel and
- Distributed Computing (JPDC), September 2019.     
+ Distributed Computing (JPDC), September 2019.
 **[6]** Y. Liu, M. Jacquelin, P. Ghysels and X.S. Li, “Highly scalable
  distributed-memory sparse triangular solution algorithms”, Proc. of
  SIAM workshop on Combinatorial Scientific Computing, June 6-8, 2018,
- Bergen, Norway.   
+ Bergen, Norway.
 **[7]** N. Ding, S. Williams, Y. Liu, X.S. Li, "Leveraging One-Sided
  Communication for Sparse Triangular Solvers", Proc. of SIAM Conf. on
- Parallel Processing for Scientific Computing. Feb. 12-15, 2020.   
+ Parallel Processing for Scientific Computing. Feb. 12-15, 2020.
 **[8]** A. Azad, A. Buluc, X.S. Li, X. Wang, and J. Langguth,
-"A distributed-memory algorithm for computing a heavy-weight perfect matching 
+"A distributed-memory algorithm for computing a heavy-weight perfect matching
 on bipartite graphs", SIAM J. Sci. Comput., Vol. 42, No. 4, pp. C143-C168, 2020.\
 **[9]** N. Ding, Y. Liu, S. Williams, X.S. Li,
-"A Message-Driven, Multi-GPU Parallel Sparse Triangular Solver”, 
+"A Message-Driven, Multi-GPU Parallel Sparse Triangular Solver”,
 Proceedings of SIAM Proceedings of ACDA21 conference, 2021.\
-**[10]** Y. Liu, N. Ding, P. Sao, S. Williams, X.S. Li, 
+**[10]** Y. Liu, N. Ding, P. Sao, S. Williams, X.S. Li,
 "Unified Communication Optimization Strategies for Sparse Triangular Solver on CPU and GPU Clusters", Proceedings of SC23, Nov. 2023 \
 **[11]** X. Li, P. Lin, Y. Liu, P. Sao, “Newly Released Capabilities in Distributed-memory SuperLU Sparse Direct Solver”,
 ACM Trans. Math. Software, Volume 49, No. 1, March 2023.
@@ -504,40 +504,40 @@ ACM Trans. Math. Software, Volume 49, No. 1, March 2023.
 **[12]** W. Boukaram, Y. Hong Y, Y. Liu, T. Shi, X.S. Li.
   "Batched sparse direct solver design and evaluation in SuperLU\_DIST".
   International Journal of High Performance Computing Applications. 2024;38(6):585-598.
-  doi:10.1177/10943420241268200 
+  doi:10.1177/10943420241268200
 
 
-**Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)   
-**Gustavo Chavez**, Lawrence Berkeley National Lab, [gichavez@lbl.gov](gichavez@lbl.gov)   
-**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)   
-**Nan Ding**, Lawrence Berkeley National Lab, [nanding@lbl.gov](nanding@lbl.gov)  
+**Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)
+**Gustavo Chavez**, Lawrence Berkeley National Lab, [gichavez@lbl.gov](gichavez@lbl.gov)
+**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)
+**Nan Ding**, Lawrence Berkeley National Lab, [nanding@lbl.gov](nanding@lbl.gov)
 **John Gilbert**, UC Santa Barbara, [gilbert@cs.ucsb.edu](gilbert@cs.ucsb.edu)
-**Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)  
-**Paul Lin**, Lawrence Berkeley National Lab, [paullin@lbl.gov](paullin@lbl.gov)   
-**Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)   
-**Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)  
-**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)   
-**Ichitaro Yamazaki**, Univ. of Tennessee, [ic.yamazaki@gmail.com](ic.yamazaki@gmail.com)  
+**Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)
+**Paul Lin**, Lawrence Berkeley National Lab, [paullin@lbl.gov](paullin@lbl.gov)
+**Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)
+**Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)
+**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)
+**Ichitaro Yamazaki**, Univ. of Tennessee, [ic.yamazaki@gmail.com](ic.yamazaki@gmail.com)
 
 
 # RELEASE VERSIONS
 ```
-October 15, 2003    Version 2.0  
-October 1,  2007    Version 2.1  
-Feburary 20, 2008   Version 2.2  
-October 15, 2008    Version 2.3  
-June 9, 2010        Version 2.4  
-November 23, 2010   Version 2.5  
-March 31, 2013      Version 3.3  
-October 1, 2014     Version 4.0  
-July 15, 2014       Version 4.1  
-September 25, 2015  Version 4.2  
-December 31, 2015   Version 4.3  
-April 8, 2016       Version 5.0.0  
-May 15, 2016        Version 5.1.0  
-October 4, 2016     Version 5.1.1  
-December 31, 2016   Version 5.1.3  
-September 30, 2017  Version 5.2.0  
+October 15, 2003    Version 2.0
+October 1,  2007    Version 2.1
+Feburary 20, 2008   Version 2.2
+October 15, 2008    Version 2.3
+June 9, 2010        Version 2.4
+November 23, 2010   Version 2.5
+March 31, 2013      Version 3.3
+October 1, 2014     Version 4.0
+July 15, 2014       Version 4.1
+September 25, 2015  Version 4.2
+December 31, 2015   Version 4.3
+April 8, 2016       Version 5.0.0
+May 15, 2016        Version 5.1.0
+October 4, 2016     Version 5.1.1
+December 31, 2016   Version 5.1.3
+September 30, 2017  Version 5.2.0
 January 28, 2018    Version 5.3.0
 June 1, 2018        Version 5.4.0
 September 22, 2018  Version 6.0.0
