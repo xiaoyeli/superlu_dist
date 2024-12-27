@@ -1,4 +1,4 @@
-name: Run Github CI tests. 
+name: GitHub CI tests
 
 on: [push, pull_request]
 
