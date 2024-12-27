@@ -1,6 +1,6 @@
 # SuperLU_DIST (version 9.1.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
-[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
+[![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
 
 SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
@@ -51,7 +51,7 @@ Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
 # SuperLU_DIST (version 9.1.0)  <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
-[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
+[![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
 
 SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
