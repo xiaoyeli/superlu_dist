@@ -1008,8 +1008,8 @@ psgstrs(superlu_dist_options_t *options, int_t n,
 	gpuStream_t sid=0;
 	int gid=0;
 	gridinfo_t *d_grid = NULL;
-	double *d_x = NULL;
-	double *d_lsum = NULL;
+	float *d_x = NULL;
+	float *d_lsum = NULL;
     int  *d_bmod = NULL;
     int  *d_fmod = NULL;
 #endif
