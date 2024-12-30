@@ -203,6 +203,7 @@ int_t symbfact
 	printf("\tnonzeros in LSUB  " IFMT "\n", nnzLSUB);
     }
     SUPERLU_FREE(iwork);
+    SUPERLU_FREE(i32work);
 
 #if ( PRNTlevel>=3 )
     PrintInt10("lsub", Glu_freeable->xlsub[n], Glu_freeable->lsub);

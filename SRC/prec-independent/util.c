@@ -673,7 +673,7 @@ void PrintInt10(char *name, int_t len, int_t *x)
             printf("\n\t[" IFMT "-" IFMT "]", i, i + 9);
         printf(IFMT, x[i]);
     }
-    printf("\n");
+    printf("\n"); fflush(stdout);
 }
 
 void PrintInt32(char *name, int len, int *x)
@@ -687,7 +687,7 @@ void PrintInt32(char *name, int len, int *x)
             printf("\n\t[%2d-%2d]", i, i + 9);
         printf("%6d", x[i]);
     }
-    printf("\n");
+    printf("\n"); fflush(stdout);
 }
 
 int file_PrintInt10(FILE *fp, char *name, int_t len, int_t *x)
