@@ -12,7 +12,6 @@ module load cudatoolkit
 module load cray-libsci
 module load cmake
 # module use /global/common/software/nersc/pe/modulefiles/latest
-module load nvshmem/2.11.0
 
 #OpenMP settings:
 export OMP_NUM_THREADS=1
@@ -33,8 +32,9 @@ export SUPERLU_BIND_MPI_GPU=1
 export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
 export SUPERLU_ACC_SOLVE=1
 
-##NVSHMEM settings:
-# NVSHMEM_HOME=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/nvshmem_src_2.8.0-3/build/
+# ##NVSHMEM settings:
+# module load nvshmem/2.11.0
+NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
@@ -45,10 +45,13 @@ export NVSHMEM_DISABLE_CUDA_VMM=1
 export FI_CXI_OPTIMIZED_MRS=false
 export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
 export NVSHMEM_BOOTSTRAP=MPI
+export NVSHMEM_REMOTE_TRANSPORT=libfabric
 
 #export NVSHMEM_DEBUG=TRACE
 #export NVSHMEM_DEBUG_SUBSYS=ALL
 #export NVSHMEM_DEBUG_FILE=nvdebug_success
+
+
 #run the application
 #matrix=(nimrodMatrix-B.mtx nimrodMatrix-N.mtx)
 INPUT_DIR=$CFS/m2957/liuyangz/my_research/matrix/

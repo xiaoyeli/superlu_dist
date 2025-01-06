@@ -2,10 +2,10 @@
 #SBATCH -A m2957
 #SBATCH -C gpu
 #SBATCH -q regular
-#SBATCH -t 0:10:00
-#SBATCH -N 16
+#SBATCH -t 1:00:00
+#SBATCH -N 64
 #SBATCH --ntasks-per-node=4
-#SBATCH --gpus 64
+#SBATCH --gpus 256
 #SBATCH --mail-user=liuyangzhuan@lbl.gov
 #SBATCH --mail-type=BEGIN
 #SBATCH -e ./tmp.err
@@ -15,7 +15,6 @@ module load PrgEnv-gnu
 module load cmake
 module load cudatoolkit/12.2
 module load cray-libsci/23.12.5
-module load nvshmem/2.11.0
 module load python/3.11
 ulimit -s unlimited
 #MPI settings:
@@ -24,9 +23,9 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
-NROW=2   # number of MPI row processes 
-NCOL=2   # number of MPI column processes 
-NTH=4 # number of OMP threads
+NROW=16   # number of MPI row processes 
+NCOL=16   # number of MPI column processes 
+NTH=16 # number of OMP threads
 ################################################# 
 
 
@@ -52,6 +51,8 @@ export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # nmpipergpu>1 can better saturat
 
 ## The following is NVSHMEM settings for multi-GPU trisolve 
 ################################################# 
+# module load nvshmem/2.11.0
+NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
@@ -92,6 +93,6 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 
 
-srun -n $NCORE_VAL_TOT2D  -c $TH_PER_RANK --cpu_bind=cores python ../PYTHON/pddrive.py -c $NCOL -r $NROW -s 1 -q 5 -m 1 -p 0 -i 0 
+srun -N 64 -n $NCORE_VAL_TOT2D  -c $TH_PER_RANK --cpu_bind=cores python ../PYTHON/pddrive.py -c $NCOL -r $NROW -s 1 -q 5 -m 1 -p 0 -i 0 
 
 

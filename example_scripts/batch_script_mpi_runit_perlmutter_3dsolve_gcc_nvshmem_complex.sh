@@ -9,7 +9,6 @@ module load cudatoolkit/12.2
 # module load cray-libsci/22.11.1.2
 module load cray-libsci/23.12.5
 # module use /global/common/software/nersc/pe/modulefiles/latest
-module load nvshmem/2.11.0
 ulimit -s unlimited
 #MPI settings:
 export MPICH_GPU_SUPPORT_ENABLED=1
@@ -39,22 +38,23 @@ export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # 2: this can better saturate GPU
 export SUPERLU_RANKORDER='XY'  # Be careful: XY needs to be used when NOROWPERM or SolveOnly is used for 3D grids
 
 # ##NVSHMEM settings:
-# # NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
-# export NVSHMEM_USE_GDRCOPY=1
-# export NVSHMEM_MPI_SUPPORT=1
-# export MPI_HOME=${MPICH_DIR}
-# export NVSHMEM_LIBFABRIC_SUPPORT=1
-# export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
-# export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
-# export NVSHMEM_DISABLE_CUDA_VMM=1
-# export FI_CXI_OPTIMIZED_MRS=false
-# export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
-# export NVSHMEM_BOOTSTRAP=MPI
-# export NVSHMEM_REMOTE_TRANSPORT=libfabric
+# module load nvshmem/2.11.0
+NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+export NVSHMEM_USE_GDRCOPY=1
+export NVSHMEM_MPI_SUPPORT=1
+export MPI_HOME=${MPICH_DIR}
+export NVSHMEM_LIBFABRIC_SUPPORT=1
+export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
+export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
+export NVSHMEM_DISABLE_CUDA_VMM=1
+export FI_CXI_OPTIMIZED_MRS=false
+export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
+export NVSHMEM_BOOTSTRAP=MPI
+export NVSHMEM_REMOTE_TRANSPORT=libfabric
 
-# #export NVSHMEM_DEBUG=TRACE
-# #export NVSHMEM_DEBUG_SUBSYS=ALL
-# #export NVSHMEM_DEBUG_FILE=nvdebug_success
+#export NVSHMEM_DEBUG=TRACE
+#export NVSHMEM_DEBUG_SUBSYS=ALL
+#export NVSHMEM_DEBUG_FILE=nvdebug_success
 
 if [[ $NERSC_HOST == edison ]]; then
   CORES_PER_NODE=24

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# export NVSHMEM_ROOT=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/
+export NVSHMEM_ROOT=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/
+
+cd $NVSHMEM_ROOT
+rm -rf nvshmem_src_2.8.0-3*
 wget https://developer.download.nvidia.com/compute/redist/nvshmem/2.8.0/source/nvshmem_src_2.8.0-3.txz
 tar -xvf nvshmem_src_2.8.0-3.txz
 cd nvshmem_src_2.8.0-3
@@ -7,7 +12,7 @@ cd nvshmem_src_2.8.0-3
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 ##export FI_LOG_LEVEL Warn
  
-export NVSHMEM_HOME=${PWD}/build 
+export NVSHMEM_HOME=${NVSHMEM_ROOT}/nvshmem_src_2.8.0-3/build 
 export NVSHMEM_USE_GDRCOPY=1
 export GDRCOPY_HOME=/usr
 export NVSHMEM_MPI_SUPPORT=1
@@ -35,7 +40,6 @@ export NVSHMEM_REMOTE_TRANSPORT=libfabric
 export MPICH_GPU_SUPPORT_ENABLED=0
 export CRAY_ACCEL_TARGET=nvidia80
 export MPI_HOME=${MPICH_DIR}
-export NVSHMEM_HOME=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/nvshmem_src_2.8.0-3/build
 export NVSHMEM_LIBFABRIC_SUPPORT=1
 export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
 
@@ -45,7 +49,7 @@ export FI_CXI_OPTIMIZED_MRS=false
 export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
 export NVSHMEM_BOOTSTRAP=MPI
 export NVSHMEM_DEBUG=0
-
+export NVSHMEM_IBRC_SUPPORT=0
 export CUDA_HOME=${CUDA_HOME}
 #cd ./examples
 make -j16
