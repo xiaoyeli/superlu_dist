@@ -151,7 +151,7 @@ doublecomplex *zready_x, *zready_lsum;
 
 int ztrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
                            zScalePermstruct_t * ScalePermstruct,
-                           int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat)
+                           int* supernodeMask, gridinfo_t *grid)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int kr,kc,nlb,nub;
