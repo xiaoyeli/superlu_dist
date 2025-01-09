@@ -151,7 +151,6 @@ double *dready_x, *dready_lsum;
 // #endif
 
 int dtrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
-                           dScalePermstruct_t * ScalePermstruct,
                            int* supernodeMask, gridinfo_t *grid)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;

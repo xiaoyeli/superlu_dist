@@ -2327,7 +2327,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;
 		dtrs_compute_communication_structure(options, n, LUstruct,
-					ScalePermstruct, supernodeMask, grid);
+					supernodeMask, grid);
 		SUPERLU_FREE(supernodeMask);
 	}
 

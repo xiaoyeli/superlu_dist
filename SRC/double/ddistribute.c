@@ -1979,6 +1979,21 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
     } /* else fact != SamePattern_SameRowPerm */
 
+
+	if ( options->Fact != SamePattern_SameRowPerm ) {
+		// /* Flatten L metadata into one buffer. */
+		pdflatten_LDATA(options, n, LUstruct, grid);
+
+		// /* Compute communication structure for trisolve. */ 
+		int* supernodeMask = int32Malloc_dist(nsupers);
+		for(int ii=0; ii<nsupers; ii++)
+			supernodeMask[ii]=1;
+		dtrs_compute_communication_structure(options, n, LUstruct,
+					supernodeMask, grid);
+		SUPERLU_FREE(supernodeMask);
+	}
+
+
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
        ilsum, fmod, fsendx_plist, bmod, bsendx_plist  */

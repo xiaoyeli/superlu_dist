@@ -3317,7 +3317,7 @@ double *dense, *dense_col; /* SPA */
     for(int ii=0; ii<nsupers; ii++)
       supernodeMask[ii]=1;
     dtrs_compute_communication_structure(options, n, LUstruct,
-          ScalePermstruct, supernodeMask, grid);
+          supernodeMask, grid);
     SUPERLU_FREE(supernodeMask);
   }
 

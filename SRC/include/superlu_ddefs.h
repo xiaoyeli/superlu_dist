@@ -773,7 +773,6 @@ extern int_t dleafForestForwardSolve3d(superlu_dist_options_t *options, int_t tr
 
 
 extern int dtrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
-                           dScalePermstruct_t * ScalePermstruct,
                            int* supernodeMask, gridinfo_t *grid);
 extern int_t dreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
                       dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, double* recvbuf, xtrsTimer_t *xtrsTimer);

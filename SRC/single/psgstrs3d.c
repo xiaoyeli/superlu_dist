@@ -151,7 +151,6 @@ float *sready_x, *sready_lsum;
 // #endif
 
 int strs_compute_communication_structure(superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
-                           sScalePermstruct_t * ScalePermstruct,
                            int* supernodeMask, gridinfo_t *grid)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;

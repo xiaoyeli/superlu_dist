@@ -1128,13 +1128,13 @@ psdistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		// /* Compute communication structure for trisolve. */ 
 		if (get_new3dsolve()){
 			strs_compute_communication_structure(options, n, LUstruct,
-						ScalePermstruct, trf3Dpart->supernodeMask, grid);
+						 trf3Dpart->supernodeMask, grid);
 		}else{
 			int* supernodeMask = int32Malloc_dist(nsupers);
 			for(int ii=0; ii<nsupers; ii++)
 				supernodeMask[ii]=1;
 			strs_compute_communication_structure(options, n, LUstruct,
-						ScalePermstruct, supernodeMask, grid);
+						supernodeMask, grid);
 			SUPERLU_FREE(supernodeMask);
 		}
 	}

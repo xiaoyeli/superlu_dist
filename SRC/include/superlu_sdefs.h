@@ -773,7 +773,6 @@ extern int_t sleafForestForwardSolve3d(superlu_dist_options_t *options, int_t tr
 
 
 extern int strs_compute_communication_structure(superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
-                           sScalePermstruct_t * ScalePermstruct,
                            int* supernodeMask, gridinfo_t *grid);
 extern int_t sreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, float* x, int nrhs,
                       strf3Dpartition_t*  trf3Dpartition, sLUstruct_t* LUstruct, gridinfo3d_t* grid3d, float* recvbuf, xtrsTimer_t *xtrsTimer);
