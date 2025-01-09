@@ -3322,7 +3322,9 @@ float *dense, *dense_col; /* SPA */
 				ScalePermstruct, supernodeMask, grid);
 	SUPERLU_FREE(supernodeMask);
   if (get_acc_solve()){
-    nv_init_wrapper(grid->comm);
+		#ifdef HAVE_NVSHMEM
+        nv_init_wrapper(grid->comm);
+		#endif
   }
 
 

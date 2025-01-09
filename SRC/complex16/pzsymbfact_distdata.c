@@ -3321,7 +3321,9 @@ doublecomplex *dense, *dense_col; /* SPA */
 				ScalePermstruct, supernodeMask, grid);
 	SUPERLU_FREE(supernodeMask);
   if (get_acc_solve()){
+		#ifdef HAVE_NVSHMEM
         nv_init_wrapper(grid->comm);
+		#endif
   }
 
 
