@@ -3311,20 +3311,18 @@ float *dense, *dense_col; /* SPA */
 		MPI_MAX, grid->comm);
 
 
-  // /* Flatten L metadata into one buffer. */
-  psflatten_LDATA(options, n, LUstruct, grid);
 
-  // /* Compute communication structure for trisolve. */ 
-	int* supernodeMask = int32Malloc_dist(nsupers);
-	for(int ii=0; ii<nsupers; ii++)
-		supernodeMask[ii]=1;
-	strs_compute_communication_structure(options, n, LUstruct,
-				ScalePermstruct, supernodeMask, grid);
-	SUPERLU_FREE(supernodeMask);
-  if (get_acc_solve()){
-		#ifdef HAVE_NVSHMEM
-        nv_init_wrapper(grid->comm);
-		#endif
+  if ( options->Fact != SamePattern_SameRowPerm ) {
+    // /* Flatten L metadata into one buffer. */
+    psflatten_LDATA(options, n, LUstruct, grid);
+
+    // /* Compute communication structure for trisolve. */ 
+    int* supernodeMask = int32Malloc_dist(nsupers);
+    for(int ii=0; ii<nsupers; ii++)
+      supernodeMask[ii]=1;
+    strs_compute_communication_structure(options, n, LUstruct,
+          ScalePermstruct, supernodeMask, grid);
+    SUPERLU_FREE(supernodeMask);
   }
 
 
