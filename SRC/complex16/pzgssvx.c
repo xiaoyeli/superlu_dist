@@ -1166,10 +1166,6 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]);*/
 
-	/* Flatten L metadata into one buffer. */
-	if ( Fact != SamePattern_SameRowPerm ) {
-		pzflatten_LDATA(options, n, LUstruct, grid, stat);
-	}
 
 	/* Perform numerical factorization in parallel. */
 	t = SuperLU_timer_();
@@ -1394,7 +1390,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 
 
-    /* nvshmem related. The nvshmem_malloc has to be called before ztrs_compute_communication_structure, otherwise solve is much slower*/
+    /* nvshmem related. */
     #ifdef HAVE_NVSHMEM
 		nsupers = Glu_persist->supno[n-1] + 1;
 		int nc = CEILING( nsupers, grid->npcol);
@@ -1407,21 +1403,10 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		int ready_x_size = maxrecvsz*nc;
 		int ready_lsum_size = 2*maxrecvsz*nr;
 		if (get_acc_solve()){
-		nv_init_wrapper(grid->comm);
 		zprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 
 		}
 	#endif
-
-	if ( options->Fact != SamePattern_SameRowPerm) {
-		nsupers = Glu_persist->supno[n-1] + 1;
-		int* supernodeMask = int32Malloc_dist(nsupers);
-		for(int ii=0; ii<nsupers; ii++)
-			supernodeMask[ii]=1;
-		ztrs_compute_communication_structure(options, n, LUstruct,
-						ScalePermstruct, supernodeMask, grid, stat);
-		SUPERLU_FREE(supernodeMask);
-	}
 
     } /* end if (!factored) */
 
@@ -2523,7 +2508,7 @@ nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
 
 
 int pzflatten_LDATA(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
-                           gridinfo_t *grid, SuperLUStat_t * stat)
+                           gridinfo_t *grid)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int kr,kc,nlb,nub;

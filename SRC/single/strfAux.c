@@ -544,7 +544,7 @@ float* sgetBigU(superlu_dist_options_t *options,
     return bigU;
 } /* sgetBigU */
 
-
+#if 0
 /* YL: Initialize 3Dpartition using only LUstruct on grid 0. Note that this is a function modifed based on dinitTrf3Dpartition */
 strf3Dpartition_t* sinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_options_t *options,
 				      sLUstruct_t *LUstruct, gridinfo3d_t * grid3d
@@ -939,6 +939,7 @@ strf3Dpartition_t* sinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
 #endif
     return trf3Dpartition;
 } /* sinitTrf3Dpartition_allgrid */
+#endif 
 
 #if 0
 /* This routine is called by all 3D processes, in driver pdgssvx3d(). */

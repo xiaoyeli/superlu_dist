@@ -543,7 +543,7 @@ doublecomplex* zgetBigU(superlu_dist_options_t *options,
     return bigU;
 } /* zgetBigU */
 
-
+#if 0
 /* YL: Initialize 3Dpartition using only LUstruct on grid 0. Note that this is a function modifed based on dinitTrf3Dpartition */
 ztrf3Dpartition_t* zinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_options_t *options,
 				      zLUstruct_t *LUstruct, gridinfo3d_t * grid3d
@@ -938,6 +938,7 @@ ztrf3Dpartition_t* zinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
 #endif
     return trf3Dpartition;
 } /* zinitTrf3Dpartition_allgrid */
+#endif
 
 #if 0
 /* This routine is called by all 3D processes, in driver pdgssvx3d(). */

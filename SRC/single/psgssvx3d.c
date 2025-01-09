@@ -924,7 +924,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				distribution routine. */
 			t = SuperLU_timer_();
 
-			dist_mem_use = psdistribute3d_Yang(options, n, A, ScalePermstruct,
+			dist_mem_use = psdistribute3d(options, n, A, ScalePermstruct,
 											Glu_freeable, LUstruct, grid3d);
 			stat->utime[DIST] = SuperLU_timer_() - t;
 
@@ -954,11 +954,6 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		}
 
-		/* Flatten L metadata into one buffer. */
-		if ( Fact != SamePattern_SameRowPerm ) {
-			psflatten_LDATA(options, n, LUstruct, grid, stat);
-		}
-
 
 		if(Fact != SamePattern_SameRowPerm){
 			// checkDist3DLUStruct(LUstruct, grid3d);
@@ -979,7 +974,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/* Perform numerical factorization in parallel on all process layers.*/
 
-		/* nvshmem related. The nvshmem_malloc has to be called before strs_compute_communication_structure, otherwise solve is much slower*/
+		/* nvshmem related. */
 		#ifdef HAVE_NVSHMEM
 			int nc = CEILING( nsupers, grid->npcol);
 			int nr = CEILING( nsupers, grid->nprow);
@@ -991,7 +986,6 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int ready_x_size = maxrecvsz*nc;
 			int ready_lsum_size = 2*maxrecvsz*nr;
 			if (get_acc_solve()){
-			nv_init_wrapper(grid->comm);
 		    sprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 			}
 		#endif
@@ -1098,19 +1092,6 @@ sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			sbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
 		}
 
-		if ( options->Fact != SamePattern_SameRowPerm) {
-			if (get_new3dsolve() && Solve3D==true){
-				strs_compute_communication_structure(options, n, LUstruct,
-							ScalePermstruct, trf3Dpartition->supernodeMask, grid, stat);
-			}else{
-				int* supernodeMask = int32Malloc_dist(nsupers);
-				for(int ii=0; ii<nsupers; ii++)
-					supernodeMask[ii]=1;
-				strs_compute_communication_structure(options, n, LUstruct,
-							ScalePermstruct, supernodeMask, grid, stat);
-				SUPERLU_FREE(supernodeMask);
-			}
-		}
 
 
 		stat->utime[FACT] = SuperLU_timer_() - t;

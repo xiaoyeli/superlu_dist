@@ -774,7 +774,7 @@ extern int_t zleafForestForwardSolve3d(superlu_dist_options_t *options, int_t tr
 
 extern int ztrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
                            zScalePermstruct_t * ScalePermstruct,
-                           int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat);
+                           int* supernodeMask, gridinfo_t *grid);
 extern int_t zreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, doublecomplex* x, int nrhs,
                       ztrf3Dpartition_t*  trf3Dpartition, zLUstruct_t* LUstruct, gridinfo3d_t* grid3d, doublecomplex* recvbuf, xtrsTimer_t *xtrsTimer);
 
@@ -993,9 +993,6 @@ extern void zperform_row_permutation(superlu_dist_options_t *, fact_t Fact,
 	       gridinfo_t *, SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *,
 	       int job, int Equil, int *rowequ, int *colequ, int *iinfo);
 extern double zcomputeA_Norm(int notran, SuperMatrix *, gridinfo_t *);
-extern int ztrs_compute_communication_structure(superlu_dist_options_t *options,
-       int_t n, zLUstruct_t *, zScalePermstruct_t * ScalePermstruct,
-       int* supernodeMask, gridinfo_t *, SuperLUStat_t *);
 
 /* Distribute the data for numerical factorization */
 extern float zdist_psymbtonum(superlu_dist_options_t *, int_t, SuperMatrix *,
@@ -1551,7 +1548,7 @@ extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_
 
 
 extern int pzflatten_LDATA(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
-                           gridinfo_t *grid, SuperLUStat_t * stat);
+                           gridinfo_t *grid);
 extern void pzconvert_flatten_skyline2UROWDATA(superlu_dist_options_t *, gridinfo_t *,
 	                 zLUstruct_t *, SuperLUStat_t *, int n);
 extern void pzconvertUROWDATA2skyline(superlu_dist_options_t *, gridinfo_t *,
@@ -1563,7 +1560,7 @@ zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
                 gridinfo_t *grid, int_t *colptr[], int_t *rowind[],
                 doublecomplex *a[]);
 extern float
-pzdistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+pzdistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	     zScalePermstruct_t *ScalePermstruct,
 	     Glu_freeable_t *Glu_freeable, zLUstruct_t *LUstruct,
 	     gridinfo3d_t *grid3d);
