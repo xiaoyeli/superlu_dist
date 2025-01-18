@@ -23,9 +23,10 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
-NROW=16   # number of MPI row processes 
-NCOL=16   # number of MPI column processes 
-NTH=16 # number of OMP threads
+NROW=2   # number of MPI row processes 
+NCOL=2   # number of MPI column processes 
+NPZ=1    # number of 2D process grids  
+NTH=4 # number of OMP threads
 ################################################# 
 
 
@@ -73,14 +74,16 @@ export NVSHMEM_REMOTE_TRANSPORT=libfabric
 CORES_PER_NODE=64
 THREADS_PER_NODE=128
 GPUS_PER_NODE=4
-CORE_VAL2D=`expr $NCOL \* $NROW`
-NODE_VAL2D=`expr $CORE_VAL2D / $GPUS_PER_NODE`
-MOD_VAL=`expr $CORE_VAL2D % $GPUS_PER_NODE`
+CORE_VAL=`expr $NCOL \* $NROW \* $NPZ`
+NODE_VAL=`expr $CORE_VAL / $GPUS_PER_NODE`
+MOD_VAL=`expr $CORE_VAL % $GPUS_PER_NODE`
 if [[ $MOD_VAL -ne 0 ]]
 then
-  NODE_VAL2D=`expr $NODE_VAL2D + 1`
+  NODE_VAL=`expr $NODE_VAL + 1`
 fi
-NCORE_VAL_TOT2D=`expr $NROW \* $NCOL `
+NCORE_VAL_TOT=`expr $NROW \* $NCOL \* $NPZ `
+
+
 OMP_NUM_THREADS=$NTH
 TH_PER_RANK=`expr $NTH \* 2`
 export OMP_NUM_THREADS=$NTH
@@ -93,6 +96,11 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 
 
-srun -N 64 -n $NCORE_VAL_TOT2D  -c $TH_PER_RANK --cpu_bind=cores python ../PYTHON/pddrive.py -c $NCOL -r $NROW -s 1 -q 5 -m 1 -p 0 -i 0 
+srun -N 1 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python ../PYTHON/pddrive.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 2 -m 1 -p 0 -i 0 
+
+
+
+
+
 
 

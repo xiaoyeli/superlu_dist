@@ -8,7 +8,7 @@ def setup_pdbridge(sp, INT64):
     sp.pdbridge_init.restype = None
     if INT64 == 0:
         sp.pdbridge_init.argtypes = [
-            ctypes.c_int, ctypes.c_int, ctypes.c_int,
+            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
             ctypes.POINTER(ctypes.c_int),
             ctypes.POINTER(ctypes.c_int),
             ctypes.POINTER(ctypes.c_double),
@@ -18,7 +18,7 @@ def setup_pdbridge(sp, INT64):
         ]
     else:
         sp.pdbridge_init.argtypes = [
-            ctypes.c_int64, ctypes.c_int64, ctypes.c_int64,
+            ctypes.c_int, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64,
             ctypes.POINTER(ctypes.c_int64),
             ctypes.POINTER(ctypes.c_int64),
             ctypes.POINTER(ctypes.c_double),

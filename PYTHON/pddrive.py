@@ -22,15 +22,24 @@ if(rank==0):
 ####################################################################################################
 ####################################################################################################
 ####################### create the matrix
-INT64 = 0 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
+INT64 = 1 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
+algo3d = 1 # whether to use 2D or 3D factorizations
 rng = np.random.default_rng()
-n = 1000
+n = 4000
 nrhs = 1
+use_cov = 0
 
 if(rank==0):
-    a = scipy.sparse.random(n, n, density=0.01, random_state=rng)
-    m = (a.T @ a) + scipy.sparse.identity(n)
-    print("sparsity: ", float(m.nnz)/n**2)
+    if(use_cov==0):
+        a = scipy.sparse.random(n, n, density=0.01, random_state=rng)
+        m = (a.T @ a) + scipy.sparse.identity(n)
+        print("sparsity: ", float(m.nnz)/n**2, "nnz(A): ", m.nnz)
+    else:
+        m = scipy.sparse.load_npz('/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/sparse_matrix10Mill.npz')
+        # m = scipy.sparse.load_npz('/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/sparse_matrix10Mill_prettydense.npz')
+        m = m.tocsr()
+        m = m[0:n, 0:n]
+        print("sparsity: ", float(m.nnz)/n**2, "nnz(A): ", m.nnz)
 else: #dummy data, not refered inside superlu_dist API
     a = scipy.sparse.random(1, 1, density=1, random_state=rng)
     m = (a.T @ a) 
@@ -56,8 +65,14 @@ else:
 ####################### handle options 
 argv=sys.argv
 if(len(argv)==1): # options are not passed via command line, set them manually here. If they are not set here, default values are used
-    argv.extend(['-r', '%i'%(np.sqrt(size))])  # process rows
-    argv.extend(['-c', '%i'%(np.sqrt(size))])  # process columns
+    if(algo3d==1):
+        argv.extend(['-d', '1'])  # process layers
+        argv.extend(['-r', '%i'%(np.sqrt(size))])  # process rows
+        argv.extend(['-c', '%i'%(np.sqrt(size))])  # process columns       
+    else:
+        argv.extend(['-r', '%i'%(np.sqrt(size))])  # process rows
+        argv.extend(['-c', '%i'%(np.sqrt(size))])  # process columns
+    
     argv.extend(['-p', '1'])  # row permutation 
     argv.extend(['-q', '2'])  # column permutation 
     argv.extend(['-s', '0'])  # parallel symbolic factorization, needs -q to be 5
@@ -82,6 +97,7 @@ sp = pdbridge.load_library(INT64)
 pyobj = ctypes.c_void_p()
 if(INT64==0):
     sp.pdbridge_init(
+        algo3d,
         n,                              # int_t m
         n,                              # int_t n
         nnz,                            # int_t nnz
@@ -94,6 +110,7 @@ if(INT64==0):
     )
 else:
     sp.pdbridge_init(
+        algo3d,
         n,                              # int_t m
         n,                              # int_t n
         nnz,                            # int_t nnz

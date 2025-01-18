@@ -32,6 +32,7 @@ typedef struct {
     dLUstruct_t LUstruct;
     dSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
+    gridinfo3d_t grid3d;
 } slu_handle;
 
 #ifdef __cplusplus
@@ -39,11 +40,24 @@ extern "C" {
 #endif
 
 /*== APIs for python caller =======*/
-extern void pdbridge_init(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr, double *nzval, void ** pyobj, int argc, char *argv[]);
+extern void pdbridge_init(int algo3d, int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr, double *nzval, void ** pyobj, int argc, char *argv[]);
 extern void pdbridge_solve(void ** pyobj, int nrhs, double   *b_global);
 extern void pdbridge_free(void ** pyobj);
 extern void pdbridge_factor(void ** pyobj);
 extern void pdbridge_logdet(void ** pyobj, int * sign, double * logdet);
+
+extern void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr, double *nzval, void ** pyobj, int argc, char *argv[]);
+extern void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global);
+extern void pdbridge_free2d(void ** pyobj);
+extern void pdbridge_factor2d(void ** pyobj);
+extern void pdbridge_logdet2d(void ** pyobj, int * sign, double * logdet);
+
+extern void pdbridge_init3d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr, double *nzval, void ** pyobj, int argc, char *argv[]);
+extern void pdbridge_solve3d(void ** pyobj, int nrhs, double   *b_global);
+extern void pdbridge_free3d(void ** pyobj);
+extern void pdbridge_factor3d(void ** pyobj);
+extern void pdbridge_logdet3d(void ** pyobj, int * sign, double * logdet);
+
 
 #ifdef __cplusplus
   }
@@ -51,4 +65,5 @@ extern void pdbridge_logdet(void ** pyobj, int * sign, double * logdet);
 #endif 
 
 int dcreate_matrix_from_csc(SuperMatrix *A, int_t m, int_t n, int_t nnz, int_t *rowind0, int_t *colptr0, double *nzval0, gridinfo_t *grid);
+int dcreate_matrix_from_csc3d(SuperMatrix *A, int_t m, int_t n, int_t nnz, int_t *rowind0, int_t *colptr0, double *nzval0, gridinfo3d_t *grid3d);
 int count_swaps(int perm[], int n);
