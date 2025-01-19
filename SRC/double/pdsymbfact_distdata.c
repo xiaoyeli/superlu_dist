@@ -3312,6 +3312,9 @@ double *dense, *dense_col; /* SPA */
 
 
   if ( options->Fact != SamePattern_SameRowPerm ) {
+    // /* Flatten L metadata into one buffer. */
+    pdflatten_LDATA(options, n, LUstruct, grid);
+
       // /* Compute communication structure for trisolve. */ 
     int* supernodeMask = int32Malloc_dist(nsupers);
     for(int ii=0; ii<nsupers; ii++)
