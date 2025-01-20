@@ -298,11 +298,22 @@ get_perm_c_parmetis (SuperMatrix *A, int *perm_r, int *perm_c,
   for(i=1; i < nprocs_i; i++) 
     displs[i] = displs[i-1] + recvcnts[i-1];
   
-  MPI_Allgatherv (dist_order, m_loc, mpi_int_t, perm_c, recvcnts, displs, 
-		  mpi_int_t, grid->comm);
+#if defined (_LONGINT)
+  int *dist_order_int = int32Malloc_dist(m_loc);
+  for (i = 0; i < m_loc; ++i) dist_order_int[i] = dist_order[i];
+#else
+  int *dist_order_int = dist_order;
+#endif
+
+  MPI_Allgatherv (dist_order_int, m_loc, MPI_INT, perm_c, recvcnts, displs, 
+		  MPI_INT, grid->comm);
+		  //mpi_int_t, grid->comm);
 
   if ( iam < noDomains) {
     SUPERLU_FREE (dist_order);
+#if defined (_LONGINT)
+    SUPERLU_FREE (dist_order_int);
+#endif
   }
   SUPERLU_FREE (vtxdist_i);
   SUPERLU_FREE (vtxdist_o);
@@ -360,7 +371,8 @@ get_perm_c_parmetis (SuperMatrix *A, int *perm_r, int *perm_c,
 #if ( DEBUGlevel>=1 )
   CHECK_MALLOC(iam, "Exit get_perm_c_parmetis()");
 #endif
-  
+  check_perm_dist("check perm_c from parmetis", n, perm_c);
+
 #endif /* HAVE_PARMETIS */
   return (-mem);
 } /* get_perm_c_parmetis */
