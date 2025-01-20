@@ -475,6 +475,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
 	// options.RowPerm = NOROWPERM;
 	// options.ColPerm = NATURAL;
 
+    iam = slu_obj->grid3d.iam;
     if (!iam) {
 	print_sp_ienv_dist(&(slu_obj->options));
 	print_options_dist(&(slu_obj->options));
@@ -485,7 +486,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
        INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
     superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &(slu_obj->grid3d));
-    iam = slu_obj->grid3d.iam;
+
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Enter pdbridge_init3d()");
