@@ -1127,9 +1127,10 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if (symb_comm != MPI_COMM_NULL) MPI_Comm_free (&symb_comm);
 
 	/* Distribute entries of A into L & U data structures. */
-	//if (parSymbFact == NO || ???? Fact == SamePattern_SameRowPerm) {
-	if ( parSymbFact == NO ) {
-	    /* CASE OF SERIAL SYMBOLIC */
+	if (parSymbFact == NO || Fact == SamePattern_SameRowPerm) {
+	//if ( parSymbFact == NO ) {
+	    /* Case of serial symbolic,
+	       or parallel symbolic and reuse L&U structure, only redistribute A */
   	    /* Apply column permutation to the original distributed A */
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
 
@@ -1390,7 +1391,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 
 
-    /* nvshmem related. */
+    /* nvshmem related */
     #ifdef HAVE_NVSHMEM
 		nsupers = Glu_persist->supno[n-1] + 1;
 		int nc = CEILING( nsupers, grid->npcol);
@@ -1405,6 +1406,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		if (get_acc_solve()){
 		nv_init_wrapper(grid->comm);
 		zprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+
 		}
 	#endif
 
