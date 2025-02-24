@@ -30,10 +30,10 @@
 module load PrgEnv-gnu
 # module load gcc/11.2.0
 module load cmake
-module load cudatoolkit/12.2
+module load cudatoolkit
 # avoid bug in cray-libsci/21.08.1.2
 # module load cray-libsci/22.11.1.2
-module load cray-libsci/23.12.5
+module load cray-libsci
 # module use /global/common/software/nersc/pe/modulefiles/latest
 # module load nvshmem/2.11.0
 module load python/3.11
@@ -41,13 +41,13 @@ module load python/3.11
 export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_nopiv
 
 # avoid bug in cudatoolkit
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.2\/compat:/}
+# export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.4\/compat:/}
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
 
 # export PREFIX_PATH=~/.local/perlmutter/python-3.11/
 
 
-NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 #NVSHMEM_HOME=${CRAY_NVIDIA_PREFIX}/comm_libs/nvshmem/
 cmake .. \
   -DCMAKE_C_FLAGS="-O2 -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
@@ -61,7 +61,7 @@ cmake .. \
   -DTPL_ENABLE_LAPACKLIB=ON \
   -DBUILD_SHARED_LIBS=ON \
   -DTPL_ENABLE_CUDALIB=ON \
-  -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=/opt/cray/pe/craype/2.7.30/bin/CC" \
+  -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=CC" \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
@@ -69,10 +69,10 @@ cmake .. \
   -DTPL_ENABLE_MAGMALIB=OFF \
   -DTPL_MAGMA_INCLUDE_DIRS="${MAGMA_ROOT}/include" \
   -DTPL_MAGMA_LIBRARIES="${MAGMA_ROOT}/lib/libmagma.so" \
-  -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
-  -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
-  -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m2957/liuyangz/my_software/parmetis-4.0.3-gnu-longint/include;/global/cfs/cdirs/m2957/liuyangz/my_software/parmetis-4.0.3-gnu-longint/metis/include" \
-  -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m2957/liuyangz/my_software/parmetis-4.0.3-gnu-longint/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m2957/liuyangz/my_software/parmetis-4.0.3-gnu-longint/build/Linux-x86_64/libmetis/libmetis.so" \
+  -DTPL_BLAS_LIBRARIES=$CRAY_LIBSCI_PREFIX/lib/libsci_gnu_mp.so \
+  -DTPL_LAPACK_LIBRARIES=$CRAY_LIBSCI_PREFIX/lib/libsci_gnu_mp.so \
+  -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-gnu-longint/include;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-gnu-longint/metis/include" \
+  -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-gnu-longint/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-gnu-longint/build/Linux-x86_64/libmetis/libmetis.so" \
   -DTPL_ENABLE_COMBBLASLIB=OFF \
   -DTPL_ENABLE_NVSHMEM=OFF \
   -DTPL_NVSHMEM_LIBRARIES="-L${CUDA_HOME}/lib64/stubs/ -lnvidia-ml -L/usr/lib64 -lgdrapi -lstdc++ -L/opt/cray/libfabric/1.20.1/lib64 -lfabric -L${NVSHMEM_HOME}/lib -lnvshmem" \

@@ -2,22 +2,25 @@
 #
 #modules:
 module load PrgEnv-gnu
-# module load gcc/11.2.0
 module load cmake
-module load cudatoolkit/12.2
-# avoid bug in cray-libsci/21.08.1.2
-# module load cray-libsci/22.11.1.2
-module load cray-libsci/23.12.5
+module load cudatoolkit
+module load cray-libsci
 # module use /global/common/software/nersc/pe/modulefiles/latest
 ulimit -s unlimited
 #MPI settings:
-export MPICH_GPU_SUPPORT_ENABLED=1
+# export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
+
+
+# Problem setting:
+dims=(4 4 4 8) 
+bs=64
+
+
+
 #SUPERLU settings:
-
-
 export SUPERLU_LBS=GD  
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
 export GPU3DVERSION=0
@@ -26,9 +29,9 @@ export NEW3DSOLVE=1
 export NEW3DSOLVETREECOMM=1
 export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
 
-# the supernode size doesn't need to specified when options.SolveOnly is used
-export SUPERLU_MAXSUP=1 # max supernode size
-export SUPERLU_RELAX=1  # upper bound for relaxed supernode size
+# the supernode size has to be the same as -bs when options.SolveOnly is used
+export SUPERLU_MAXSUP=${bs} # max supernode size
+export SUPERLU_RELAX=${bs} # upper bound for relaxed supernode size
 export SUPERLU_MAX_BUFFER_SIZE=10000000 ## 500000000 # buffer size in words on GPU
 export SUPERLU_NUM_LOOKAHEADS=2   ##4, must be at least 2, see 'lookahead winSize'
 export SUPERLU_NUM_GPU_STREAMS=1
@@ -39,7 +42,7 @@ export SUPERLU_RANKORDER='XY'  # Be careful: XY needs to be used when NOROWPERM 
 
 # ##NVSHMEM settings:
 # module load nvshmem/2.11.0
-NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
@@ -72,13 +75,14 @@ else
   exit $EXIT_HOST
 fi
 
-nprows=(2)
+nprows=(1)
 npcols=(1)
-npz=(2)
+npz=(4)
 nrhs=(1)
 NTH=1
 NREP=1
 # NODE_VAL_TOT=1
+
 
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -151,11 +155,24 @@ do
 # export SUPERLU_ACC_SOLVE=1
 # srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}_nmpipergpu${nmpipergpu}
 
-SUPERLU_ACC_OFFLOAD=0
+# SUPERLU_ACC_OFFLOAD=0
+# export GPU3DVERSION=0
+# export SUPERLU_ACC_SOLVE=0
+# echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
+
+
+SUPERLU_ACC_OFFLOAD=1
 export GPU3DVERSION=0
-export SUPERLU_ACC_SOLVE=0
-echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
-srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
+export SUPERLU_ACC_SOLVE=1
+dim0=${dims[0]}
+dim1=${dims[1]}
+dim2=${dims[2]}
+dim3=${dims[3]}
+mkdir -p qcd
+srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d_qcd -bs=${bs} -dim="${dim0} ${dim1} ${dim2} ${dim3}" -grid="${NROW} ${NCOL} ${NPZ}" | tee ./qcd/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_bs${bs}_dims${dim0}_${dim1}_${dim2}_${dim3}
+
+
 
 # SUPERLU_ACC_OFFLOAD=1
 # export GPU3DVERSION=1

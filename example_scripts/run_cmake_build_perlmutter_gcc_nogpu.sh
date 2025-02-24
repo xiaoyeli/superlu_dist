@@ -4,7 +4,7 @@
 module unload gpu
 #module load PrgEnv-gnu
 #module load gcc/11.2.0
-module load cmake/3.24.3
+module load cmake
 #module load cudatoolkit/11.7
 
 parmetis_dir=/global/cfs/cdirs/m3894/tpl/install/parmetis/parmetis-4.0.3/n9-gcc11.2.0
@@ -23,16 +23,16 @@ cmake .. \
      -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
      -DTPL_ENABLE_LAPACKLIB=ON \
      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/default/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
-     -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/default/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
+     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
+     -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
      -DBUILD_SHARED_LIBS=OFF \
-     -DCMAKE_BUILD_TYPE=Release \
+     -DCMAKE_BUILD_TYPE=Debug \
      -DCMAKE_INSTALL_PREFIX=.
      
 make pddrive
 make pddrive3d
 make f_pddrive
-
+make pzdrive3d_qcd 
 
 
 # -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \

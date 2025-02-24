@@ -4,7 +4,7 @@
 module load PrgEnv-gnu
 # module load gcc/11.2.0
 module load cmake
-module load cudatoolkit/12.2
+module load cudatoolkit
 module unload cray-libsci
 # module use /global/common/software/nersc/pe/modulefiles/latest
 
@@ -37,7 +37,7 @@ export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 
 # ##NVSHMEM settings:
 # module load nvshmem/2.11.0
-NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
