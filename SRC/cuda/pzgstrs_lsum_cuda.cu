@@ -2249,6 +2249,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                     Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
                     if(nrhs==1){
+                    // if(0){
 
                         for (i = tid; i < knsupc; i+=block_size){
                             temp1=zero;
@@ -3096,6 +3097,7 @@ gridinfo_t *grid
 					Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 
 					if(nrhs==1){
+					// if(0){
 						for (i = tid; i < knsupc; i+=block_size){
 							temp1=zero;
 							for (l=0 ; l<knsupc ; l++){

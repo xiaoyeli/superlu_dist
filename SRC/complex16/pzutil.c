@@ -1307,6 +1307,10 @@ void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx
       if ( !iam ) {
 	printf(".. Sol %2d: ||X - Xtrue|| / ||X|| = %e\t max_i |x - xtrue|_i / |x|_i = %e\n", j, err, errcomp);
 	fflush(stdout);
+    // for (i = 0; i < n; i++) {
+    //         printf("xi: %e %e xtruei: %e %e\n",x_work[i].r,x_work[i].i, xtrue_work[i].r,xtrue_work[i].i);
+    //     	fflush(stdout);
+    // }
       }
     }
 }

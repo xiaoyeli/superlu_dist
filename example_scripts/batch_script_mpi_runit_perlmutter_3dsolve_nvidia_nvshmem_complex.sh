@@ -142,8 +142,9 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # for MAT in Geo_1438.bin 
 # for MAT in s1_mat_0_126936.bin
 # for MAT in nimrodMatrix-B.bin
-for MAT in nimrod_new/nimrodMatrix-Ti.mtx nimrod_new/nimrodMatrix-nc.mtx nimrod_new/nimrodMatrix-nd.mtx nimrod_new/nimrodMatrix-V.mtx nimrod_new/nimrodMatrix-B.mtx nimrod_new/nimrodMatrix-J.mtx 
+# for MAT in nimrod_new/nimrodMatrix-Ti.mtx nimrod_new/nimrodMatrix-nc.mtx nimrod_new/nimrodMatrix-nd.mtx nimrod_new/nimrodMatrix-V.mtx nimrod_new/nimrodMatrix-B.mtx nimrod_new/nimrodMatrix-J.mtx 
 # for MAT in cg20.cua
+for MAT in young4c.mtx
 # for MAT in s2D9pt2048.rua
 # for MAT in s2D9pt1536.rua
 # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin

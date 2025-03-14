@@ -981,6 +981,9 @@ extern void  zreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
 extern int  zread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
+extern int
+zwrite_binary_withname(int_t n, int_t nnz,
+	      doublecomplex *values, int_t *rowind, int_t *colptr, char *newfile);                      
 
 extern void validateInput_pzgssvx3d(superlu_dist_options_t *, SuperMatrix *A,
        int ldb, int nrhs, gridinfo3d_t *, int *info);

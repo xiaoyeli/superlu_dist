@@ -574,6 +574,8 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     }
 #endif
 
+
+
     LUstruct->dt = 'z';
 
     // get the 2d grid
@@ -583,7 +585,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     /* Test the options choices. */
     *info = 0;
 
-    if ( options->SolveOnly == YES ) {
+    if ( options->SolveOnly == YES && options->Fact != FACTORED) {
 	options->Fact = DOFACT;       // this is set to enable distribution 
 	options->Equil = NO;
 	options->RowPerm = NOROWPERM;
@@ -1529,6 +1531,8 @@ if (get_acc_solve()){
 			if (get_new3dsolve()){
 				pzgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+
+
 			}else{
 				pzgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
@@ -1898,6 +1902,11 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 
 	B = A3d->B3d;		 // B is now assigned back to B3d on return
 	A->Store = Astore3d; // restore Astore to 3D
+
+
+	// if ( grid3d->zscp.Iam == 0 ) { // process layer 0
+	// 	PStatPrint(&options, &stat, &grid3d->grid2d);
+	// }
 
 #if (DEBUGlevel >= 1)
 	CHECK_MALLOC(iam, "Exit pzgssvx3d()");

@@ -506,6 +506,12 @@ int main (int argc, char *argv[])
     /* Initialize the statistics variables. */
     PStatInit (&stat);
 
+    if (!iam) {
+        print_sp_ienv_dist(&options);
+        print_options_dist(&options);
+        fflush(stdout);
+    }
+
     /* Call the linear equation solver. */
     pzgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);

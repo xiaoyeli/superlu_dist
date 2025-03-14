@@ -40,3 +40,23 @@ zwrite_binary(int_t n, int_t nnz,
     fclose(fp1);
     return 0;
 }
+
+
+int
+zwrite_binary_withname(int_t n, int_t nnz,
+	      doublecomplex *values, int_t *rowind, int_t *colptr, char *newfile)
+{       
+    FILE  *fp1;
+    int nnz_written;
+    size_t isize = sizeof(int_t), dsize = sizeof(double);
+    fp1 = fopen(newfile, "wb");
+    fwrite(&n, isize, 1, fp1);
+    fwrite(&nnz, isize, 1, fp1);
+    fwrite(colptr, isize, n+1, fp1);
+    fwrite(rowind, isize, nnz, fp1);
+    nnz_written = fwrite(values, dsize, 2*nnz, fp1);
+    printf("n " IFMT ", # of doublecomplex: " IFMT "\n", n, nnz);
+    printf("dump binary file ... # of doubles fwrite: %d\n", nnz_written);
+    assert(nnz_written == 2*nnz);
+    fclose(fp1);
+}

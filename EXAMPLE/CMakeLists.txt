@@ -196,7 +196,7 @@ if(enable_complex16)
   target_link_libraries(pzdrive3 ${all_link_libs})
   add_superlu_dist_example(pzdrive3 cg20.cua 2 2)
   install(TARGETS pzdrive3 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
-  
+
   set(ZEXM4 pzdrive4.c zcreate_matrix.c)
   add_executable(pzdrive4 ${ZEXM4})
   target_link_libraries(pzdrive4 ${all_link_libs})
@@ -207,6 +207,13 @@ if(enable_complex16)
   target_link_libraries(pzdrive3d ${all_link_libs})
   install(TARGETS pzdrive3d RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
   
+  
+  set(ZEXM3DQCD pzdrive3d_qcd.cpp )
+  add_executable(pzdrive3d_qcd ${ZEXM3DQCD})
+  target_link_libraries(pzdrive3d_qcd ${all_link_libs})
+  install(TARGETS pzdrive3d_qcd RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE") 
+
+
   set(ZEXM3D1 pzdrive3d1.c zcreate_matrix.c zcreate_matrix3d.c)
   add_executable(pzdrive3d1 ${ZEXM3D1})
   target_link_libraries(pzdrive3d1 ${all_link_libs})
