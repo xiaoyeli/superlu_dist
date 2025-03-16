@@ -317,11 +317,11 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #ifndef MAGMA_CONST
 #define MAGMA_CONST
 
-#define DIM_X  32
-#define DIM_Y  16
-
-// #define DIM_X  16
+// #define DIM_X  32     // If DIM_X*DIM_Y is large, trisolve results are wrong on Perlmutter when nrhs>1. (gemm_device_dlsum_bmod_stridedB and gemm_device_dlsum_fmod give wrong results) 
 // #define DIM_Y  16
+
+#define DIM_X  16  
+#define DIM_Y  16
 
 #define DIM_XA  DIM_X
 #define DIM_YA  DIM_Y

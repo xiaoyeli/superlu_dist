@@ -2249,25 +2249,29 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                     Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
                     if(nrhs==1){
-                    // if(0){
+                    // if(1){
 
+                        RHS_ITERATE(j){
                         for (i = tid; i < knsupc; i+=block_size){
                             temp1=zero;
                             for (l=0 ; l<knsupc ; l++){
                                 doublecomplex ctemp;
-                                zz_mult(&ctemp, &Linv[l*knsupc+i], &x[ii+l]);
+                                zz_mult(&ctemp, &Linv[l*knsupc+i], &x[ii+l + j*knsupc]);
                                 z_add(&temp1, &temp1, &ctemp);
 
                             }
-                            lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
+                            lsum[il+i+ j*knsupc]=temp1; //reuse lsum as temporary output as it's no longer accessed
+                        }
                         }
                         __syncthreads();
 
+                        RHS_ITERATE(j){
                         for (i = tid; i < knsupc; i+=block_size){
-                            x[i + ii] = lsum[il+i];
+                            x[i + ii+ j*knsupc] = lsum[il+i+ j*knsupc];
                             // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
                             }
                         __syncthreads();
+                        }
 
 
 
@@ -2336,6 +2340,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                 ii = X_BLK( lib );
 
                 if(nrhs==1){
+                // if(1){
                     luptr_tmp1 = lloc[idx_v];
                     lb = 0;
                     nbrow=0;
