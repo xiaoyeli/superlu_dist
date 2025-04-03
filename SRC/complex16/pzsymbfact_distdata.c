@@ -560,7 +560,7 @@ dist_symbLU (superlu_dist_options_t *options, int_t n,
     else
       nnzToRecv[iam] = nnz_loc_u;
 
-#if ( DEBUGlevel>=1 )
+#if ( PRNTlevel>=1 )
     if (iam==0) {
 	printf("\t.dist_symbLU [1] memAux %.2f, memRet %.2f (MB)\n", memAux*1e-6, memRet*1e-6);
 	fflush(stdout);
@@ -692,7 +692,7 @@ dist_symbLU (superlu_dist_options_t *options, int_t n,
   *p_xlsub = xlsub_n; *p_lsub = lsub_n;
   *p_xusub = xusub_n; *p_usub = usub_n;
 
-#if ( DEBUGlevel>=1 )
+#if ( PRNTlevel>=1 )
     if (iam==0) {
 	printf("\t.dist_symbLU [3] before return: memAux %.4f\t memRet %.4f (MB)\n", memAux*1e-6, memRet*1e-6);
 	fflush(stdout);
@@ -1569,7 +1569,7 @@ doublecomplex *dense, *dense_col; /* SPA */
     SUPERLU_MAX(ldaspa, ldaspa_j)*sp_ienv_dist(3, options)*dword;
 #if ( PRNTlevel>=1 )
   if (iam==0) {
-      printf("\t.zdist_psymbtonum [[2]] memDist %.2f, memNLU %.2f [+ dense SPA]\n", memDist*1e-6, memNLU*1e-6);
+      printf("\t.zdist_psymbtonum [2] memDist %.2f, memNLU %.2f [+ dense SPA]\n", memDist*1e-6, memNLU*1e-6);
       fflush(stdout);
   }
 #endif
@@ -1647,7 +1647,7 @@ doublecomplex *dense, *dense_col; /* SPA */
   memNLU += nsupers_j * sizeof(double*) + nsupers_j * sizeof(int_t*)+ nsupers_j * sizeof(int_t*);
 #if ( PRNTlevel>=1 )
   if (iam==0) {
-      printf("\t.zdist_psymbtonum [[3]] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
+      printf("\t.zdist_psymbtonum [3] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
       fflush(stdout);
   }
 #endif
@@ -1684,9 +1684,9 @@ doublecomplex *dense, *dense_col; /* SPA */
     bsendx_plist[i] = &index1[j];
   /* -------------------------------------------------------------- */
   memNLU += 2*nsupers_j*sizeof(int_t*) + 2*len*iword;
-#if ( DEBUGlevel>=1 )
+#if ( PRNTlevel>=1 )
   if (iam==0) {
-      printf("\t.zdist_psymbtonum [[4]] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
+      printf("\t.zdist_psymbtonum [4] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
       fflush(stdout);
   }
 #endif
@@ -2125,9 +2125,9 @@ doublecomplex *dense, *dense_col; /* SPA */
   } /* end for jb ... */
 
   SUPERLU_FREE(ilsum_j);
-#if ( DEBUGlevel>=1 )
+#if ( PRNTlevel>=1 )
   if (iam==0) {
-      printf("\t.zdist_psymbtonum [[5]] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
+      printf("\t.zdist_psymbtonum [5] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
       fflush(stdout);
   }
 #endif
@@ -3313,8 +3313,7 @@ doublecomplex *dense, *dense_col; /* SPA */
   if ( options->Fact != SamePattern_SameRowPerm ) {
     // /* Flatten L metadata into one buffer. */
     pzflatten_LDATA(options, n, LUstruct, grid);
-
-    // /* Compute communication structure for trisolve. */ 
+    // /* Compute communication structure for trisolve. */
     int* supernodeMask = int32Malloc_dist(nsupers);
     for(int ii=0; ii<nsupers; ii++)
       supernodeMask[ii]=1;
@@ -3322,7 +3321,6 @@ doublecomplex *dense, *dense_col; /* SPA */
           supernodeMask, grid);
     SUPERLU_FREE(supernodeMask);
   }
-
 
 #if ( DEBUGlevel>=1 )
   /* Memory allocated but not free'd:
