@@ -1230,10 +1230,10 @@ void pdbridge_free2d(void ** pyobj)
 
     if ( iam != -1 ) PStatFree(&(slu_obj->stat));
 
-    /* ------------------------------------------------------------
-       TERMINATES THE MPI EXECUTION ENVIRONMENT.
-       ------------------------------------------------------------*/
-    MPI_Finalize();
+    // /* ------------------------------------------------------------
+    //    TERMINATES THE MPI EXECUTION ENVIRONMENT.
+    //    ------------------------------------------------------------*/
+    // MPI_Finalize();
 
     *pyobj = (void*)slu_obj;
 
@@ -1261,7 +1261,7 @@ void pdbridge_free3d(void ** pyobj)
     dLUstructFree (&(slu_obj->LUstruct));
     superlu_gridexit3d (&(slu_obj->grid3d));
     if ( iam != -1 ) PStatFree (&(slu_obj->stat));
-    MPI_Finalize ();
+    // MPI_Finalize ();
     *pyobj = (void*)slu_obj;
 }
 

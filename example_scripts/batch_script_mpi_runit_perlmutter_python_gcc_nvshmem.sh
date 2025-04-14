@@ -94,9 +94,13 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 ################################################# 
 
 
+############### use mpirun to call the python driver 
+srun -N 1 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 2 -m 1 -p 0 -i 0 | tee a.out_singlelaunch 
 
 
-srun -N 1 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python ../PYTHON/pddrive.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 2 -m 1 -p 0 -i 0 
+############### sequentially call the python driver pddrive_master.py, but parallelly launching the workers pddrive_worker.py 
+srun -N 1 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 2 -m 1 -p 0 -i 0 | tee a.out_seperatelaunch_worker  &
+python -u ../PYTHON/pddrive_master.py | tee a.out_seperatelaunch_master
 
 
 

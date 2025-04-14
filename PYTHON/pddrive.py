@@ -22,12 +22,12 @@ if(rank==0):
 ####################################################################################################
 ####################################################################################################
 ####################### create the matrix
-INT64 = 1 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
+INT64 = 0 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
 algo3d = 1 # whether to use 2D or 3D factorizations
 rng = np.random.default_rng()
-n = 4000
+n = 4000000
 nrhs = 1
-use_cov = 0
+use_cov = 1
 
 if(rank==0):
     if(use_cov==0):
@@ -92,6 +92,7 @@ argv_ctypes = (ctypes.c_char_p * (argc + 1))(*argv_bytes, None)
 ####################################################################################################
 ####################################################################################################
 ####################### call the APIs
+start = time.time()
 sp = pdbridge.load_library(INT64)
 ####################### initialization
 pyobj = ctypes.c_void_p()
@@ -121,25 +122,38 @@ else:
         argc,                           # int argc
         argv_ctypes                     # char *argv[]
     )    
+end = time.time()
+if(rank==0):
+    print(f"Time spent in pdbridge_init: {end - start} seconds")
+
+
 
 ####################### factor 
-# Define the function signature for pdbridge_factor
+start = time.time()
 sp.pdbridge_factor(
     ctypes.byref(pyobj),            # void **pyobj
 )
+end = time.time()
+if(rank==0):
+    print(f"Time spent in pdbridge_factor: {end - start} seconds")
 
 
 ####################### solve 
-# Define the function signature for pdbridge_solve
+start = time.time()
 xb = np.random.rand(n*nrhs).astype(np.float64) # pdbridge_solve will broadcast xb on rank 0 to all ranks
 sp.pdbridge_solve(
     ctypes.byref(pyobj),            # void **pyobj
     nrhs,                           # int nrhs
     xb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),  # double *nzval
 )
+end = time.time()
+if(rank==0):
+    print(f"Time spent in pdbridge_solve: {end - start} seconds")
+
 
 
 ####################### log-determinant 
+start = time.time()
 sign = ctypes.c_int(1)
 logdet = ctypes.c_double(0.0)
 sp.pdbridge_logdet(
@@ -150,10 +164,17 @@ sp.pdbridge_logdet(
 
 if(rank==0):
     print("superlu logdet:",sign.value,logdet.value)
-    sign, logdet = np.linalg.slogdet(m.toarray())
-    print("numpy logdet:",int(sign),logdet)
+    # sign, logdet = np.linalg.slogdet(m.toarray())
+    # print("numpy logdet:",int(sign),logdet)
+end = time.time()
+if(rank==0):
+    print(f"Time spent in pdbridge_logdet: {end - start} seconds")
 
 
 ####################### free stuff
+start = time.time()
 sp.pdbridge_free(ctypes.byref(pyobj))
+end = time.time()
+if(rank==0):
+    print(f"Time spent in pdbridge_free: {end - start} seconds")
 
