@@ -21,7 +21,7 @@ for Nvidia, AMD, and Intel GPUs.
 <!-- This "alpha" release contains double-precision real and-->
 <!-- double-precision complex data types.-->
 
-The latest documentation and publications can be found at this web site:
+The full documentation and publications can be found at this web site:
 https://portal.nersc.gov/project/sparse/superlu/
 
 In paticular, we highly recommend using the the latest 3D code, with example [EXAMPLE/pddrive3d.c](https://github.com/xiaoyeli/superlu_dist/blob/master/EXAMPLE/pddrive3.c),
