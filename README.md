@@ -8,18 +8,29 @@ A*X=B. It uses Gaussian elimination with static pivoting (GESP).
 Static pivoting is a technique that combines the numerical stability of
 partial pivoting with the scalability of Cholesky (no pivoting),
 to run accurately and efficiently on large numbers of processors.
-
 SuperLU_DIST is a parallel extension to the serial SuperLU library.
 It is targeted for the distributed memory parallel machines.
 SuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism
-and MPI for off-node communications. We are actively developing multi-GPU
-acceleration capabilities.
+and MPI for off-node communications. Numerical LU factorization and triangular solvers can be performed on multiple GPU nodes
+for Nvidia, AMD, and Intel GPUs.
+<!-- We are actively developing multi-GPU acceleration capabilities.
 <!-- Currently, the LU factorization and triangular solution routines, -->
 <!-- which are the most time-consuming part of the solution process,-->
 <!-- are parallelized. The other routines, such as static pivoting and -->
 <!-- column preordering for sparsity are performed sequentially. -->
 <!-- This "alpha" release contains double-precision real and-->
 <!-- double-precision complex data types.-->
+
+The full documentation and publications can be found at this web site:
+https://portal.nersc.gov/project/sparse/superlu/
+
+In paticular, we highly recommend using the the latest 3D code, with example [EXAMPLE/pddrive3d.c](https://github.com/xiaoyeli/superlu_dist/blob/master/EXAMPLE/pddrive3.c),
+which significantly outpeforms the earlier 2D code (EXAMPLE/pddrive.c) both on GPUs and for strong scaling, 
+because it contains the novel 3D communication-avoiding algorithms
+This was released since Version 9.0.0. The [Release Note](https://github.com/xiaoyeli/superlu_dist/releases/tag/v9.0.0) and the companion [ACM TOMS paper](https://dl.acm.org/doi/full/10.1145/3577197)
+should serve as the Users' Guide.
+
+[EXAMPLE/README](EXAMPLE/README) shows how to run all the examples. 
 
 Table of Contents
 =================
