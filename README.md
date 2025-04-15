@@ -24,12 +24,13 @@ for Nvidia, AMD, and Intel GPUs.
 The latest documentation and publications can be found at this web site:
 https://portal.nersc.gov/project/sparse/superlu/
 
-In paticular, we highly recommend using the the latest 3D code, with usage example EXAMPLE/pddrive3d.c,
+In paticular, we highly recommend using the the latest 3D code, with example [EXAMPLE/pddrive3d.c](https://github.com/xiaoyeli/superlu_dist/blob/master/EXAMPLE/pddrive3.c),
 which significantly outpeforms the earlier 2D code (EXAMPLE/pddrrive.c) both on GPUs and for strong scaling, 
 because it contains the novel 3D communication-avoiding algorithms
 This was released since Version 9.0.0. The [Release Note](https://github.com/xiaoyeli/superlu_dist/releases/tag/v9.0.0) and the companion [ACM TOMS paper](https://dl.acm.org/doi/full/10.1145/3577197)
 should serve as the Users' Guide.
 
+[EXAMPLE/README](EXAMPLE/README) shows how to run all the examples. 
 
 Table of Contents
 =================
