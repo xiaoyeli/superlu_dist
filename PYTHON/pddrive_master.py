@@ -19,11 +19,10 @@ use_cov = 1
 
 ######################## define the files used to communicate between masters and workers
 CONTROL_FILE = "control.txt"
-MODE_FILE  = "mode.txt"
 DATA_FILE    = "data.bin"
 RESULT_FILE  = "result.bin"
 
-def wait_for_flag(expected_flag, control_file, poll_interval=0.1):
+def wait_for_flag(expected_flag, control_file, poll_interval=0.01):
     """Poll the control file until its content equals the expected flag."""
     while True:
         if os.path.exists(control_file):
