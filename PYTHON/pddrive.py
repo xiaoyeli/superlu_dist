@@ -69,6 +69,7 @@ if(len(argv)==1): # options are not passed via command line, set them manually h
         argv.extend(['-d', '1'])  # process layers
         argv.extend(['-r', '%i'%(np.sqrt(size))])  # process rows
         argv.extend(['-c', '%i'%(np.sqrt(size))])  # process columns       
+        argv.extend(['-b', '0'])  # batch count       
     else:
         argv.extend(['-r', '%i'%(np.sqrt(size))])  # process rows
         argv.extend(['-c', '%i'%(np.sqrt(size))])  # process columns

@@ -553,7 +553,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     }
 
 
-    if ( batchCount > 0 ) {	
+    if ( batchCount > 1 ) {	
     } else {
         dcreate_matrix_from_csc3d(&(slu_obj->A),m, n, nnz, rowind, colptr, nzval, &(slu_obj->grid3d));
     }

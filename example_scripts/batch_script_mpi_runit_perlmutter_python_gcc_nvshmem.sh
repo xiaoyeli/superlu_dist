@@ -23,8 +23,8 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
-NROW=2   # number of MPI row processes 
-NCOL=2   # number of MPI column processes 
+NROW=1   # number of MPI row processes 
+NCOL=1   # number of MPI column processes 
 NPZ=1    # number of 2D process grids  
 NTH=4 # number of OMP threads
 ################################################# 
@@ -35,7 +35,7 @@ NTH=4 # number of OMP threads
 export SUPERLU_PYTHON_LIB_PATH=../build/PYTHON/
 export SUPERLU_LBS=GD  
 export SUPERLU_ACC_OFFLOAD=1 # whether to do CPU or GPU numerical factorization
-export GPU3DVERSION=0 # whether to do use the latest C++ numerical factorization 
+export GPU3DVERSION=1 # whether to do use the latest C++ numerical factorization 
 export SUPERLU_ACC_SOLVE=0 # whether to do CPU or GPU triangular solve
 export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
 export SUPERLU_MAXSUP=256 # max supernode size
@@ -95,11 +95,11 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 
 ############### use mpirun to call the python driver 
-srun -N 1 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 2 -m 1 -p 0 -i 0 | tee a.out_singlelaunch 
+srun -N 1 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 2 -m 1 -p 0 -i 0 -b 0 | tee a.out_singlelaunch 
 
 
 ############### sequentially call the python driver pddrive_master.py, but parallelly launching the workers pddrive_worker.py 
-srun -N 1 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 2 -m 1 -p 0 -i 0 | tee a.out_seperatelaunch_worker  &
+srun -N 1 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 2 -m 1 -p 0 -i 0 -b 0 | tee a.out_seperatelaunch_worker  &
 python -u ../PYTHON/pddrive_master.py | tee a.out_seperatelaunch_master
 
 
