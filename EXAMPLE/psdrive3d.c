@@ -223,7 +223,6 @@ int main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
-    options.Algo3d = YES;
     options.IterRefine = NOREFINE;
     // options.ParSymbFact       = YES;
     // options.ColPerm           = PARMETIS;

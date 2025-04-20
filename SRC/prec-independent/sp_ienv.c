@@ -76,7 +76,7 @@ at the top-level directory.
 #include <stdio.h>
 #include "superlu_defs.h"
 
-int
+int_t
 sp_ienv_dist(int ispec, superlu_dist_options_t *options)
 {
     int i;
@@ -131,12 +131,17 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
 		return (options->superlu_n_gemm);
         case 8:
   	    ttemp = getenv ("SUPERLU_MAX_BUFFER_SIZE");
-	    if (ttemp) 
+	    if ( ttemp==NULL )ttemp = getenv("MAX_BUFFER_SIZE"); 
+	    if (ttemp) {
+#if defined (_LONGINT)
+		char *eptr;
+		return strtoll (ttemp, &eptr, 10);
+#else		
 		return atoi (ttemp);
-	    else if(getenv("MAX_BUFFER_SIZE")) 
-		return(atoi(getenv("MAX_BUFFER_SIZE")));
-	    else 
+#endif
+	    } else {
 		return (options->superlu_max_buffer_size);
+	    }
          case 9:
   	    ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
 	    if (ttemp) 

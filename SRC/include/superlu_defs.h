@@ -715,14 +715,14 @@ typedef struct {
     char superlu_rankorder[4]; /* Z-major or XY-majir order in 3D grid */
     char superlu_lbs[4]; /* etree load balancing strategy in 3D algorithm */
     int superlu_n_gemm; /* one of GEMM offload criteria; see sp_ienv(7) */
-    int superlu_max_buffer_size; /* max. buffer size on GPU; see sp_ienv(8) */
+    int_t superlu_max_buffer_size; /* max. buffer size on GPU; see sp_ienv(8) */
     int superlu_num_gpu_streams; /* number of GPU streams; see sp_ienv(9) */
     int superlu_acc_offload; /* whether to offload work to GPU; see sp_ienv(10) */
     int batchCount;     /* number of systems in the batched interface 
 			   0 : not to use batch interface (default)    */
-    yes_no_t      SymPattern;      /* symmetric factorization          */
-    yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
-    yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
+    yes_no_t  SymPattern;      /* symmetric factorization          */
+    yes_no_t  Use_TensorCore;  /* Use Tensor Core or not  */
+    yes_no_t  Algo3d;          /* Python inteface uses this to flag whether to use 3D factorization/solve algorithms */
 } superlu_dist_options_t;
 
 typedef struct {
@@ -1100,7 +1100,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 /* Auxiliary routines */
 extern double SuperLU_timer_ (void);
 extern void   superlu_abort_and_exit_dist(char *);
-extern int    sp_ienv_dist (int, superlu_dist_options_t *);
+extern int_t  sp_ienv_dist (int, superlu_dist_options_t *);
 extern void   ifill_dist (int *, int, int);
 extern void   super_stats_dist (int_t, int_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,

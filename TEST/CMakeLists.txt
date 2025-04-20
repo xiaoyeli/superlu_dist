@@ -23,6 +23,8 @@ function(cat IN_FILE OUT_FILE)
   file(APPEND ${OUT_FILE} "${CONTENTS}")
 endfunction()
 
+set(MPIEXEC_PREFLAGS "-oversubscribe")
+
 # Function to perform test
 # call API:  add_superlu_dist_tests(pddrive big.rua)
 function(add_superlu_dist_tests target input)

@@ -230,13 +230,11 @@ main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
-    options.Algo3d = YES;
     options.ReplaceTinyPivot = YES;
     options.IterRefine = NOREFINE;
     options.DiagInv           = YES;
     // options.ParSymbFact       = YES;
     // options.ColPerm           = PARMETIS;
-    options.Algo3d = YES;
 	options.DiagInv = YES;
     options.ReplaceTinyPivot  = YES;    
 #if 0
