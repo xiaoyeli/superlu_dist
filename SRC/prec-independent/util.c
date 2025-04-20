@@ -236,7 +236,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->superlu_num_gpu_streams = 8;
     options->batchCount = 0;
     options->SymPattern = NO;
-    options->Algo3d = NO;
+    //options->Algo3d = NO;
 #ifdef SLU_HAVE_LAPACK
     options->DiagInv = YES;
 #else
@@ -269,14 +269,14 @@ void print_options_dist(superlu_dist_options_t *options)
     printf("**    SymPattern                : %4d\n", options->SymPattern);
     printf("**    lookahead_etree           : %4d\n", options->lookahead_etree);
     printf("**    Use_TensorCore            : %4d\n", options->Use_TensorCore);
-    printf("**    Use 3D algorithm          : %4d\n", options->Algo3d);
+    //printf("**    Use 3D algorithm          : %4d\n", );
     printf("** parameters that can be altered by environment variables:\n");
-    printf("**    superlu_relax             : %4d\n", sp_ienv_dist(2, options));
-    printf("**    superlu_maxsup            : %4d\n", sp_ienv_dist(3, options));
-    printf("**    min GEMM m*k*n to use GPU : %d\n", sp_ienv_dist(7, options));
-    printf("**    GPU buffer size           : %10d\n", sp_ienv_dist(8, options));
-    printf("**    GPU streams               : %4d\n", sp_ienv_dist(9, options));
-    printf("**    estimated fill ratio      : %4d\n", sp_ienv_dist(6, options));
+    printf("**    superlu_relax             : %4d\n", (int) sp_ienv_dist(2, options));
+    printf("**    superlu_maxsup            : %4d\n", (int) sp_ienv_dist(3, options));
+    printf("**    min GEMM m*k*n to use GPU : %d\n", (int) sp_ienv_dist(7, options));
+    printf("**    GPU buffer size           : %4lld\n", (long long) sp_ienv_dist(8, options));
+    printf("**    GPU streams               : %4d\n", (int) sp_ienv_dist(9, options));
+    printf("**    estimated fill ratio      : %4d\n", (int) sp_ienv_dist(6, options));
     printf("**************************************************\n");
 }
 
@@ -306,10 +306,10 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     
     printf("**************************************************\n");
     printf(".. blocking parameters from sp_ienv():\n");
-    printf("**    relaxation                 : %d\n", sp_ienv_dist(2, options));
-    printf("**    max supernode              : %d\n", sp_ienv_dist(3, options));
-    printf("**    estimated fill ratio       : %d\n", sp_ienv_dist(6, options));
-    printf("**    min GEMM m*k*n to use GPU  : %d\n", sp_ienv_dist(7, options));
+    printf("**    relaxation                 : %d\n", (int) sp_ienv_dist(2, options));
+    printf("**    max supernode              : %d\n", (int) sp_ienv_dist(3, options));
+    printf("**    estimated fill ratio       : %d\n", (int) sp_ienv_dist(6, options));
+    printf("**    min GEMM m*k*n to use GPU  : %d\n", (int) sp_ienv_dist(7, options));
     printf(".. parallel environment:\n");
     printf("**    OpenMP threads             : %4d\n", num_threads);
     printf("**    GPU enabled?               : %4d\n", gpu_enabled);

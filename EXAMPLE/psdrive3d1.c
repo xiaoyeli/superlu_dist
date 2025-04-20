@@ -328,7 +328,6 @@ main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
-    options.Algo3d = YES;
     options.IterRefine = SLU_SINGLE;
 #if 0
     options.RowPerm = NOROWPERM;

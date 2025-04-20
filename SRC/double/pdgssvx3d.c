@@ -25,7 +25,7 @@ at the top-level directory.
 
 /*
  Solve-only setup
-  turn off: equil, rowperm, colperm, 
+  turn off: equil, rowperm, colperm,
   options->ilu_level = 0;
    1. DOFACT -> distribution
    2. FACTORED -> solve
@@ -544,9 +544,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     fact_t Fact;
     double *a;
     int_t *colptr, *rowind;
-    int *perm_r;			/* row permutations from partial pivoting */
-    int *perm_c;			/* column permutation vector */
-    int_t *etree;			/* elimination tree */
+    int *perm_r;	/* row permutations from partial pivoting */
+    int *perm_c;	/* column permutation vector */
+    int_t *etree;	/* elimination tree */
     int_t *rowptr, *colind; /* Local A in NR */
     int colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t i, j, irow, m, n, nnz;
@@ -574,7 +574,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
     }
 
-
 #endif
 
     LUstruct->dt = 'd';
@@ -586,8 +585,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     /* Test the options choices. */
     *info = 0;
 
-    if ( options->SolveOnly == YES ) {
-	options->Fact = DOFACT;       // this is set to enable distribution 
+    if ( options->SolveOnly == YES && options->Fact != FACTORED) {
+	options->Fact = DOFACT;       // this is set to enable distribution
 	options->Equil = NO;
 	options->RowPerm = NOROWPERM;
 	options->ColPerm = NATURAL;
@@ -599,8 +598,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     validateInput_pdgssvx3d(options, A, ldb, nrhs, grid3d, info);
 
     /* Initialization. */
-
-    options->Algo3d = YES;
 
     /* definition of factored seen by each process layer */
     factored = (Fact == FACTORED);
@@ -860,10 +857,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     MPI_Bcast(&colequ, 1, MPI_INT, 0, grid3d->zscp.comm);
 
     /* Now all processes in 3D grid participate */
-    
+
     /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid */
     /* Sherry Q: original input A, not permuted yet */
-    
+
     if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
     {
 	if (parSymbFact == NO) {
@@ -956,7 +953,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		}
 
-
 		if(Fact != SamePattern_SameRowPerm){
 			// checkDist3DLUStruct(LUstruct, grid3d);
 			// zeros out the Supernodes that are not owned by the grid
@@ -976,7 +972,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/* Perform numerical factorization in parallel on all process layers.*/
 
-		/* nvshmem related. */ // TODO: Does this work in iterative refinement with rhs>1? Should we associate these data with SOLVEstruct?
+		/* nvshmem related */ // TODO: Does this work in iterative refinement with rhs>1? Should we associate these data with SOLVEstruct?
 		#ifdef HAVE_NVSHMEM
 			int nc = CEILING( nsupers, grid->npcol);
 			int nr = CEILING( nsupers, grid->nprow);
@@ -988,7 +984,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int ready_x_size = maxrecvsz*nc;
 			int ready_lsum_size = 2*maxrecvsz*nr;
 			if (get_acc_solve()){
-			nv_init_wrapper(grid->comm);	
+			nv_init_wrapper(grid->comm);
 		    dprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 			}
 		#endif
@@ -1023,10 +1019,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
-			
+
 			if(options->batchCount == 0)
 			{
-#ifdef HAVE_CUDA				
+#ifdef HAVE_CUDA
 dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 
@@ -1036,8 +1032,9 @@ dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			dCopyLUGPU2Host(dLUgpu, LUstruct);
 			dDestroyLUgpuHandle(dLUgpu);
 #endif
+
        	      	 } else { /* batched version */
-		 
+
 #ifdef HAVE_MAGMA
 			double tic = SuperLU_timer_();
 			dBatchFactorize_Handle batch_ws = dgetBatchFactorizeWorkspace(
@@ -1071,9 +1068,9 @@ dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 #else // no MAGMA
 			// TODO: How should we handle this?
 			ABORT("Fatal error: Batched mode requires magma support!\n");
-#endif 
+#endif
 	      	   } /* end if batchCount == 0 */
-		 
+
 		    // print other stuff
 		    // if (!grid3d->zscp.Iam)
 		    // 	SCT_printSummary(grid, SCT);
@@ -1094,9 +1091,6 @@ dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 		if (get_new3dsolve()){
 			dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
 		}
-
-
-
 
 		stat->utime[FACT] = SuperLU_timer_() - t;
 

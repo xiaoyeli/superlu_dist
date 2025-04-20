@@ -371,7 +371,6 @@ int main(int argc, char *argv[])
     /* Set the default input options: */
     superlu_dist_options_t options;
     set_default_options_dist(&options);
-    options.Algo3d = YES;
     /* Turn off permutations */
     options.SolveOnly          = YES;
     options.ILU_level          = 0;

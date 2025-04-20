@@ -8,8 +8,10 @@ examples to suit your applications.
  double complex: pzdrive* )
 
 The examples illustrate the following functionalities:
-  0. pddrive3d.c: (invoke new communication-avoiding 3D algorithms)
-         Use PxGSSVX3D with the default options to solve a linear system
+  0. pddrive3d.c:
+  (invoke new communication-avoiding 3D algorithms, with GPU offload, and batch interface))
+         Use PxGSSVX3D to solve a linear system,
+	 OR, use PxGSSVX_CSC_BATCH to solve a batch of linear systems.
      pddrive3d1.c:
 	 Use PxGSSVX3D to solve the systems with same A but different
 	 right-hand side. (Reuse the factored form of A)

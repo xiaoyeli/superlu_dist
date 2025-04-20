@@ -24,7 +24,7 @@ at the top-level directory.
 
 /*
  Solve-only setup
-  turn off: equil, rowperm, colperm, 
+  turn off: equil, rowperm, colperm,
   options->ilu_level = 0;
    1. DOFACT -> distribution
    2. FACTORED -> solve
@@ -543,9 +543,9 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     fact_t Fact;
     doublecomplex *a;
     int_t *colptr, *rowind;
-    int *perm_r;			/* row permutations from partial pivoting */
-    int *perm_c;			/* column permutation vector */
-    int_t *etree;			/* elimination tree */
+    int *perm_r;	/* row permutations from partial pivoting */
+    int *perm_c;	/* column permutation vector */
+    int_t *etree;	/* elimination tree */
     int_t *rowptr, *colind; /* Local A in NR */
     int colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t i, j, irow, m, n, nnz;
@@ -572,9 +572,8 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     if (getenv("GPU3DVERSION")) {
        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
     }
+
 #endif
-
-
 
     LUstruct->dt = 'z';
 
@@ -586,7 +585,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     *info = 0;
 
     if ( options->SolveOnly == YES && options->Fact != FACTORED) {
-	options->Fact = DOFACT;       // this is set to enable distribution 
+	options->Fact = DOFACT;       // this is set to enable distribution
 	options->Equil = NO;
 	options->RowPerm = NOROWPERM;
 	options->ColPerm = NATURAL;
@@ -598,8 +597,6 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     validateInput_pzgssvx3d(options, A, ldb, nrhs, grid3d, info);
 
     /* Initialization. */
-
-    options->Algo3d = YES;
 
     /* definition of factored seen by each process layer */
     factored = (Fact == FACTORED);
@@ -859,10 +856,10 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     MPI_Bcast(&colequ, 1, MPI_INT, 0, grid3d->zscp.comm);
 
     /* Now all processes in 3D grid participate */
-    
+
     /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid */
     /* Sherry Q: original input A, not permuted yet */
-    
+
     if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
     {
 	if (parSymbFact == NO) {
@@ -955,7 +952,6 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		}
 
-
 		if(Fact != SamePattern_SameRowPerm){
 			// checkDist3DLUStruct(LUstruct, grid3d);
 			// zeros out the Supernodes that are not owned by the grid
@@ -975,7 +971,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/* Perform numerical factorization in parallel on all process layers.*/
 
-		/* nvshmem related. */
+		/* nvshmem related */ // TODO: Does this work in iterative refinement with rhs>1? Should we associate these data with SOLVEstruct?
 		#ifdef HAVE_NVSHMEM
 			int nc = CEILING( nsupers, grid->npcol);
 			int nr = CEILING( nsupers, grid->nprow);
@@ -1022,7 +1018,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
-			
+
 			if(options->batchCount == 0)
 			{
 #ifdef HAVE_CUDA
@@ -1035,8 +1031,9 @@ zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			zCopyLUGPU2Host(zLUgpu, LUstruct);
 			zDestroyLUgpuHandle(zLUgpu);
 #endif
-			} else { /* batched version */
-		 
+
+       	      	 } else { /* batched version */
+
 #ifdef HAVE_MAGMA
 			double tic = SuperLU_timer_();
 			zBatchFactorize_Handle batch_ws = zgetBatchFactorizeWorkspace(
@@ -1070,9 +1067,9 @@ zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 #else // no MAGMA
 			// TODO: How should we handle this?
 			ABORT("Fatal error: Batched mode requires magma support!\n");
-#endif 
+#endif
 	      	   } /* end if batchCount == 0 */
-		 
+
 		    // print other stuff
 		    // if (!grid3d->zscp.Iam)
 		    // 	SCT_printSummary(grid, SCT);
@@ -1093,7 +1090,6 @@ zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 		if (get_new3dsolve()){
 			zbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
 		}
-
 
 		stat->utime[FACT] = SuperLU_timer_() - t;
 
@@ -1531,8 +1527,6 @@ if (get_acc_solve()){
 			if (get_new3dsolve()){
 				pzgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
-
-
 			}else{
 				pzgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
@@ -1902,11 +1896,6 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 
 	B = A3d->B3d;		 // B is now assigned back to B3d on return
 	A->Store = Astore3d; // restore Astore to 3D
-
-
-	// if ( grid3d->zscp.Iam == 0 ) { // process layer 0
-	// 	PStatPrint(&options, &stat, &grid3d->grid2d);
-	// }
 
 #if (DEBUGlevel >= 1)
 	CHECK_MALLOC(iam, "Exit pzgssvx3d()");
