@@ -92,7 +92,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, sympattern;
     int      iam, info, ldb, ldx;
     char     **cpp, c, *postfix;;
-    FILE *fp, *fopen();
+    FILE *fp;
     int cpp_defs();
     int ii, omp_mpi_level;
     int ldumap, myrank, p; /* The following variables are used for batch solves */
@@ -332,7 +332,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     int equil, colperm, rowperm, ir, lookahead, sympattern, symbfact;
     int iam, info, ldb, ldx;
     char **cpp, c, *suffix;
-    FILE *fp, *fopen ();
+    FILE *fp;
     extern int cpp_defs ();
     int ii, omp_mpi_level, batchCount = 0;
     int*    usermap;     /* The following variables are used for batch solves */
@@ -608,7 +608,7 @@ void pdbridge_factor2d(void ** pyobj)
     int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
     int      iam, info, ldb, ldx;
     char     **cpp, c, *postfix;;
-    FILE *fp, *fopen();
+    FILE *fp;
     int cpp_defs();
     int ii, omp_mpi_level,m;
     int ldumap, myrank, p; /* The following variables are used for batch solves */
@@ -703,7 +703,7 @@ void pdbridge_factor3d (void ** pyobj)
     int equil, colperm, rowperm, ir, lookahead, sympattern;
     int iam, info, ldb, ldx;
     char **cpp, c, *suffix;
-    FILE *fp, *fopen ();
+    FILE *fp;
     extern int cpp_defs ();
     int ii, omp_mpi_level, batchCount = 0, m, i, j;
     int*    usermap;     /* The following variables are used for batch solves */
@@ -797,7 +797,7 @@ void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global)
     int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
     int      iam, info, ldb, ldx;
     char     **cpp, c, *postfix;;
-    FILE *fp, *fopen();
+    FILE *fp;
     int cpp_defs();
     int ii, omp_mpi_level,m;
     int ldumap, myrank, p; /* The following variables are used for batch solves */
@@ -904,7 +904,7 @@ void pdbridge_solve3d (void ** pyobj, int nrhs, double   *b_global)
     int equil, colperm, rowperm, ir, lookahead, sympattern;
     int iam, info, ldb, ldx;
     char **cpp, c, *suffix;
-    FILE *fp, *fopen ();
+    FILE *fp;
     extern int cpp_defs ();
     int ii, omp_mpi_level, batchCount = 0, m, i, j;
     int*    usermap;     /* The following variables are used for batch solves */

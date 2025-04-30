@@ -845,7 +845,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *index;
     double *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 
 	// assert(grid->npcol*grid->nprow==1);
 
@@ -944,7 +944,7 @@ void dComputeLevelsets(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *index,*lloc;
     double *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 
 	// assert(grid->npcol*grid->nprow==1);
 
@@ -985,7 +985,7 @@ void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval;
-	FILE *fp, *fopen();
+	FILE *fp;
 
 	assert(grid->npcol*grid->nprow==1);
 
@@ -1092,7 +1092,7 @@ void dGenCSCLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval0;
-	FILE *fp, *fopen();
+	FILE *fp;
 
     double *val;
     int_t  *row, *col;
@@ -1245,7 +1245,7 @@ void dGenCSRLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval0;
-	FILE *fp, *fopen();
+	FILE *fp;
 
     double *val;
     int_t  *row, *col;
@@ -1730,7 +1730,7 @@ void dDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
     int_t *index;
     double *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 	gridinfo_t *grid = &(grid3d->grid2d);
 	int iam = grid->iam;
 	int iam3d = grid3d->iam;

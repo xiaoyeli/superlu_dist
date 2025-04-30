@@ -182,7 +182,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #if 0
 void zreadrhs(int m, doublecomplex *b)
 {
-    FILE *fp, *fopen();
+    FILE *fp;
     int i, j;
 
     if ( !(fp = fopen("b.dat", "r")) ) {

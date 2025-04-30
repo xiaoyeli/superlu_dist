@@ -613,7 +613,7 @@ void dDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
     int_t *index;
     double *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 	gridinfo_t *grid = &(grid3d->grid2d);
 	int iam = grid->iam;
 	int iam3d = grid3d->iam;
