@@ -593,6 +593,7 @@ if (TPL_MAGMA_INCLUDE_DIRS)
   include_directories(${TPL_MAGMA_INCLUDE_DIRS})  ## MAGMA
 endif ()
 include_directories(${MPI_C_INCLUDE_PATH})
+include_directories($ENV{MPI_C_INCLUDE_PATH})
 
 ######################################################################
 #
