@@ -153,6 +153,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     options.Equil = NO;
     options.ReplaceTinyPivot = YES;
 #endif
+    (slu_obj->options).ReplaceTinyPivot = YES;
 
     /* Parse command line argv[], may modify default options */
     for (cpp = argv+1; *cpp; ++cpp) {
@@ -455,7 +456,9 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     options.ColPerm = NATURAL;
     options.ReplaceTinyPivot = YES;
 #endif
-
+    
+    (slu_obj->options).ReplaceTinyPivot = YES;
+    
     if ( batchCount > 0 )
         (slu_obj->options).batchCount = batchCount;
 

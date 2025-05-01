@@ -28,12 +28,6 @@ RESULT_FILE  = "result.bin"
 poll_interval = 0.1
 
 
-
-argv=sys.argv
-if '-d' in sys.argv:
-    algo3d=1
-
-
 # Ensure the file exists; if not, wait a moment and try again.
 while True:
     flag=''
@@ -50,14 +44,17 @@ while True:
         #####  read in the matrix by rank 0
         if rank == 0:
             with open(DATA_FILE, "rb") as f:
-                m,INT64 = pickle.load(f)
+                m,INT64,algo3d = pickle.load(f)
             n=(m.shape)[0]    
             INT64 = comm.bcast(INT64, root=0)
+            algo3d = comm.bcast(algo3d, root=0)
             n = comm.bcast(n, root=0)
         else:
             INT64=-1
+            algo3d=-1
             n=-1
             INT64 = comm.bcast(INT64, root=0)
+            algo3d = comm.bcast(algo3d, root=0)
             n = comm.bcast(n, root=0)
             a = scipy.sparse.random(1, 1, density=1)
             m = (a.T @ a)     

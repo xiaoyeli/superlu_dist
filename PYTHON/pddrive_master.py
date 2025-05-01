@@ -10,7 +10,8 @@ import pickle
 ####################################################################################################
 ####################################################################################################
 ####################### create the matrix
-INT64 = 0 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
+INT64 = 1 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
+algo3d = 0 # whether to use 2D or 3D factorizations
 rng = np.random.default_rng()
 n = 4000000
 nrhs = 1
@@ -40,8 +41,9 @@ if(use_cov==0):
     m = (a.T @ a) + scipy.sparse.identity(n)
     print("sparsity: ", float(m.nnz)/n**2, "nnz(A): ", m.nnz)
 else:
-    m = scipy.sparse.load_npz('/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/sparse_matrix10Mill.npz')
+    # m = scipy.sparse.load_npz('/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/sparse_matrix10Mill.npz')
     # m = scipy.sparse.load_npz('/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/sparse_matrix10Mill_prettydense.npz')
+    m = scipy.sparse.load_npz('/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/sparse_matrix10Mill_no1.npz')
     m = m.tocsr()
     m = m[0:n, 0:n]
     print("sparsity: ", float(m.nnz)/n**2, "nnz(A): ", m.nnz)
@@ -55,7 +57,7 @@ else:
 ####################### initialization
 start = time.time()
 with open(DATA_FILE, "wb") as f:
-    pickle.dump((m,INT64), f)
+    pickle.dump((m,INT64,algo3d), f)
 with open(CONTROL_FILE, "w") as f:
     f.write("init")
 wait_for_flag("done", CONTROL_FILE)
