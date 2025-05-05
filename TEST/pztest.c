@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     int    nprow, npcol;
     int    iam, info, ldb, ldx, nrhs, iinfo;
     char     **cpp, c;
-    FILE *fp, *fopen();
+    FILE *fp;
     char matrix_type[8], equed[1];
     int  relax, maxsuper, fill_ratio, min_gemm_gpu_offload=0;
     int    equil, ifact, nfact, iequil, iequed, prefact, notfactored, diaginv;

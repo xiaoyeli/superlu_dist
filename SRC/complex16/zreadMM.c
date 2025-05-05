@@ -228,7 +228,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 static void zreadrhs(int m, doublecomplex *b)
 {
-    FILE *fp, *fopen();
+    FILE *fp;
     int i;
 
     if ( !(fp = fopen("b.dat", "r")) ) {

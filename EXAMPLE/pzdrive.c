@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
-    FILE *fp, *fopen();
+    FILE *fp;
     int cpp_defs();
     int ii, omp_mpi_level;
     int ldumap, myrank, p; /* The following variables are used for batch solves */

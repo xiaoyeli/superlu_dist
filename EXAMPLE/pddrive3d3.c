@@ -123,7 +123,7 @@ main (int argc, char *argv[])
     int lookahead, colperm, rowperm, ir;
     int iam, info, ldb, ldx, nrhs, ii, omp_mpi_level;
     char **cpp, c, *suffix;
-    FILE *fp, *fopen ();
+    FILE *fp;
     extern int cpp_defs ();
 
     nprow = 1;            /* Default process rows.      */

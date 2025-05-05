@@ -1581,7 +1581,7 @@ t1 = SuperLU_timer_();
 
 #if 0  // this will readin a matrix with only lower triangular part, note that this code block is only for benchmarking cusparse performance
 
-	FILE *fp, *fopen();
+	FILE *fp;
 	if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/copter2.mtx", "r")) ) {
 	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/epb3.mtx", "r")) ) {
 	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/gridgena.mtx", "r")) ) {

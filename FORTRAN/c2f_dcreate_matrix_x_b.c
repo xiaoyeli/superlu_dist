@@ -99,7 +99,7 @@ int c2f_dcreate_matrix_x_b(char *fname, int nrhs, int nprocs,
     char     trans[1];
 
     char     **cpp, c, *postfix;;
-    FILE     *fp, *fopen();
+    FILE     *fp;
     
     MPI_Comm_rank(slucomm, &iam);
 

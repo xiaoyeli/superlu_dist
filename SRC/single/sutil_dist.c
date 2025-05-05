@@ -845,7 +845,7 @@ void sDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *index;
     float *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 
 	// assert(grid->npcol*grid->nprow==1);
 
@@ -1275,7 +1275,7 @@ void sDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
     int_t *index;
     float *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 	gridinfo_t *grid = &(grid3d->grid2d);
 	int iam = grid->iam;
 	int iam3d = grid3d->iam;
