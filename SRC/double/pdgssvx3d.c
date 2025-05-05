@@ -1023,17 +1023,17 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if(options->batchCount == 0)
 			{
 #ifdef HAVE_CUDA
-dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+			    dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 
 			/* call pdgstrf3d() in C++ code */
-			pdgstrf3d_LUv1(dLUgpu);
+			    pdgstrf3d_LUv1(dLUgpu);
 
 			dCopyLUGPU2Host(dLUgpu, LUstruct);
 			dDestroyLUgpuHandle(dLUgpu);
 #endif
 
-       	      	 } else { /* batched version */
+       	      	   } else { /* batched version */
 
 #ifdef HAVE_MAGMA
 			double tic = SuperLU_timer_();

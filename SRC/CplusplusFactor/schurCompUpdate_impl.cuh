@@ -428,12 +428,15 @@ int_t xLUstruct_t<Ftype>::dSchurComplementUpdateGPU(
                                 lpanel.blkPtrGPU(iSt), lpanel.LDA(),
                                 upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
                                 A_gpu.gpuGemmBuffs[streamId], gemm_m);
+	    stat->ops[FACT] += 2 * gemm_m * gemm_n * gemm_k;
 
             scatterGPU_driver<Ftype>(
                 iSt, iEnd, jSt, jEnd, A_gpu.gpuGemmBuffs[streamId], gemm_m,
                 A_gpu.maxSuperSize, ldt, lpanel.gpuPanel, upanel.gpuPanel, 
                 dA_gpu, cuStream
             );
+    	    stat->ops[FACT] += gemm_m * gemm_n; // scatter
+
         }
     }
     gpuErrchk(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
@@ -580,6 +583,8 @@ int_t xLUstruct_t<Ftype>::dSchurCompUpdatePartGPU(
                         upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
                         gemmBuff, gemm_m);
 
+    stat->ops[FACT] += 2 * gemm_m * gemm_n * gemm_k;
+
     // setting up scatter
     dim3 dimBlock(ldt); // 1d thread
     dim3 dimGrid(iEnd - iSt, jEnd - jSt);
@@ -590,8 +595,10 @@ int_t xLUstruct_t<Ftype>::dSchurCompUpdatePartGPU(
         gemmBuff, gemm_m,
         lpanel.gpuPanel, upanel.gpuPanel, dA_gpu);
 
+    stat->ops[FACT] += gemm_m * gemm_n; // scatter
+    
     return 0;
-}
+} /* end dSchurCompUpdatePartGPU() */
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dSchurCompUpLimitedMem(

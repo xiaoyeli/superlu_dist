@@ -420,6 +420,8 @@ int_t xLUstruct_t<Ftype>::dScatter(int_t m, int_t n,
         }
     }
 
+    stat->ops[FACT] += m * n;
+	
     return 0;
 }
 
@@ -576,11 +578,17 @@ int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolve(int_t k, int_t offset, diagFactB
                   MPI_DOUBLE, krow(k), (grid->cscp).comm);
 
     /*=======   Panel Update                ======*/
-    if (myrow == krow(k))
+    if (myrow == krow(k)) {
         uPanelVec[g2lRow(k)].panelSolve(ksupc, dFBufs[offset]->BlockLFactor, ksupc);
+	int ncols = uPanelVec[g2lRow(k)].nzcols();
+	stat->ops[FACT] += ksupc*ksupc * ncols;
+    }
 
-    if (mycol == kcol(k))
+    if (mycol == kcol(k)) {
         lPanelVec[g2lCol(k)].panelSolve(ksupc, dFBufs[offset]->BlockUFactor, ksupc);
+	int nrows = lPanelVec[g2lCol(k)].nzrows();
+	stat->ops[FACT] += ksupc*ksupc * nrows;
+    }
 
     return 0;
 }

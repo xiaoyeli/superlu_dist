@@ -1028,6 +1028,8 @@ zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			/* call pzgstrf3d() in C++ code */
 			pzgstrf3d_LUv1(zLUgpu);
 
+			stat->ops[FACT] *= 4; /* accommodate complex arithmtic */
+
 			zCopyLUGPU2Host(zLUgpu, LUstruct);
 			zDestroyLUgpuHandle(zLUgpu);
 #endif

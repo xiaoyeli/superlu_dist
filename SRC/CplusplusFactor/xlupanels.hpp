@@ -358,7 +358,7 @@ struct xLUstruct_t
     SCT_t *SCT;
     superlu_dist_options_t *options;
     SuperLUStat_t *stat;
-
+    
     // Adding more variables for factorization
     trf3dpartitionType<Ftype> *trf3Dpartition;
     int_t maxLvl;
@@ -724,4 +724,5 @@ struct xLUstruct_t
     int_t dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, diagFactBufs_type<Ftype>** dFBufs);
 #endif
 };
+// end xLUstruct_t{}
 
