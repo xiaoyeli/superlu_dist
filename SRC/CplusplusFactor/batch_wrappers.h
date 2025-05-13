@@ -91,30 +91,30 @@ inline magma_int_t
 magma_getrf_nopiv_vbatched(
     magma_int_t* m, magma_int_t* n,
     float **dA_array, magma_int_t *ldda,
-    float *dtol_array, magma_int_t *info_array,
+    float *dtol_array, double eps, magma_int_t *info_array,
     magma_int_t batchCount, magma_queue_t queue)
-{ 
-    return magma_sgetrf_nopiv_vbatched(m, n, dA_array, ldda, dtol_array, info_array, batchCount, queue); 
+{
+    return magma_sgetrf_nopiv_expert_vbatched(m, n, dA_array, ldda, dtol_array, eps, info_array, batchCount, queue); 
 }
 
 inline magma_int_t
 magma_getrf_nopiv_vbatched(
     magma_int_t* m, magma_int_t* n,
     double **dA_array, magma_int_t *ldda,
-    double *dtol_array, magma_int_t *info_array,
+    double *dtol_array, double eps, magma_int_t *info_array,
     magma_int_t batchCount, magma_queue_t queue)
 { 
-    return magma_dgetrf_nopiv_vbatched(m, n, dA_array, ldda, dtol_array, info_array, batchCount, queue); 
+    return magma_dgetrf_nopiv_expert_vbatched(m, n, dA_array, ldda, dtol_array, eps, info_array, batchCount, queue); 
 }
 
 inline magma_int_t
 magma_getrf_nopiv_vbatched(
     magma_int_t* m, magma_int_t* n,
     doublecomplex **dA_array, magma_int_t *ldda,
-    double *dtol_array, magma_int_t *info_array,
+    double *dtol_array, double eps, magma_int_t *info_array,
     magma_int_t batchCount, magma_queue_t queue)
 { 
-    return magma_zgetrf_nopiv_vbatched(m, n, (magmaDoubleComplex **)dA_array, ldda, dtol_array, info_array, batchCount, queue); 
+    return magma_zgetrf_nopiv_expert_vbatched(m, n, (magmaDoubleComplex **)dA_array, ldda, dtol_array, eps, info_array, batchCount, queue);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

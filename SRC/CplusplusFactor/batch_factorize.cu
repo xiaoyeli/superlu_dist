@@ -551,10 +551,13 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
     // Diagonal block batched LU decomposition   
     marshallBatchedLUData<T>(ws, k_st, k_end);
     
+    // TODO: This should be replaced by the user defined tolerances
+    float eps = 1e-6;
+
     int_t info = magma_getrf_nopiv_vbatched(
         mdata.dev_diag_dim_array, mdata.dev_diag_dim_array, 
         mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
-        NULL, mdata.dev_info_array, mdata.batchsize, 
+        NULL, eps, mdata.dev_info_array, mdata.batchsize, 
         ws->magma_queue
     );
     
