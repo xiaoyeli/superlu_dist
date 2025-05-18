@@ -94,11 +94,10 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
        }
      }
 
-     if(strcmp(sym,"general")) {
-       printf("Symmetric matrix: will be expanded\n");
-       expand=1;
-     } else
-       expand=0;
+     if ( (!strcmp(sym,"symmetric")) || (!strcmp(sym,"hermitian")) ) {
+         printf("Symmetric matrix: will be expanded\n");
+         expand=1;
+     } else expand=0;
 
      /* 2/ Skip comments */
      while(banner[0]=='%') {
@@ -118,10 +117,12 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
       exit(-1);
    }
 
-    if(expand)
-      new_nonz = 2 * *nonz - *n;
-    else
-      new_nonz = *nonz;
+    if(expand) {
+        new_nonz = 2 * *nonz; /* upper bound, accommodate hard zeros on the diagonal */
+	printf("new_nonz upper bound symmetric expansion:\t" IFMT "\n", new_nonz);
+    } else {
+        new_nonz = *nonz;
+    }
 
     *m = *n;
     printf("m %lld, n %lld, nonz %lld\n", (long long) *m, (long long) *n, (long long) *nonz);
@@ -182,7 +183,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
     *nonz = nz;
     if(expand) {
-      printf("new_nonz after symmetric expansion:\t" IFMT "\n", *nonz);
+      printf("*nonz after symmetric expansion:\t" IFMT "\n", *nonz);
       fflush(stdout);
     }
 

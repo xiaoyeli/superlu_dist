@@ -685,7 +685,7 @@ void PrintInt32(char *name, int len, int *x)
     {
         if (i % 10 == 0)
             printf("\n\t[%2d-%2d]", i, i + 9);
-        printf("%6d", x[i]);
+        printf("%10d", x[i]);
     }
     printf("\n"); fflush(stdout);
 }

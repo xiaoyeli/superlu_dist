@@ -218,6 +218,8 @@ FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)
 	marker[i] = t_colptr[i];
     }
 
+    int diags = 0; // count nonzero diagonals
+    
     /* Transpose matrix A to T */
     for (j = 0; j < n; ++j)
 	for (i = al_colptr[j]; i < al_colptr[j+1]; ++i) {
@@ -225,9 +227,10 @@ FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)
 	    t_rowind[marker[col]] = j;
 	    t_val[marker[col]] = al_val[i];
 	    ++marker[col];
+	    if (col == j) ++diags;
 	}
 
-    new_nnz = *nonz * 2 - n;
+    new_nnz = *nonz * 2 - diags; // to be sure each diagonal is counted only once
     if ( !(a_colptr = (int_t *) SUPERLU_MALLOC( (n+1) * sizeof(int_t)) ) )
 	ABORT("SUPERLU_MALLOC a_colptr[]");
     if ( !(a_rowind = (int_t *) SUPERLU_MALLOC( new_nnz * sizeof(int_t)) ) )
@@ -255,7 +258,9 @@ FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)
       a_colptr[j+1] = k;
     }
 
-    printf("FormFullA: new_nnz = " IFMT ", k = " IFMT "\n", new_nnz, k);
+    *nonz = k;
+    printf("FormFullA: new_nnz = " IFMT ", actual *nonz = " IFMT ", diags %d\n", new_nnz,k,diags);
+    assert(*nonz==new_nnz);
 
     SUPERLU_FREE(al_val);
     SUPERLU_FREE(al_rowind);
@@ -268,7 +273,6 @@ FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)
     *nzval = a_val;
     *rowind = a_rowind;
     *colptr = a_colptr;
-    *nonz = new_nnz;
 }
 
 void

@@ -150,7 +150,8 @@ dldperm_dist(int job, int n, int_t nnz, int_t colptr[], int_t adjncy[],
     printf(".. After MC64AD info %d\tsize of matching %d\n", info[0], num);
 #endif
     if ( info[0] == 1 ) { /* Structurally singular */
-        printf(".. The last %d permutations:\n", n-num);
+	
+        printf("MC64 detects singularity .. The last %d permutations:\n", n-num);
 	PrintInt32("perm", n-num, &perm[num]);
     }
 

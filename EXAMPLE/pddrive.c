@@ -122,7 +122,6 @@ int main(int argc, char *argv[])
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
     options.Equil = NO;
-    options.ReplaceTinyPivot = YES;
 #endif
 
     /* Parse command line argv[], may modify default options */
@@ -303,7 +302,6 @@ int main(int argc, char *argv[])
 		postfix = &((*cpp)[ii+1]);
 	}
     }
-    // printf("%s\n", postfix);
 
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
