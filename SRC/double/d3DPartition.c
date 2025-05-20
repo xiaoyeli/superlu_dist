@@ -316,10 +316,32 @@ void dbcastPermutedSparseA(SuperMatrix *A,
 /***** YL: remove the allocation in the following as dGatherNRformat_loc3d_allgrid instead of dGatherNRformat_loc3d has been called, which already allocate A->Store on all grids
  * Note the the broadcast is still needed as the A->Store has been scaled by dscaleMatrixDiagonally only on grid 0
 */
+
+
+
+    int_t chunk= 100000000; // this makes sure chunk*sizeof(doublecomplex)<2e9
+    int count;
+    int_t Nchunk;
+    int_t remainder;
+    Nchunk = CEILING(Astore->nnz_loc,chunk);
+    remainder =  Astore->nnz_loc%chunk;
+
+
+
+
 #if 1
-    MPI_Bcast(Astore->nzval, Astore->nnz_loc*sizeof(double), MPI_BYTE, 0, grid3d->zscp.comm);
-    MPI_Bcast(Astore->rowptr, (Astore->m_loc+1)*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
-    MPI_Bcast(Astore->colind, Astore->nnz_loc*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
+        for (int i = 0; i < Nchunk; ++i) {
+        int_t idx=i*chunk;
+        if(i==Nchunk-1){
+                count=remainder;
+        }else{
+                count=chunk;
+        }  
+            MPI_Bcast( &(Astore->nzval[idx]),  count*sizeof(double), MPI_BYTE, 0, grid3d->zscp.comm);
+            MPI_Bcast( &(Astore->colind[idx]), count*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);    
+        }
+        MPI_Bcast(Astore->rowptr, (Astore->m_loc+1)*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
+
 #else
     allocBcastArray( (void **) &(Astore->nzval), Astore->nnz_loc*sizeof(double),
         0, grid3d->zscp.comm);
