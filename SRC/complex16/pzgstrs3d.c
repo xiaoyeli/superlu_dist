@@ -81,8 +81,10 @@ int_t ztrs_B_init3d_newsolve(int_t nsupers, doublecomplex* x, int nrhs, zLUstruc
     doublecomplex* xtmp;
     sForest_t** sForests = trf3Dpartition->sForests;
     int_t Pr = grid->nprow;
+    
     int_t nlb = CEILING (nsupers, Pr);    /* Number of local block rows. */
 
+    if(grid3d->zscp.Np>1){
     if (!(xtmp = doublecomplexCalloc_dist (Llu->ldalsum * nrhs + nlb * XK_H)))
     ABORT ("Malloc fails for xtmp[].");
 
@@ -141,6 +143,7 @@ int_t ztrs_B_init3d_newsolve(int_t nsupers, doublecomplex* x, int nrhs, zLUstruc
         }
     }
     SUPERLU_FREE (xtmp);
+    }
 	return 0;
 }
 
@@ -1555,7 +1558,7 @@ int_t ztrs_X_gather3d(doublecomplex* x, int nrhs, ztrf3Dpartition_t*  trf3Dparti
 	int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 	int_t myGrid = grid3d->zscp.Iam;
 	int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
-
+    if(grid3d->zscp.Np>1){
 	for (int_t ilvl = 0; ilvl < maxLvl - 1; ++ilvl)
 	{
 		int_t sender, receiver;
@@ -1587,7 +1590,7 @@ int_t ztrs_X_gather3d(doublecomplex* x, int nrhs, ztrf3Dpartition_t*  trf3Dparti
 
 		}
 	}
-
+    }
 	return 0;
 }
 
@@ -6292,7 +6295,7 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
     doublecomplex *send_dbuf, *recv_dbuf;
     int_t *xsup, *supno;
     int_t i, ii, irow, gbi, jj, k, knsupc, l, lk;
-    int p, procs;
+    int p, procs, j;
     gridinfo_t * grid = &(grid3d->grid2d);
     if (!grid3d->zscp.Iam)
     {
@@ -6320,6 +6323,42 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
         rdispls_nrhs = gstrs_comm->B_to_X_SendCnt + 7 * procs;
         ptr_to_ibuf = gstrs_comm->ptr_to_ibuf;
         ptr_to_dbuf = gstrs_comm->ptr_to_dbuf;
+
+
+	if(procs==1){ // faster memory copy when procs=1
+
+#ifdef _OPENMP
+#pragma omp parallel default (shared)
+#endif
+	{
+#ifdef _OPENMP
+#pragma omp master
+#endif
+	{
+		// t = SuperLU_timer_();
+#ifdef _OPENMP
+#if defined __GNUC__  && !defined __NVCOMPILER
+#pragma	omp	taskloop private (i,l,irow,k,j,knsupc) untied
+#endif
+#endif
+		for (i = 0; i < m_loc; ++i) {
+			irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
+
+			k = BlockNum( irow );
+			knsupc = SuperSize( k );
+			l = X_BLK( k );
+
+			x[l - XK_H].r = k; /* Block number prepended in the header. */
+			x[l - XK_H].i = 0;
+
+			irow = irow - FstBlockC(k); /* Relative row number in X-block */
+			RHS_ITERATE(j) {
+			x[l + irow + j*knsupc] = B[i + j*ldb];
+			}
+		}
+	}
+	}
+	}else{
 
         /* ------------------------------------------------------------
            NOW COMMUNICATE THE ACTUAL DATA.
@@ -6396,6 +6435,7 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
         SUPERLU_FREE (send_ibuf);
         SUPERLU_FREE (send_dbuf);
     }
+    }
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit pzReDistribute3d_B_to_X()");
 #endif
@@ -6431,7 +6471,7 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
     int *ptr_to_ibuf, *ptr_to_dbuf;
     int_t *send_ibuf, *recv_ibuf;
     doublecomplex *send_dbuf, *recv_dbuf;
-    int iam, p, q, pkk, procs;
+    int iam, p, q, pkk, procs,j;
     int_t num_diag_procs, *diag_procs;
     gridinfo_t * grid = &(grid3d->grid2d);
 #if ( DEBUGlevel>=1 )
@@ -6448,6 +6488,38 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
     procs = grid->nprow * grid->npcol;
     if (!grid3d->zscp.Iam)
     {
+    if(procs==1){ //faster memory copy when procs=1
+
+#ifdef _OPENMP
+#pragma omp parallel default (shared)
+#endif
+	{
+#ifdef _OPENMP
+#pragma omp master
+#endif
+	{
+		// t = SuperLU_timer_();
+#ifdef _OPENMP
+#if defined __GNUC__  && !defined __NVCOMPILER
+#pragma	omp	taskloop private (k,knsupc,lk,irow,l,i,j) untied
+#endif
+#endif
+		for (k = 0; k < nsupers; k++) {
+		knsupc = SuperSize( k );
+		lk = LBi( k, grid ); /* Local block number */
+		irow = FstBlockC( k );
+		l = X_BLK( lk );
+		for (i = 0; i < knsupc; ++i) {
+			RHS_ITERATE(j) { /* RHS is stored in row major in the buffer. */
+				B[irow-fst_row +i + j*ldb] = x[l + i + j*knsupc];
+			}
+			}
+		}
+	}
+	}
+
+	}else{
+
         int_t *row_to_proc = SOLVEstruct->row_to_proc;  /* row-process mapping */
         pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
 
@@ -6537,6 +6609,7 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
 
         SUPERLU_FREE (send_ibuf);
         SUPERLU_FREE (send_dbuf);
+        }   
     }
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit pzReDistribute_X_to_B()");
@@ -7102,7 +7175,13 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     xtrsTimer_t xtrsTimer;
 
     initTRStimer(&xtrsTimer, grid);
+    
+
+    MPI_Barrier (grid3d->comm);
     double tx = SuperLU_timer_();
+    stat->utime[SOLVE] = 0.0;
+    double tx_st= SuperLU_timer_();
+
     /* Redistribute B into X on the diagonal processes. */
     pzReDistribute3d_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
                             ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
@@ -7112,13 +7191,10 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     /*---------------------------------------------------
      * Forward solve Ly = b.
      *---------------------------------------------------*/
-
-    ztrs_B_init3d_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition);
-
-    MPI_Barrier (grid3d->comm);
     tx = SuperLU_timer_();
-    stat->utime[SOLVE] = 0.0;
-    double tx_st= SuperLU_timer_();
+    ztrs_B_init3d_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition);
+    xtrsTimer.t_init_b = SuperLU_timer_() - tx;
+    tx = SuperLU_timer_();
 
 
     // {
@@ -7281,15 +7357,16 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 
     xtrsTimer.t_backwardSolve = SuperLU_timer_() - tx;
-    MPI_Barrier (grid3d->comm);
-    stat->utime[SOLVE] = SuperLU_timer_ () - tx_st;
+    // MPI_Barrier (grid3d->comm);
+    tx = SuperLU_timer_();
     ztrs_X_gather3d(x, nrhs, trf3Dpartition, LUstruct, grid3d, &xtrsTimer);
+    xtrsTimer.t_gather_x = SuperLU_timer_() - tx;
     tx = SuperLU_timer_();
     pzReDistribute3d_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
                             ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
 
     xtrsTimer.t_pxReDistribute_X_to_B = SuperLU_timer_() - tx;
-
+    stat->utime[SOLVE] = SuperLU_timer_ () - tx_st;
     /**
      * Reduce the Solve flops from all the grids to grid zero
      */

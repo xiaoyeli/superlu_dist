@@ -1724,7 +1724,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                 int* d_nfrecv,
                 volatile int* d_status,
                 volatile int* d_statusmod,
-                int* d_flag_mod
+                int* d_flag_mod,
+                int gemmflag
         )
 {
     doublecomplex zero = {0.0, 0.0};
@@ -1832,25 +1833,28 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 
         Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
-        if (nrhs == 1) {
-
+        if(gemmflag==0 || nrhs==1){
+            RHS_ITERATE(j){
             for (i = tid; i < knsupc; i += block_size) {
                 temp1 = zero;
                 for (l = 0; l < knsupc; l++) {
                     doublecomplex ctemp;
-                    zz_mult(&ctemp, &Linv[l * knsupc + i], &x[ii + l]);
+                    zz_mult(&ctemp, &Linv[l * knsupc + i], &x[ii + l + j*knsupc]);
                     z_add(&temp1, &temp1, &ctemp);
 
                 }
-                lsum[il + i] = temp1; //reuse lsum as temporary output as it's no longer accessed
+                lsum[il + i + j*knsupc] = temp1; //reuse lsum as temporary output as it's no longer accessed
+            }
             }
             __syncthreads();
 
+            RHS_ITERATE(j){
             for (i = tid; i < knsupc; i += block_size) {
-                x[i + ii] = lsum[il + i];
+                x[i + ii+ j*knsupc] = lsum[il + i+ j*knsupc];
                 //printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
             }
             __syncthreads();
+            }
         } else {
             __syncthreads();
             for (int blx = 0; blx * BLK_M < knsupc; blx++) {
@@ -1875,7 +1879,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
             }
             __syncthreads();
 
-            RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
+            RHS_ITERATE(j)
+            for (i = tid; i < knsupc; i += block_size)
                     x[i + ii + j * knsupc] = lsum[i + il + j * knsupc];
             __syncthreads();
         }//if(nrhs==1)
@@ -1927,7 +1932,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
         lib = LBi(k, grid); /* Local block number, row-wise. */
         ii = X_BLK(lib);
 
-        if (nrhs == 1) {
+        if(gemmflag==0 || nrhs==1){
             luptr_tmp1 = lloc[idx_v];
             lb = 0;
             nbrow = 0;
@@ -2127,7 +2132,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
  long int *Lindval_loc_bc_offset,
  int_t *xsup,
  int *bcols_masked,
- gridinfo_t *grid
+ gridinfo_t *grid,
+ int gemmflag
 )
 {
     doublecomplex zero = {0.0, 0.0};
@@ -2248,8 +2254,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
 
                     Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
-                    if(nrhs==1){
-                    // if(1){
+                    if(gemmflag==0 || nrhs==1){
 
                         RHS_ITERATE(j){
                         for (i = tid; i < knsupc; i+=block_size){
@@ -2339,8 +2344,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
                 ii = X_BLK( lib );
 
-                if(nrhs==1){
-                // if(1){
+                if(gemmflag==0 || nrhs==1){
                     luptr_tmp1 = lloc[idx_v];
                     lb = 0;
                     nbrow=0;
@@ -2862,9 +2866,12 @@ void zlsum_fmod_inv_gpu_wrap
                 int procs
         ) {
 
+            
+
     int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
 
     int mype;
+    int gemmflag = get_acc_solve()==2;
 
     if(procs==1){
         nblock_ex=0;
@@ -2874,7 +2881,7 @@ void zlsum_fmod_inv_gpu_wrap
         if(1){
     #endif
             dim3 dimBlock(nthread_x, nthread_y);
-            zlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
+            zlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, gemmflag);
         }else{
             dim3 dimBlock(nthread_x, nthread_y,1);
             zlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
@@ -2947,7 +2954,7 @@ void zlsum_fmod_inv_gpu_wrap
                                                                                 zready_x, zready_lsum,
                                                                                 my_flag_bc, my_flag_rd,
                                                                                 d_nfrecv, d_status,
-                                                                                d_statusmod,d_flag_mod);
+                                                                                d_statusmod,d_flag_mod,gemmflag);
             CUDA_CHECK(cudaGetLastError());
         } // if status
     //} // if npes==1
@@ -2996,7 +3003,8 @@ long int *Uinv_bc_offset,
 int_t *Uindval_loc_bc_dat,
 long int *Uindval_loc_bc_offset,
 int_t *xsup,
-gridinfo_t *grid
+gridinfo_t *grid,
+int gemmflag
 )
 {
     doublecomplex zero = {0.0, 0.0};
@@ -3101,25 +3109,29 @@ gridinfo_t *grid
 
 					Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 
-					if(nrhs==1){
-					// if(0){
+					if(gemmflag==0 || nrhs==1){
+                        RHS_ITERATE(j){
 						for (i = tid; i < knsupc; i+=block_size){
 							temp1=zero;
 							for (l=0 ; l<knsupc ; l++){
                                 doublecomplex ctemp;
-                                zz_mult(&ctemp, &Uinv[l*knsupc+i], &x[ii+l]);
+                                zz_mult(&ctemp, &Uinv[l*knsupc+i], &x[ii+l+ j*knsupc]);
                                 z_add(&temp1, &temp1, &ctemp);
 							}
-							lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
+							lsum[il+i+ j*knsupc]=temp1; //reuse lsum as temporary output as it's no longer accessed
 						}
-						__syncthreads();
+                        }
+                        __syncthreads();
 
+                        RHS_ITERATE(j){
 						for (i = tid; i < knsupc; i+=block_size){
-							x[i + ii] = lsum[il+i];
+							x[i + ii+j*knsupc] = lsum[il+i+j*knsupc];
 							// // if(lk==69)
 							// printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
 							}
-						__syncthreads();
+                        }
+                        __syncthreads();
+
 					}else{
 						__syncthreads();
 						for (int blx = 0; blx*BLK_M < knsupc; blx++){
@@ -3184,8 +3196,7 @@ gridinfo_t *grid
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 				ii = X_BLK( lib );
 
-				if(nrhs==1){
-				// if(0){
+                if(gemmflag==0 || nrhs==1){
 					for (i=tid;i<knsupc;i+=block_size)
 						temp2[i]=x[ii+i];
 					__syncthreads();
@@ -4125,7 +4136,6 @@ gridinfo_t *grid
  *   Perform local block modifications: lsum[i] -= L_i,k * X[k].
  * </pre>
  */
-
  __global__ void zlsum_bmod_inv_gpu_mrhs_nvshmem
  /************************************************************************/
          (
@@ -4161,7 +4171,8 @@ gridinfo_t *grid
                  volatile int* d_statusmod,
                  int nblock_ex,
                  int maxsuper,
-         int* d_flag_mod_u
+         int* d_flag_mod_u,
+         int gemmflag
          )
  {
     doublecomplex zero = {0.0, 0.0};
@@ -4266,23 +4277,27 @@ gridinfo_t *grid
 
          Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 
-         if(nrhs==1){
+         if(gemmflag==0 || nrhs==1){
+             RHS_ITERATE(j){
              for (i = tid; i < knsupc; i+=block_size){
                  temp1=zero;
                  for (l=0 ; l<knsupc ; l++){
                     doublecomplex ctemp;
-                    zz_mult(&ctemp, &Uinv[l*knsupc+i], &x[ii+l]);
+                    zz_mult(&ctemp, &Uinv[l*knsupc+i], &x[ii+l+ j*knsupc]);
                     z_add(&temp1, &temp1, &ctemp);
 
                  }
-                 lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
+                 lsum[il+i+ j*knsupc]=temp1; //reuse lsum as temporary output as it's no longer accessed
+             }
              }
              __syncthreads();
 
+             RHS_ITERATE(j){
              for (i = tid; i < knsupc; i+=block_size){
-                 x[i + ii] = lsum[il+i];
+                 x[i + ii+j*knsupc] = lsum[il+i+j*knsupc];
                  // // if(lk==69)
                  // printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
+                }
              }
              __syncthreads();
          }else{
@@ -4365,7 +4380,7 @@ gridinfo_t *grid
          lib = LBi( k, grid ); /* Local block number, row-wise. */
          ii = X_BLK( lib );
 
-         if(nrhs==1){
+         if(gemmflag==0 || nrhs==1){
              for (i=tid;i<knsupc;i+=block_size)
                  temp2[i]=zready_x[i + maxrecvsz*keep_lk]; // Nan
              __syncthreads();
@@ -4503,6 +4518,7 @@ gridinfo_t *grid
 
 
 
+
 void zlsum_bmod_inv_gpu_wrap
 (
     superlu_dist_options_t *options,
@@ -4568,6 +4584,8 @@ if (MAXSUPER < maxsuper) {
 printf("increase MAXSUPER\n");
 exit(1);
 }
+int gemmflag = get_acc_solve()==2;
+
 
 if(procs==1){
 #ifdef SINGLE_RHS_OPT
@@ -4576,7 +4594,7 @@ if(procs==1){
     if(1){
 #endif
         dim3 dimBlock(nthread_x, nthread_y);
-        zlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
+        zlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag);
     }else{
         dim3 dimBlock(nthread_x, nthread_y,1);
         // zlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
@@ -4678,7 +4696,7 @@ if(procs==1){
                                                                     my_flag_bc, my_flag_rd,
                                                                     d_nfrecv_u, d_status,
                                                                     d_statusmod, nblock_ex,
-                                                                    maxsuper, d_flag_mod_u); //temp2_offset, temp2,maxsuper);
+                                                                    maxsuper, d_flag_mod_u,gemmflag); //temp2_offset, temp2,maxsuper);
         CUDA_CHECK(cudaGetLastError());
     }
 

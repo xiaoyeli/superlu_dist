@@ -65,7 +65,7 @@ cmake .. \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DTPL_ENABLE_MAGMALIB=OFF \
   -DTPL_MAGMA_INCLUDE_DIRS="${MAGMA_ROOT}/include" \
   -DTPL_MAGMA_LIBRARIES="${MAGMA_ROOT}/lib/libmagma.so" \
@@ -88,6 +88,7 @@ cmake .. \
 make pddrive -j16
 make pddrive3d -j16
 make f_pddrive
+make pzdrive3d_qcd 
 make python
 
 ## -DTPL_BLAS_LIBRARIES=/global/cfs/cdirs/m3894/ptlin/tpl/amd_blis/install/amd_blis-20211021-n9-gcc9.3.0/lib/libblis.a \

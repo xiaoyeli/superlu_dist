@@ -15,8 +15,8 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 
 # Problem setting:
-dims=(4 4 4 8) 
-bs=64
+dims=(8 8 8 16) 
+bs=48
 
 
 
@@ -78,7 +78,7 @@ fi
 nprows=(1)
 npcols=(1)
 npz=(1)
-nrhs=(2)
+nrhs=(1)
 NTH=1
 NREP=1
 # NODE_VAL_TOT=1
@@ -146,6 +146,7 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # for MAT in nimrod_new/nimrodMatrix-Ti.mtx nimrod_new/nimrodMatrix-nc.mtx nimrod_new/nimrodMatrix-nd.mtx nimrod_new/nimrodMatrix-V.mtx nimrod_new/nimrodMatrix-B.mtx nimrod_new/nimrodMatrix-J.mtx 
 # for MAT in nimrodMatrix-B.mtx
 for MAT in qcd.bin
+# for MAT in young4c.mtx
 do
 mkdir -p $MAT
 for ii in `seq 1 $NREP`
@@ -158,30 +159,30 @@ do
 # export SUPERLU_ACC_SOLVE=1
 # srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}_nmpipergpu${nmpipergpu}
 
-# SUPERLU_ACC_OFFLOAD=0
+# SUPERLU_ACC_OFFLOAD=1
 # export GPU3DVERSION=0
-# export SUPERLU_ACC_SOLVE=0
+# export SUPERLU_ACC_SOLVE=1
 # echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
 # srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
-
-
-# SUPERLU_ACC_OFFLOAD=1
-# export GPU3DVERSION=1
-# export SUPERLU_ACC_SOLVE=1
-# dim0=${dims[0]}
-# dim1=${dims[1]}
-# dim2=${dims[2]}
-# dim3=${dims[3]}
-# mkdir -p qcd
-# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d_qcd -bs=${bs} -dim="${dim0} ${dim1} ${dim2} ${dim3}" -grid="${NROW} ${NCOL} ${NPZ}" | tee ./qcd/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_bs${bs}_dims${dim0}_${dim1}_${dim2}_${dim3}
-
 
 
 SUPERLU_ACC_OFFLOAD=1
 export GPU3DVERSION=1
 export SUPERLU_ACC_SOLVE=1
-echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
-srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
+dim0=${dims[0]}
+dim1=${dims[1]}
+dim2=${dims[2]}
+dim3=${dims[3]}
+mkdir -p qcd
+srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d_qcd -bs=${bs} -dim="${dim0} ${dim1} ${dim2} ${dim3}" -grid="${NROW} ${NCOL} ${NPZ}" | tee ./qcd/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_bs${bs}_dims${dim0}_${dim1}_${dim2}_${dim3}
+
+
+
+# SUPERLU_ACC_OFFLOAD=1
+# export GPU3DVERSION=1
+# export SUPERLU_ACC_SOLVE=1
+# echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
 
 
 # export SUPERLU_ACC_SOLVE=1
