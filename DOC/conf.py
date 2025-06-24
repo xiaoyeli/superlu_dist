@@ -78,8 +78,8 @@ suppress_warnings = ['bibtex.duplicate_citation']
 
 html_theme = 'pydata_sphinx_theme'
 
-html_logo_light = os.path.join('images', 'logos', 'superlu-logo')
-html_static_path = ['_static', html_logo_light]
+html_logo_light = os.path.join('images', 'logos', 'superlu-logo.png')
+# html_static_path = ['_static', html_logo_light]
 
 # use much smaller font for h1, h2 etc. They are absurdly large in the standard style
 # https://pydata-sphinx-theme.readthedocs.io/en/v0.12.0/user_guide/styling.html
@@ -88,7 +88,7 @@ html_css_files = [
 ]
 
 html_logo = html_logo_light
-html_favicon = os.path.join('images', 'logos', 'superlu-logo')
+# html_favicon = os.path.join('images', 'logos', 'superlu-logo')
 #html_last_updated_fmt = r'%Y-%m-%dT%H:%M:%S%z (' + git_describe_version + ')'
 
 

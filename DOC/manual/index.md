@@ -8,7 +8,7 @@
 \break
 \break
 \break
-{\Huge\textbf{SuperLU Users Manual}}
+{\Huge\textbf{SuperLU Users Manual ddddddddddddddddddddddddddddddddddd }}
 ```
 
 **Lawrence Berkeley National Laboratory**
