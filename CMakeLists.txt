@@ -70,8 +70,10 @@ include(CheckLanguage)
 # Usual initialization stuff
 #
 ######################################################################
-set(CMAKE_CXX_STANDARD 11)
-#set(CMAKE_CXX_STANDARD 14)
+if (NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 11)
+  #set(CMAKE_CXX_STANDARD 14)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #message("!!!! top: cxx_implicit='${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}'")
@@ -521,7 +523,9 @@ if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
 
   message("-- Enabled support for COMBBLAS")
   set(COMBBLAS_FOUND TRUE)
-  set(CMAKE_CXX_STANDARD 14)  # CombBLAS requires c++14
+  if (NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 14)  # CombBLAS requires c++14
+  endif()
 
   set(COMBBLAS_LIB ${TPL_COMBBLAS_LIBRARIES})
   # fix up COMBBLAS library names
