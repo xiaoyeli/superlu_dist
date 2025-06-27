@@ -1,0 +1,84 @@
+\begin{thebibliography}{10}
+
+\bibitem{lapackmanual2}
+E.~Anderson, Z.~Bai, C.~Bischof, J.~Demmel, J.~Dongarra, J.~Du~Croz,
+  A.~Greenbaum, S.~Hammarling, A.~McKenney, S.~Ostrouchov, and D.~Sorensen.
+\newblock {\em {LAPACK} Users' Guide, Release 2.0}.
+\newblock {SIAM}, Philadelphia, 1995.
+\newblock 324 pages.
+
+\bibitem{arioli89}
+M.~Arioli, J.~W. Demmel, and I.~S. Duff.
+\newblock Solving sparse linear systems with sparse backward error.
+\newblock {\em SIAM J. Matrix Anal. Appl.}, 10(2):165--190, April 1989.
+
+\bibitem{davis96}
+Timothy~A. Davis, John~R. Gilbert, Esmond Ng, and Barry Peyton.
+\newblock Approximate minimum degree ordering for unsymmetric matrices.
+\newblock Talk presented at XIII Householder Symposium on Numerical Algebra,
+  June 1996. Journal version in preparation.
+
+\bibitem{superlu95}
+James~W. Demmel, Stanley~C. Eisenstat, John~R. Gilbert, Xiaoye~S. Li, and
+  Joseph~W.H. Liu.
+\newblock A supernodal approach to sparse partial pivoting.
+\newblock Technical Report UCB//CSD-95-883, Computer Science Division, U.C.
+  Berkeley, July 1995.
+\newblock (Xerox PARC report CSL-95-03, LAPACK Working Note \#103).
+
+\bibitem{superlu_shm97}
+James~W. Demmel, John~R. Gilbert, and Xiaoye~S. Li.
+\newblock An asynchronous parallel supernodal algorithm for sparse gaussian
+  elimination.
+\newblock Technical Report UCB//CSD-97-943, Computer Science Division, U.C.
+  Berkeley, Feburary 1997.
+\newblock LAPACK Working Note \#124, Submitted to SIAM J. Matrix Anal. Appl.
+
+\bibitem{duffgrimes92}
+I.S Duff, R.G Grimes, and J.G Lewis.
+\newblock Users' guide for the harwell-boeing sparse matrix collection (release
+  1).
+\newblock Technical Report RAL-92-086, Rutherford Appleton Laboratory, December
+  1992.
+
+\bibitem{georgeliung88}
+Alan George, Joseph Liu, and Esmond Ng.
+\newblock A data structure for sparse {QR} and {LU} factorizations.
+\newblock {\em SIAM J. Sci. Stat. Comput.}, 9:100--121, 1988.
+
+\bibitem{georgeng87}
+Alan George and Esmond Ng.
+\newblock Symbolic factorization for sparse {G}aussian elimination with partial
+  pivoting.
+\newblock {\em SIAM J. Sci. Stat. Comput.}, 8(6):877--898, 1987.
+
+\bibitem{gilbertngpeyton94b}
+John~R. Gilbert, Esmond~G. Ng, and Barry~W. Peyton.
+\newblock Computing row and column counts for sparse {QR} factorization.
+\newblock Talk presented at SIAM Symposium on Applied Linear Algebra, June
+  1994. Journal version in preparation.
+
+\bibitem{higham89}
+N.~J. Higham.
+\newblock Algorithm 674: {FORTRAN} codes for estimating the one-norm of a real
+  or complex matrix, with applications to condition estimation.
+\newblock {\em {ACM} Trans. Math. Soft.}, 14:381--396, 1988.
+
+\bibitem{li96}
+Xiaoye~S. Li.
+\newblock Sparse {G}aussian elimination on high performance computers.
+\newblock Technical Report UCB//CSD-96-919, Computer Science Division, U.C.
+  Berkeley, September 1996.
+\newblock Ph.D dissertation.
+
+\bibitem{liu85}
+Joseph~W.H. Liu.
+\newblock Modification of the minimum degree algorithm by multiple elimination.
+\newblock {\em ACM Trans. Math. Software}, 11:141--153, 1985.
+
+\bibitem{posix}
+{POSIX} {S}ystem {A}pplication {P}rogram {I}nterface: Threads extension [{C}
+  {L}anguage], {POSIX} 1003.1c draft 4.
+\newblock IEEE Standards Department.
+
+\end{thebibliography}

@@ -1,0 +1,1552 @@
+% \section{Introduction}
+% \label{sec:intro}
+
+\section{About {\superlu}}
+
+In this chapter, SuperLU will always mean Sequential SuperLU.
+{\superlu} package contains a set of subroutines to solve sparse 
+linear systems $AX=B$. Here $A$ is a square, nonsingular, $n\times n$
+sparse matrix, and  
+$X$ and $B$ are dense $n\times nrhs$ matrices, where 
+$nrhs$ is the number of right-hand sides and solution vectors.
+Matrix $A$ need not be symmetric or definite; indeed, {\superlu} is
+particularly appropriate for matrices with very unsymmetric structure.
+
+The package uses $LU$ decomposition with partial (or threshold) pivoting,
+and forward/back substitutions. The columns of $A$ may be preordered before 
+factorization (either by the user or by \superlu); 
+this preordering for sparsity is completely separate from 
+the factorization. To improve backward stability, we provide working 
+precision iterative refinement subroutines~\cite{arioli89}. 
+Routines are also available to 
+equilibrate the system, estimate the condition number, calculate 
+the relative backward error, and estimate error bounds for the 
+refined solutions. We also include a Matlab MEX-file interface, so that
+our factor and solve routines can be called as alternatives to those 
+built into Matlab. The $LU$ factorization routines can handle
+non-square matrices, but the triangular solves are performed only
+for square matrices.
+
+    Starting from Version 4.0, we provide the incomplete factorization
+(ILU) routines which can be used as preconditioners for iterative
+solvers~\cite{lishao10}.
+
+    The factorization algorithm uses a graph reduction technique to 
+reduce graph traversal time in the symbolic analysis. We exploit
+dense submatrices in the numerical kernel, and organize computational
+loops in a way that reduces data movement between levels of the
+memory hierarchy.
+The resulting algorithm is highly efficient on modern architectures.
+The performance gains are particularly evident for large problems.
+There are ``tuning parameters'' to optimize the peak performance as
+a function of cache size. For a detailed description of the algorithm,
+see reference~\cite{superlu99}.
+
+    \superlu\ is implemented in ANSI C, and must be compiled with a standard
+ANSI C compiler. It includes versions for both real and complex
+matrices, in both single and double precision. 
+The file names for the 
+single-precision real version start with letter ``s'' (such as {\tt sgstrf.c});
+the file names for the double-precision real version start with letter ``d'' 
+(such as {\tt dgstrf.c}); the file names for the single-precision complex
+version start with letter ``c'' (such as {\tt cgstrf.c}); the file names
+for the double-precision complex version start with letter ``z'' 
+(such as {\tt zgstrf.c}).
+
+% \subsection{Availability}
+
+\section{How to call a {\superlu} routine}
+\label{sec:ex5x5}
+As a simple example, let us consider how to solve
+a $5\times 5$ sparse linear system $AX=B$, by calling a driver
+routine {\tt dgssv()}. Figure~\ref{5x5} shows matrix $A$, and its $L$ and $U$
+factors. This sample program is located in {\tt SuperLU/EXAMPLE/superlu.c.}
+
+\begin{figure}[t]
+  \newcommand{\s}{\space}
+  \newcommand{\x}{\bullet}
+  \newcommand{\f}{\circ}
+  \begin{displaymath}
+  \begin{array}{cc}
+{\arraycolsep=3pt
+%\normalsize
+\left(
+\begin{array}{rrrrr}
+s  	& \s 	& u 	& u 	& \s \\
+l  	& u  	& \s 	& \s 	& \s \\
+\s 	& l 	& p  	& \s 	& \s \\
+\s 	& \s 	& \s 	& e  	& u \\
+l 	& l 	& \s 	& \s 	& r 
+\end{array}
+\right)  }  \:\:\: &
+{\arraycolsep=3pt
+%\normalsize
+\left(
+\begin{array}{rrrrr}
+19.00  	& \s 	& 21.00 & 21.00	& \s \\
+0.63 	& 21.00	& -13.26& -13.26& \s \\
+\s 	& 0.57 	& 23.58	& 7.58 	& \s \\
+\s 	& \s 	& \s 	& 5.00 	& 21.00 \\
+0.63 	& 0.57 	& -0.24	& -0.77	& 34.20
+\end{array}
+\right)  }  \\ 
+\: & \: \\
+\mbox{Original matrix $A$} 	& \mbox{Factors $F=L+U-I$} \\
+    s = 19, u = 21, p = 16, e = 5, r = 18, l = 12  & \\
+  \end{array}
+  \end{displaymath}
+\vspace*{-0.2in}
+\caption{A $5\times 5$ matrix and its $L$ and $U$ factors.}
+\label{5x5}
+\end{figure}
+
+The program first initializes the three arrays,
+{\tt a[], asub[]} and {\tt xa[]}, which store the nonzero coefficients of
+matrix $A$, their row indices, and the indices indicating the beginning of
+each column in the coefficient and row index arrays.
+This storage format is called compressed column format, also known as
+Harwell-Boeing format~\cite{duffgrimes92}.
+% The program first reads the matrix $A$ stored 
+% in the Harwell-Boeing format. See the file {\tt dreadhb.c} or
+% reference~\cite{duffgrimes92} for the detailed format. In addition 
+% to reading the matrix, {\tt dreadhb} allocates storage for the three arrays,
+% The user can supply
+% other routine to replace {\tt dreadhb}, if his or her matrix is
+% stored or generated in other way. 
+Next, the two utility routines
+{\tt dCreate\_CompCol\_Matrix()} and {\tt dCreate\_Dense\_Matrix()}
+are called to set up the matrix structures for $A$ and $B$, respectively.
+The routine {\tt set\_default\_options()} sets the default values
+to the input {\tt options} argument. This controls how the matrix
+will be factorized and how the system will be solved.
+After calling the {\superlu} routine {\tt dgssv()}, the $B$ matrix is
+overwritten by the solution matrix $X$.
+In the end, all the dynamically allocated data structures are de-allocated
+by calling various utility routines.%
+
+{\superlu} can perform more general tasks, which will be
+explained later.
+
+% Additional example programs are provided in Section~\ref{sec:example}.
+
+\begin{verbatim}
+#include "slu_ddefs.h"
+
+main(int argc, char *argv[])
+{
+/*
+ * Purpose
+ * =======
+ * 
+ * This is the small 5x5 example used in the Sections 2 and 3 of the 
+ * Users' Guide to illustrate how to call a SuperLU routine, and the
+ * matrix data structures used by SuperLU.
+ *
+ */
+    SuperMatrix A, L, U, B;
+    double   *a, *rhs;
+    double   s, u, p, e, r, l;
+    int      *asub, *xa;
+    int      *perm_r; /* row permutations from partial pivoting */
+    int      *perm_c; /* column permutation vector */
+    int      nrhs, info, i, m, n, nnz, permc_spec;
+    superlu_options_t options;
+    SuperLUStat_t stat;
+
+    /* Initialize matrix A. */
+    m = n = 5;
+    nnz = 12;
+    if ( !(a = doubleMalloc(nnz)) ) ABORT("Malloc fails for a[].");
+    if ( !(asub = intMalloc(nnz)) ) ABORT("Malloc fails for asub[].");
+    if ( !(xa = intMalloc(n+1)) ) ABORT("Malloc fails for xa[].");
+    s = 19.0; u = 21.0; p = 16.0; e = 5.0; r = 18.0; l = 12.0;
+    a[0] = s; a[1] = l; a[2] = l; a[3] = u; a[4] = l; a[5] = l;
+    a[6] = u; a[7] = p; a[8] = u; a[9] = e; a[10]= u; a[11]= r;
+    asub[0] = 0; asub[1] = 1; asub[2] = 4; asub[3] = 1;
+    asub[4] = 2; asub[5] = 4; asub[6] = 0; asub[7] = 2;
+    asub[8] = 0; asub[9] = 3; asub[10]= 3; asub[11]= 4;
+    xa[0] = 0; xa[1] = 3; xa[2] = 6; xa[3] = 8; xa[4] = 10; xa[5] = 12;
+
+    /* Create matrix A in the format expected by SuperLU. */
+    dCreate_CompCol_Matrix(&A, m, n, nnz, a, asub, xa, SLU_NC, SLU_D, SLU_GE);
+    
+    /* Create right-hand side matrix B. */
+    nrhs = 1;
+    if ( !(rhs = doubleMalloc(m * nrhs)) ) ABORT("Malloc fails for rhs[].");
+    for (i = 0; i < m; ++i) rhs[i] = 1.0;
+    dCreate_Dense_Matrix(&B, m, nrhs, rhs, m, SLU_DN, SLU_D, SLU_GE);
+
+    if ( !(perm_r = intMalloc(m)) ) ABORT("Malloc fails for perm_r[].");
+    if ( !(perm_c = intMalloc(n)) ) ABORT("Malloc fails for perm_c[].");
+
+    /* Set the default input options. */
+    set_default_options(&options);
+    options.ColPerm = NATURAL;
+
+    /* Initialize the statistics variables. */
+    StatInit(&stat);
+
+    /* Solve the linear system. */
+    dgssv(&options, &A, perm_c, perm_r, &L, &U, &B, &stat, &info);
+    
+    dPrint_CompCol_Matrix("A", &A);
+    dPrint_CompCol_Matrix("U", &U);
+    dPrint_SuperNode_Matrix("L", &L);
+    print_int_vec("\nperm_r", m, perm_r);
+
+    /* De-allocate storage */
+    SUPERLU_FREE (rhs);
+    SUPERLU_FREE (perm_r);
+    SUPERLU_FREE (perm_c);
+    Destroy_CompCol_Matrix(&A);
+    Destroy_SuperMatrix_Store(&B);
+    Destroy_SuperNode_Matrix(&L);
+    Destroy_CompCol_Matrix(&U);
+    StatFree(&stat);
+}
+\end{verbatim}
+
+
+\section{Matrix data structures}
+\label{sec:rep}
+
+    \superlu\ uses a principal data structure {\tt SuperMatrix} (defined in
+{\tt SRC/supermatrix.h}) to represent a general matrix, sparse or dense. 
+ Figure~\ref{fig:struct} gives the specification of the {\tt SuperMatrix} 
+structure. The {\tt SuperMatrix} structure contains two levels of fields.
+The first level defines all the properties of a matrix which are independent
+of how it is stored in memory. In particular, it specifies the following 
+three orthogonal properties: storage type ({\tt Stype}) indicates the 
+type of the storage scheme in {\tt *Store}; data type ({\tt Dtype}) 
+encodes the four precisions; 
+mathematical type ({\tt Mtype}) specifies some mathematical properties. 
+The second level ({\tt *Store}) points to the actual storage
+used to store the matrix. We associate with each {\tt Stype XX}
+a storage format called {\tt XXformat}, such as {\tt NCformat},
+{\tt SCformat}, etc.
+
+\begin{figure}
+\begin{verbatim}
+
+typedef struct {
+    Stype_t Stype; /* Storage type: indicates the storage format of *Store. */
+    Dtype_t Dtype; /* Data type. */
+    Mtype_t Mtype; /* Mathematical type */
+    int  nrow;     /* number of rows */
+    int  ncol;     /* number of columns */
+    void *Store;   /* pointer to the actual storage of the matrix */
+} SuperMatrix;
+
+typedef enum {
+    SLU_NC,        /* column-wise, not supernodal */
+    SLU_NR,        /* row-wise, not supernodal */
+    SLU_SC,        /* column-wise, supernodal */
+    SLU_SR,        /* row-wise, supernodal */
+    SLU_NCP,       /* column-wise, not supernodal, permuted by columns
+                     (After column permutation, the consecutive columns of 
+                      nonzeros may not be stored contiguously. */
+    SLU_DN,        /* Fortran style column-wise storage for dense matrix */
+    SLU_NR_loc     /* distributed compressed row format */ 
+} Stype_t;
+
+typedef enum {
+    SLU_S,         /* single */
+    SLU_D,         /* double */
+    SLU_C,         /* single-complex */
+    SLU_Z          /* double-complex */
+} Dtype_t;
+
+typedef enum {
+    SLU_GE,        /* general */
+    SLU_TRLU,      /* lower triangular, unit diagonal */
+    SLU_TRUU,      /* upper triangular, unit diagonal */
+    SLU_TRL,       /* lower triangular */
+    SLU_TRU,       /* upper triangular */
+    SLU_SYL,       /* symmetric, store lower half */
+    SLU_SYU,       /* symmetric, store upper half */
+    SLU_HEL,       /* Hermitian, store lower half */
+    SLU_HEU        /* Hermitian, store upper half */
+} Mtype_t;
+
+\end{verbatim}
+\caption{{\tt SuperMatrix} data structure.}
+\label{fig:struct}
+\end{figure}
+
+The {\tt SuperMatrix} type so defined can accommodate various types 
+of matrix structures and appropriate operations to be applied on them, 
+although currently \superlu\ implements only a subset of this collection. 
+% \SuperLU\ assumes that all matrices are stored in column-major order. 
+Specifically, matrices $A$, $L$, $U$, $B$, and $X$ can have the following
+types:
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|c|} \hline
+            &$A$     	  	&$L$     &$U$     &$B$     &$X$ \\\hline
+{\tt Stype} &\NC\ or \NR     	&\SC     &\NC     &\DN     &\DN \\
+{\tt Dtype}\footnotemark
+            &any      		&any     &any     &any     &any  \\
+{\tt Mtype} &\GE     		&\TRLU   &\TRU    &\GE     &\GE \\\hline
+\end{tabular}
+\footnotetext{{\tt Dtype} can be one of \S, \D, {\C} or \Z.}
+\end{center}
+
+In what follows, we illustrate the storage schemes defined by {\tt Stype}.
+Following C's convention, all array indices and locations below are zero-based.
+
+\begin{itemize}
+\item
+$A$ may have storage type {\NC} or {\NR}.
+The {\NC} format is the same as the Harwell-Boeing sparse 
+matrix format~\cite{duffgrimes92}, that is, the compressed column storage.
+\begin{verbatim}
+    typedef struct {
+        int  nnz;     /* number of nonzeros in the matrix */
+        void *nzval;  /* array of nonzero values packed by column */
+        int  *rowind; /* array of row indices of the nonzeros */
+        int  *colptr; /* colptr[j] stores the location in nzval[] and rowind[]
+                         which starts column j. It has ncol+1 entries, 
+                         and colptr[ncol] = nnz. */
+    } NCformat;
+\end{verbatim}
+
+The {\NR} format is the compressed row storage defined below.
+\begin{verbatim}
+    typedef struct {
+        int  nnz;     /* number of nonzeros in the matrix */
+        void *nzval;  /* array of nonzero values packed by row */
+        int  *colind; /* array of column indices of the nonzeros */
+        int  *rowptr; /* rowptr[j] stores the location in nzval[] and colind[]
+                         which starts row j. It has nrow+1 entries,
+                         and rowptr[nrow] = nnz. */
+    } NRformat;
+\end{verbatim}
+
+The factorization and solve routines in {\superlu} are designed to
+handle column-wise storage only. If the input matrix $A$ is in row-oriented
+storage, i.e., in {\NR} format, then the driver routines ({\tt dgssv()} and
+{\tt dgssvx()}) actually perform the $LU$ decomposition on $A^T$, which
+is column-wise, and solve the system using the $L^T$ and $U^T$ factors.
+The data structures holding $L$ and $U$ on output are different (swapped)
+from the data structures you get from column-wise input. For more detailed
+descriptions about this process, please refer to the leading comments 
+of the routines {\tt dgssv()} and {\tt dgssvx()}.
+%%%% in Appendix~\ref{chap:superlu_spec}.
+
+Alternatively, the users may call a utility routine
+{\tt dCompRow\_to\_CompCol()}
+to convert the input matrix in {\NR} format to another matrix
+in {\NC} format, before calling SuperLU. The definition of this routine is
+\begin{verbatim}
+    void dCompRow_to_CompCol(int m, int n, int nnz,
+                             double *a, int *colind, int *rowptr,
+                             double **at, int **rowind, int **colptr);
+\end{verbatim}
+
+This conversion takes time proportional to the number of nonzeros in $A$.
+However, it requires storage for a separate copy of matrix $A$.
+
+\item
+$L$ is a supernodal matrix with the storage type {\SC}.
+Due to the supernodal structure, $L$ is in fact stored as a 
+sparse block lower triangular matrix~\cite{superlu99}.
+
+\begin{verbatim}
+    typedef struct {
+        int  nnz;           /* number of nonzeros in the matrix */
+        int  nsuper;        /* index of the last supernode */
+        void *nzval;        /* array of nonzero values packed by column */
+        int  *nzval_colptr; /* nzval_colptr[j] stores the location in
+                               nzval[] which starts column j */
+        int  *rowind;       /* array of compressed row indices of 
+                               rectangular supernodes */
+        int  *rowind_colptr;/* rowind_colptr[j] stores the location in
+                               rowind[] which starts column j */
+        int  *col_to_sup;   /* col_to_sup[j] is the supernode number to 
+                               which column j belongs */
+        int  *sup_to_col;   /* sup_to_col[s] points to the starting column
+                               of the s-th supernode */
+    } SCformat;
+\end{verbatim}
+
+\item
+Both $B$ and $X$ are stored as conventional two-dimensional arrays in
+column-major order, with the storage type {\DN}.
+\begin{verbatim}
+    typedef struct {
+        int lda;     /* leading dimension */
+        void *nzval; /* array of size lda-by-ncol to represent 
+                        a dense matrix */
+    } DNformat;
+\end{verbatim}
+\end{itemize}
+
+Figure~\ref{fig:matrixeg} shows the data structures for the %5\times 5$
+example matrices in Figure~\ref{5x5}.
+
+For a description of {\tt NCPformat}, see section~\ref{sec:permX}.
+
+\input{fig5x5}
+
+
+\section{{\tt Options} argument}
+The {\tt options} argument is the input argument to control
+the behaviour of the library. The user can tell the solver how the linear
+systems should be solved based on some known characteristics of the system.
+For example, for diagonally dominant matrices, 
+choosing the diagonal pivots ensures stability; there is no need for
+numerical pivoting (i.e., $P_r$ can be an Identity matrix).
+In another situation where a sequence of matrices with the
+same sparsity pattern need be factorized, the column
+permutation $P_c$ (and also the row permutation $P_r$, if
+the numerical values are similar) need be computed only
+once, and reused thereafter.
+In these cases, the solvers' performance can be much improved over
+using the default settings.
+{\tt Options} is implemented as a C structure containing the
+following fields:
+\begin{itemize}
+\item {\tt Fact}\\
+    Specifies whether or not the factored form of the matrix
+    $A$ is supplied on entry, and if not, how the matrix $A$ will
+    be factorized base on the previous history, such as factor from
+    scratch, reuse $P_c$ and/or $P_r$, or reuse the data structures of $L$
+    and $U$. 
+    {\tt fact} can be one of:
+    \begin{itemize}
+    \item {\tt DOFACT}: the matrix $A$ will be factorized from scratch.
+    \item {\tt SamePattern}: the matrix $A$ will be factorized assuming
+	that a factorization of a matrix with the same sparsity pattern
+	was performed prior to this one. Therefore, this factorization
+        will reuse column permutation vector {\tt perm\_c}.
+    \item {\tt SampPattern\_SameRowPerm}: the matrix $A$ will be factorized
+	assuming that a factorization of a matrix with the same sparsity
+	pattern and similar numerical values was performed prior to this one.
+        Therefore, this factorization will reuse both row and column
+        permutation vectors {\tt perm\_r} and {\tt perm\_c}, both row and
+	column scaling factors $D_r$ and $D_c$, and the distributed data
+	structure set up from the previous symbolic factorization.
+    \item {\tt FACTORED}: the factored form of $A$ is input.
+    \end{itemize}
+\item {\tt Equil}  \{ {\tt YES} $|$ {\tt NO} \} \\
+    Specifies whether to equilibrate the system (scale $A$'s rows and columns
+    to have unit norm).
+\item {\tt ColPerm}\\
+    Specifies how to permute the columns of the matrix for sparsity
+    preservation.
+    \begin{itemize}
+    \item {\tt NATURAL}: natural ordering.
+    \item {\tt MMD\_ATA}: minimum degree ordering on the structure of
+			$A^TA$.
+    \item {\tt MMD\_AT\_PLUS\_A}: minimum degree ordering on the
+			structure of $A^T+A$.
+    \item {\tt COLAMD}: approximate minimum degree column ordering
+    \item {\tt MY\_PERMC}: use the ordering given in {\tt perm\_c} input by
+	                the user.
+    \end{itemize}
+\item {\tt Trans}  \{ {\tt NOTRANS} $|$ {\tt TRANS} $|$ {\tt CONJ} \} \\
+    Specifies whether to solve the transposed system.
+\item {\tt IterRefine} \\
+    Specifies whether to perform iterative refinement, and in what
+    precision to compute the residual.
+    \begin{itemize}
+    \item {\tt NO}: no iterative refinement
+    \item {\tt SINGLE}: perform iterative refinement in single precision
+    \item {\tt DOUBLE}: perform iterative refinement in double precision
+    \item {\tt EXTRA}: perform iterative refinement in extra precision
+    \end{itemize}
+\item {\tt DiagPivotThresh}  $[0.0, 1.0]$ \\
+    Specifies the threshold used for a diagonal entry to be an
+    acceptable pivot.
+\item {\tt SymmetricMode}  \{ {\tt YES} $|$ {\tt NO} \} \\
+    Specifies whether to use the symmetric mode. Symmetric mode gives 
+    preference to diagonal pivots, and uses an $(A^T + A)$-based column
+    permutation algorithm.
+\item {\tt PivotGrowth} \{ {\tt YES} $|$ {\tt NO} \} \\
+    Specifies whether to compute the reciprocal pivot growth.
+\item {\tt ConditionNumber} \{ {\tt YES} $|$ {\tt NO} \} \\
+    Specifies whether to compute the reciprocal condition number.
+\item {\tt RowPerm} (only for ILU or SuperLU\_DIST) \\
+    Specifies whether to permute the rows of the original matrix.
+    \begin{itemize}
+    \item {\tt NO}: not to permute the rows
+    \item {\tt LargeDiag\_MC64}: use a serial, weighted bipartite matching
+      algorithm implemented in MC64 to permute the rows to make the
+      diagonal large relative to the off-diagonal~\cite{duffkoster01}.
+    \item {\tt LargeDiag\_AWPM}: use a parallel, approximate weighted bipartite
+      matching algorithm implemented in CombBLAS to permute the rows to
+      make the diagonal large relative to the off-diagonal~\cite{awpm}.
+    \item {\tt MY\_PERMR}: use the permutation given by the user
+    \end{itemize}
+\item {\tt ILU\_DropRule} \\
+    Specifies the dropping rule for ILU: ( Default: {\tt DROP\_BASIC | DROP\_AREA} )
+  \begin{itemize}
+  \item {\tt DROP\_BASIC:} Basic dropping rule, supernodal based ILUTP($\tau$).
+  \item {\tt DROP\_PROWS:} Supernodal based ILUTP($p,\tau$), 
+                   $p = \gamma\cdot nnz(A)/n$.
+  \item {\tt DROP\_COLUMN:} Variant of ILUTP($p,\tau$), for j-th column,
+			      $p = \gamma \cdot nnz(A(:,j))$.
+  \item {\tt DROP\_AREA:}    Variation of ILUTP, for j-th column, use
+		      $nnz(F(:,1:j)) / nnz(A(:,1:j))$ to control memory.
+  \item {\tt DROP\_DYNAMIC:} Dynamically adjust the threshold $\tau$ during factorizaion:\\
+			  If $nnz(L(:,1:j)) / nnz(A(:,1:j)) > \gamma$,
+ 			     $\tau_L(j) := \min(\tau_0, \tau_L(j-1)\cdot 2)$;
+ 			  Otherwise
+			    $\tau_L(j) := \max(\tau_0, \tau_L(j-1) / 2)$. 
+ 			  $\tau_U(j)$ uses the similar rule.
+  \item {\tt DROP\_INTERP:}  Compute the second dropping threshold by
+ 	                  interpolation instead of quick select (default).
+   		          In this case, the actual fill ratio is not
+ 			  guaranteed to be smaller than gamma.
+  \end{itemize}
+\item {\tt ILU\_DropTol}  $[0.0, 1.0]$ \\
+    Specifies the numerical dropping threshold for ILU.
+\item {\tt ILU\_FillFactor} ($ \ge 1.0 $)\\
+    Specifies the expected fill ratio upper bound, $\gamma$, for ILU.
+\item {\tt ILU\_MILU} \{ {\tt SILU} $|$ {\tt SMILU\_1} $|$ {\tt
+  SMILU\_2} $|$ {\tt SMILU\_3} \} \\
+    Specifies which version of modified ILU to use.
+\item {\tt PrintStat}  \{ {\tt YES} $|$ {\tt NO} \} \\
+    Specifies whether to print the solver's statistics.
+\end{itemize}
+
+The routine {\tt set\_default\_options()} sets the following default
+values:
+\begin{verbatim}
+    Fact              = DOFACT       /* factor from scratch */
+    Equil             = YES             
+    ColPerm           = COLAMD
+    Trans             = NOTRANS
+    IterRefine        = NOREFINE
+    DiagPivotThresh   = 1.0          /* partial pivoting */
+    SymmetricMode     = NO
+    PivotGrowth       = NO;
+    ConditionNumber   = NO;
+    PrintStat         = YES
+\end{verbatim}
+
+To use the ILU routines, such as {\tt dgsitrf()}, the user should call
+{\tt  ilu\_set\_default\_options()} to set the default values
+({\tt set\_default\_options()} is first called in this routine prior
+to the following):
+\begin{verbatim}
+    DiagPivotThresh   = 0.1          /* partial pivoting */
+    RowPerm           = LargeDiag
+    ILU_DropRule      = DROP_BASIC | DROP_AREA;
+    ILU_DropTol       = 1e-4;
+    ILU_FillFactor    = 10.0;
+    ILU_Norm          = INF_NORM;
+    ILU_MILU          = SILU;        /* not to use MILU */   
+    ILU_FillTol       = 1e-2;
+\end{verbatim}
+
+The other possible values for each field are documented in the
+source code {\tt SRC/slu\_util.h}.
+The users can reset each default value according to their needs.
+
+
+\section{Permutations}
+\label{sec:perm}
+Two permutation matrices are involved in the solution process. In fact, 
+the actual factorization
+we perform is $P_rAP_c^T=LU$, where $P_r$ is determined from partial pivoting 
+(with a threshold pivoting option), and $P_c$ is a column permutation
+chosen either by the user or {\superlu}, usually to make the $L$
+and $U$ factors as sparse as possible.
+$P_r$ and $P_c$ are represented by two integer vectors
+{\tt perm\_r[]} and {\tt perm\_c[]}, which are the permutations
+of the integers $(0:m-1)$ and $(0:n-1)$, respectively.
+
+\subsection{Ordering for sparsity}
+\label{sec:permX}
+Column reordering for sparsity is completely separate from the $LU$ 
+factorization. The column permutation $P_c$ should be applied before
+calling the factorization routine {\tt dgstrf()}. In principle, any ordering
+heuristic used for symmetric matrices can be applied to $A^TA$ 
+(or $A+A^T$ if the matrix is nearly structurally symmetric) to obtain $P_c$.
+Currently, we provide the following ordering options through {\tt options}
+argument. The {\tt options.ColPerm} field can take the following values:
+\begin{itemize}
+\item {\tt NATURAL}: use natural ordefring (i.e., $P_c = I$).
+\item {\tt MMD\_AT\_PLUS\_A}: use minimum degree ordering on the
+			structure of $A^T+A$.
+\item {\tt MMD\_ATA}: use minimum degree ordering on the structure of $A^TA$.
+\item {\tt COLAMD}: use approximate minimum degree column ordering.
+\item {\tt MY\_PERMC}: use the ordering given in the permutation
+               vector {\tt perm\_c[]}, which is input by the user.
+\end{itemize}
+
+% The MMD code is due to Joseph W.H. Liu, which implements a variant of
+% the minimum degree ordering algorithm~\cite{liu85}.
+
+If {\tt options.ColPerm} is set to the last value, the library will use
+the permutation vector {\tt perm\_c[]} as an input, which may be obtained
+from any other ordering algorithm. For example, the nested-dissection type
+of ordering codes include
+Metis~\cite{kaku:98a}, Chaco~\cite{hele:95} and Scotch~\cite{scotch}.
+% {\superlu} also contains user-callable routines to form the structure
+% of $A^T + A$ or $A^TA$. These routines are named {\tt at\_plus\_a()}
+% and {\tt getata()}.
+
+Alternatively, the users can provide their own column permutation vector.
+For example, it may be an ordering suitable for the underlying physical
+problem. Both driver routines {\tt dgssv} and {\tt dgssvx} take 
+{\tt perm\_c[]} as an input argument.
+% In the future, we will augment {\tt get\_perm\_c} functionality with more
+% ordering algorithms, such as approximate minimum degree ordering
+% on the column intersection graph of $A$~\cite{davisgilbert00}.
+
+After permutation $P_c$ is applied to $A$, we use {\NCP} format
+to represent the permuted matrix $AP_c^T$, in which the consecutive 
+columns of nonzeros may not be stored contiguously in memory.
+Therefore, we need two separate arrays of pointers, {\tt colbeg[]} and 
+{\tt colend[]}, to indicate the beginning and end of
+each column in {\tt nzval[]} and {\tt rowind[]}.
+\begin{verbatim}
+    typedef struct {
+        int  nnz;     /* number of nonzeros in the matrix */
+        void *nzval;  /* array of nonzero values, packed by column */
+        int  *rowind; /* array of row indices of the nonzeros */
+        int  *colbeg; /* colbeg[j] points to the location in nzval[] and rowind[]
+                         which starts column j */
+        int  *colend; /* colend[j] points to one past the location in nzval[]
+                         and rowind[] which ends column j */
+    } NCPformat;
+\end{verbatim}
+
+
+\subsection{Partial pivoting with threshold}
+We have included a threshold pivoting parameter $u\in [0,1]$ to control 
+numerical stability. The user can choose to use a row permutation obtained
+from a previous factorization. (The argument
+{\tt options.Fact = SamePattern\_SameRowPerm} should be
+passed to the factorization routine {\tt dgstrf()}.) 
+The pivoting subroutine {\tt dpivotL()} checks whether this choice of pivot
+satisfies the threshold; if not, it will try the diagonal element.
+If neither of the above satisfies the threshold, 
+the maximum magnitude element in the column will be used as the pivot.
+The pseudo-code of the pivoting policy for column $j$ is given below.
+
+\begin{tabbing}
+junk \= junk \= junk \= \kill
+\> (1)\> compute $thresh = u~|a_{mj}|$, where $|a_{mj}|=\max_{i\ge j}|a_{ij}|$;
+\\ \\
+\> (2)\> {\bf if} user specifies pivot row $k$ {\bf and}
+                  $|a_{kj}|\ge thresh$ {\bf and} $a_{kj}\ne 0$ {\bf then} \\
+\>    \> \>        pivot row $= k$; \\
+\>    \>  {\bf else if } $|a_{jj}| \ge thresh$ 
+                         {\bf and} $a_{jj}\ne 0$ {\bf then} \\
+\>    \> \>        pivot row $= j$; \\
+\>    \>  {\bf else} \\
+\>    \> \>        pivot row $= m$; \\
+\>    \>  {\bf endif};
+\end{tabbing}
+
+Two special values of $u$ result in the following two strategies:
+\begin{itemize}
+\item $u=0.0$: either use user-specified pivot order if available, 
+               or else use diagonal pivot;
+\item $u=1.0$: classical partial pivoting.
+\end{itemize}
+
+\section{Symmetric Mode}
+In many applications, matrix $A$ may be diagonally dominant or nearly so.
+In this case, pivoting on the diagonal is sufficient for stability and
+is preferable for sparsity to off-diagonal pivoting.
+To do this, the user can set a small (less-than-one) diagonal pivot threshold
+(e.g., 0.0, 0.01) and choose an ($A^T + A$)--based column permutation
+algorithm. We call this setting {\em symmetric mode}.
+In this case, the {\tt options.SymmetricMode = YES} must be set.
+
+Note that, when a diagonal entry is smaller than the
+threshold, the code will still choose an off-diagonal pivot.
+That is, the row permutation $P_r$ may not be Identity.
+Please refer to~\cite{li05} for more discussion on the symmetric mode.
+
+
+\section{Incomplete LU factorization (ILU) preconditioner}
+Starting from SuperLU version 4.0, we provide the ILU routines to be
+used as preconditioners for iterative solvers.  Our ILU method can be
+considered to be a variant of the ILUTP method originally proposed by
+Saad~\cite{saad94}, which combines a dual dropping strategy with
+numerical pivoting (``T'' stands for threshold, and ``P'' stands for
+pivoting).  We adapted the classic
+dropping strategies of ILUTP in order to incorporate supernode
+structures and to accommodate dynamic supernodes due to partial
+pivoting. For the secondary dropping strategy, we proposed an
+area-based fill control method, which is more flexible and numerically
+robust than the traditional column-based scheme.  Furthermore, we
+incorporated several heuristics for adaptively modifying various
+threshold parameters as the factorization proceeds, which improves
+the robustness of the algorithm. The details can be found in~\cite{lishao10}.
+
+
+\section{Memory management for $L$ and $U$}
+\label{sec:mem}
+In the sparse $LU$ algorithm, the amount of space needed to hold the
+data structures of $L$ and $U$ cannot be accurately predicted prior to 
+the factorization.
+The dynamically growing arrays include those for the nonzero values
+({\tt nzval[]}) and the compressed row indices ({\tt rowind[]}) of $L$, and
+for the nonzero values ({\tt nzval[]}) and the row
+indices ({\tt rowind[]}) of $U$.
+
+Two alternative memory models are presented to the user:
+\begin{itemize}
+\item system-level -- based on C's dynamic allocation capability 
+      ({\tt malloc/free});
+\item user-level -- based on a user-supplied {\tt work[]} array of 
+      size {\tt lwork} (in bytes). This is similar to Fortran-style
+      handling of work space. {\tt Work[]} is organized as a two-ended stack, 
+      one end holding the $L$ and $U$ data structures, the other end 
+      holding the auxiliary arrays of known size.
+\end{itemize}
+
+Except for the different ways to allocate/deallocate space, the logical 
+view of the memory organization is the same for both schemes. 
+Now we describe the policies in the memory module.
+
+At the outset of the factorization, we guess there will be {\tt FILL*nnz(A)}
+fills in the factors and allocate corresponding storage for the 
+above four arrays, where 
+{\tt nnz(A)} is the number of nonzeros in original matrix $A$, and 
+{\tt FILL} is an integer, say 20. (The value of {\tt FILL} can be
+set in an inquiry function {\tt sp\_ienv()}, see section~\ref{sec:parameters}.)
+If this initial request exceeds the physical memory constraint, 
+the {\tt FILL} factor is repeatedly reduced, and attempts are made to 
+allocate smaller arrays, until the initial allocation succeeds.
+
+During the factorization, 
+if any array size exceeds the allocated bound, we expand it
+as follows. We first allocate a chunk of new memory of size {\tt EXPAND}
+times the old size, then copy the existing data into the new 
+memory, and then free the old storage. The extra copying is necessary,
+because the factorization algorithm requires that
+each of the aforementioned four data structures be {\em contiguous} in memory.
+The values of {\tt FILL} and {\tt EXPAND} are normally set to 20 and 1.5, 
+respectively. See {\tt xmemory.c} for details.
+
+%%%% One user suggested using ``realloc'', that can fix the problem.
+After factorization, we do not garbage-collect the extra space that
+may have been allocated. Thus, there will be external fragmentation in
+the $L$ and $U$ data structures. The settings of {\tt FILL} and {\tt EXPAND} 
+should take into account the trade-off between the number of expansions 
+and the amount of fragmentation.
+
+Arrays of known size, such as various column pointers and working arrays, 
+are allocated just once. All dynamically-allocated working arrays are freed
+after factorization.
+
+
+\section{User-callable routines}
+\label{sec:routine}
+
+The naming conventions, calling sequences and functionality of
+these routines mimic the corresponding \LAPACK\ software~\cite{lapackmanual2}.
+In the routine names, such as {\tt dgstrf}, we use the two letters
+{\tt GS} to denote {\em general sparse} matrices. The leading
+letter{\tt x} stands for {\tt S, D, C}, or {\tt Z}, specifying the data type.
+
+%% Appendix~\ref{chap:superlu_spec} contains, for each individual routine,
+%% the leading comments and the complete specification of the calling 
+%% sequence and arguments.
+
+\subsection{Driver routines}
+We provide two types of driver routines for solving systems of 
+linear equations. The driver routines can handle both column-
+and row-oriented storage schemes.
+\begin{itemize}
+\item A simple driver {\tt dgssv()}, which solves the system $AX=B$ by 
+      factorizing $A$ and overwriting $B$ with the solution $X$. 
+\item An expert driver {\tt dgssvx()}, which, in addition to the above, also 
+      performs the following functions (some of them optionally):
+      \begin{itemize}
+      \item solve $A^TX=B$;
+      \item equilibrate the system (scale $A$'s rows and columns to have
+		unit norm) if $A$ is poorly scaled;
+      \item estimate the condition number of $A$, check for near-singularity,
+            and check for pivot growth;
+      \item refine the solution and compute forward and backward error bounds.
+      \end{itemize}
+\item An expert driver {\tt dgsisx()}, which gives the approximate
+  solutions of linear equations $AX=B$ or $A^TX=B$, using the ILU
+  factorization from {\tt dgsitrf()}. An estimation of the condition
+  number is provide, and the pivot growth is computed.
+\end{itemize}
+
+These driver routines cover all the functionality of the computational
+routines. We expect that most users can simply use these driver routines
+to fulfill their tasks with no need to bother with the computational routines.
+
+
+\subsection{Computational routines}
+The users can invoke the following computational routines, instead of the
+driver routines, to directly control the behavior of {\superlu}.
+The computational routines can only handle column-oriented storage.
+
+\begin{itemize}
+\item {\tt dgstrf()}: Factorize.
+
+      This implements the first-time factorization, or later re-factorization
+      with the same nonzero pattern. In re-factorizations, the code
+      has the ability to use the same column permutation $P_c$ and
+      row permutation $P_r$ obtained from a previous factorization.
+      The input argument {\tt options} contains several scalar
+      arguments to control how the $LU$ decomposition and the 
+      numerical pivoting should be performed. {\tt dgstrf()} can handle
+      non-square matrices.
+
+\item {\tt dgsitrf()}: ILU.
+
+      This implements the incomplete LU factorization
+      The input argument {\tt options} contains several scalar
+      arguments to control how the incomplete facotirzation and the 
+      numerical pivoting should be performed.
+
+\item {\tt dgstrs()}: Triangular solve.
+
+      This takes the $L$ and $U$ triangular factors, the row and column 
+      permutation vectors, and the right-hand side to compute a solution
+      matrix $X$ of $AX=B$ or $A^TX=B$.
+
+\item {\tt dgscon()}: Estimate condition number.
+      
+      Given the matrix $A$ and its factors $L$ and $U$, this estimates the 
+      condition number in the one-norm or infinity-norm. The algorithm is 
+      due to Hager and Higham~\cite{higham96}, and is the same as 
+      {\tt CONDEST} in sparse Matlab.
+
+\item {\tt dgsequ()/dlaqgs()}: Equilibrate.
+
+      {\tt dgsequ} first computes the row and column scalings $D_r$ 
+      and $D_c$ which would make each row and each column of the scaled 
+      matrix $D_rAD_c$ have equal norm. 
+      {\tt dlaqgs} then applies them to the original matrix $A$ if it is 
+      indeed badly scaled. The equilibrated $A$ overwrites the original $A$.
+
+\item {\tt dgsrfs()}: Refine solution.
+
+      Given $A$, its factors $L$ and $U$, and an initial solution $X$, 
+      this does iterative refinement, using the same precision as the 
+      input data. It also computes
+      forward and backward error bounds for the refined solution.
+
+\end{itemize}
+
+\subsection{Utility routines}
+\label{sec:slu_utility}
+
+The utility routines can help users create and destroy the {\superlu}
+matrices easily. These routines reside in two places: {\tt SRC/util.c}
+contains the routines that are precision-independent;\\
+{\tt SRC/\{s,d,c,z\}util.c} contains the routines dependent on precision.
+Here, we list the prototypes of these routines.
+
+\begin{verbatim}
+    /* Create a supermatrix in compressed column format. A is the output. */
+    dCreate_CompCol_Matrix(SuperMatrix *A, int m, int n, int nnz, 
+                           double *nzval, int *rowind, int *colptr,
+                           Stype_t stype, Dtype_t dtype, Mtype_t mtype);
+
+    /* Create a supermatrix in compressed row format. A is the output. */
+    dCreate_CompRow_Matrix(SuperMatrix *A, int m, int n, int nnz, 
+                           double *nzval, int *colind, int *rowptr,
+                           Stype_t stype, Dtype_t dtype, Mtype_t mtype);
+
+    /* Copy matrix A into matrix B, both in compressed column format. */
+    dCopy_CompCol_Matrix(SuperMatrix *A, SuperMatrix *B);
+
+    /* Create a supermatrix in dense format. X is the output.*/
+    dCreate_Dense_Matrix(SuperMatrix *X, int m, int n, double *x, int ldx,
+                         Stype_t stype, Dtype_t dtype, Mtype_t mtype);
+
+    /* Create a supermatrix in supernodal format. L is the output. */
+    dCreate_SuperNode_Matrix(SuperMatrix *L, int m, int n, int nnz, 
+                             double *nzval, int *nzval_colptr, int *rowind,
+                             int *rowind_colptr, int *col_to_sup, int *sup_to_col,
+                             Stype_t stype, Dtype_t dtype, Mtype_t mtype);
+
+    /* Convert the compressed row fromat to the compressed column format. */
+    dCompRow_to_CompCol(int m, int n, int nnz, 
+                        double *a, int *colind, int *rowptr,
+                        double **at, int **rowind, int **colptr);
+
+    /* Print a supermatrix in compressed column format. */
+    dPrint_CompCol_Matrix(char *what, SuperMatrix *A);
+
+    /* Print a supermatrix in supernodal format. */
+    dPrint_SuperNode_Matrix(char *what, SuperMatrix *A);
+
+    /* Print a supermatrix in dense format. */
+    dPrint_Dense_Matrix(char *what, SuperMatrix *A);
+
+    /* Deallocate the storage structure *Store. */
+    Destroy_SuperMatrix_Store(SuperMatrix *A);
+
+    /* Deallocate the supermatrix structure in compressed column format. */
+    Destroy_CompCol_Matrix(SuperMatrix *A)
+
+    /* Deallocate the supermatrix structure in supernodal format. */
+    Destroy_SuperNode_Matrix(SuperMatrix *A)
+
+    /* Deallocate the supermatrix structure in permuted compressed column format. */
+    Destroy_CompCol_Permuted(SuperMatrix *A)
+
+    /* Deallocate the supermatrix structure in dense format. */
+    Destroy_Dense_Matrix(SuperMatrix *A)
+\end{verbatim}
+
+\section{Matlab interface}
+\label{sec:MatlabInterface}
+In the {\tt \SuperLU/MATLAB} subdirectory, we have developed a set of 
+MEX-files interface to Matlab. Typing {\tt make} in this directory
+produces executables to be invoked in Matlab.
+The current {\tt Makefile} is set up so that the MEX-files
+are compatible with Matlab Version 5. The user should edit
+{\tt Makefile} for Matlab Version 4 compatibility.
+Right now, only the factor routine {\tt dgstrf()} 
+and the simple driver routine {\tt dgssv()} are callable by invoking
+{\tt superlu} and {\tt lusolve} in Matlab, respectively. {\tt Superlu} 
+and {\tt lusolve} correspond to the two Matlab built-in functions {\tt lu}
+and {\tt $\backslash$}$\;$. In Matlab, when you type 
+
+ \hspace{.4in}{\tt help superlu}
+
+\noindent you will find the following description about {\tt superlu}'s
+functionality and how to use it.
+\begin{verbatim}
+  SUPERLU : Supernodal LU factorization
+ 
+  Executive summary:
+
+  [L,U,p] = superlu(A)          is like [L,U,P] = lu(A), but faster.
+  [L,U,prow,pcol] = superlu(A)  preorders the columns of A by min degree,
+                                    yielding A(prow,pcol) = L*U.
+
+  Details and options:
+
+  With one input and two or three outputs, SUPERLU has the same effect as LU,
+  except that the pivoting permutation is returned as a vector, not a matrix:
+
+  [L,U,p] = superlu(A) returns unit lower triangular L, upper triangular U,
+            and permutation vector p with A(p,:) = L*U.
+  [L,U] = superlu(A) returns permuted triangular L and upper triangular U
+            with A = L*U.
+
+  With a second input, the columns of A are permuted before factoring:
+
+  [L,U,prow] = superlu(A,psparse) returns triangular L and U and permutation 
+            prow with A(prow,psparse) = L*U.
+  [L,U] = superlu(A,psparse) returns permuted triangular L and triangular U 
+            with A(:,psparse) = L*U.
+  Here psparse will normally be a user-supplied permutation matrix or vector
+  to be applied to the columns of A for sparsity.  COLMMD is one way to get
+  such a permutation; see below to make SUPERLU compute it automatically.
+  (If psparse is a permutation matrix, the matrix factored is A*psparse'.)
+
+  With a fourth output, a column permutation is computed and applied:
+
+  [L,U,prow,pcol] = superlu(A,psparse)  returns triangular L and U and
+            permutations prow and pcol with A(prow,pcol) = L*U.
+            Here psparse is a user-supplied column permutation for sparsity,
+            and the matrix factored is A(:,psparse) (or A*psparse' if the
+            input is a permutation matrix).  Output pcol is a permutation
+            that first performs psparse, then postorders the etree of the 
+            column intersection graph of A.  The postorder does not affect 
+            sparsity, but makes supernodes in L consecutive.
+  [L,U,prow,pcol] = superlu(A,0) is the same as ... = superlu(A,I); it does
+            not permute for sparsity but it does postorder the etree.
+  [L,U,prow,pcol] = superlu(A) is the same as ... = superlu(A,colmmd(A));
+            it uses column minimum degree to permute columns for sparsity,
+            then postorders the etree and factors.
+\end{verbatim}
+
+
+\noindent For a description about {\tt lusolve}'s functionality and how
+to use it, you can type
+
+ \hspace{.4in}{\tt help lusolve}
+
+
+\begin{verbatim}
+  LUSOLVE : Solve linear systems by supernodal LU factorization.
+ 
+  x = lusolve(A, b) returns the solution to the linear system A*x = b,
+      using a supernodal LU factorization that is faster than Matlab's 
+      builtin LU.  This m-file just calls a mex routine to do the work.
+
+  By default, A is preordered by column minimum degree before factorization.
+  Optionally, the user can supply a desired column ordering:
+
+  x = lusolve(A, b, pcol) uses pcol as a column permutation.  
+      It still returns x = A\b, but it factors A(:,pcol) (if pcol is a 
+      permutation vector) or A*Pcol (if Pcol is a permutation matrix).
+       
+  x = lusolve(A, b, 0) suppresses the default minimum degree ordering;
+      that is, it forces the identity permutation on columns.
+\end{verbatim}
+
+% In the future, we will develop an interface for the expert driver 
+% {\tt dgssvx} to provide more functionality.
+Two M-files {\tt trysuperlu.m} and {\tt trylusolve.m} are written to test the 
+correctness of {\tt superlu} and {\tt lusolve}. In addition to testing the
+residual norms, they also test the function invocations with various
+number of input/output arguments.
+
+
+\section{Installation}
+\label{sec:install}
+\subsection{File structure}
+The top level SuperLU/ directory is structured as follows:
+\begin{verbatim}
+    SuperLU/README    instructions on installation
+    SuperLU/CBLAS/    needed BLAS routines in C, not necessarily fast
+    SuperLU/EXAMPLE/  example programs
+    SuperLU/INSTALL/  test machine dependent parameters; this Users' Guide
+    SuperLU/MAKE_INC/ sample machine-specific make.inc files
+    SuperLU/MATLAB/   Matlab mex-file interface
+    SuperLU/SRC/      C source code, to be compiled into the superlu.a library
+    SuperLU/TESTING/  driver routines to test correctness
+    SuperLU/Makefile  top level Makefile that does installation and testing
+    SuperLU/make.inc  compiler, compile flags, library definitions and C
+                      preprocessor definitions, included in all Makefiles
+\end{verbatim}
+
+Before installing the package, you may need to edit {\tt SuperLU/make.inc}
+for your system.
+This make include file is referenced inside each of the {\tt Makefiles}
+in the various subdirectories. As a result, there is no need to 
+edit the {\tt Makefiles} in the subdirectories. All information that is
+machine specific has been defined in {\tt make.inc}.
+
+Sample machine-specific {\tt make.inc} are provided 
+in the {\tt MAKE\_INC/} subdirectory for several systems, including
+IBM RS/6000, DEC Alpha, SunOS 4.x, SunOS 5.x (Solaris), HP-PA and
+SGI Iris 4.x.  When you have selected the machine on which you wish 
+to install SuperLU, you may copy the appropriate sample include file 
+(if one is present) into {\tt make.inc}. For example, if you wish to run 
+SuperLU on an IBM RS/6000, you can do:
+
+\hspace{.4in}{\tt cp MAKE\_INC/make.rs6k make.inc}
+
+For systems other than those listed above, slight modifications to the 
+{\tt make.inc} file will need to be made. In particular, 
+the following three items should be examined:
+\begin{enumerate}
+\item The BLAS library.\\
+   If there is a BLAS library available on your machine, you may define
+   the following in {\tt make.inc}:
+
+   \hspace{.4in}{\tt BLASDEF = -DUSE\_VENDOR\_BLAS}
+
+   \vspace{-6pt}
+   \hspace{.4in}{\tt BLASLIB = <BLAS library you wish to link with>}
+
+   The {\tt CBLAS/} subdirectory contains the part of the C BLAS needed by 
+   the {\superlu} package. However, these codes are intended for use
+   only if there is no faster implementation of the BLAS already available
+   on your machine. In this case, you should do the following:
+   \begin{itemize}
+   \item[1)] In {\tt make.inc}, undefine (comment out) BLASDEF, define:
+
+          \hspace{.4in}{\tt BLASLIB = ../blas\$(PLAT).a}
+
+   \item[2)] In the {\superlu/} directory, type:
+
+          \hspace{.4in}{\tt make blaslib}
+
+          to make the BLAS library from the routines in the {\tt CBLAS/}
+	  subdirectory.
+   \end{itemize}
+   
+\item C preprocessor definition {\tt CDEFS}.\\
+   In the header file {\tt SRC/Cnames.h}, we use macros to determine how
+   C routines should be named so that they are callable by Fortran.%
+   \footnote{Some vendor-supplied {\BLAS} libraries do not have C 
+   interfaces. So the re-naming is needed in order for the {\superlu} {\BLAS}
+   calls (in C) to interface with the Fortran-style {\BLAS}.}
+   The possible options for {\tt CDEFS} are:
+   \begin{itemize}
+   \item {\tt -DAdd\_}: Fortran expects a C routine to have an underscore
+                        postfixed to the name;
+   \item {\tt -DNoChange}: Fortran expects a C routine name to be identical
+                        to that compiled by C;
+   \item {\tt -DUpCase}: Fortran expects a C routine name to be all uppercase.
+   \end{itemize}
+
+\item The Matlab MEX-file interface.\\
+   The {\tt MATLAB/} subdirectory includes Matlab C MEX-files, so that 
+   our factor and solve routines can be called as alternatives to those
+   built into Matlab. In the file {\tt SuperLU/make.inc}, 
+   define MATLAB to be the 
+   directory in which Matlab is installed on your system, for example:
+
+   \hspace{.4in}{\tt MATLAB = /usr/local/matlab}
+
+   At the SuperLU/ directory, type:
+
+   \hspace{.4in} {\tt make matlabmex} 
+
+   to build the MEX-file
+   interface. After you have built the interface, you may go to the 
+   {\tt MATLAB/} subdirectory to test the correctness by typing (in Matlab):
+   
+   \hspace{.4in}{\tt trysuperlu}
+
+   \hspace{.4in}{\tt trylusolve}
+
+\end{enumerate}
+
+
+A {\tt Makefile} is provided in each subdirectory.
+The installation can be done completely automatically by simply 
+typing {\tt make} at the top level.
+
+\subsection{Testing}
+The test programs in {\tt \superlu/INSTALL} subdirectory test two routines:
+\begin{itemize}
+\item {\tt slamch()/dlamch()} determines properties of the floating-point
+      arithmetic at run-time (both single and double precision), such as
+      the machine epsilon, underflow threshold, overflow threshold, 
+      and related parameters;
+\item {\tt SuperLU\_timer\_()} returns the time in seconds used by the
+      process. This function may need to be modified to run on your machine.
+\end{itemize}
+
+The test programs in the {\tt \superlu/TESTING} subdirectory are designed to 
+test all the functions of the driver routines, especially the expert drivers.
+The Unix shell script files {\tt xtest.csh} are used to invoke tests
+with varying parameter settings. The input matrices include an actual 
+sparse matrix {\tt \superlu/EXAMPLE/g10} of dimension $100\times 100$,%
+\footnote{Matrix {\tt g10} is first generated with the structure of
+the 10-by-10 five-point grid, and random numerical values. The
+columns are then permuted by COLMMD ordering from Matlab.}
+and numerous matrices with special properties from the \LAPACK\ test suite. 
+Table~\ref{tab:testmats} describes the properties of the test matrices.
+
+\begin{table}
+\begin{minipage}{3.2in}
+\begin{center}
+\begin{tabular}{|l|l|} \hline
+Matrix type  &Description \\\hline
+0            &sparse matrix {\tt g10} \\
+1            &diagonal                \\
+2            &upper triangular        \\
+3            &lower triangular        \\
+4            &random, $\kappa=2$      \\
+5            &first column zero       \\
+6            &last column zero        \\
+7            &last $n/2$ columns zero \\
+8            &random, $\kappa=\sqrt{0.1/\varepsilon}$ \\
+9            &random, $\kappa=0.1/\varepsilon$ \\
+10           &scaled near underflow   \\
+11           &scaled near overflow    \\ \hline
+\end{tabular}
+\end{center}
+\caption{Properties of the test matrices. $\varepsilon$ is the machine epsilon 
+         and $\kappa$ is the condition number of matrix $A$. Matrix types
+         with one or more columns set to zero are used to test the error 
+         return codes.}
+\label{tab:testmats}
+\end{minipage}
+\begin{minipage}[b]{3.2in}
+\begin{center}
+\begin{tabular}{|l|l|l|} \hline
+Test Type	&Test ratio               &Routines \\ \hline
+0 &$||LU-A||/(n||A||\varepsilon)$	  &{\tt dgstrf} \\
+1 &$||b-Ax|| / (||A||\;||x||\varepsilon)$ &{\tt dgssv}, {\tt dgssvx} \\
+2 &$||x-x^*||/(||x^*||\kappa\varepsilon)$ &{\tt dgssvx} \\
+3 &$||x-x^*|| / (||x^*||\; FERR)$    &{\tt dgssvx} \\
+4 &$BERR / \varepsilon$             &{\tt dgssvx} \\ \hline
+\end{tabular}
+\end{center}
+\caption{Types of tests. $x^*$ is the true solution, $FERR$ is the 
+         error bound, and $BERR$ is the backward error.}
+\label{tab:tests}
+\end{minipage}
+\end{table}
+
+For each command line option specified in {\tt dtest.csh}, the test program
+{\tt ddrive} reads in or generates an appropriate matrix, calls the 
+driver routines, and computes a number of test ratios to verify that 
+each operation has performed correctly. If the test ratio is smaller than
+a preset threshold, the operation is considered to be correct.
+Each test matrix is subject to the tests listed in Table~\ref{tab:tests}.
+
+Let $r$ be the residual $r=b-Ax$, and let $m_i$ be the number of nonzeros in 
+row $i$ of $A$. Then the componentwise backward error $BERR$ and 
+forward error $FERR$~\cite{lapackmanual2} are calculated by:
+$$ BERR = \max_i\frac{|r|_i}{(|A|~|x|+|b|)_i}\ .$$
+$$FERR = \frac{||~|A^{-1}|~f~||_\infty}{||x||_\infty}\ .$$
+Here, $f$ is a nonnegative vector whose components are computed as
+$f_i=|r|_i + m_i~\varepsilon~(|A|~|x|+|b|)_i$, and the norm in the numerator 
+is estimated using the same subroutine used for estimating the
+condition number. 
+$BERR$ measures the smallest relative perturbation one can make to each 
+entry of A and of b so that the computed solution is an exact
+solution of the perturbed problem. $FERR$ is an estimated bound on 
+the error $\| x^* - x \|_{\infty} / \| x \|_{\infty}$, where $x^*$ is 
+the true solution.
+For further details on error analysis and error bounds
+estimation, see~\cite[Chapter 4]{lapackmanual2} and ~\cite{arioli89}.
+
+
+\subsection{Performance-tuning parameters}
+\label{sec:parameters}
+{\superlu} chooses such machine-dependent parameters as block size by calling
+an inquiry function {\tt sp\_ienv()}, which may be set to return different
+values on different machines. The declaration of this function is
+
+\vspace{.1in}
+{\tt int sp\_ienv(int ispec);}
+\vspace{.1in}
+
+{\tt Ispec} specifies the parameter to be returned,
+(See reference~\cite{superlu99} for their definitions.)
+\begin{tabbing}
+xxxxxx \= xxxx \= junk \= \kill
+\>ispec\>= 1: the panel size ($w$)\\
+\>     \>= 2: the relaxation parameter to control supernode amalgamation 
+              ($relax$)\\
+\>     \>= 3: the maximum allowable size for a supernode ($maxsup$)\\
+\>     \>= 4: the minimum row dimension for 2D blocking to be used ($rowblk$)\\
+\>     \>= 5: the minimum column dimension for 2D blocking to be used ($colblk$)\\
+\>     \>= 6: the estimated fills factor for L and U, compared with A
+\end{tabbing}	    
+
+Users are encouraged to modify this subroutine to set
+the tuning parameters for their own local environment.
+The optimal values depend mainly on the cache size and the \BLAS\ speed. 
+If your system has a very small cache, or if you want to efficiently 
+utilize the closest cache in a multilevel cache organization, you should 
+pay special attention to these parameter settings. 
+In our technical paper~\cite{superlu99}, we described a detailed methodology 
+for setting these parameters for high performance.
+
+The $relax$ parameter is usually set between 4 and 8. The other parameter
+values which give good performance on several machines are listed in
+Table~\ref{tab:block_params}. In a supernode-panel update, if the updating
+supernode is too large to fit in cache, then a 2D block partitioning of
+the supernode is used, in which $rowblk$ and $colblk$ determine that a 
+block of size $rowblk\times colblk$ is used to update current panel.
+
+If $colblk$ is set greater than $maxsup$, then the program will never
+use 2D blocking. For example, for the Cray J90 (which does not have cache), 
+$w=1$ and 1D blocking give good performance; more levels of blocking only 
+increase overhead.
+
+\begin{table}
+\begin{small}
+\begin{center}
+\begin{tabular}{|l|r r r r r r|} \hline
+\multicolumn{1}{|c|}{} &
+\multicolumn{1}{r}{On-chip} &
+\multicolumn{1}{r}{External} &
+\multicolumn{1}{r}{} &
+\multicolumn{1}{r}{} &
+\multicolumn{1}{r}{} &
+\multicolumn{1}{r|}{} \\
+\multicolumn{1}{|c|}{Machine} &
+\multicolumn{1}{r}{Cache} &
+\multicolumn{1}{r}{Cache} &
+\multicolumn{1}{r}{$w$} &
+\multicolumn{1}{r}{$maxsup$} &
+\multicolumn{1}{r}{$rowblk$} &
+\multicolumn{1}{r|}{$colblk$} \\ \hline
+RS/6000-590	&256 KB		&--	&8	&100 	&200	&40\\
+MIPS R8000	&16 KB		&4 MB	&20	&100	&800	&100\\
+Alpha 21064	&8 KB		&512 KB	&8	&100	&400	&40\\
+Alpha 21164	&8 KB-L1	&4 MB	&16	&50	&100	&40\\
+ 		&96 KB-L2	&	&	&	&	&\\
+Sparc 20	&16 KB		&1 MB	&8	&100	&400	&50\\
+UltraSparc-I	&16 KB		&512 KB	&8	&100	&400	&40\\
+Cray J90	&--		&--	&1	&100	&1000	&100\\
+\hline
+\end{tabular}
+\end{center}
+\end{small}
+\vspace*{-.1in}
+\caption{Typical blocking parameter values for several machines.}
+\label{tab:block_params}
+\end{table}
+
+
+
+\section{Example programs}
+\label{sec:example}
+
+In the {\tt SuperLU/EXAMPLE/} subdirectory, we present a few sample
+programs to illustrate how to use various functions provded in {\superlu}.
+The users can modify these examples to suit their applications.
+Here are the brief descriptions of the double precision version of
+the examples:
+\begin{itemize}
+\item {\tt dlinsol}: use simple driver {\tt dgssv()} to solve a linear
+      system one time.
+\item {\tt dlinsol1}: use simple driver {\tt dgssv()} in the symmetric mode.
+\item {\tt dlinsolx}: use {\tt dgssvx()} with the full (default) set of options
+      to solve a linear system.
+\item {\tt dlinsolx1}: use {\tt dgssvx()} to factorize $A$ first, then solve
+      the system later.
+\item {\tt dlinsolx2}: use {\tt dgssvx()} to solve systems repeatedly with
+      the same sparsity pattern of matrix A.
+\item {\tt superlu}: the small 5x5 sample program in Section~\ref{sec:ex5x5}.
+\end{itemize}
+
+In this directory, a {\tt Makefile} is provided to generate the executables,
+and a {\tt README} file describes how to run these examples.
+
+
+\section{Calling from Fortran}
+
+The {\tt SuperLU/FORTRAN/} subdirectory contains an example of using
+{\superlu} from a Fortran program.
+The General rules for mixing Fortran and C programs are as follows.
+
+\begin{itemize}
+\item Arguments in C are passed by value, while in Fortran are passed by
+      reference.  So we always pass the address (as a pointer) in the C 
+      calling routine. (You cannot make a call with numbers directly in 
+      the parameters.)
+\item Fortran uses 1-based array addressing, while C uses 0-based.
+      Therefore, the row indices ({\tt rowind[]}) and the integer pointers
+      to arrays ({\tt colptr[]}) should be adjusted before they 
+      are passed into a C routine.
+\end{itemize}
+
+Because of the above language differences, in order to embed {\superlu}
+in a Fortran environment, users are required to use ``wrapper'' routines
+(in C) for all the {\superlu} routines that will be called from Fortran
+programs. The example {\tt c\_fortran\_dgssv.c} in the {\tt FORTRAN/}
+directory shows how a wrapper program should be written.
+This program is listed below.
+
+\begin{verbatim}
+#include "dsp_defs.h"
+
+#define HANDLE_SIZE  8
+
+typedef struct {
+    SuperMatrix *L;
+    SuperMatrix *U;
+    int *perm_c;
+    int *perm_r;
+} factors_t;
+
+int
+c_fortran_dgssv_(int *iopt, int *n, int *nnz, int *nrhs, double *values,
+                 int *rowind, int *colptr, double *b, int *ldb,
+                 int factors[HANDLE_SIZE], /* a handle containing the pointer
+                                              to the factored matrices */
+                 int *info)
+
+{
+/* 
+ * This routine can be called from Fortran.
+ *
+ * iopt (input) int
+ *      Specifies the operation:
+ *      = 1, performs LU decomposition for the first time
+ *      = 2, performs triangular solve
+ *      = 3, free all the storage in the end
+ *
+ * factors (input/output) integer array of size 8
+ *      If iopt == 1, it is an output and contains the pointer pointing to
+ *                    the structure of the factored matrices.
+ *      Otherwise, it it an input.
+ *
+ */
+    SuperMatrix A, AC, B;
+    SuperMatrix *L, *U;
+    int *perm_r; /* row permutations from partial pivoting */
+    int *perm_c; /* column permutation vector */
+    int *etree;  /* column elimination tree */
+    SCformat *Lstore;
+    NCformat *Ustore;
+    int      i, panel_size, permc_spec, relax;
+    trans_t  trans;
+    double   drop_tol = 0.0;
+    mem_usage_t   mem_usage;
+    superlu_options_t options;
+    SuperLUStat_t stat;
+    factors_t *LUfactors;
+
+    trans = NOTRANS;
+
+    if ( *iopt == 1 ) { /* LU decomposition */
+
+        /* Set the default input options. */
+        set_default_options(&options);
+
+        /* Initialize the statistics variables. */
+        StatInit(&stat);
+
+        /* Adjust to 0-based indexing */
+        for (i = 0; i < *nnz; ++i) --rowind[i];
+        for (i = 0; i <= *n; ++i) --colptr[i];
+
+        dCreate_CompCol_Matrix(&A, *n, *n, *nnz, values, rowind, colptr,
+                               SLU_NC, SLU_D, SLU_GE);
+        L = (SuperMatrix *) SUPERLU_MALLOC( sizeof(SuperMatrix) );
+        U = (SuperMatrix *) SUPERLU_MALLOC( sizeof(SuperMatrix) );
+        if ( !(perm_r = intMalloc(*n)) ) ABORT("Malloc fails for perm_r[].");
+        if ( !(perm_c = intMalloc(*n)) ) ABORT("Malloc fails for perm_c[].");
+        if ( !(etree = intMalloc(*n)) ) ABORT("Malloc fails for etree[].");
+
+        /*
+         * Get column permutation vector perm_c[], according to permc_spec:
+         *   permc_spec = 0: natural ordering 
+         *   permc_spec = 1: minimum degree on structure of A'*A
+         *   permc_spec = 2: minimum degree on structure of A'+A
+         *   permc_spec = 3: approximate minimum degree for unsymmetric matrices
+         */    	
+        permc_spec = 3;
+        get_perm_c(permc_spec, &A, perm_c);
+	
+        sp_preorder(&options, &A, perm_c, etree, &AC);
+
+        panel_size = sp_ienv(1);
+        relax = sp_ienv(2);
+
+        dgstrf(&options, &AC, drop_tol, relax, panel_size, 
+               etree, NULL, 0, perm_c, perm_r, L, U, &stat, info);
+
+        if ( *info == 0 ) {
+            Lstore = (SCformat *) L->Store;
+            Ustore = (NCformat *) U->Store;
+            printf("No of nonzeros in factor L = %d\n", Lstore->nnz);
+            printf("No of nonzeros in factor U = %d\n", Ustore->nnz);
+            printf("No of nonzeros in L+U = %d\n", Lstore->nnz + Ustore->nnz);
+            dQuerySpace(L, U, &mem_usage);
+            printf("L\\U MB %.3f\ttotal MB needed %.3f\texpansions %d\n",
+                   mem_usage.for_lu/1e6, mem_usage.total_needed/1e6,
+                   mem_usage.expansions);
+        } else {
+            printf("dgstrf() error returns INFO= %d\n", *info);
+            if ( *info <= *n ) { /* factorization completes */
+               dQuerySpace(L, U, &mem_usage);
+               printf("L\\U MB %.3f\ttotal MB needed %.3f\texpansions %d\n",
+                     mem_usage.for_lu/1e6, mem_usage.total_needed/1e6,
+                     mem_usage.expansions);
+            }
+        }
+	
+        /* Restore to 1-based indexing */
+        for (i = 0; i < *nnz; ++i) ++rowind[i];
+        for (i = 0; i <= *n; ++i) ++colptr[i];
+
+        /* Save the LU factors in the factors handle */
+        LUfactors = (factors_t*) SUPERLU_MALLOC(sizeof(factors_t));
+        LUfactors->L = L;
+        LUfactors->U = U;
+        LUfactors->perm_c = perm_c;
+        LUfactors->perm_r = perm_r;
+        factors[0] = (int) LUfactors;
+
+        /* Free un-wanted storage */
+        SUPERLU_FREE(etree);
+        Destroy_SuperMatrix_Store(&A);
+        Destroy_CompCol_Permuted(&AC);
+        StatFree(&stat);
+
+    } else if ( *iopt == 2 ) { /* Triangular solve */
+        /* Initialize the statistics variables. */
+        StatInit(&stat);
+
+        /* Extract the LU factors in the factors handle */
+        LUfactors = (factors_t*) factors[0];
+        L = LUfactors->L;
+        U = LUfactors->U;
+        perm_c = LUfactors->perm_c;
+        perm_r = LUfactors->perm_r;
+
+        dCreate_Dense_Matrix(&B, *n, *nrhs, b, *ldb, SLU_DN, SLU_D, SLU_GE);
+
+        /* Solve the system A*X=B, overwriting B with X. */
+        dgstrs (trans, L, U, perm_c, perm_r, &B, &stat, info);
+
+        Destroy_SuperMatrix_Store(&B);
+        StatFree(&stat);
+
+    } else if ( *iopt == 3 ) { /* Free storage */
+        /* Free the LU factors in the factors handle */
+        LUfactors = (factors_t*) factors[0];
+        SUPERLU_FREE (LUfactors->perm_r);
+        SUPERLU_FREE (LUfactors->perm_c);
+        Destroy_SuperNode_Matrix(LUfactors->L);
+        Destroy_CompCol_Matrix(LUfactors->U);
+        SUPERLU_FREE (LUfactors->L);
+        SUPERLU_FREE (LUfactors->U);
+        SUPERLU_FREE (LUfactors);
+    } else {
+        fprintf(stderr, "Invalid iopt=%d passed to c_fortran_dgssv()\n");
+        exit(-1);
+    }
+}
+\end{verbatim}
+
+Since the matrix structures in C
+cannot be directly returned to Fortran, we use a handle named {\tt factors}
+to access those structures. The handle is essentially
+an integer pointer pointing to the factored matrices obtained from {\superlu}.
+So the factored matrices are opaque objects to the Fortran program, but
+can only be manipulated from the C wrapper program.
+
+The Fortran program {\tt FORTRAN/f77\_main.f} shows how a Fortran program may
+call\\
+{\tt c\_fortran\_dgssv()}, and is listed below.
+A {\tt README} file in this directory describes how to compile
+and run this program.
+
+\begin{verbatim}
+      program f77_main
+      integer maxn, maxnz
+      parameter ( maxn = 10000, maxnz = 100000 )
+      integer rowind(maxnz), colptr(maxn)
+      real*8  values(maxnz), b(maxn)
+      integer n, nnz, nrhs, ldb, info
+      integer factors(8), iopt
+*
+*     Read the matrix file in Harwell-Boeing format
+      call hbcode1(n, n, nnz, values, rowind, colptr)
+*
+      nrhs = 1
+      ldb = n
+      do i = 1, n
+         b(i) = 1
+      enddo
+*
+* First, factorize the matrix. The factors are stored in factor() handle.
+      iopt = 1
+      call c_fortran_dgssv( iopt, n, nnz, nrhs, values, rowind, colptr, 
+     $                      b, ldb, factors, info )
+*
+      if (info .eq. 0) then
+         write (*,*) 'Factorization succeeded'
+      else
+         write(*,*) 'INFO from factorization = ', info
+      endif
+*
+* Second, solve the system using the existing factors.
+      iopt = 2
+      call c_fortran_dgssv( iopt, n, nnz, nrhs, values, rowind, colptr, 
+     $                      b, ldb, factors, info )
+*
+      if (info .eq. 0) then
+         write (*,*) 'Solve succeeded'
+         write (*,*) (b(i), i=1, 10)
+      else
+         write(*,*) 'INFO from triangular solve = ', info
+      endif
+
+* Last, free the storage allocated inside SuperLU
+      iopt = 3
+      call c_fortran_dgssv( iopt, n, nnz, nrhs, values, rowind, colptr, 
+     $                      b, ldb, factors, info )
+*
+      stop
+      end
+\end{verbatim}
+
+% In the future, we may provide complete Fortran interfaces
+% to the user-callable routines in {\superlu}.

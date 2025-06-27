@@ -1,0 +1,87 @@
+\documentstyle[11pt,psfig,fullpage]{article}
+
+\def\SuperLU{\mbox{SuperLU}}
+\def\BLAS{\mbox{BLAS}}
+\def\LAPACK{\mbox{LAPACK}}
+\def\NC{\mbox{\tt NC}}
+\def\NCP{\mbox{\tt NCP}}
+\def\SC{\mbox{\tt SC}}
+\def\DN{\mbox{\tt DN}}
+\def\GE{\mbox{\tt GE}}
+\def\TRLU{\mbox{\tt TRLU}}
+\def\TRU{\mbox{\tt TRU}}
+\def\S{\mbox{\tt \_S}}
+\def\D{\mbox{\tt \_D}}
+\def\C{\mbox{\tt \_C}}
+\def\Z{\mbox{\tt \_Z}}
+
+\title{\SuperLU\ Users' Guide}
+
+\author{
+  \hskip.5in\mbox{\ }
+        James W. Demmel%
+        \thanks{Computer Science Division, University of California,
+        Berkeley, CA  94720 (demmel@cs.berkeley.edu).
+        The research of Demmel and Li was supported in part by 
+        NSF grant ASC--9313958,
+        DOE grant DE--FG03--94ER25219,
+        UT Subcontract No.\ ORA4466 from ARPA Contract No.\ DAAL03--91--C0047,
+        DOE grant DE--FG03--94ER25206,
+        and
+        NSF Infrastructure grants CDA--8722788 and CDA--9401156.
+        }
+\and
+        John R. Gilbert%
+        \thanks{Xerox Palo Alto Research Center,
+	3333 Coyote Hill Road,
+        Palo Alto, CA 94304 (gilbert@parc.xerox.com).
+        The research of this author was supported in part by the
+	Institute for Mathematics and Its Applications at the University
+	of Minnesota and in part by DARPA Contract No. DABT63-95-C0087.
+	Copyright $\copyright$ 1994-1997 by Xerox Corporation.
+        All rights reserved.}
+\and
+        Xiaoye S. Li%
+	\thanks{National Energy Research Scientific Computing (NERSC),
+        Lawrence Berkeley National Lab,	1 Cyclotron Rd,
+        Berkeley, CA 94720 (xiaoye@nersc.gov). 
+        This work was supported by the Director, Office of Computational and
+        Technology Research, Division of Mathematical, Information, and
+        Computational Sciences of the U.S. Department of Energy under contract
+        number DE-AC03-76SF00098. 
+	}
+   }
+
+
+\date{July 15, 1997}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\part{Sequential SuperLU}
+\include{ug_part1}
+
+\part{ug_part2}
+
+\section{Acknowledgement}
+We would like to thank Jinqchong Teo for helping generate the code
+to work with four floating-point data types. 
+We thank Ed Rothberg of Silicon Graphics for discussions and providing us
+access to the SGI Power Challenge. We also thank Sivan Toledo for 
+suggestions on improving the routines' interfaces.
+
+
+% -----------------------------------------------------------
+\pagebreak
+\bibliographystyle{plain}
+\bibliography{/home/barad-dur/jwd/users/xiaoye/thesis/sparse,%
+/home/barad-dur/jwd/users/xiaoye/thesis/others}
+
+% -----------------------------------------------------------
+\include{append}
+
+\end{document}

@@ -1,0 +1,180 @@
+%\documentstyle[11pt,psfig,fullpage,url]{report}
+\documentclass[11pt]{report}
+\usepackage{fullpage}
+%\usepackage{psfig}
+\usepackage{graphicx}
+\usepackage{url,cleveref}
+
+\setlength{\topmargin}{-0.5cm}
+
+\newcommand{\fig}[1]{Figure~\ref{fig:#1}}
+%\renewcommand{\sec}[1]{Section~\ref{sec:#1}} % This destroys \sec for secant.
+\newcommand{\tab}[1]{Table~\ref{tab:#1}}
+\newcommand{\ignore}[1]{}
+
+\newcommand{\superlu}{{\tt SuperLU}}              % "SuperLU"
+\newcommand{\superlud}{{\tt SuperLU\_DIST}}       % "SuperLU_DIST"
+\newcommand{\superlumt}{{\tt SuperLU\_MT}}        % "SuperLU_DIST"
+\newcommand{\metis}{{\tt MeTiS}}
+\newcommand{\parmetis}{{\tt ParMeTiS}}
+
+\def\SuperLU{\mbox{SuperLU}}
+%\def\superlumt{\mbox{SuperLU\_MT}}
+%\def\superlud{\mbox{SuperLU\_DIST}}
+\def\BLAS{\mbox{BLAS}}
+\def\LAPACK{\mbox{LAPACK}}
+
+\def\NC{\mbox{\tt SLU\_NC}}
+\def\NR{\mbox{\tt SLU\_NR}}
+\def\NRloc{\mbox{\tt SLU\_NR\_loc}}
+\def\NCP{\mbox{\tt SLU\_NCP}}
+\def\SC{\mbox{\tt SLU\_SC}}
+\def\SCP{\mbox{\tt SLU\_SCP}}
+\def\DN{\mbox{\tt SLU\_DN}}
+\def\GE{\mbox{\tt SLU\_GE}}
+\def\TRLU{\mbox{\tt SLU\_TRLU}}
+\def\TRU{\mbox{\tt SLU\_TRU}}
+\def\S{\mbox{\tt SLU\_S}}
+\def\D{\mbox{\tt SLU\_D}}
+\def\C{\mbox{\tt SLU\_C}}
+\def\Z{\mbox{\tt SLU\_Z}}
+
+\def\ptt{\tt}
+
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+
+\title{\SuperLU\ Users' Guide%
+\thanks{The work was supported by Director, Office of Science,
+Office of Advanced Scientic Computing Research of the U.S. Department of
+Energy under Contract No. DE-AC02-05CH11231.
+Additional support was provided by the U.S. Dept. of Energy (DOE), Office of Science,
+Advanced Scientific Computing Research
+(and Basic Energy Sciences/Biological and Environmental Research/High
+Energy Physics/Fusion Energy Sciences/Nuclear Physics),
+through the Scientific Discovery through Advanced Computing (SciDAC) program.}
+}
+
+\author{
+  \hskip.5in\mbox{\ }
+        Xiaoye S. Li%
+	\thanks{
+        Lawrence Berkeley National Laboratory, MS 50F-1650, 1 Cyclotron Rd,
+        Berkeley, CA 94720. (xsli@lbl.gov).
+%  This work was supported
+%  in part by the Director, Office of Advanced Scientific Computing
+%       Research of the U.S. Department of Energy under Contract
+%        No. D-AC02-05CH11231.
+	}
+\and
+        James W. Demmel%
+        \thanks{Computer Science Division, University of California,
+        Berkeley, CA 94720. (demmel@cs.berkeley.edu).
+        The research of Demmel and Li was supported in part by 
+        NSF grant ASC--9313958,
+        DOE grant DE--FG03--94ER25219,
+        UT Subcontract No.\ ORA4466 from ARPA Contract No.\ DAAL03--91--C0047,
+        DOE grant DE--FG03--94ER25206,
+        and
+        NSF Infrastructure grants CDA--8722788 and CDA--9401156.
+        }
+\and
+        John R. Gilbert%
+        \thanks{
+ 	Department of Computer Science, University of California,
+	 Santa Barbara, CA 93106. (gilbert@cs.ucsb.edu).
+%	Xerox Palo Alto Research Center,
+%	3333 Coyote Hill Road,
+%        Palo Alto, CA 94304 (gilbert@parc.xerox.com).
+        The research of this author was supported in part by the
+	Institute for Mathematics and Its Applications at the University
+	of Minnesota and in part by DARPA Contract No. DABT63-95-C0087.
+	Copyright $\copyright$ 1994-1997 by Xerox Corporation.
+        All rights reserved.}
+\and
+    Laura Grigori%
+    \thanks{
+    INRIA Saclay-Ile de France,
+    Laboratoire de Recherche en Informatique,
+    Universite Paris-Sud 11. (laura.grigori@inria.fr)
+    }
+\and 
+    Piyush Sao%
+    \thanks{
+      Computational Science and Engineering Division,
+      Georgia Institute of Technology, Atlanta.
+      (piyush3@gatech.edu).
+    The research of this author was supported in part by the
+    National Science Foundation CAREER award number 0953100 and
+    DOE X-Stack 1.0 under DE-FC02-10ER26006/DE-SC0004915 (PI: Richard Vuduc).
+    }
+\and
+    Meiyue Shao%
+    \thanks{
+      Computational Research Division,
+      Lawrence Berkeley National Laboratory,
+      MS 50F-1650, 1 Cyclotron Rd,
+      Berkeley, CA 94720. (myshao@lbl.gov).
+%    Department of Computing Science and HPC2N,
+%    Ume{\aa} University,
+%    SE-901 87, Ume{\aa}, Sweden. (myshao@cs.umu.se)
+    }
+\and
+    Ichitaro Yamazaki%
+    \thanks{
+    Innovative Computing Laboratory,
+    Department of Electrical Engineering and Computer Science,
+    The University of Tennessee. (ic.yamazaki@gmail.com).
+    The research of this author was supported in part by the Director,
+    Office of Advanced Scientific Computing Research of the
+    U.S. Department of Energy under Contract No. D-AC02-05CH11231.}
+}
+
+
+%\date{November 15, 1997}
+%\date{December 16, 2002}
+\date{September 1999 \\
+% Last update: March 2003 % SuperLU_DIST v2.0 - distributed input interface
+% Last update: September 2003 % fixed the MPI buffer bug in triangular solve
+% Last update: October 2003 % SuperLU v3.0
+% Last update: September 2007 % SuperLU_MT v2.0
+% Last update: November 2007 % SuperLU_DIST v2.1
+% Last update: June 2009 % SuperLU v4.0
+% Last update: October 2009
+% Last update: August 2011   % SuperLU_DIST v3.0
+\vspace{4mm}
+% Last update: October 2014   % SuperLU_DIST v4.0, included GPU, OpenMP for factorization
+%Last update: March 2016   % Frank MCKENNA: Manual has 1 more integer arg for
+                           % LUstructInit(m,n,&LUstruct)
+Last update: June 2018}   % Added parallel AWPM row pivoting option
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\renewcommand{\thefootnote}{\arabic{footnote}}
+
+\chapter{Introduction}
+\label{chap:intro}
+\input{intro}
+
+\chapter{Sequential SuperLU (Version 4.2)}
+\label{chap:superlu}
+\input{ug_part1}
+
+%\chapter{Multithreaded SuperLU (Version 1.1)}
+\chapter{Multithreaded SuperLU (Version 2.0)}
+\label{chap:superlu_mt}
+\input{ug_part2}
+
+\chapter{Distributed-memory SuperLU on manycore nodes (Version 4.0)}
+\label{chap:superlu_dist}
+\input{ug_part3}
+
+%\newpage
+\bibliographystyle{plain}
+\bibliography{sparse,others}
+
+% -----------------------------------------------------------
+%\input{append}
+
+\end{document}

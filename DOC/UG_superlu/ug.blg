@@ -1,0 +1,86 @@
+This is BibTeX, Version 0.99d (TeX Live 2023)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: ug.aux
+The style file: plain.bst
+Database file #1: sparse.bib
+I was expecting an "="---line 1962 of file sparse.bib
+ :              Last 
+ :                   update: June 2018"
+I'm skipping whatever remains of this entry
+You're missing a field name---line 2216 of file sparse.bib
+ : 
+ : %URL = {https://epubs.siam.org/doi/abs/10.1137/1.9780898718003},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+You're missing a field name---line 2644 of file sparse.bib
+ : 
+ : % author = {X.S. Li and J. Demmel and J. Gilbert and L. Grigori and Y. Liu
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+You're missing a field name---line 3962 of file sparse.bib
+ : @inproceedings{Chen2021,
+ :                         ,
+I'm skipping whatever remains of this entry
+Database file #2: others.bib
+Repeated entry---line 269 of file others.bib
+ : @book{scalapackmanual
+ :                      ,
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 1327 of file others.bib
+ :   
+ :   pages = {A883-A907},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+You're missing a field name---line 1581 of file others.bib
+ : 
+ : %  booktitle = {Proc. 15th International Particle Accelerator Conference},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+You're missing a field name---line 1621 of file others.bib
+ : 
+ : %  booktitle = {Proc. 15th International Particle Accelerator Conference},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+Warning--I didn't find a database entry for "awpm"
+You've used 34 entries,
+            2118 wiz_defined-function locations,
+            710 strings with 9660 characters,
+and the built_in function-call counts, 11061 in all, are:
+= -- 1062
+> -- 582
+< -- 4
++ -- 238
+- -- 195
+* -- 815
+:= -- 1889
+add.period$ -- 108
+call.type$ -- 34
+change.case$ -- 197
+chr.to.int$ -- 0
+cite$ -- 34
+duplicate$ -- 369
+empty$ -- 840
+format.name$ -- 195
+if$ -- 2266
+int.to.chr$ -- 0
+int.to.str$ -- 34
+missing$ -- 29
+newline$ -- 178
+num.names$ -- 66
+pop$ -- 197
+preamble$ -- 1
+purify$ -- 166
+quote$ -- 0
+skip$ -- 247
+stack$ -- 0
+substring$ -- 630
+swap$ -- 43
+text.length$ -- 4
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 130
+warning$ -- 0
+while$ -- 95
+width$ -- 36
+write$ -- 377
+(There were 8 error messages)

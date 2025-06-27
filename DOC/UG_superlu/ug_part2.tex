@@ -1,0 +1,562 @@
+\section{About SuperLU\_MT}
+Among the various steps of the solution process in the sequential SuperLU,
+the $LU$ factorization dominates the computation; it usually takes more than
+95\% of the sequential runtime for large sparse linear systems.
+We have designed and implemented an
+algorithm to perform the factorization in parallel on machines
+with a shared address space and multithreading.
+The parallel algorithm is based on the efficient
+sequential algorithm implemented in SuperLU. Although we attempted
+to minimize the amount of changes to the sequential code, there are
+still a number of non-trivial modifications to the serial SuperLU,
+mostly related to the matrix data structures and memory organization.
+All these changes are summarized in Table~\ref{tab:diff_superlu} and their
+impacts on performance are studied thoroughly in~\cite{superlu_smp99,li96}.
+In this part of the Users' Guide, we describe only the changes that 
+the user should be aware of. Other than these differences, most of the
+material in chapter~\ref{chap:superlu} is still applicable.
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{|l|l|}\hline
+Construct	&Parallel algorithm \\\hline
+panel		&restricted so it does not contain branchings in the elimination tree \\
+supernode	&restricted to be a fundamental supernode in the elimination tree \\
+supernode storage &use either static or dynamic upper bound 
+		(section~\ref{sec:mt_mem}) \\
+pruning \& DFS	&use both $G(L^T)$ and pruned $G(L^T)$ to avoid locking\\\hline
+\end{tabular}
+\end{center}
+\vspace{-.1in}
+\caption{The differences between the parallel and the sequential algorithms.}
+\label{tab:diff_superlu}
+\end{table}
+
+
+\section{Storage types for $L$ and $U$}
+\label{sec:mt_datastructure}
+
+As in the sequential code, the type for the factored matrices $L$ and $U$ 
+is {\tt SuperMatrix} (Figure~\ref{fig:struct}), however, their storage formats
+(stored in {\tt *Store}) are changed. In the parallel algorithm, the
+adjacent panels of the columns may be assigned to different processes,
+and they may be finished and put in global memory out of order. That is,
+the consecutive columns or supernodes may not be stored contiguously
+in memory. Thus, in addition to the pointers to the beginning
+of each column or supernode, we need pointers to the end of
+the column or supernode. In particular, the storage type for $L$ is
+{\tt SCP} (Supernode, Column-wise and Permuted), defined as:
+
+\begin{verbatim}
+    typedef struct {
+        int  nnz;          /* number of nonzeros in the matrix */
+        int  nsuper;       /* number of supernodes */
+        void *nzval;       /* pointer to array of nonzero values, 
+                              packed by column */
+        int *nzval_colbeg; /* nzval_colbeg[j] points to beginning of column j
+                              in nzval[] */
+        int *nzval_colend; /* nzval_colend[j] points to one past the last 
+                              element of column j in nzval[] */
+        int *rowind;       /* pointer to array of compressed row indices of 
+                              the supernodes */
+        int *rowind_colbeg;/* rowind_colbeg[j] points to beginning of column j
+                              in rowind[] */
+        int *rowind_colend;/* rowind_colend[j] points to one past the last
+                              element of column j in rowind[] */
+        int *col_to_sup;   /* col_to_sup[j] is the supernode number to which
+                              column j belongs */
+        int *sup_to_colbeg;/* sup_to_colbeg[s] points to the first column 
+                              of the s-th supernode /
+        int *sup_to_colend;/* sup_to_colend[s] points to one past the last
+                              column of the s-th supernode */
+    } SCPformat;
+\end{verbatim}
+
+The storage type for $U$ is {\tt NCP}, defined as:
+\begin{verbatim}
+    typedef struct {
+        int  nnz;     /* number of nonzeros in the matrix */
+        void *nzval;  /* pointer to array of nonzero values, packed by column */
+        int  *rowind; /* pointer to array of row indices of the nonzeros */
+        int  *colbeg; /* colbeg[j] points to the location in nzval[] and rowind[]
+                         which starts column j */
+        int  *colend; /* colend[j] points to one past the location in nzval[]
+                         and rowind[] which ends column j */
+    } NCPformat;
+\end{verbatim}
+
+The table below summarizes the data and storage types of all the matrices 
+involved in the parallel routines:
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|c|} \hline
+            &$A$     	  	&$L$     &$U$     &$B$     &$X$ \\\hline
+{\tt Stype} &\NC\ or \NR     	&\SCP    &\NCP    &\DN     &\DN \\
+{\tt Dtype} &any      		&any     &any     &any     &any \\
+{\tt Mtype} &\GE     		&\TRLU   &\TRU    &\GE     &\GE \\\hline
+\end{tabular}
+\end{center}
+
+
+\section{{\tt Options} argument}
+The {\tt options} argument is the input argument to control
+the behaviour of the libraries.
+{\tt Options} is implemented as a C structure containing the
+following fields:
+\begin{itemize}
+\item {\tt nprocs} \\
+    Specifies the number of threads to be spawned.
+\item {\tt Fact}\\
+    Specifies whether or not the factored form of the matrix
+    $A$ is supplied on entry, and if not, how the matrix $A$ will
+    be factorized base on the previous history, such as factor from
+    scratch, reuse $P_c$ and/or $P_r$, or reuse the data structures of $L$
+    and $U$. 
+    {\tt fact} can be one of:
+    \begin{itemize}
+    \item {\tt DOFACT}: the matrix $A$ will be factorized from scratch.
+    \item {\tt EQUILIBRATE}: the matrix A will be equilibrated, then
+             factored into L and U.
+    \item {\tt FACTORED}: the factored form of $A$ is input.
+    \end{itemize}
+\item {\tt Trans}  \{ {\tt NOTRANS} $|$ {\tt TRANS} $|$ {\tt CONJ} \} \\
+    Specifies whether to solve the transposed system.
+\item {\tt panel\_size} \\
+    Specifies the number of consecutive columns to be treated as a
+    unit of task.
+\item {\tt relax} \\
+    Specifies the number of columns to be grouped as a relaxed
+    supernode.
+\item {\tt refact}  \{ {\tt YES} $|$ {\tt NO} \} \\
+    Specifies whether this is first time or subsequent factorization.
+\item {\tt diag\_pivot\_thresh}  $[0.0, 1.0]$ \\
+    Specifies the threshold used for a diagonal entry to be an
+    acceptable pivot.
+\item {\tt SymmetricMode}  \{ {\tt YES} $|$ {\tt NO} \} \\
+    Specifies whether to use the symmetric mode.
+\item {\tt PrintStat}  \{ {\tt YES} $|$ {\tt NO} \} \\
+    Specifies whether to print the solver's statistics.
+\end{itemize}
+
+
+\section{User-callable routines}
+As in the sequential SuperLU, we provide both computational routines and
+driver routines. To name those routines that involve parallelization in the
+call-graph, we prepend a letter {\tt p} to the names of their sequential
+counterparts, for example {\tt pdgstrf}.
+For the purely sequential routines, we use the same names as before.
+%% Appendix~\ref{chap:superlu_mt_spec} contains, for each individual routine,
+%% the leading comments and the complete specification of the calling 
+%% sequence and arguments.
+Here, we only list the routines that are different from the sequential ones.
+
+\subsection{Driver routines}
+We provide two types of driver routines for solving systems of 
+linear equations. The driver routines can handle both column-
+and row-oriented storage schemes.
+\begin{itemize}
+\item A simple driver {\tt pdgssv}, which solves the system $AX=B$ by 
+      factorizing $A$ and overwriting $B$ with the solution $X$. 
+\item An expert driver {\tt pdgssvx}, which, in addition to the above, also 
+      performs the following functions (some of them optionally):
+      \begin{itemize}
+      \item solve $A^TX=B$;
+      \item equilibrate the system (scale $A$'s rows and columns to have
+		unit norm) if $A$ is poorly scaled;
+      \item estimate the condition number of $A$, check for near-singularity,
+            and check for pivot growth;
+      \item refine the solution and compute forward and backward error bounds.
+      \end{itemize}
+\end{itemize}
+
+\subsection{Computational routines}
+The user can invoke the following computational routines
+to directly control the behavior of SuperLU.
+The computational routines can only handle column-oriented storage.
+Except for the parallel factorization routine {\tt pdgstrf}, all the other
+routines are identical to those appeared in the sequential superlu.
+
+\begin{itemize}
+\item {\tt pdgstrf}: Factorize (in parallel).
+
+      This implements the first-time factorization, or later re-factorization
+      with the same nonzero pattern. In re-factorizations, the code
+      has the ability to use the same column permutation $P_c$ and
+      row permutation $P_r$ obtained from a previous factorization.
+      Several scalar arguments control how the $LU$ decomposition and the 
+      numerical pivoting should be performed. {\tt pdgstrf} can handle
+      non-square matrices.
+
+\item {\tt dgstrs}: Triangular solve.
+
+      This takes the $L$ and $U$ triangular factors, the row and column 
+      permutation vectors, and the right-hand side to compute a solution
+      matrix $X$ of $AX=B$ or $A^TX=B$.
+
+\item {\tt dgscon}: Estimate condition number.
+      
+      Given the matrix $A$ and its factors $L$ and $U$, this estimates the 
+      condition number in the one-norm or infinity-norm. The algorithm is 
+      due to Hager and Higham~\cite{higham96}, and is the same as 
+      {\tt condest} in sparse Matlab.
+
+\item {\tt dgsequ/dlaqgs}: Equilibrate.
+
+      {\tt dgsequ} first computes the row and column scalings $D_r$ 
+      and $D_c$ which would make each row and each column of the scaled 
+      matrix $D_rAD_c$ have equal norm. 
+      {\tt dlaqgs} then applies them to the original matrix $A$ if it is 
+      indeed badly scaled. The equilibrated $A$ overwrites the original $A$.
+
+\item {\tt dgsrfs}: Refine solution.
+
+      Given $A$, its factors $L$ and $U$, and an initial solution $X$, 
+      this does iterative refinement, using the same precision as the 
+      input data. It also computes
+      forward and backward error bounds for the refined solution.
+
+\end{itemize}
+
+
+
+\section{Installation}
+\label{sec:mt_install}
+
+\subsection{File structure}
+The top level SuperLU\_MT/ directory is structured as follows:
+\begin{verbatim}
+   SuperLU_MT_2.0/README    instructions on installation
+   SuperLU_MT_2.0/CBLAS/    BLAS routines in C, functional but not fast
+   SuperLU_MT_2.0/DOC/      Users' Guide
+   SuperLU_MT_2.0/EXAMPLE/  example programs
+   SuperLU_MT_2.0/INSTALL/  test machine dependent parameters
+   SuperLU_MT_2.0/SRC/      C source code, to be compiled into libsuperlu_mt.a
+   SuperLU_MT_2.0/TESTING/  driver routines to test correctness
+   SuperLU_MT_2.0/lib/      SuperLU_MT library archive libsuperlu_mt.a
+   SuperLU_MT_2.0/Makefile  top level Makefile that does installation and testing
+   SuperLU_MT_2.0/MAKE_INC  sample machine-specific make.inc files
+   SuperLU_MT_2.0/make.inc  compiler, compiler flags, library definitions and C
+                            preprocessor definitions, included in all Makefiles.
+                            (You may need to edit it to suit for your system 
+                             before compiling the whole package.)
+
+\end{verbatim}
+
+We have ported the parallel programs to a number of platforms, which are
+reflected in the make include files provided in the top level directory, 
+for example, {\tt make.pthreads, make.openmp, make.ibm, make.sun, make.sgi,
+make.cray}. 
+If you are using one of these machines, such as an IBM, you can
+simply copy {\tt make.sun} into {\tt make.inc} before compiling. 
+If you are not using any of the machines to which we have ported, 
+you will need to read section~\ref{sec:mt_port} about the
+porting instructions.
+
+The rest of the installation and testing procedure is similar to that
+described in section~\ref{sec:install} for the serial SuperLU.
+Then, you can type {\tt make} at the top level directory to
+finish installation. In the {\tt SuperLU\_MT/TESTING} subdirectory, you can 
+type {\tt pdtest.csh} to perform testings.
+
+
+\subsection{Performance issues}
+\label{sec:superlu_mt_perf}
+
+\subsubsection{Memory management for $L$ and $U$}
+\label{sec:mt_mem}
+In the sequential SuperLU, four data arrays associated with the $L$
+and $U$ factors can be expanded dynamically, as described in 
+section~\ref{sec:mem}. 
+% These include the nonzero values ({\tt nzval}) and the compressed 
+% row indices ({\tt rowind}) of $L$, and
+% the nonzero values ({\tt nzval}) and the row indices ({\tt rowind}) of $U$.
+In the parallel code, the expansion is hard and costly to implement, 
+because when a process detects that an array bound is exceeded, it has to send
+a signal to and suspend the execution of the other processes. Then
+the detecting process can proceed with the array expansion. After the
+expansion, this process must wake up all the suspended processes.
+
+In this release of the parallel code, 
+we have not yet implemented the above expansion mechanism.
+For now, the user must pre-determine an 
+estimated size for each of the four arrays through the inquiry function
+{\tt sp\_ienv()}. There are two interpretations for each 
+integer value {\tt FILL} returned by calling this function with 
+{\tt ispec = 6, 7, or 8}.
+A negative number is interpreted as the fills growth factor, that is,
+the program will allocate {\tt (-FILL)*nnz(A)} elements for the corresponding
+array. A positive number is interpreted as the true amount
+the user wants to allocate, that is, the program will allocate
+{\tt FILL} elements for the corresponding array.
+In both cases, if the initial request exceeds the physical memory constraint,
+the sizes of the arrays are repeatedly reduced until the initial
+allocation succeeds.
+
+\vspace{.1in}
+{\tt int sp\_ienv(int ispec);}
+\vspace{.1in}
+
+{\tt Ispec} specifies the parameter to be returned:
+\begin{tabbing}
+xxxxxx \= xxxx \= junk \= \kill
+\>ispec\>= $\ldots$ \\
+\>     \>= 6: size of the array to store the values of the $L$ supernodes ({\tt nzval})\\
+\>     \>= 7: size of the array to store the columns in U ({\tt nzval/rowind})\\
+\>     \>= 8: size of the array to store the subscripts of the $L$ supernodes ({\tt rowind});
+\end{tabbing}	    
+
+If the actual fill exceeds any array size, the program will abort with a
+message showing the current column when failure occurs, and indicating
+how many elements are needed up to the current column. The user
+may reset a larger fill parameter for this array and then restart
+the program.
+
+To make the storage allocation more efficient for the supernodes in $L$, 
+we devised a special storage scheme.
+The need for this special treatment and how we implement it are fully
+explained and studied in~\cite{superlu_smp99,li96}. Here, we only sketch the
+main idea. Recall that the parallel algorithm assigns one panel of columns
+to one process.
+Two consecutive panels may be assigned to two different processes,
+even though they may belong to the same supernode discovered later.
+Moreover, a third panel may be
+finished by a third process and put in memory between these two panels, 
+resulting in the columns of a supernode being noncontiguous in memory. 
+This is undesirable, because then we cannot directly call BLAS routines
+using this supernode unless we pay the cost of copying the columns
+into contiguous memory first. To overcome this problem, we exploited
+the observation that the nonzero structure for $L$ is contained
+in that of the Householder matrix $H$ from the Householder sparse $QR$
+transformation~\cite{georgeliung88,georgeng87}. Furthermore, it can be
+shown that a fundamental supernode of $L$ is always contained in
+a fundamental supernode of $H$. This containment property is true for
+any row permutation $P_r$ in $P_rA = LU$. Therefore, we can pre-allocate 
+storage for the $L$ supernodes based on the size of $H$ supernodes.
+Fortunately, there exists a fast algorithm (almost linear in the
+number of nonzeros of $A$) to compute the size of $H$ and the supernodes 
+partition in $H$~\cite{glnp:01}.
+
+In practice, the above static prediction is fairly tight for most problems.
+However, for some others, the number of nonzeros in $H$ greatly
+exceeds the number of nonzeros in $L$. To handle this situation,
+we implemented an algorithm that still uses the supernodes
+partition in $H$, but dynamically searches the supernodal graph of $L$
+to obtain a much tighter bound for the storage. Table 6 in~\cite{superlu_smp99}
+demonstrates the storage efficiency achieved by both static and
+dynamic approach.
+
+In summary, our program tries to use the static prediction first
+for the $L$ supernodes. 
+In this case, we ignore the integer value given in the function
+{\tt sp\_ienv(6)}, and simply use the nonzero count of $H$.
+If the user finds that the size of $H$ is too large, he can invoke the
+dynamic algorithm at runtime by setting the following 
+Linux shell environment variable:
+
+\vspace{.1in}
+{\tt setenv SuperLU\_DYNAMIC\_SNODE\_STORE 1}
+\vspace{.1in}
+
+\noindent 
+The dynamic algorithm incurs runtime overhead. For example, this overhead 
+is usually between 2\% and 15\% on a single processor RS/6000-590 for a 
+range of test matrices.
+ 
+\subsubsection{Symmetric structure pruning}
+In both serial and parallel algorithms, we have implemented Eisenstat
+and Liu's symmetric pruning idea of representing the graph $G(L^T)$
+by a reduced graph $G'$, and thereby reducing the DFS traversal time.
+A subtle difficulty arises in the parallel implementation.
+
+When the owning process of a panel starts DFS (depth-first search) on 
+$G'$ built so far, it only sees the partial graph, because the part of $G'$
+corresponding to the busy panels down the elimination tree is not yet complete.
+So the structural prediction at this stage can miss some nonzeros.
+After performing the updates from the finished supernodes, the process 
+will wait for all the busy descendant panels to finish
+and perform more updates from them. Now, we make a conservative
+assumption that all these busy panels will update the current
+panel so that their nonzero structures are included in the current panel.
+
+This approximate scheme works fine for most problems. 
+However, we found that this conservatism may sometimes cause 
+a large number of structural zeros
+(they are related to the supernode amalgamation performed at the
+bottom of the elimination tree)
+to be included and they in turn are propagated through the rest of the 
+factorization.
+
+We have implemented an exact structural prediction scheme to 
+overcome this problem.
+In this scheme, when each numerical nonzero is scattered into the
+sparse accumulator array, we set the occupied flag as well. Later when
+we accumulate the updates from the busy descendant panels,
+we check the occupied flags to determine the exact nonzero structure.
+This scheme avoids unnecessary zero propagation at the expense
+of runtime overhead, because setting the occupied flags must be done in
+the inner loop of the numeric updates.
+
+We recommend that the user use the approximate scheme
+(by default) first. If the user finds
+that the amount of fill from the parallel factorization is 
+substantially greater than that from the sequential factorization,
+he can then use the accurate scheme.
+To invoke the second scheme, the user should recompile the code by 
+defining the macro:
+ 
+\vspace{.1in}
+{\tt -D SCATTER\_FOUND}
+\vspace{.1in}
+
+\noindent for the C preprocessor.
+
+\subsubsection{The inquiry function {\tt sp\_ienv()}}
+\label{sec:SuperLU_MT_sp_ienv}
+
+For some user controllable constants, such as the blocking parameters
+and the size of the global storage for $L$ and $U$, SuperLU\_MT
+calls the inquiry function {\tt sp\_ienv()} to retrieve their values.
+The declaration of this function is
+
+\vspace{.1in}
+{\tt int sp\_ienv(int ispec).}
+\vspace{.1in}
+
+The full meanings of the returned values are as follows:
+\begin{tabbing}
+xxxxxx \= xxxx \= junk \= \kill
+\>ispec\>= 1: the panel size $w$ \\
+\>     \>= 2: the relaxation parameter to control supernode amalgamation
+		($relax$) \\
+\>     \>= 3: the maximum allowable size for a supernode ($maxsup$)\\
+\>     \>= 4: the minimum row dimension for 2D blocking to be used ($rowblk$)\\
+\>     \>= 5: the minimum column dimension for 2D blocking to be used ($colblk$)\\
+
+\>     \>= 6: size of the array to store the values of the L supernodes ($nzval$)\\
+\>     \>= 7: size of the array to store the columns in U ($nzval/rowind$) \\
+\>     \>= 8: size of the array to store the subscripts of the L supernodes ($rowind$)
+\end{tabbing}
+
+We should take into account the trade-off between cache reuse and amount 
+of parallelism in order to set the appropriate $w$ and $maxsup$. 
+Since the parallel algorithm
+assigns one panel factorization to one process, large values may
+constrain concurrency, even though they may be good for uniprocessor
+performance. We recommend that $w$ and $maxsup$ be set a bit smaller
+than the best values used in the sequential code.
+
+The settings for parameters 2, 4 and 5 are the same
+as those described in section~\ref{sec:parameters}.
+The settings for parameters 6, 7 and 8 are discussed in
+section~\ref{sec:mt_mem}. 
+
+In the file {\tt SRC/sp\_ienv.c}, we provide sample settings of these
+parameters for several machines.
+
+\section{Example programs}
+In the {\tt SuperLU\_MT/EXAMPLE/} subdirectory, we present a few sample
+programs to illustrate the complete calling sequences to use the simple
+and expert drivers to solve systems of equations.
+Examples are also given to illustrate how to perform a sequence of
+factorizations for the matrices with the same sparsity pattern,
+and how SuperLU\_MT can be integrated into the other
+multithreaded application such that threads are created only once.
+A {\tt Makefile} is provided to generate the executables.
+A {\tt README} file in this directory shows how to run these examples.
+The leading comment in each routine describes the functionality of
+the example.
+
+
+\section{Porting to other platforms}
+\label{sec:mt_port}
+We have provided the parallel interfaces for a number of shared-memory
+machines. 
+Table~\ref{tab:mt_machines} lists the platforms on which
+we have tested the library, and the respective {\tt make.inc} files.
+The most portable interface for shared memory programming is
+POSIX threads~\cite{posix}, 
+since nowadays many commercial UNIX operating systems have support for it.
+We call our POSIX threads interface the {\tt Pthreads} interface. 
+To use this interface, you can copy {\tt make.pthreads} into {\tt make.inc}
+and then compile the library.
+In the last column of Table~\ref{tab:mt_machines}, we list the runtime
+environment variable to be set in order to use multiple CPUs.
+For example, to use 4 CPUs on the Origin2000, you need to set
+the following before running the program:
+
+\vspace{.1in}
+{\tt setenv MP\_SET\_NUMTHREADS 4}
+\vspace{.1in}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|l|l|l|l|} \hline
+		&		&Programming	&Environment \\
+make.inc	&Platforms 	&Model		&Variable\\ \hline
+make.pthreads   &Machines with POSIX threads    &pthreads	& \\
+make.openmp     &Machines with OpenMP   &OpenMP	& {\tt OMP\_NUM\_THREADS} \\
+make.alpha      &DEC Alpha Servers 	&DECthreads	& \\
+make.cray       &Cray C90/J90 	     &microtasking &{\tt NCPUS}\\
+make.ibm        &IBM Power series 	&pthreads	& \\
+make.origin     &SGI/Cray Origin2000 &parallel C &{\tt MP\_SET\_NUMTHREADS}\\
+make.sgi        &SGI Power Challenge &parallel C &{\tt MPC\_NUM\_THREADS}\\
+make.sun        &Sun Ultra Enterprise 	&Solaris threads	& \\
+  \hline
+\end{tabular}
+\end{center}
+\vspace{-.1in}
+\caption{Platforms on which SuperLU\_MT was tested.}
+\label{tab:mt_machines}
+\end{table}
+
+In the source code, all the platform specific constructs are enclosed in 
+the C {\tt \#ifdef} preprocessor statement.
+If your platform is different from any one listed in 
+Table~\ref{tab:mt_machines}, you need to go to these places and
+create the parallel constructs suitable for your machine.
+The two constructs, concurrency and synchronization, are explained 
+in the following two subsections, respectively.
+
+\subsection{Creating multiple threads}
+Right now, only the factorization routine {\tt pdgstrf} is parallelized,
+since this is the most time-consuming part in the whole solution process.
+There is one single thread of control on entering and exiting {\tt pdgstrf}.
+Inside this routine, more than one thread may be created.
+All the newly created threads begin by calling the thread function
+{\tt pdgstrf\_thread} and they are concurrently executed on multiple
+processors. The thread function {\tt pdgstrf\_thread} expects a single
+argument of type {\tt void*}, which is a pointer to the structure
+containing all the shared data objects.
+
+\subsection{Use of mutexes}
+Although the threads {\tt pdgstrf\_thread} execute independently of each
+other, they share the same address space and can communicate efficiently
+through shared variables. Problems may arise if two threads try to access
+(at least one is to modify) the shared data at the same time.
+Therefore, we must ensure that all memory accesses to the same data
+are mutually exclusive. There are five critical regions in the
+program that must be protected by mutual exclusion. Since we want
+to allow different processors to enter different critical regions
+simultaneously, we use five mutex variables as listed
+in Table~\ref{tab:mutexes}. The user should properly initialize them in 
+routine {\tt ParallelInit}, and destroy them in routine {\tt ParallelFinalize}.
+Both these routines are in file {\tt pxgstrf\_synch.c}.
+
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|l|l|}\hline
+Mutex		&Critical region \\ \hline
+{\tt ULOCK}	&allocate storage for a column of matrix $U$ \\
+{\tt LLOCK}	&allocate storage for row subscripts of matrix $L$\\
+{\tt LULOCK}	&allocate storage for the values of the supernodes\\
+{\tt NSUPER\_LOCK}&increment supernode number {\tt nsuper}\\
+{\tt SCHED\_LOCK} &invoke {\tt Scheduler()} which may update global task queue\\
+\hline
+\end{tabular}
+\end{center}
+\vspace{-.1in}
+\caption{Five mutex variables.}
+\label{tab:mutexes}
+\end{table}
+

@@ -1,0 +1,4014 @@
+@string{IEEEPDS  = "IEEE Trans. Parallel and Distributed Systems"}
+@string{IJSA     = "Int. Journal of Supercomputer Applications"}
+@string{siad     = "SIAM J. Algebraic and Discrete Methods"}
+@string{sicomp   = "SIAM J. Computing"}
+@string{simax    = "SIAM J. Matrix Analysis and Applications"}
+@string{sinum    = "SIAM J. Numerical Analysis"}
+@string{sissc    = "SIAM J. Scientific and Statistical Computing"}
+@string{sisc     = "SIAM J. Scientific Computing"}
+@string{sirev    = "SIAM Review"}
+@string{toms     = "ACM Trans.\ Mathematical Software"}
+
+@MISC{agarwal94,
+    AUTHOR = {Agarwal, R.C. and Gustavson, F.G. and Palkar, P. and Zubair, M.},
+    TITLE = {A Performance Analysis of the Subroutines in the
+		  {ESSL/LAPACK} Call Conversion Interface ({CCI})},
+    HOWPUBLISHED = {IBM T.J. Watson Research Center, Yorktown Heights},
+    YEAR = {1994} }
+
+@inproceedings{adel:01,
+   author    = {Emmanuel Agullo and P.~R. Amestoy and A. Buttari and
+ A. Guermouche and G. Joslin and J.-Y. L’Excellent and X.~S. Li
+ and A. Napov and F.-H. Rouet and M. Sid-Lakhdar and J. Xia
+and S. Wang and C. Weisbecker and I. Yamazaki},
+   title     = {Recent advances in sparse direct solvers},
+   booktitle = {22nd Conference on Structural Mechanics in Reactor Technology},
+
+   address = {San Francisco, USA},
+   year = {2013},
+   month = {August 18-23}
+}
+
+@ARTICLE{aho72,
+   AUTHOR = {A. V. Aho and M. R. Garey and J. D. Ullman},
+   TITLE = {The transitive reduction of a directed graph},
+   JOURNAL = sicomp,
+   YEAR	   = {1972},
+   VOLUME = {1},
+   PAGES = {131--137} }
+
+@TECHREPORT{amestoy91,
+    AUTHOR = {Amestoy, P.~R.},
+    TITLE = {Factorization of large unsymmetric sparse matrices based
+	on a multifrontal approach in a multiprocessor environment},
+    INSTITUTION = {CERFACS, Toulouse, France},
+    NUMBER = {TH/PA/91/2},
+    NOTE = {Ph.{D} thesis},
+    MONTH = {February},
+    YEAR = {1991} }
+
+@ARTICLE{amdu:93,
+   AUTHOR = {Amestoy, P.~R. and Duff, I.~S.},
+   TITLE = {Memory Management Issues in Sparse Multifrontal Methods on 
+	    Multiprocessors},
+   JOURNAL = {Int. J. Supercomputer Appl.},
+   YEAR	   = {1993},
+   VOLUME = {7},
+   NUMBER = {1},
+   MONTH = {Spring},
+   PAGES = {64--82} }
+
+@ARTICLE{amestoyduff89,
+   AUTHOR = {P. R. Amestoy and I. S. Duff},
+   TITLE = {Vectorization of a multiprocessor multifrontal code},
+   JOURNAL = {The International Journal of Supercomputer Applications},
+   YEAR	   = {1989},
+   VOLUME = {3},
+   PAGES = {41--59} }
+
+@techreport{ame94-MUPS,
+     ADDRESS = {Toulouse, France},  
+     AUTHOR = {P. R. Amestoy and I. S. Duff},  
+     INSTITUTION = {CERFACS},  
+     TITLE = {{MUPS}: a parallel package for solving sparse unsymmetric sets of linear equations},  
+     YEAR = {1994}
+}
+
+@ARTICLE{amestoydavisduff96,
+   AUTHOR = {Amestoy, P. R. and Davis, T. A. and Duff, I.~S.},
+   TITLE = {An approximate minimum degree ordering algorithm},
+   JOURNAL = simax,
+   YEAR	   = {1996},
+   VOLUME = {17},
+   NUMBER = {4},
+   PAGES = {886-905},
+   NOTE   = {Also University of Florida TR-94-039}
+}
+@article{amestoydavisduff04,
+author = {P. Amestoy and T. Davis and I. Duff},
+title = {Algorithm 837: {AMD}, an approximate minimum degree ordering algorithm},
+journal = toms,
+volume = {30},
+number = {3},
+pages = {381-388},
+year = 2004
+}
+
+@techreport{amestoyduff98,
+     AUTHOR = {P. R. Amestoy and I. S. Duff and J.-Y. L'Excellent},
+     INSTITUTION = {Rutherford Appleton Laboratory},  
+     NUMBER = {RAL-TR-98-051},  
+     TITLE = {Multifrontal Parallel Distributed symmetric and unsymmetric
+              solvers},
+     YEAR = {1998}
+}
+
+@article{Amestoy:2001:ACT,
+  author =       "P.~R. Amestoy and I.~S. Duff and J.-Y. L'Excellent 
+                and X.~S. Li",
+  title =        "Analysis and Comparison of Two General Sparse Solvers
+                  for Distributed Memory Computers",
+  journal =      toms,
+  volume =       "27",
+  number =       "4",
+  month =        dec,
+  year =         "2001",
+  pages =        "388--421",
+  note="\url{http://doi.acm.org/10.1145/504210.504212}", 
+}
+
+
+@TECHREPORT{amestoy2000,
+    AUTHOR = {P.~R. Amestoy and I.~S. Duff and J.-Y. L'Excellent
+              and X.~S. Li},
+    TITLE = {Analysis, Tuning and Comparison of Two General Sparse 
+             Solvers for Distributed Memory Computers},
+    INSTITUTION = {NERSC, Lawrence Berkeley National Laboratory},
+    NUMBER = {LBNL-45992},
+    NOTE = {Submitted to {\em ACM Trans.\ Mathematical Software}},
+    MONTH = {June},
+    YEAR = {2000} }
+
+@techreport{ampu:00,
+   author    = {P. R. Amestoy and C. Puglisi},
+   title     = {An unsymmetrized multifrontal {LU} factorization},
+   institution = {ENSEEIHT-IRIT},
+   year      = {2000},
+   number    = {RT/APO/00/3},
+   note      = {Also Lawrence Berkeley National Laboratory report LBNL-46474},
+   type      = {Tech. Rep.}
+}
+
+@article{amdp:96,
+   author    = {P. R. Amestoy and I. S. Duff and C. Puglisi},
+   title     = {Multifrontal {QR} factorization in a multiprocessor
+                environment},
+   journal = {Numer. Linear Algebra Appl.},
+   volume  = 3,
+   number  = 4,
+   pages   = {275-300},
+   year    = 1996
+}
+
+@article{ampu:02,
+   author    = {P. R. Amestoy and C. Puglisi},
+   title     = {An unsymmetrized multifrontal {LU} factorization},
+   journal = SIMAX,
+   volume  = 24,
+   year    = 2002,
+   number  = 2,
+   pages   = {553-569}
+}
+
+@TECHREPORT{alp:05,
+    AUTHOR = {P.~R. Amestoy and X.~S. Li and S. Pralet},
+    TITLE = {Unsymmetric Ordering Using a Constrained Markowitz Scheme},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {LBNL-56861},
+    NOTE = {Also CERFACS report TR/PA/04/137. Submitted to 
+           {\em SIAM J. Matrix Analysis and Applications}},
+    MONTH = {January},
+    YEAR = {2005}
+}
+
+@article{amestoy:302,
+author = {P.~R. Amestoy and X.~S. Li and S. Pralet},
+collaboration = {},
+title = {Unsymmetric Ordering Using A Constrained Markowitz Scheme},
+publisher = {SIAM},
+year = {2007},
+journal = {SIAM Journal on Matrix Analysis and Applications},
+volume = {29},
+number = {1},
+pages = {302-327},
+keywords = {sparse unsymmetric matrices; greedy heuristics; ordering methods; bipartite quotient graph},
+note="\url{http://link.aip.org/link/?SML/29/302/1}",
+doi = {10.1137/050622547}
+}
+
+@article{adlk:2001,
+title   = {A Fully Asynchronous Multifrontal Solver
+           Using Distributed Dynamic Scheduling},
+author  = {P. R. Amestoy and I. S. Duff and
+           J.-Y. L'Excellent and J. Koster},
+journal = {SIAM Journal on Matrix Analysis and Applications},
+volume  = 23,
+year    = 2001,
+number  = 1,
+pages   = {15-41}
+}
+
+@inproceedings{adel:01,
+   author    = {P. R. Amestoy and I. S. Duff and J.-Y. L'Excellent
+              and X. S. Li},
+   title     = {Performance and Tuning of Two Distributed Memory
+                Sparse Solvers},
+   booktitle = {Proceedings of the Tenth SIAM Conference on 
+                Parallel Processing for Scientific Computing},
+   address = {Portsmouth, Virginia},
+   year = {2001},
+   month = {March 12--14,},
+}
+
+@TECHREPORT{adel:01b,
+    AUTHOR = {P. R. Amestoy and I. S. Duff and J.-Y. L'Excellent
+              and X. S. Li},
+    TITLE = {Impact of the Implementation of {MPI} Point-to-Point
+             Communications on the Performance of Two General Sparse Solvers},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {LBNL-48968},
+    MONTH = {October},
+    YEAR = {2001}
+}
+
+@techreport{adel:03,
+   author    = {P.~R. Amestoy and I.~S. Duff and J.-Y. L'Excellent 
+          and X.~S. Li},
+   title     = {Impact of the implementation of {MPI} point-to-point
+                communications on the performance of two general
+                sparse solvers},
+   year      = {2003},
+   institution = {CERFACS},
+   number = "TR/PA/03/14",
+   note = {Various versions have appeared as technical reports
+           RT/APO/01/4 from ENSEEIHT-IRIT, Toulouse, RR-4372 from INRIA,
+           Lyon, and LBNL-48968 from Lawrence Berkeley National
+Laboratory,
+           California.  To appear in {\it Parallel Computing}},
+   month = {March}
+}
+
+@ARTICLE{adel:03b,
+   author    = {P.~R. Amestoy and I.~S. Duff and J.-Y. L'Excellent
+                   and X.~S. Li},
+   title     = {Impact of the implementation of {MPI} point-to-point
+                communications on the performance of two general
+                sparse solvers},
+   JOURNAL   = {Parallel Computing},
+   year      = {2003},
+   VOLUME    = {29},
+   ISSUE     = {7},
+   PAGES     = {833-849}
+}
+
+@TECHREPORT{amestoyling03,
+    AUTHOR = {P. R. Amestoy and X. S. Li and E. G. Ng},
+    TITLE = {Diagonal Markowitz Scheme With Local Symmetrization},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {LBNL-53854},
+    MONTH = {October},
+    YEAR = {2003},
+    NOTE = {Also ENSEEIHT-IRIT RT/APO/03/05}
+}
+
+@article{amestoy:228,
+    author = {P.~R. Amestoy and X.~S. Li and E.~G. Ng},
+    collaboration = {},
+    title = {Diagonal Markowitz Scheme with Local Symmetrization},
+    publisher = {SIAM},
+    year = {2007},
+    journal = {SIAM Journal on Matrix Analysis and Applications},
+    volume = {29},
+    number = {1},
+    pages = {228-244},
+    keywords = {sparse nonsymmetric matrices; linear equations;
+                ordering methods},
+    note="\url{http://link.aip.org/link/?SML/29/228/1}",
+    doi = {10.1137/050637315}
+}
+
+@article{mumps2001,
+  author = {P. R. Amestoy and I. S. Duffd and J. Koster and J.-Y. L’Excellent},
+  title = {A fully asynchronous multifrontal solver using distributed
+          dynamic scheduling},
+  journal = {SIAM Journal of Matrix Analysis and Applications},
+  volume = {23},
+  number = {1},
+  pages = {15-41},
+  year = 2001
+}
+
+%% a single good reference to MUMPS
+@article{bib:mumps,
+ author = {P.~R. Amestoy and A.~Guermouche and J.-Y. L'Excellent and S.~Pralet},
+ title = {Hybrid scheduling for the parallel solution of linear systems},
+ journal = {Parallel Computing},
+ volume = {32},
+ number = {2},
+ pages = {136-156},
+ year = 2006
+}
+
+@misc{mumps_ug03,
+     AUTHOR = {P. R. Amestoy and I. S. Duff and J.-Y. L'Excellent
+               and J. Koster},
+     TITLE = {{MU}ltifrontal {M}assively {P}arallel {S}olver
+             ({MUMPS} Version 4.3) {U}sers' {G}uide},
+     MONTH = {July},
+     YEAR = {2003},
+}
+
+@misc{mumps_web,
+  key  = "mumps_web",
+  title =  "{MUMPS: A MUltifrontal Massively Parallel sparse direct Solver}",
+  howpublished = "\url{http://graal.ens-lyon.fr/MUMPS/}"
+}
+
+@article{amestoy2015improving,
+  title={Improving multifrontal methods by means of block low-rank representations},
+  author={P. Amestoy and C. Ashcraft and O. Boiteau and A. Buttari and J.-Y. L'Excellent and C. Weisbecker},
+  journal={SIAM J. Scientific Computing},
+  volume={37},
+  number={3},
+  pages={A1451-A1474},
+  year={2015},
+  publisher={SIAM}
+}
+
+@article{amestoy2017,
+  title={On the complexity of the block low-rank multifrontal factorization},
+  author={Patrick Amestoy and Alfredo Buttari and Jean-Yves l'Excellent and Theo Mary},
+  journal={SIAM J. Scientific Computing},
+  volume={39},
+  number={4},
+  pages={A1710-A1740},
+  year={2017},
+  publisher={SIAM}
+}
+
+@ARTICLE{arioli89,
+   AUTHOR = {Arioli, M. and Demmel, J. W. and Duff, I. S.},
+   TITLE = {Solving Sparse Linear Systems with Sparse Backward Error},
+   JOURNAL = {SIAM J. Matrix Anal. Appl.},
+   YEAR	   = {1989},
+   VOLUME = {10},
+   NUMBER = {2},
+   MONTH = {April},
+   PAGES = {165--190} }
+
+@INCOLLECTION{arioliduff90,
+    AUTHOR = {M. Arioli and I.~S. Duff},
+    TITLE = {Experiments in Tearing Large Sparse Systems},
+    BOOKTITLE = {Reliable Numerical Computation},
+    PUBLISHER = {Oxford Science Publications},
+    EDITOR = {M. G. Cox and S. Hammarling},
+    PAGES = {207--226},
+    YEAR = {1990} }
+
+@ARTICLE{arioli92,
+   AUTHOR = {M. Arioli and I.~Duff and J. Noailles and D. Ruiz},
+   TITLE = {A block projection method for sparse matrices},
+   JOURNAL = sissc,
+   YEAR	   = {1992},
+   VOLUME = {13},
+   NUMBER = {1},
+   MONTH = {January},
+   PAGES = {47--70} }
+
+@ARTICLE{ashcraft87,
+    AUTHOR = {Ashcraft, C.C. and Grimes, R.G. and Lewis, J.G. 
+	and Peyton, B.W. and Simon, H.D.},
+    TITLE = {Recent progress in sparse matrix methods for large linear
+             systems},
+    JOURNAL = {International Journal of Supercomputer Applications},
+    NUMBER = {1},
+    VOLUME = {4},
+    PAGES = {10--30},
+    YEAR = {1987} }
+
+@ARTICLE{ashcraft97,
+    AUTHOR = {Ashcraft, C. and Liu, J.~W. H.},
+    TITLE = {Using domain decomposition to find graph of bisectors},
+    JOURNAL = {{BIT}},
+    NUMBER = {3},
+    VOLUME = {37},
+    PAGES = {506--534},
+    YEAR = {1997} }
+
+@article{ashcraft95,
+     AUTHOR = {C. Ashcraft},
+     TITLE = {Compressed graphs and the minimum degree algorithm},
+     JOURNAL = {SIAM Journal on Scientific Computing},
+     KEY = {LLt mfrontal},
+     PAGES = {1404-1411},
+     VOLUME = {16},
+     YEAR = {1995}
+}
+
+@article{ash89-relaxed,
+     AUTHOR = {C. Ashcraft and R. Grimes},
+     JOURNAL = toms,
+     KEY = {LLt mfrontal},
+     PAGES = {291-309},
+     TITLE = {The influence of relaxed supernode partitions on the multifrontal method},
+     VOLUME = {15},
+     YEAR = {1989}
+}
+@TECHREPORT{ashcraft90,
+    AUTHOR = {Ashcraft, C. and Eisenstat, S.~C. and Liu, J.~ and 
+	Sherman, A.~H.},
+    TITLE = {A Comparison of Three Column-based Distributed Sparse 
+		Factorization Schemes},
+    INSTITUTION = {Yale University, Department of Computer Science},
+    NUMBER = {Research Report YALEU/DCS/RR-810},
+    MONTH = {July},
+    YEAR = {1990} }
+
+@INCOLLECTION{ashcraft93,
+    AUTHOR = {Ashcraft, Cleve},
+    TITLE = {The fan-both family of column-based distributed Cholesky 
+             factorization algorithms},
+    BOOKTITLE = {Graph theory and sparse matrix computation},
+    PUBLISHER = {Springer-Verlag, New York},
+    EDITOR = {George, A. and Gilbert, J.~R. and Liu, J.~W.~H.},
+    PAGES = {159--190},
+    YEAR = {1993} }
+
+@InCollection{ashcraft94,
+  author =   {Ashcraft, Cleve},
+  title =   {The fan-both family of column-based distributed
+                  {C}holesky factorization algorithms},
+  booktitle =   {Graph {T}heory and {S}parse {M}atrix {C}omputation},
+  pages =  {159-191},
+  publisher =  {Springer Verlag},
+  year =  1994,
+  editor =  {George, A. and Gilbert, J.~R. and Liu, J.~W.~H.}
+}
+
+@TECHREPORT{ashcraftliu96,
+    AUTHOR = {Ashcraft, C. and Liu, J.},
+    TITLE = {Robust ordering of sparse matrices using multisection},
+    INSTITUTION = {Boeing Information and Support Services},
+    NUMBER = {ISSTECH-96-002},
+    YEAR = {1996},
+    NOTE = {Also Technical Report CS 96-01, Department of Computer Science,
+            York University, Canada.}
+}
+
+@article{ashcraftliu98,
+    AUTHOR = {Ashcraft, C. and Liu, J.},
+    TITLE = {Robust ordering of sparse matrices using multisection},
+    JOURNAL = simax,
+    VOLUME = {19},
+    PAGES = {816-832},
+    YEAR = {1998},
+}
+
+@inproceedings{asgr:99,
+   author    = {C. Ashcraft and R. G. Grimes},
+   title     = {{SPOOLES}: An object oriented sparse matrix library},
+   booktitle = {Proceedings of the Ninth SIAM Conference on 
+                Parallel Processing for Scientific Computing},
+   address = {San Antonio, Texas},
+   year = {1999},
+   month = {March 22--24,},
+   note="\url{http://www.netlib.org/linalg/spooles}"
+}
+%   note = {http://www.netlib.org/linalg/spooles}
+
+@techreport{aztec2.0,
+     AUTHOR = {Scott A. Hutchinson and Lydie V. Prevost and John
+		  N. Shadid and Ray S. Tuminaro},
+     INSTITUTION = {Sandia National Laboratories},  
+     NUMBER = {SAND95-1559},
+     TITLE = {Aztec {U}ser's {G}uide, {V}ersion 2.0 {B}eta},
+     YEAR = {1998}
+}
+		  
+@unpublished{bai95,
+  Author = {Z. Bai and D. Day and J. Demmel and J. Dongarra and
+            M. Gu and A. Ruhe},
+  Title =  {Outline for Templates for the Solution of
+            Eigenvalue Problems},
+  Note = {Preprint},
+  year = "1995"
+}
+
+@inproceedings{barnardsimon93,
+    AUTHOR = {Barnard, S. T. and Simon, H.},
+    TITLE  = {A fast multilevel implementation of recursive spectral
+              bisection for partitioning unstructured problems},
+    BOOKTITLE = {Sixth {SIAM} conference on parallel processing for
+                 scientific computing},
+    EDITOR = {R. F. Sincovec and D. Keyes and M. Leuze and L. Petzold
+              and D. Reed},
+    PAGES = {711-718},
+    YEAR = {1993} }
+
+%% http://www.netlib.org/templates/templates.pdf
+@BOOK{templates,
+AUTHOR = {R. Barrett and M. Berry and T. F. Chan and J. Demmel and J. Donato 
+and J. Dongarra and V. Eijkhout and R. Pozo and C. Romine and H. Van der Vorst},
+TITLE = {Templates for the Solution of Linear Systems: Building Blocks
+ for Iterative Methods, 2nd Edition},
+PUBLISHER = {SIAM},
+YEAR = {1994},
+ADDRESS = {Philadelphia, PA} }
+
+@BOOK{LinsolTemplate94,
+      AUTHOR = {R. Barrett and M. Berry and T. F. Chan and J. Demmel
+		  and J. Donato and J. Dongarra and V. Eijkhout
+		  and R. Pozo and C. Romine and H. van der Vorst},
+      TITLE = {Templates for the solution of linear systems:
+		  Building blocks for the iterative methods, 2nd Edition},
+      PUBLISHER = {SIAM},
+      YEAR = {1994},
+      ADDRESS = {Philadelphia, PA}
+}
+
+@article{beht:00,
+   author    = {M. Benzi and J. C. Haws and M. Tuma},
+   title     = {Preconditioning highly indefinite and nonsymmetric matrices},
+   journal   = SISC,
+   year      = {2000},
+   volume    = {22},
+   pages     = {1333--1353},
+}
+
+@article{benzi02,
+   author    = {M. Benzi},
+   title     = {Preconditioning Techniques for Large Linear Systems: A Survey},
+   journal   = {J. Comp. Phys.},
+   year      = {2002},
+   volume    = {182},
+   pages     = {418-477},
+}
+
+@ARTICLE{bischof90,
+    AUTHOR = {Christian H. Bischof and John G. Lewis and Daniel J. Pierce},
+    TITLE = {Incremental condition estimation for sparse matrices},
+    JOURNAL = simax,
+    YEAR	   = {1990},
+    VOLUME = {11},
+    NUMBER = {4},
+    PAGES = {644--659} }
+
+@article{brainman02,
+     AUTHOR = {Igor Brainman and Sivan Toledo},
+     TITLE = {Nested-dissection orderings for sparse {LU}
+              with partial pivoting},
+     JOURNAL = simax,
+     PAGES = {998-112},
+     VOLUME = {23},
+     NUMBER = {4},
+     YEAR = {2002}
+}
+
+@MISC{castle92,
+    AUTHOR = {J.~W. Demmel {\em et.al.}},
+    TITLE = {The Castle Project: A Proposal to The Department of
+		  Energy for Integrated Parallel Scientific Computing},
+    HOWPUBLISHED = {Computer Science Division, University of
+		  California at Berkeley},
+    MONTH = {November},
+    YEAR = {1992} }
+
+@TECHREPORT{changilbertteng94,
+    AUTHOR = {T. Chan and J. Gilbert and S.-H. Teng},
+    TITLE = {Geometric spectral partitioning},
+    INSTITUTION = {Palo Alto Research Center, Xerox Corporation,
+		  California},
+    NUMBER = {CSL-94-15},
+    YEAR = {1994} }
+
+@MANUAL{cmmdmanual,
+        TITLE = {CMMD Reference Manual},
+        ORGANIZATION = "Thinking Machines Corporation",
+        NUMBER = {Version 3.0 Beta},
+        NOTE = "Cambridge, Massachsett",
+        MONTH = {December},
+        YEAR = {1992} }
+
+@article{chao00,
+     AUTHOR = {Edmond Chao},
+     TITLE = {A Priori Sparsity Patterns for Parallel Sparse
+              Approximate Inverse Preconditioners},
+     JOURNAL = sisc,
+     PAGES = {1804-1822},
+     VOLUME = {21},
+     NUMBER = {5},
+     YEAR = {2000}
+}
+
+@PHDTHESIS{chen01,
+    AUTHOR = {Tzu-Yi Chen},
+    TITLE = {Preconditioning sparse matrices for computing eigenvalues
+             and computing linear systems of equations},
+    SCHOOL = {Computer Science Division, UC Berkeley},
+    MONTH = {December},
+    YEAR = {2001} }
+
+@techreport{cicottili08,
+     AUTHOR = {P. Cicotti and X. S. Li and Scott B. Baden},
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     NUMBER = {LBNL-196E},  
+     TITLE = {{LUSim}: A Framework for Simulation-Based Performance Modeling
+              and Prediction of Parallel Sparse {LU} Factorization},
+     MONTH = {May},
+     YEAR = {2008},
+     note="\url{http://repositories.cdlib.org/lbnl/LBNL-196E/}"
+}
+
+@misc{cicotti09,
+    AUTHOR = {Pietro Cicotti},
+    TITLE = "Performance Modeling Tools for Parallel Linear Algebra
+             Computations",
+    HOWPUBLISHED = {{ACM Student Research Competition, Tapia Conference}},
+    YEAR = {Portland, Oregon. April 1-4, 2009}
+ }
+
+@article{coleman86,
+     AUTHOR = {Thomas F. Coleman and Anders Edenbrandt and John R. Gilbert},
+     TITLE = {Predicting fill for sparse orthogonal factorization},
+     JOURNAL = {Journal of the Association for Computing Machinery},
+     PAGES = {517-532},
+     VOLUME = {33},
+     YEAR = {1986}
+}
+
+@inproceedings{cuthillmckee69,
+    AUTHOR = {E.\ Cuthill and J.\ McKee},
+    TITLE  = "Reducing the bandwidth of sparse symmetric matrices",
+    BOOKTITLE = {Proc.\ ACM Nat.\ Conf.},
+    ADDRESS = {New York},
+    PAGES = {157-172},
+    YEAR = {1969} }
+
+@article{davisyew90,
+     AUTHOR = {T. A. Davis and P. C. Yew},
+     TITLE = {A nondeterministic parallel algorithm for general
+                  unsymmetric sparse {LU} factorization},
+     JOURNAL = simax,
+     PAGES = {384--402},
+     VOLUME = {11},
+     YEAR = {1990}
+}
+
+@TECHREPORT{davis93,
+    AUTHOR = {Timothy A. Davis},
+    TITLE = {User's Guide for the Unsymmetric-pattern MultiFrontal
+		  Package ({UMFPACK}) },
+    INSTITUTION = {Computer and Information Sciences Department,
+		  University of Florida},
+    NUMBER = {TR-93-020},
+    MONTH = {June},
+    YEAR = {1993} }
+
+%%    NOTE = "\url{http://www.netlib.org/linalg/umfpack2.tar.gz}"
+@TECHREPORT{davisduff95,
+    AUTHOR = {T. A. Davis and I. S. Duff},
+    TITLE = {A combined unifrontal/multifrontal method for unsymmetric
+		sparse matrices},
+    INSTITUTION = {Computer and Information Sciences Department,
+			University of Florida},
+    NUMBER = {TR-95-020},
+    YEAR = {1995}
+}
+
+@inproceedings{chen99,
+   author    = {T.-Y. Chen and J. Gilbert and S. Toledo},
+   title     = {Toward an efficient column minimum degree code for
+             symmetric multiprocessors},
+   booktitle = {Proceedings of the 9th SIAM Conference on Parallel Processing
+               for Scientific Computing},
+   address = {San Antonio, Texas},
+   year = {1999}
+ }
+
+@misc{davis96,
+    AUTHOR = {Timothy A. Davis and John R. Gilbert and
+ 		  Stefan I. Larimore and  Esmond Ng},
+    TITLE = {A column approximate minimum degree ordering algorithm},
+    NOTE = {manuscript, in preparation}
+    }
+
+@book{davis96book,
+    Author = {T.A. Davis},
+    TITLE = {Direct Methods for Sparse Linear Systems},
+    publisher = {SIAM},
+    year = 2006,
+    address = {Philadelphia} }
+
+@misc{davis97,
+    AUTHOR = {Timothy A. Davis},
+    TITLE = {{University of Florida Sparse Matrix Collection}},
+    howpublished = "\url{http://www.cise.ufl.edu/research/sparse/matrices}"
+    }
+		  
+@ARTICLE{davisduff97,
+     AUTHOR = {T. A. Davis and I. S. Duff},
+     TITLE = {An unsymmetric-pattern multifrontal method for sparse
+             {LU} factorization},
+     JOURNAL = simax,
+     YEAR = {1997},
+     VOLUME = {18},
+     NUMBER = {1},
+     PAGES = {140--158},
+     MONTH = {January}    }
+
+@ARTICLE{davisduff99,
+     AUTHOR = {T. A. Davis and I. S. Duff},
+     TITLE = {A combined unifrontal/multifrontal method for unsymmetric
+		sparse matrices},
+     JOURNAL = toms,
+     YEAR = {1999},
+     VOLUME = {25},
+     NUMBER = {1},
+     PAGES = {1--19}
+}
+
+@TECHREPORT{davisgilbert00,
+    AUTHOR = {Timothy A. Davis and John R. Gilbert and
+ 		  Stefan I. Larimore and  Esmond Ng},
+    TITLE = {A column approximate minimum degree ordering algorithm},
+    INSTITUTION = {Computer and Information Sciences Department,
+			University of Florida},
+    NUMBER = {TR-00-005},
+    YEAR = {2000},
+    NOTE = {submitted to {\em ACM Trans. Math. Software}}
+    }
+
+@ARTICLE{davisgilbert04,
+   AUTHOR = {T. A. Davis and J. R. Gilbert and S. Larimore and E. Ng},
+   TITLE = {A column approximate minimum degree ordering algorithm},
+   JOURNAL = toms,
+   YEAR = {2004},
+   VOLUME = {30},
+   NUMBER = {3},
+   PAGES = {353-376}
+}
+
+% (http://www.cise.ufl.edu/research/sparse/umfpack/).
+@ARTICLE{davis04,
+     AUTHOR = {T. A. Davis},
+     TITLE = {{Algorithm 832: UMFPACK V4.3, an unsymmetric-pattern multifrontal
+         method with a column pre-ordering strategy}},
+     JOURNAL = toms,
+     YEAR = {2004},
+     VOLUME = {30},
+     NUMBER = {2},
+     PAGES = {196-199},
+     note = "\url{https://people.engr.tamu.edu/davis/suitesparse.html}"
+}
+
+@ARTICLE{davis:11,
+     AUTHOR = {T. A. Davis},
+     TITLE = {{Algorithm 915, SuiteSparseQR: Multifrontal multithreaded rank-revealing
+           sparse QR factorization}},
+     JOURNAL = toms,
+     VOLUME = 38,
+     NUMBER = 1,
+     PAGE = {8:1-8:22},
+     YEAR = {2011},
+     note="\url{https://people.engr.tamu.edu/davis/suitesparse.html}"
+}
+
+@TECHREPORT{demmel92,
+    AUTHOR = {Demmel, J.~W.},
+    TITLE = {Trading Off Parallelism and Numerical Stability},
+    INSTITUTION = {Computer Science Division, University of
+		  California at Berkeley},
+    NUMBER = {Report No. UCB/CSD 92-702},
+    MONTH = {September},
+    YEAR = {1992} }
+
+@article{dulmage63,
+    author = {A.L. Dulmage and N.S. Mendelsohn},
+    title = {Two algorithms for bipartite graphs},
+    journal = {J. Sot. Indust. Appl. Math.},
+    volume = {11},
+    pages = {183-194},
+    year = 1963
+}
+
+@ARTICLE{DKR_68,
+ AUTHOR = {T. Dupont and R.~P. Kendall and H.~H. Rachford, Jr.},
+   TITLE = {An approximate factorization procedure for solving self-adjoint elliptic difference equations},
+   JOURNAL = {{SIAM Journal on Numerical Analysis}},
+   YEAR = {1968},
+   VOLUME = {5},
+   PAGES = {559-573}
+}
+
+@TECHREPORT{dongarra,
+    AUTHOR = {Dongarra, Jack J. and van de Geijn, Robert A. and 
+              Walker, David W.},
+    TITLE = {Scalability issues affecting the design of a dense linear
+             lagebra library},
+    INSTITUTION = {Department of Computer Science, University of Tennessee},
+    YEAR = {1993} }
+
+@techreport{duf77-MA28,
+     AUTHOR = {I. S. Duff},  
+     INSTITUTION = {Harwell},  
+     NUMBER = {AERE R-8730},  
+     TITLE = {{MA}28 - {A} set of {FORTRAN} subroutines for sparse unsymmetric linear equations},  
+     YEAR = {1977}
+}
+
+
+@techreport{duf81-MA32,
+     AUTHOR = {I. S. Duff},  
+     INSTITUTION = {Harwell},  
+     NUMBER = {AERE R 10079},  
+     TITLE = {{MA}32 - {A} package for solving sparse unsymmetric systems using the frontal method},  
+     YEAR = {1981}
+}
+
+@ARTICLE{duff81b,
+     AUTHOR = {I. S. Duff},
+     TITLE = {On algorithms for obtaining a maximum transversal},
+     JOURNAL = toms,
+     YEAR = {1981},
+     VOLUME = {7},
+     PAGES = {315--330} }
+		  
+@ARTICLE{duff81c,
+     AUTHOR = {I. S. Duff},
+     TITLE = {Algorithm 575. {P}ermutations for a zero-free diagonal},
+     JOURNAL = toms,
+     YEAR = {1981},
+     VOLUME = {7},
+     PAGES = {387--390} }
+
+@inproceedings{duf82,
+     ADDRESS = {Springer-Verlag, New York},  
+     AUTHOR = {I. S. Duff},  
+     BOOKTITLE = {Proc. Third IIMAS Workshop on Numerical Analysis 1981},  
+     EDITOR = {J.P. Hennart},  
+     PAGES = {240-247},  
+     PUBLISHER = {Lecture Notes in Mathematics 909},  
+     TITLE = {The design and use of a frontal scheme for solving sparse unsymmetric equations},  
+     YEAR = {1982}
+}
+
+
+@techreport{duf83,
+     AUTHOR = {I. S. Duff},  
+     INSTITUTION = {Harwell},  
+     NUMBER = {AERE R 11009},  
+     TITLE = {Enhancements to the {MA}32 package for solving sparse unsymmetric equations},  
+     YEAR = {1983}
+}
+
+@inproceedings{duf84,
+     AUTHOR = {I. S. Duff},  
+     BOOKTITLE = {Computing Methods in Applied Sciences and Engineering VI},  
+     EDITOR = {R. Glowinski, J. L. Lions},  
+     NOTE = {((Report CSS 150, AERE Harwell, Oxfordshire, 1983))},  
+     PAGES = {57-74},  
+     PUBLISHER = {North Holland},  
+     TITLE = {The solution of nearly symmetric sparse linear equations},  
+     YEAR = {1984}
+}
+
+@article{duf84-mfrontal,
+     AUTHOR = {I. S. Duff and J. K. Reid},
+     JOURNAL = sissc,
+     KEY = {LU mfrontal},
+     PAGES = {633-641},
+     TITLE = {The multifrontal solution of unsymmetric sets of linear equations},
+     VOLUME = {5},
+     YEAR = {1984}
+}
+
+@ARTICLE{duffreid83,
+   AUTHOR = {Duff, I.S and Reid, J.K},
+   TITLE = {The Multifrontal Solution of Indefinite Sparse Symmetric
+		Linear Equations},
+   JOURNAL = toms,
+   YEAR	   = {1983},
+   VOLUME = {9},
+   NUMBER = {3},
+   MONTH = {September},
+   PAGES = {302--325} }
+
+@BOOK{dufferismanreid2017,
+      AUTHOR = {Duff, I.S. and Erisman, A.M. and Reid, J.K.},
+      TITLE = {Direct Methods for Sparse Matrices, Second Edition},
+      PUBLISHER = {Oxford University Press},
+      YEAR = {2017},
+      ADDRESS = {London}   }
+
+@BOOK{dufferismanreid86,
+      AUTHOR = {Duff, I.S. and Erisman, A.M. and Reid, J.K.},
+      TITLE = {Direct Methods for Sparse Matrices},
+      PUBLISHER = {Oxford University Press},
+      YEAR = {1986},
+      ADDRESS = {London}   }
+      
+@ARTICLE{duff89,
+   AUTHOR = {Duff, I.S},
+   TITLE = {Multiprocessing a sparse matrix code on the {A}lliant {FX}/8},
+   JOURNAL = {Journal of computational and applied mathematics},
+   YEAR	   = {1989},
+   MONTH = {September},
+   VOLUME = {27},
+   PAGES = {229-239} }
+
+@article{duf89-test,
+     AUTHOR = {I. S. Duff and R. Grimes and J. Lewis},  
+     JOURNAL = toms,
+     PAGES = {1-14},  
+     TITLE = {Sparse matrix test problems},  
+     VOLUME = {15},  
+     YEAR = {1989}
+}
+
+@techreport{duff96,
+     AUTHOR = {I.~S. Duff},  
+     INSTITUTION = {Rutherford Appleton Laboratory},  
+     NUMBER = {RAL-TR-96-047},  
+     TITLE = {Sparse numerical linear algebra: direct methods
+		and preconditioning},
+     YEAR = {1996}
+}
+
+% Appeared as Chapter 6 of the book {dodu:98}
+@TECHREPORT{duff98,
+    AUTHOR = {I.~S. Duff},
+    TITLE = {Direct Methods},
+    INSTITUTION = {Rutherford Appleton Laboratory},
+    NUMBER = {RAL-98-054},
+    YEAR = {1998} }
+		  
+@book{dodu:98,
+    author = "J.~J. Dongarra and I.~S. Duff and D.~C. Sorensen
+		  and H. A. van der Vorst",
+    title = "Numerical Linear algebra for high-performance computers",
+    publisher = "SIAM",
+    address = "Philadelphia",
+    year = "1998"
+}
+		  
+@TECHREPORT{duffgrimes92,
+    AUTHOR = {Duff, I.S. and Grimes, R.G. and Lewis, J.G.},
+    TITLE = {Users' Guide for the {Harwell-Boeing} Sparse Matrix
+		  Collection (Release 1)},
+    INSTITUTION = {Rutherford Appleton Laboratory},
+    NUMBER = {RAL-92-086},
+    MONTH = {December},
+    YEAR = {1992} }
+
+@TECHREPORT{duffreid95,
+    AUTHOR = {Duff, I.S and Reid, J. K.},
+    TITLE = {{MA47}, a {Fortran} code for direct solution of
+		  indefinite sparse symmetric linear systems},
+    INSTITUTION = {Rutherford Appleton Laboratory},
+    NUMBER = {RAL-95-001},
+    YEAR = {1995} }
+
+@article{duffreid96,
+    AUTHOR = {Duff, I.S and Reid, J. K.},
+    TITLE = {The design of {MA48}, a code for the direct solution of
+		sparse unsymmetric linear systems of equations},
+    JOURNAL = toms,
+    PAGES = {187-226},
+    VOLUME = {22},
+    YEAR = {1996} }
+
+@article{duffscott96,
+    AUTHOR = {Duff, I.S and Scott, J. A.},
+    TITLE = {The design of a new frontal code for solving sparse
+		unsymmetric systems},
+    JOURNAL = toms,
+    PAGES = {30-45},
+    VOLUME = {22},
+    NUMBER = {1},
+    YEAR = {1996} }
+
+@techreport{duffkoster97,
+     AUTHOR = {I.~S. Duff and J. Koster},  
+     INSTITUTION = {Rutherford Appleton Laboratory},  
+     NUMBER = {RAL-TR-97-059},  
+     TITLE = {The design and use of algorithms for permuting large
+		entries to the diagonal of sparse matrices},
+     YEAR = {1997}
+}
+
+@techreport{duffkoster-report99,
+     AUTHOR = {I.~S. Duff and J. Koster},  
+     INSTITUTION = {Rutherford Appleton Laboratory},  
+     NUMBER = {RAL-TR-99-030},  
+     TITLE = {On algorithms for permuting large entries to
+		  the diagonal of a sparse matrix},
+     YEAR = {1999}
+}
+
+@article{duffkoster99,		  
+    AUTHOR = {I.~S. Duff and J. Koster},
+    TITLE = {The Design and Use of Algorithms for Permuting Large
+		  Entries to the Diagonal of Sparse Matrices},
+    JOURNAL = simax,
+    PAGES = {889-901},
+    VOLUME = {20},
+    NUMBER = {4},
+    YEAR = {1999}
+}
+
+@article{duffkoster01,		  
+    AUTHOR = {I.~S. Duff and J. Koster},
+    TITLE = {On algorithms for permuting large entries to the diagonal
+             of a sparse matrix},
+    JOURNAL = simax,
+    PAGES = {973-996},
+    VOLUME = {22},
+    NUMBER = {4},
+    YEAR = {2001}
+}
+@article{duffpralet05,
+author = {Duff, Iain S. and Pralet, Stéphane},
+title = {Strategies for Scaling and Pivoting for Sparse Symmetric Indefinite Problems},
+journal = {SIAM Journal on Matrix Analysis and Applications},
+volume = {27},
+number = {2},
+pages = {313-340},
+year = {2005},
+doi = {10.1137/04061043X},
+URL = {https://doi.org/10.1137/04061043X},
+}
+
+@techreport{ddgr:13a,
+   author = "L.A. Drummond and I.S. Duff and R. Guivarch and
+             D. Ruiz and M. Zenadi",
+   title = "Partitioning strategies for the Block Cimmino algorithm",
+   institution = "RAL",
+   number = "RAL-P-2013-010",
+   year = 2013,
+   notes = "Submitted to J Engineering Mathematics"
+}
+%author = "Iain S. Duff and and Ronan Guivarch and
+%             Daniel Ruiz and Mohamed Zenadi",
+@techreport{dgrz:13a,
+   author = "I.S. Duff and R. Guivarch and D. Ruiz and M. Zenadi",
+   title = "The Augmented Block Cimmino Distributed method",
+   institution = "RAL",
+   number = "RAL-P-2013-001",
+   year = 2013,
+   notes = "Submitted to SIAM J. Scientific Computing"
+}
+
+@article{duff2014,
+    AUTHOR = {I.S. Duff and R. Guivarch and D. Ruiz and M. Zenadi},
+    TITLE = {The Augmented Block Cimmino Distributed Method},
+    JOURNAL = simax,
+    PAGES = {},
+    VOLUME = {},
+    NUMBER = {},
+    YEAR = {2014}
+}
+
+@article{eis75,
+     AUTHOR = {S. C. Eisenstat and A. H. Sherman},  
+     JOURNAL = {SIGNUM Newsletter},  
+     PAGES = {26-29},  
+     TITLE = {Efficient implementation of sparse nonsymmetric {G}aussian
+             elimination without pivoting},  
+     VOLUME = {10},  
+     YEAR = {1975}
+}
+
+@incollection{eisenstat76,
+  author = {S.C. Eisenstat and M.H. Schultz and A.H. Sherman},
+  title = {Applications of an element model for Gaussian elimination},
+  booktitle = {Sparse Matrix Computations},
+  editor = {J.R. Bunch and D.J. Rose},
+  pages = {85-96},
+  publisher = {Academic Press},
+  year = 1976
+}
+
+@INPROCEEDINGS{druinsky2016,
+    AUTHOR = {A. Druinsky and P. Ghysels and X.S. Li and O. Marques and
+              S. Williams and A. Barker and D. Kalchev and P. Vassilevski},
+    TITLE = {Comparative Performance Analysis of Coarse Solvers for Algebraic
+             Multigrid on Leading Multicore Architectures},
+    BOOKTITLE = {Proceedings of 11th International Conference on Parallel
+           Processing and Applied Mathematics (PPAM 2015)},
+    series  = {LNCS 9573, Springer},
+    YEAR = {2016},
+    pages = {116-127}
+ }
+
+@INPROCEEDINGS{marques2016,
+    author = {O. Marques and A. Druinsky and X.S. Li and A.T. Barker and
+              P. Vassilevski and D. Kalchev},
+    title =  {Tuning the Coarse Space Construction in a Spectral AMG Solver},
+    booktitle = {Proceedings of International Conference on Computational
+             Science (ICCS 2016)},
+    series = {Procedia Computer Science},
+    year = {2016},
+    volume = {80},
+    pages = {212-221}
+}
+
+
+@techreport{eis77,
+     ADDRESS = {New Haven, CT},  
+     AUTHOR = {S. C. Eisenstat and M. C. Gursky and M. H. Schultz and A. H. Sherman},  
+     INSTITUTION = {DCS, Yale University},  
+     NUMBER = {Research 114},  
+     TITLE = {{Y}ale {S}parse {M}atrix {P}ackage {II}, the nonsymmetric code},  
+     YEAR = {1977}
+}
+
+@ARTICLE{eisenstatliu92,
+    AUTHOR = {Eisenstat, S.~C. and Liu, J.~W.~H.},
+    TITLE = {Exploiting structural symmetry in sparse unsymmetric
+		  symbolic factorization},
+    JOURNAL = {SIAM J. Matrix Anal. Appl.},
+    PAGES = {13:202--211},
+    YEAR = {1992} }
+
+@ARTICLE{eisenstatliu93a,
+    AUTHOR = {Eisenstat, S.~C. and Liu, J.~W.~H.},
+    TITLE = {Exploiting structural symmetry in a sparse partial
+		  pivoting code},
+    JOURNAL = {SIAM J. Sci. Comput.},
+    VOLUME = {14},
+    NUMBER = {1},
+    PAGES = {253--257},
+    YEAR = {1993} }
+
+@INCOLLECTION{eisenstatliu93b,
+    AUTHOR = {Eisenstat, S.~C. and Liu, J.~W.~H.},
+    TITLE = {Structural Representations of {S}chur Complements in 
+             Sparse Matrices},
+    BOOKTITLE = {Graph theory and sparse matrix computation},
+    PUBLISHER = {Springer-Verlag, New York},
+    EDITOR = {George, A. and Gilbert, J.~R. and Liu, J.~W.~H.},
+    PAGES = {85--100},
+    YEAR = {1993} }
+
+@ARTICLE{eisenstatliu05,
+    AUTHOR = {Eisenstat, S.~C. and Liu, J.~W.~H.},
+    TITLE = {The Theory of Elimination Trees for Sparse Unsymmetric Matrices},
+    JOURNAL = {SIAM J. Matrix Anal. Appl.},
+    PAGES = {686--705},
+    YEAR = {2005} }
+
+@INPROCEEDINGS{eisenstatgilbertliu93,
+    AUTHOR = {Eisenstat, S.~C. and Gilbert, J.~R. and 
+              Liu, J.~W.~H.},
+    TITLE = {A Supernodal Approach to a Sparse Partial Pivoting Code},
+    BOOKTITLE = {Householder Symposium XII},
+    YEAR = {1993} }
+
+@ARTICLE{elman86,
+    AUTHOR = {Howard C. Elman},
+    TITLE = {A Stability Analysis of Incomplete {LU} Factorizations},
+    JOURNAL = {Mathematics of Computation},
+    VOLUME = {47},
+    NUMBER = {175},
+    PAGES = {191--217},
+    YEAR = {1986} }
+		  
+@MANUAL{essl94,
+        key = "International",
+        TITLE = {International Business Machines Corporation
+                 Engineering and Scientific Subroutine Library, Guide
+		  and Reference},
+        NOTE = {Version 2 Release 2, Order No. SC23-0526-01, 1994} }
+
+@ARTICLE{gallivan96,
+   AUTHOR = {K. A. Gallivan and B. A. Marsolf and H. A. G. Wijshoff},
+   TITLE = {Solving large nonsymmetric sparse linear systems using
+            {MCSPARSE}},
+   JOURNAL = {Parallel Computing},
+   YEAR	   = {1996},
+   VOLUME = {22},
+   PAGES = {1291--1333} }
+
+@ARTICLE{geistng89,
+   AUTHOR = {Geist, G.A. and Ng, E.},
+   TITLE = {Task scheduling for parallel sparse {C}holesky factorization},
+   JOURNAL = {International Journal of Parallel Programming},
+   YEAR	   = {1989},
+   VOLUME = {18},
+   NUMBER = {4},
+   PAGES = {291--314} }
+
+@ARTICLE{george73,
+   AUTHOR = {George, A.},
+   TITLE = {Nested dissection of a regular finite element mesh},
+   JOURNAL = sinum,
+   YEAR	   = {1973},
+   VOLUME = {10},
+   PAGES = {345-363} }
+
+@ARTICLE{lipton79,
+   AUTHOR = {R. J. Lipton and D. J. Rose and R. E. Tarjan},
+   TITLE = {Generalized nested dissection},
+   JOURNAL = sinum,
+   YEAR	   = {1979},
+   VOLUME = {16},
+   PAGES = {346-358} }
+
+@ARTICLE{george78,
+   AUTHOR = {A. George and D. McIntyre},
+   TITLE = {On the application of the minimum degree algorithm to 
+            finite element systems},
+   JOURNAL = sinum,
+   YEAR	   = {1978},
+   VOLUME = {15},
+   PAGES = {90--111} }
+
+@ARTICLE{georgeheath80,
+   AUTHOR = {George, A. and M.~T. Heath},
+   TITLE = {Solution of Sparse Linear Least Squares Problems 
+            Using {G}ivens Rotations},
+   JOURNAL = {Linear {A}lgebra and Its Applications},
+   YEAR	   = {1980},
+   NUMBER = {34}, 
+   PAGES = {69--83} }
+
+@article{georgeliu80,
+author = {J.~A. George and J.~W.~H. Liu},
+title = {A fast implementation of the minimum degree algorithm using quotient graphs},
+journal = toms,
+volume = {6},
+pages = {337-358},
+year = 1980
+}
+
+@BOOK{georgeliu81,
+   AUTHOR = {George, A. and Liu, J.~W.~H.},
+   TITLE = {Computer Solution of Large Sparse Positive Definite Systems},
+   YEAR	   = {1981},
+   PUBLISHER = {Prentice Hall},
+   ADDRESS = {Englewood Cliffs, NJ} }
+
+@ARTICLE{georgeliu87,
+   AUTHOR = {George, A. and Liu, J.~W.~H.},
+   TITLE = {Householder reflections versus {G}ivens Rotations in Sparse 
+            Orthogonl Decomposition},
+   JOURNAL = {Linear {A}lgebra and Its Applications},
+   YEAR	   = {1987},
+   NUMBER = {88/89}, 
+   PAGES = {223--238} }
+
+@ARTICLE{georgeliu89,
+   AUTHOR = {George, A. and Liu, J.~W.~H.},
+   TITLE = {The Evolution of the Minimum Degree Ordering Algorithms},
+   JOURNAL = {SIAM Review},
+   YEAR	   = {1989},
+   VOLUME = {31},
+   NUMBER = {1},
+   MONTH = {March},
+   PAGES = {1--19} }
+
+@ARTICLE{georgeliung89,
+   AUTHOR = {George, A. and Liu, J.~W.~H. and Ng, E.},
+   TITLE = {Communication results for parallel sparse Cholesky factorization 
+		on a hypercube},
+   JOURNAL = {Parallel Computing},
+   YEAR	   = {1989},
+   PAGES = {287-298} }
+
+@ARTICLE{georgeng85,
+   AUTHOR = {George, A. and Ng, E.},
+   TITLE = {An implementation of {G}aussian elimination with partial 
+            pivoting for sparse systems},
+   JOURNAL = {SIAM J. Sci. Stat. Comput.},
+   VOLUME = {6},
+   NUMBER = {2},
+   YEAR	   = {1985},
+   PAGES = {390--409} }
+
+@ARTICLE{george86,
+   AUTHOR = {A. George and M.~T. Heath and J. Liu and
+		  E. Ng},
+   TITLE = {Solution of Sparse Positive Definitive Systems on a
+		  Shared-Memory Multiprocessor},
+   JOURNAL = {International Journal of Parallel Programming},
+   VOLUME = {15},
+   NUMBER = {4},
+   YEAR	   = {1986},
+   PAGES = {309--325} }
+
+@article{GeorgeHeathNgLiu87,
+  author = {A. George and M.~T. Heath and E. Ng and J.~W.~H. Liu},
+  title = {Symbolic Cholesky factorization on a local-memory
+         multiprocessor},
+  journal = {Parallel Comput.},
+  volume = {5},
+  pages = {85-95},
+  year = {1987}
+}
+
+@ARTICLE{georgeng87,
+   AUTHOR = {George, A. and Ng, E.},
+   TITLE = {Symbolic factorization for sparse {G}aussian elimination
+		  with partial pivoting},
+   JOURNAL = {SIAM J. Sci. Stat. Comput.},
+   VOLUME = {8},
+   NUMBER = {6},
+   YEAR	   = {1987},
+   PAGES = {877--898} }
+
+% The structures of L\U are contained in the structure of Cholesky
+% factor of A'A.
+%
+@ARTICLE{georgeng88,
+   AUTHOR = {George, A. and Ng, E.},
+   TITLE = {On the complexity of sparse {QR} and {LU} factorization
+		  on finite-element matrices},
+   JOURNAL = {SIAM J. Sci. Stat. Comput.},
+   VOLUME = {9},
+   NUMBER = {5},
+   YEAR	  = {1988},
+   MONTH  = {September},
+   PAGES = {849--861} }
+		  
+@ARTICLE{georgeliung88,
+   AUTHOR = {George, A. and Liu, J. and Ng, E.},
+   TITLE = {A Data Structure for Sparse {QR} and {LU} Factorizations},
+   JOURNAL = {SIAM J. Sci. Stat. Comput.},
+   VOLUME = {9},
+   YEAR	   = {1988},
+   PAGES = {100-121}
+}
+
+%
+% row-oriented sparse LU on Sequent Balance 8000 at 6-CPU
+% use static data structure to allocate storage
+% sparse BLAS-1 kernel
+%
+@ARTICLE{georgeng90,
+   AUTHOR = {George, A. and Ng, E.},
+   TITLE = {Parallel sparse {G}aussian elimination with partial pivoting},
+   JOURNAL = {Annals of Operation Research},
+   VOLUME = {22},		  
+   YEAR	   = {1990},
+   PAGES = {219--240} }
+
+@article{gilbert87,
+   author = {J. R. Gilbert and R. E. Tarjan},
+   title = {The Analysis of a Nested Dissection Algorithm},
+   journal = {Numerische Mathematik},
+   year = {1987},
+   volumne = {50},
+   pages = {377-404}
+}
+
+@ARTICLE{GiraudHaidarPralet10,
+   author    = {L. Giraud and A. Haidar and S. Pralet},
+   title     = {Using multiple levels of parallelism to enhance the
+         performance of domain decomposition solvers},
+   JOURNAL   = {Parallel Computing},
+   year      = {2010},
+   VOLUME    = {36},
+   PAGES     = {285-296}   
+}
+
+@TECHREPORT{GiraudHaidarSaad10,
+    AUTHOR = {L. Giraud and A. Haidar and S. Pralet},
+    TITLE = {Sparse approsimations of the Schur complement for parallel
+         algebraic hybrid linear solvers in 3D},
+    INSTITUTION = {Institut National ...},
+    YEAR = {2010}
+}
+
+@article{gustafsson_78,
+	author = "I. Gustaffson",
+	title = "A class of first order factorization methods",
+	journal = {BIT},
+	volume = "18",
+	pages = "142-156",
+	year = "1978"
+}
+
+@TECHREPORT{hadfield94,
+    AUTHOR = {Hadfield, Steven M.},
+    TITLE = {On the LU factorization of sequences of identically structured
+		sparse matrices within a distributed memory environment},
+    INSTITUTION = {Computer \& Information Sciences Department, 
+		 University of Florida},
+    TYPE = {Ph.{D} thesis},
+    YEAR = {1994} }
+
+@ARTICLE{heathngpeyton91,
+    AUTHOR = {Heath, M.T. and Ng., E. and Peyton, B.W.},
+    TITLE = {Parallel Algorithms for Sparse Linear Systems},
+    JOURNAL = {SIAM Review},
+    YEAR = {1991},
+    VOLUME = {33},
+    NUMBER = {3},
+    MONTH = {September},
+    PAGES = {420--460} }
+
+@TECHREPORT{heath92,
+    AUTHOR = {Heath, M.T. and Raghavan, P.},
+    TITLE = {A Cartesian Parallel Nested Dissection algorithm},
+    INSTITUTION = {University of Illinois at Urbana-Champaign, Dept.
+	of Computer Science},
+    NUMBER = {UIUCDCS-R-92-1772},
+    MONTH = {October},
+    YEAR = {1992} }
+        
+@TECHREPORT{heath93,
+    AUTHOR = {Heath, M.T. and Raghavan, P.},
+    TITLE = {Distributed Solution of Sparse Linear Systems},
+    INSTITUTION = {University of Illinois at Urbana-Champaign, Dept.
+        of Computer Science},
+    NUMBER = {UIUCDCS-R-93-1793},
+    MONTH = {February},
+    YEAR = {1993} }
+
+@inproceedings{heathraghavan,
+        author = "M.~T.~Heath and P.~Raghavan",
+        title = "Performance of a fully parallel sparse solver",
+        booktitle = "Proc. Scalable High-Performance Computing Conf.",
+        publisher = "IEEE",
+        address = "Los Alamitos,CA",
+        pages = "334-341",
+        year = "1994"
+}
+
+@article{heathraghavan97,
+        author = "M.~T.~Heath and P.~Raghavan",
+        title = "Performance of a fully parallel sparse solver",
+        journal = "Int. J. Supercomputer Applications",
+	volume = 11,
+	number = 1,
+	pages={49–64},
+        year = {1997},
+	note="\url{http://www.cse.psu.edu/~raghavan}"
+}
+
+@TECHREPORT{hendricksonrothberg96,
+    AUTHOR = {B. Hendrickson and E. Rothberg},
+    TITLE = {Improving the runtime and quality of nested dissection ordering},
+    INSTITUTION = {Sandia National Laboratories, Albuquerque},
+    NUMBER = {SAND96-0868J},
+    YEAR = {1996} }
+
+@inproceedings{hendricksonleland95,
+  author = {B. Hendrickson and R. Leland},
+  title = {A Multilevel Algorithm for Partitioning Graphs},
+  booktitle = {Proc. Supercomputing},
+  address = {San Diego, CA},
+  year = 1995
+}
+
+@TECHREPORT{hele:95,
+    AUTHOR = {B. Hendrickson and R. Leland},
+    TITLE = {{The CHACO's User's Guide}},
+    INSTITUTION = {Sandia National Laboratories, Albuquerque},
+    NUMBER = {SAND95-2344$\bullet$UC-405},
+    YEAR = {1995},
+    NOTE = {\url{http://www.cs.sandia.gov/~bahendr/chaco.html}}
+}
+
+@article{hogg:10,
+   author    = {J. D. Hogg and J. K. Reid and J. A. Scott},
+   title     = {Design of a multicore sparse {Cholesky} factorization using {DAGs}},
+   journal   = SISC,
+   year      = {2010},
+   volume    = {32},
+   pages     = {3627-3649},
+}
+
+
+@article{karypis1998,
+   author    = {G. Karypis and V. Kumar},
+   title     = {A fast and high quality multilevel scheme for partitioning
+             irregular graphs},
+   journal   = SISC,
+   year      = {1998},
+   volume    = {20},
+   pages     = {359-392}
+}
+
+@misc{metis,
+    AUTHOR = {G. Karypis and V. Kumar},
+    TITLE = {Serial and Parallel software packages for partitioning
+             unstructured graphs and for computing fill-reducing
+             orderings of sparse matrices},
+    NOTE = {AHPCRC, University of Minnesota. http://www.arc.umn.edu/software/}
+}
+
+@misc{kaku:98a,
+    AUTHOR = {G. Karypis and V. Kumar},
+    TITLE = {{\sc Me$\!$T$\!$iS} -- Serial Graph Partitioning
+       and Computing Fill-Reducing Matrix Ordering},
+    NOTE = {University of Minnesota. 
+         \url{http://glaros.dtc.umn.edu/gkhome/views/metis}}
+}
+
+@misc{parmetis,
+  author ={G. Karypis and K. Schloegel},
+  title = {{\sc ParMe$\!$T$\!$iS}: Parallel Graph Partitioning and Sparse
+       Matrix Ordering Library -- Version~4.0},
+  note = {{U}niversity of {M}innesota, 2013.
+          \url{http://glaros.dtc.umn.edu/gkhome/metis/parmetis/overview}}
+}
+@misc{kaku:03,
+  author ={G. Karypis and K. Schloegel and V. Kumar},
+  title = {{\sc ParMe$\!$T$\!$iS}: Parallel Graph Partitioning and Sparse
+       Matrix Ordering Library -- Version~3.1},
+  note = {{U}niversity of {M}innesota, 2003.
+          \url{http://www-users.cs.umn.edu/~karypis/metis/parmetis/}}
+}
+
+@incollection{kenneth86,
+    author = {Kenneth Kundert},
+    title= {Sparse Matrix Techniques},
+    booktitle = {Circuit Analysis, Simulation and Design},
+    editor = {Albert Ruehli},
+    publisher = {North-Holland},
+    year = {1986} 
+}
+
+@TECHREPORT{kumar94,
+    AUTHOR = {Gupta, Anshul and Kumar, Vipin},
+    TITLE = {A Scalabe Parallel Algorithm for Sparse Matrix Factorization},
+    INSTITUTION = {Department of Computer Science, University of Minnesota},
+    NUMBER = {Report TR 94-19},
+    MONTH = {April},
+    YEAR = {1994} }
+
+@inproceedings{gupta97,
+   author    = {A. Gupta and F. Gustavson and M. Joshi and G. Karypis and
+               V. Kumar},
+   title     = {Design and Implementation of a Scalable Parallel Direct
+           Solver for Sparse Symmetric Positive Definite Systems},
+   booktitle = {Proceedings of the 8th SIAM Conference on 
+                Parallel Processing for Scientific Computing},
+   address = {Minneapolis, Minnesota},
+   year = {1997}
+ }
+
+@article{gupta97-KK,
+  author = {A. Gupta and G. Karypis and V. Kumar},
+  title = {Scalable Parallel Algorithms for Sparse Matrix Factorization},
+  journal = {IEEE Trans. Parallel Distrib. Syst.},
+  volume = 8,
+  number = 5,
+  pages = {502-520},
+  year = {1997},
+  note = "\url{http://glaros.dtc.umn.edu/gkhome/pspases/overview}"
+}
+
+@techreport{gg08,
+   AUTHOR = {A.~Gupta and T.~George},
+   TITLE = {Adaptive techniques for improving the performance of
+            incomplete factorization preconditioning},
+   INSTITUTION = {IBM Research},
+   ADDRESS = {Yorktown Heights, NY},
+   NUMBER = {RC 24598(W0807-036)},
+   YEAR = {2008}
+}
+
+@article{gg10,
+   AUTHOR = {A.~Gupta and T.~George},
+   TITLE = {Adaptive techniques for improving the performance of
+            incomplete factorization preconditioning},
+   journal = {SIAM J. Sci. Comput.},
+   volume = 32,
+   NUMBER = 1,
+   pages = {84-110},
+   YEAR = {2010}
+}
+
+@ARTICLE{liu85,
+    AUTHOR = {Liu, J.~W.~H.},
+    TITLE = {Modification of the minimum degree algorithm by multiple 
+             elimination},
+    JOURNAL = toms,
+    VOLUME = {11},
+    YEAR = {1985},
+    PAGES = {141-153}
+}
+
+@ARTICLE{liu86,
+    AUTHOR = {Liu, J.~W.~H.},
+    TITLE = {On general row merging schemes for sparse {G}ivens transformations},
+    JOURNAL = sissc,
+    VOLUME = {7},
+    YEAR = {1986},
+    PAGES = {1190--1211} }
+
+@ARTICLE{liu88,
+    AUTHOR = {Liu, J.~W.~H.},
+    TITLE = {Equivalent sparse matrix reordering by elimination
+		  tree rotations},
+    JOURNAL = {SIAM J. Sci. Statist. Comput.},
+    VOLUME = {9},
+    NUMBER = {3},		  
+    MONTH = {May},
+    YEAR = {1988},
+    PAGES = {424--444} }
+
+@ARTICLE{liu89,
+    AUTHOR = {Liu, J.~W.~H.},
+    TITLE = {Reordering sparse matrices for parallel elimination},
+    JOURNAL = {Parallel Computing},
+    VOLUME = {11},
+    YEAR = {1989},
+    PAGES = {73--91} }
+		  
+% both LU and QR
+@ARTICLE{liu90,
+    AUTHOR = {Liu, J.~W.~H.},
+    TITLE = {The Role of Elimination Trees in Sparse Factorization},
+    JOURNAL = {SIAM J. Matrix Anal. Appl.},
+    VOLUME = {11},
+    NUMBER = {1},
+    MONTH = {January},
+    YEAR = {1990},
+    PAGES = {134--172} }
+
+@ARTICLE{liungpeyton93,
+    AUTHOR = {Liu, J.~W.~H. and E.~G. Ng and B.~W. Peyton},
+    TITLE = {On finding supernodes for sparse matrix computations},
+    JOURNAL = {SIAM J. Matrix Anal. Appl.},
+    VOLUME = {14},
+    NUMBER = {1},
+    MONTH = {January},
+    YEAR = {1993},
+    PAGES = {242--252} }
+
+
+@misc{ilu++,
+  AUTHOR = {J.~Mayer},
+  TITLE = {{ILU++}},
+  howpublished = {\url{http://iamlasun8.mathematik.uni-karlsruhe.de/~ae04/iluplusplus.html}},
+  year = 2007
+}
+
+@article{mayer08,
+author  = {J.~Mayer},
+title   = {{Symmetric permutations for I-Matrices to delay and avoid
+ small pivots during factorization}},
+journal = sisc,
+year    = {2008},
+volume  = {30},
+number  = {2},
+pages   = {982-996}
+}
+
+@article{hmr73,
+author  = { A. J. Hoffman and M. S. Martin and D. J. Rose},
+title   = { Complexity bounds for regular finite difference
+and finite element grids},
+journal = { {SIAM} J. Numer. Anal.},
+year    = { 1973},
+volume  = { 10},
+pages   = { 364-369}
+}
+
+@misc{mmsmc,
+    key = {mmsmc},
+    TITLE = {{Matrix Market}},
+    howpublished = "\url{http://math.nist.gov/MatrixMarket/}",
+    institution = {National Institute of Standards}
+}
+
+@ARTICLE{raghavan95,
+    AUTHOR = {Raghavan, Padma},
+    TITLE = {Distributed Sparse Gaussian Elimination and Orthogonal
+             Factorization},
+    JOURNAL = sissc,
+    YEAR = {1995},
+    VOLUME = {16},
+    NUMBER = {6},
+    MONTH = {November},
+    PAGES = {1462-1477} }
+
+@PHDTHESIS{rothberg92,
+    AUTHOR = {Rothberg, Edward E.},
+    TITLE = {Exploiting the memory hierarchy in sequential and parallel
+        sparse Cholesky factorization},
+    SCHOOL = {Dept. of Computer Science, Stanford University},
+    MONTH = {December},
+    YEAR = {1992} }
+
+@article{rothberg96,
+     AUTHOR = {Edward Rothberg},
+     JOURNAL = sisc,
+     TITLE = {Performance of panel and block approaches to sparse
+              {C}holesky factorization on the {iPSC}/860 and
+              {P}aragon multicomputers},
+     VOLUME = {17},
+     NUMBER = {3},
+     PAGES = {699--713},
+     MONTH = May,
+     YEAR = {1996}
+}
+
+@article{sch82-Gaussian,
+     AUTHOR = {R. Schreiber},  
+     JOURNAL = toms,
+     PAGES = {256-276},  
+     TITLE = {A new implementation of sparse {G}aussian elimination},  
+     VOLUME = {8},  
+     YEAR = {1982}
+}
+
+@TECHREPORT{schreiber92,
+    AUTHOR = {Schreiber, R.},
+    TITLE = {Scalability of Sparse Solvers},
+    INSTITUTION = {RIACS, NASA Ames Research Center},
+    NUMBER = {TR 92.13},
+    MONTH = {May},
+    YEAR = {1992} }
+
+@INCOLLECTION{schreiber93,
+    AUTHOR = {Schreiber, R.},
+    TITLE = {Scalability of Sparse Direct Solvers},
+    BOOKTITLE = {Graph theory and sparse matrix computation},
+    PUBLISHER = {Springer-Verlag, New York},
+    EDITOR = {George, A. and Gilbert, J.~R. and Liu, J.~W.~H.},
+    PAGES = {191--209},
+    YEAR = {1993} }
+
+@TECHREPORT{splash,
+    AUTHOR = {J.P. Singh, W-D. Webber and A. Gupta},
+    TITLE = {SPLASH: Stanford Parallel Applications for Shared-Memory},
+    INSTITUTION = {Computer Science Laboratory, Stanford University},
+    NUMBER = {Tech. Report No. CSL-TR-91-469},
+    YEAR = {1991} }
+
+@ARTICLE{splash-2,
+    AUTHOR = {J.P. Singh, W-D. Webber and A. Gupta},
+    TITLE = {SPLASH: Stanford Parallel Applications for Shared-Memory},
+    JOURNAL = {Computer Architecture News}, 
+    VOLUME = {20}, 
+    NUMBER = {1},
+    PAGES = {5--44},
+    YEAR = {1992} }
+
+@TECHREPORT{tve93,
+    AUTHOR = {Eicken, Thorsten von},
+    TITLE = {Active Messages: an Efficient Communications Architecture
+	     for Multiprocessors},
+    INSTITUTION = {Computer Science Division, University of california
+		  at Berkeley},
+    NOTE = {Ph.D thesis},
+    MONTH = {November},
+    YEAR = {1993} }
+
+@INPROCEEDINGS{yang91,
+    AUTHOR = {Yang, T. and Gerasoulis, A.},
+    TITLE = {A Fast Scheduling Algorithm for {DAG}s on an Unbounded
+		  Number of Processors},
+    BOOKTITLE = {The Proceedings of IEEE Supercomputing},
+    PAGES = {633--642},
+    YEAR = {1991} }
+
+@INPROCEEDINGS{yang92,
+    AUTHOR = {Yang, Tao and Gerasoulis, Apostolos},
+    TITLE = {PYRROS: Static Task Scheduling and Code Generation for
+		  Message Passing Multiprocessors},
+    BOOKTITLE = {Proceedings of the Sixth ACM International Conference
+		  on Supercomputing},
+    MONTH = {July},
+    YEAR = {1992} }
+
+@article{superlu99, 
+    author  = {J.~W. Demmel and S.~C. Eisenstat and 
+               J.~R. Gilbert and X.~S. Li and J.~W.~H. Liu},
+    title   = {A supernodal approach to sparse partial pivoting},
+    journal = SIMAX, 
+    year    = {1999}, 
+    volume  = {20},
+    number  = {3},
+    pages   = {720-755},
+    note="\url{https://portal.nersc.gov/project/sparse/superlu/}"
+}
+		  
+@techreport{superlu95,
+     AUTHOR = {J.~W. Demmel and S.~C. Eisenstat and J.~R. Gilbert
+               and X.~S. Li and J.~W.~H. Liu},
+     INSTITUTION = {Computer Science Division, U.C. Berkeley},  
+     NUMBER = {UCB//CSD-95-883},  
+     TITLE = {A Supernodal Approach to Sparse Partial Pivoting},
+     YEAR = {1995},
+     NOTE = {To appear in {\em SIAM J. Matrix Anal. Appl.}},
+     kwds = {LU}
+}
+%     MONTH = {July},
+%     NOTE = {(Xerox PARC report CSL-95-03, LAPACK Working Note \#103).
+%         Software is available at http://www.netlib.org/scalapack/prototype/},
+
+@techreport{li96,
+     AUTHOR = {X.~S. Li},
+     INSTITUTION = {Computer Science Division, U.C. Berkeley},  
+     NUMBER = {UCB//CSD-96-919},  
+     TITLE = {Sparse {G}aussian Elimination on High Performance Computers},
+     MONTH = {September},
+     YEAR = {1996},
+     NOTE = {Ph.D dissertation},
+}
+@phdthesis{Li:CSD-96-919,
+    Author = {Li, X.~S.},
+    Title = {Sparse Gaussian Elimination on High Performance Computers},
+    School = {EECS Department, University of California, Berkeley},
+    Year = {1996},
+    Month = {Sep},
+    note="\url{http://www.eecs.berkeley.edu/Pubs/TechRpts/1996/5814.html}",
+    Number = {UCB/CSD-96-919}
+}
+
+@INPROCEEDINGS{lidemmel98,
+    AUTHOR = {X.~S. Li and J.~W. Demmel},
+    TITLE = {Making Sparse {G}aussian Elimination Scalable by Static
+		  Pivoting},
+    BOOKTITLE = {Proceedings of SC98: High Performance Networking and
+                 Computing Conference},
+    ADDRESS = {Orlando, Florida},
+    YEAR = {1998},
+    MONTH = {November 7--13}
+}
+
+@INPROCEEDINGS{lidemmel99,
+    AUTHOR = {X.~S. Li and J.~W. Demmel},
+    TITLE = {A Scalable Sparse Direct Solver using Static Pivoting},
+    BOOKTITLE = {Proceedings of the Ninth SIAM Conference on Parallel
+		  Processing for Scientific Computing},
+    ADDRESS = {San Antonio, Texas},
+    YEAR = {1999},
+    MONTH = {March 22--24}
+}
+		  
+@techreport{lidemmel02,
+     AUTHOR = {X.~S. Li and J.~W. Demmel},
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     NUMBER = {LBNL-49388},
+     TITLE = {{SuperLU\_DIST}: A Scalable Distributed-Memory Sparse Direct
+              Solver for Unsymmetric Linear Systems},
+     MONTH = {March},
+     YEAR = {2002},
+     NOTE = {To appear in ACM Trans.\ Mathematical Software, 2003}
+}
+
+@article{lidemmel03,
+     AUTHOR = {X.~S. Li and J.~W. Demmel},
+     TITLE = {{SuperLU\_DIST}: A Scalable Distributed-Memory Sparse Direct
+              Solver for Unsymmetric Linear Systems},
+     JOURNAL = toms,
+     YEAR = 2003,
+     MONTH = {June},
+     VOLUME = {29},
+     NUMBER = {2},
+     PAGES = {110--140},
+    note="\url{https://portal.nersc.gov/project/sparse/superlu/}"
+}
+%     NOTE = {Technical Report LBNL-49388}
+
+@Article{Li:2003:SSD,
+  author = "X.~S. Li and J.~W. Demmel",
+  title = "SuperLU_DIST: A Scalable Distributed-Memory Sparse Direct Solver
+           for Unsymmetric Linear Systems",
+  journal = toms,
+  volume = "29",
+  number = "2",
+  pages = "110--140",
+  month = jun,
+  year =  "2003",
+  CODEN = "ACMSCU",
+  ISSN =  "0098-3500",
+  URL =   "http://doi.acm.org/10.1145/779359.779361"
+}
+
+
+@TECHREPORT{liwang03,
+     AUTHOR = {X.~S. Li and Y. Wang},
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     NUMBER = {LBNL-53624},
+     TITLE = {Performance Evaluation and Enhancement of {SuperLU\_DIST} 2.0},
+     MONTH = {August},
+     YEAR = {2003},
+}
+
+@TECHREPORT{li03,
+    AUTHOR = {X.~S. Li},
+    TITLE = {An Overview of {SuperLU}: Algorithms, Implementation,
+             and User Interface},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {LBNL-53848},
+    MONTH = {September},
+    YEAR = {2003},
+    NOTE = "\url{http://crd.lbl.gov/~xiaoye/LBNL-53848.pdf}"
+}
+%    NOTE = {Submitted to ACM TOMS}
+
+@techreport{lishao09,
+     AUTHOR = {X.~S. Li and M. Shao},
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     TITLE = {A Supernodal approach to imcomplete {LU} factorization
+              with partial pivoting},
+     NUMBER = {LBNL-2178E},
+     MONTH = {June},
+     YEAR = {2009},
+     NOTE = {ACM Trans.\ Mathematical Software (submitted)}
+}
+
+%     MONTH = {January},
+@article{lishao10,
+     AUTHOR = {X.~S. Li and M. Shao},
+     TITLE = {A Supernodal approach to imcomplete {LU} factorization
+              with partial pivoting},
+     JOURNAL = toms,
+     YEAR = 2010,
+     VOLUME = {37},
+     NUMBER = {4},
+}
+
+@techreport{superlu_smp97,
+     AUTHOR = {J.~W. Demmel and J.~R. Gilbert and X.~S. Li},
+     INSTITUTION = {Computer Science Division, U.C. Berkeley},  
+     NUMBER = {UCB//CSD-97-943},
+     TITLE = {An Asynchronous Parallel Supernodal Algorithm for 
+                 Sparse Gaussian Elimination},
+     YEAR = {1997},
+     NOTE = {To appear in {\em SIAM J. Matrix Anal. Appl.}}
+}
+%     MONTH = {Feburary},
+%     NOTE = {(LAPACK Working Note \#124. )}
+%  special issue on Sparse and Structured
+%                   Matrix Computations and Their Applications},
+@article{superlu_smp99, 
+    author  = {J.~W. Demmel and J.~R. Gilbert and X.~S. Li},
+    title   = {An Asynchronous Parallel Supernodal Algorithm for 
+                 Sparse Gaussian Elimination},
+    journal = SIMAX,
+    year    = {1999}, 
+    volume  = {20},
+    number  = {4},		  
+    pages   = {915-952},
+    note="\url{https://portal.nersc.gov/project/sparse/superlu/}"
+}
+
+@techreport{superlu_ug97,
+     AUTHOR = {J.~W. Demmel and J.~R. Gilbert and X.~S. Li},
+     INSTITUTION = {Computer Science Division, U.C. Berkeley},  
+     NUMBER = {UCB//CSD-97-944},  
+     TITLE = {{SuperLU Users' Guide}},
+     MONTH = {February},
+     YEAR = {1997},
+}
+
+@techreport{superlu_ug99,
+     AUTHOR = {X.S. Li and J.W. Demmel and J.R. Gilbert and L. Grigori
+ and P. Sao and M. Shao and I. Yamazaki},
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     NUMBER = {LBNL-44289},
+     TITLE = {{SuperLU Users' Guide}},
+     MONTH = {September},
+     YEAR = {1999},
+     NOTE = "\url{https://portal.nersc.gov/project/sparse/superlu/ug.pdf}",
+             Last update: June 2018"
+}
+		  
+@misc{superlu_sw,
+     AUTHOR = {J.~W. Demmel and J.~R. Gilbert and X.~S. Li},
+     TITLE = {{SuperLU and SuperLU\_MT}},		  
+     NOTE = {http://www.netlib.org/scalapack/prototype/},
+     MONTH = {November},		  
+     YEAR = {1997},
+}
+
+
+%%    NOTE = "\url{http://crd.lbl.gov/~xiaoye/LBNL-53848.pdf}"
+@article{li05,
+    AUTHOR = {X.~S. Li},
+    TITLE = {{An Overview of {SuperLU}: Algorithms, Implementation,
+             and User Interface}},
+    journal = toms,
+    volume = {31},
+    number = {3},
+    month = {September},
+    year = {2005},
+    pages = {302-325},
+}
+		  
+@techreport{li08a,
+     AUTHOR = {X. S. Li},
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     NUMBER = {in preparation},  
+     TITLE = {Sparse {LU} Factorizations on Multicore Platforms},
+     YEAR = {2008}
+}
+
+@inproceedings{li08b,
+   author    = {X. S. Li},
+   title     = {Evaluation of sparse factorization and triangular solution
+                on multicore architectures},
+   booktitle = {Proceedings of VECPAR’08 8th International Meeting High
+           Performance Computing for Computational Science},
+   address = {Toulouse, France},
+   year = {2008},
+   month = {June 24-27}
+}
+
+@inproceedings{li08c,
+   author    = {X. S. Li},
+   title     = {Evaluation of SuperLU on multicore architectures},
+   booktitle = {Proceedings of SciDAC 2008 Conference, Journal of Physics:
+   Conference Series 125 (2008) 012079. Institute of Physics Publishing.},
+   address = {Seattle},
+   year = {2008},
+   month = {July 13-17}
+}
+
+@TECHREPORT{li09,
+    AUTHOR = {X.~S. Li and M. Shao},
+    TITLE = {A Supernodal Approach to Incomplete {LU} factorization},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {in preparation},
+    MONTH = {March},
+    YEAR = {2009},
+}
+
+@inproceedings{sovinec05,
+   author    = {C. R. Sovinec and C. C. Kim and D. D. Schnack and A. Y. Pankin, 
+  S. E. Kruger and E. D. Held and D. P. Brennan and D. C. Barnes and X. S. Li
+  and  D. K. Kaushik and S. C. Jardin and the NIMROD Team},
+  title = {{Nonlinear Magnetohydrodynamic (MHD) Simulations using High-Order 
+   Finite Elements}},
+   booktitle = {Proc. of SciDAC 2005, Journal of Physics:
+      Conference Series 16 (2005). Institute of Physics Publishing.},
+   pages = {25-34},
+   address = {San Francisco},
+   year = {2005},
+   month = {June 26-30}
+}
+
+@inproceedings{li_scidac07,
+   author    = {X.S. Li and J. Demmel and L. Grigori and M. Gu and J. Xia
+   and S. Jardin and C. Sovinec and L.-Q Lee},
+   title = {Enhancing Scalability of Sparse Direct Methods},
+   booktitle = {Proc. of SciDAC 2007, Journal of Physics:
+      Conference Series 78 (2007) 012041. Institute of Physics Publishing.},
+   address = {Boston},
+   year = {2007},
+   month = {June 24-28}
+}
+
+@inproceedings{li_scidac09,
+   author    = {X.S. Li and M. Shao and I. Yamazaki and E.G. Ng},
+   title     = {Factorization-based sparse solvers and preconditioners}, 
+   booktitle = {Proceedings of SciDAC 2009 Conference, Journal of Physics:
+   Conference Series 180 (2009) 012015. Institute of Physics Publishing.},
+   address = {San Diego},
+   year = {2009},
+   month = {June 14-18},
+   pages = {421-434}
+}
+
+@inproceedings{Yamazaki09,
+   author    = {I. Yamazaki and X.S. Li and E.G. Ng},
+   title     = {A Parallel Hybrid Linear Solver for Accelerator Cavity Design},
+   booktitle = {Proc. of ICAP09, the 10th International Computational Accelerator
+                 Physics conference},
+   address = {San Francisco, California},
+   date = {Aug. 31 - Sept. 4},
+   year = {2009},
+   pages = {89-92}
+}
+@inproceedings{YamazakiLi10,
+   author    = {I. Yamazaki and X.S. Li},
+   title     = {On techniques to improve robustness and scalability of
+                the Schur complement method},
+   booktitle = {Proc. of VECPAR 2010},
+   address = {Berkeley, California},
+   date = {June 22-25},
+   year = {2010},
+   note = {\url{http://portal.nersc.gov/project/sparse/pdslin/}}
+}
+@techreport{pdslin_ug11,
+     AUTHOR = {I. Yamazaki and X.~S. Li and E. Ng},
+     INSTITUTION = {lawrence Berkeley National Laboratory},
+     TITLE = {{PDSLin Users Guide}},
+     MONTH = {June},
+     YEAR = {2011},
+     NUMBER = {LBNL-4825E},
+}
+
+@inproceedings{YamazakiLi-ipdps12,
+   author    = {I. Yamazaki and X.S. Li},
+   title     = {New Scheduling Strategies and Hybrid Programming for a Parallel
+      Right-looking Sparse {LU} Factorization on Multicore Cluster Systems},
+   booktitle = {Proceedings of IEEE International Parallel and Distributed Processing 
+      Symposium (IPDPS 2012)},
+   address = {Shanghai, China},
+   year = {2012},
+   month = {May 20-24}
+}
+
+@ARTICLE{Yamazaki2012,
+  author = {I. Yamazaki and X.S. Li and F.-H. Rouet and B. U\c{c}ar},
+  title = {Partitioning, Ordering, and Load Balancing
+        in a Hierarchically Parallel Hybrid Linear Solver},
+  journal = {Int'l J. of High Performance Comput.},
+  volume = {},
+  pages = {},
+  year = {2012 (revised)}
+
+}
+@inproceedings{Yamazaki-ipdps13,
+   author    = {I. Yamazaki and X.S. Li and F.-H. Rouet and B. U\c{c}ar},
+   title     = {On partitioning and reordering problems in
+                a hierarchically parallel hybrid linear solver},
+   booktitle = {Proc. of IPDPS 2013 Workshops},
+   note = {PDSEC-13 Workshop},
+   address = {Boston},
+   year = {2013},
+   month = {May 20-24}
+}
+@inproceedings{RajBomanHeroux12,
+  author = {S. Rajamanickam and E.G. Boman and M.A. Heroux},
+  title = {{ShyLU}: A Hybrid-Hybrid Solver for Multicore Platforms},
+  booktitle = {Proc. of IPDPS 2012},
+  volume = {},
+  pages = {},
+  address = {Shanghai, China},
+  month = {May 20-24},
+  year = {2012}
+}
+
+@PHDTHESIS{lucas87_thesis,
+    AUTHOR = {Robert F. Lucas},
+    TITLE = {Solving planar systems of equations on distributed-memory
+             multiprocessors},
+    SCHOOL = {Department of Electrical Engineering, Stanford University},
+    YEAR = {1987} }
+
+@TECHREPORT{pralet04,
+    AUTHOR = {S. Pralet and P.~R. Amestoy and X.~S. Li},
+    TITLE = {Unsymmetric Ordering Using a Constraint {Markowitz} Scheme},
+    INSTITUTION = {In preparation},
+    YEAR = {2004} }
+%    NUMBER = {Research Report YALEU/DCS/RR-810},
+%    MONTH = {July},
+
+@article{rothberg+91,
+    AUTHOR = {Rothberg, E. E. and Gupta, A.},
+    TITLE = {Efficient Sparse Matrix Factorization on High-Performance
+             Workstations--Exploiting the Memory Hierarchy},
+    journal = toms,
+    volume = {17},
+    number = {3},
+    month = {September},
+    year = {1991},
+    pages = {313--334} 
+}
+
+%% Last chapter of Ed's thesis
+@INPROCEEDINGS{rothberg93,
+    AUTHOR = {Rothberg, E. E. and Gupta, A.},
+    TITLE = {An Efficient Block-Oriented Approach to Parallel Sparse
+ 		  Cholesky Factorization},
+    BOOKTITLE = {Supercomputing},
+    YEAR = {1993},
+    MONTH = {November},
+    PAGES = {503--512} }
+
+@article{rothberg94a,
+     AUTHOR = {Edward Rothberg and Anoop Gupta},
+     JOURNAL = sisc,
+     TITLE = {An Efficient Block-Oriented Approach to Parallel Sparse
+ 		  Cholesky Factorization},
+     VOLUME = {15},
+     NUMBER = {6},
+     PAGES = {1413-1439},
+     MONTH = {November},
+     YEAR = {1994}
+}
+
+%% On Intel Paragon, ~3.2 Gflops on 196-nodes		  
+@INPROCEEDINGS{rothberg94,
+    AUTHOR = {Rothberg, Edward and Schreiber, Robert},
+    TITLE = {Improved Load Distribution in Parallel Sparse 
+		  Cholesky Factorization},
+    BOOKTITLE = {Supercomputing},
+    YEAR = {1994},
+    MONTH = {November},
+    PAGES = {783--792} }
+
+@article{saad94,
+   author   = {Y.~Saad},
+   title    = {{ILUT: A dual threshold incomplete LU factorization}},
+   journal  = {Numerical Linear Algebra with Applications},
+   volume   = 1,
+   number   = 4,
+   pages    = "387-402",
+   year     = 1994
+}
+@BOOK{saad96,
+      AUTHOR = {Yousef Saad},
+      TITLE = {Iterative methods for sparse linear systems},
+      PUBLISHER = {PWS Publishing Company},
+      YEAR = {1996},
+      ADDRESS = {Boston, MA}
+}
+
+@book{saad2003,
+author = {Saad, Yousef},
+title = {Iterative Methods for Sparse Linear Systems},
+publisher = {Society for Industrial and Applied Mathematics},
+year = {2003},
+doi = {10.1137/1.9780898718003},
+address = {},
+edition   = {Second},
+%URL = {https://epubs.siam.org/doi/abs/10.1137/1.9780898718003},
+%eprint = {https://epubs.siam.org/doi/pdf/10.1137/1.9780898718003}
+}
+
+@book{saad04,
+ author = {Y.~Saad},
+ title = {Iterative methods for sparse linear systems},
+ publisher = {SIAM},
+ address = {Philadelphia},
+ year = {2004}
+}
+
+@book{saad2011,
+ author = {Y.~Saad},
+ title = {Numerical Methods for Large Eigenvalue Problems},
+ publisher = {Society for Industrial and Applied Mathematics},
+ address = {Philadelphia},
+ year = {2011},
+ edition = {Second}
+}
+
+@article{bollhofer06,
+  Author = {M. Bollh\"ofer and Y. Saad},
+  Title = {Multilevel preconditioners constructed from inverse-based {ILUs}},
+  JOURNAL = sisc,
+  VOLUME = 27,
+  NUMBER = 5,
+  PAGES = {1627-1650},
+  YEAR = 2006
+}
+
+@misc{sparskit,
+  author = {Y.~Saad},
+  TITLE = {{SPARSKIT}: A basic tool-kit for sparse matrix computations},
+  howpublished = {\url{http://www-users.cs.umn.edu/~saad/software/SPARSKIT/sparskit.html}},
+  institution = {University of Minnesota}
+}
+@article{henon06,
+ author={P. Henon and Y. Saad},
+ title ={A parallel multilevel ILU factorization based on a hierarchical graph decomposition},
+ journal = {SIAM J. Sci. Comput.},
+ year = {2006},
+ volume = {28},
+ number = {6},
+ pages = {2266-2293}
+}
+@misc{hid,
+    AUTHOR = {J. Gaidamour and P. Henon and Y. Saad},
+    TITLE = {{HID - Hierarchical Interface Decomposition}},
+    howpublished = {http://hips.george.inria.fr}
+}
+@inproceedings{hips,
+ author = {J. Gaidamour and P. Henon},
+ title = {{HIPS}: a parallel hybrid direct/iterative solver based on a Schur complement},
+ booktitle =	 {Proc. PMAA},
+ year =	 {2008} 
+}
+
+@article{scgf:00,
+   author    = {O. Schenk and K. G\"artner and W. Fichtner},
+   title     = "Efficient sparse {LU} factorization with left--right looking
+                strategy on shared memory multiprocessors",
+   journal   = "BIT",
+   volume    = 40,
+   number    = 1,
+   pages     = "158--176",
+   year      = 2000,
+   URL = "https://pardiso-project.org/"
+   }
+
+@ARTICLE{skeel79,
+    AUTHOR = {R.D. Skeel},
+    TITLE = {Scaling for numerical stability for {G}aussian elimination},
+    JOURNAL = {J. ACM},
+    VOLUME = {26}, 
+    PAGES = {494--526},
+    YEAR = {1979} }
+
+@ARTICLE{skeel80,
+    AUTHOR = {R.D. Skeel},
+    TITLE = {Iterative refinement implies numerical stability for {G}aussian
+             elimination},
+    JOURNAL = {Mathematics of Computation},
+    VOLUME = {35}, 
+    NUMBER = {151},
+    PAGES = {817--832},
+    YEAR = {1980} }
+
+@TECHREPORT{stewart03,
+    AUTHOR = {G. W. Stewart},
+    TITLE = {Building an Old-Fashioned Sparse Solver},
+    INSTITUTION = {Department of Computer Science, University of Maryland,
+                  College Park},
+    NUMBER = {TR-2003-95},
+    MONTH = {August},
+    YEAR = {2003}
+}
+
+@techreport{sles,
+     AUTHOR = {W. Gropp and B. F. Smith},
+     INSTITUTION = {Mathematics and Computer Science Division},
+     NUMBER = {ANL-93-8},  
+     TITLE = {Simplified Linear Equation Solvers User Manual},
+     MONTH = {February},
+     YEAR = {1993}
+}
+
+@book{smith96,
+  author = {B. Smith and P. Bjorstad and W. Gropp},
+  title  = {Domain Decomposition. Parallel Multilevel Methods for Elliptic Partial Differential Equations.},
+  publisher = {Cambridge University Press},
+  address   = {New York},
+  year = {1996}
+}
+
+@incollection{gupta92,
+  Author = {A. Gupta and E. Rothberg and E. Ng and B. W. Peyton},
+  Title = {Parallel sparse {C}holesky factorization algorithms for
+           shared-memory multiprocessor systems},
+  booktitle = {Advances in Computer Methods for Partial Differential 
+               Equations--VII},
+  editor = {R. Vichnevetsky and D. Knight and G. Richter},
+  publisher = {IMACS},
+  address = {New Brunswick, NJ.},
+  pages = {622--628},		  
+  year = 1992,
+  }
+
+
+@article{vanderstappen93,
+     AUTHOR = {A. Frank van der Stappen and Rob H. Bisseling and
+               Johannes G. G. van der Vorst},
+     JOURNAL = simax,
+     TITLE = {Parallel sparse {LU} decomposition on a mesh network
+              of transputers},
+     VOLUME = {14},
+     NUMBER = {3},
+     PAGES = {853--879},
+     MONTH = {July},
+     YEAR = {1993}
+}
+
+%		  
+%  author = "S. A. Vavasis",
+%  title = "Stable finite elements for problems with wild coefficients",
+%  institution = "Department of Computer Science, Cornell University",
+%  address = "Ithaca, NY",
+%  number = "93--1364",
+%  year = "1993",
+%  note = "To appear in {\em SIAM J. Numerical Analysis}."}
+@article{Vava:fe,
+     AUTHOR = {S. A. Vavasis},
+     JOURNAL = sinum,
+     TITLE = {Stable finite elements for problems with wild coefficients},
+     VOLUME = {33},
+     NUMBER = {3},
+     PAGES = {890--916},
+     MONTH = {June},
+     YEAR = {1996}
+}
+
+@ARTICLE{fujy:98,
+    AUTHOR = {C. Fu and X. Jiao and T. Yang},
+    TITLE = {Efficient sparse {LU} factorization with partial pivoting
+		  on distributed memory architectures},
+    JOURNAL = {IEEE Trans. Parallel and Distributed Systems},
+    VOLUME = {9}, 
+    NUMBER = {2},
+    PAGES = {109--125},
+    YEAR = {1998},
+    note="\url{https://sites.cs.ucsb.edu/projects/s+/}"
+    }
+
+@BOOK{zlatev91,
+   AUTHOR = {Zahari Zlatev},
+   TITLE = {Computational methods for general sparse matrices},
+   YEAR	   = {1991},
+   PUBLISHER = {Kluwer Academic},
+   ADDRESS = {Dordrecht; Boston} }
+
+@techreport{zlatev95,
+     AUTHOR = {Z. Zlatev and J. Wa\'{s}niewski and P. C. Hansen and
+               Tz. Ostromsky},
+     TITLE = {{PARASPAR}: a package for the solution of large
+                    linear algebraic equations on parallel computers
+                    with shared memory},
+     NUMBER = {95-10},
+     INSTITUTION = {Technical University of Denmark},
+     MONTH = {September},
+     YEAR = {1995}
+}
+
+@TECHREPORT{qrcnts,
+     AUTHOR = {J.~R. Gilbert and X.~S. Li and E.~G. Ng
+               and B.~W. Peyton},
+     title = {{Computing Row and Column Counts for Sparse $QR$ and
+               $LU$ Factorizations}},
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     YEAR = {2001},
+     MONTH = {January},
+     TYPE = {Technical {R}eport LBNL-47372},
+     ADDRESS = {Berkeley},
+     NOTE = {Submitted to BIT}
+}
+
+@ARTICLE{glnp:01,
+    AUTHOR = {J. R. Gilbert and X. S. Li and E. G. Ng
+               and B.~W. Peyton},
+    TITLE = {Computing Row and Column Counts for Sparse ${QR}$ and ${LU}$
+             Factorization},
+    JOURNAL = {BIT},
+    VOLUME = {41}, 
+    NUMBER = {4},
+    PAGES = {693--710},
+    YEAR = {2001} }
+
+@INPROCEEDINGS{grigorili02,
+    AUTHOR = {L. Grigori and X.~S. Li},
+    TITLE = {A New Scheduling Algorithm for Parallel Sparse {LU}
+             Factorization with Static Pivoting},
+    BOOKTITLE = {Proceedings of SC2002},
+    ADDRESS = {Baltimore},
+    YEAR = {2002},
+    MONTH = {November 16-22}
+}
+
+@INPROCEEDINGS{grigorili_para04,
+    AUTHOR = {L. Grigori and X.~S. Li},
+    TITLE = {Performance Analysis of Parallel Right-Looking Sparse {LU}
+             Factorization on Two Dimensional Grid of Processors},
+    BOOKTITLE = {Proceedings of PARA'04},
+    series      = {LNCS 3732, Springer},
+    YEAR = {2006},
+    pages = {768--777}
+}
+
+@TECHREPORT{grigorili04,
+    AUTHOR = {L. Grigori and X.~S. Li},
+    TITLE = {Performance Analysis of Parallel Supernodal Sparse LU
+             Factorization},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {LBNL-54497},
+    MONTH = {Feburary},
+    YEAR = {2004}
+}
+
+@article{grigorili07,
+  author = {L. Grigori and X. S. Li},
+  title = {Towards an Accurate Performance Modeling of Parallel Sparse
+           Factorization}, 
+  journal = {Applicable Algebra in Engineering, Communication, and Computing},
+  volume = {18},
+  number = {3},
+  pages = {241-261},
+  year = 2007
+}
+
+@INPROCEEDINGS{GDX08,
+    AUTHOR = {L. Grigori and J. Demmel and H. Xiang},
+    TITLE = {Communication-avoiding {Gaussian Elimination}},
+    BOOKTITLE = {Supercomputing 08},
+    ADDRESS = {Austin, Texas},
+    YEAR = {2008},
+    MONTH = {November 15-21}
+}
+
+@TECHREPORT{grigoridemmelli05,
+    AUTHOR = {L. Grigori and J.~W. Demmel and X.~S. Li},
+    TITLE = {Parallel Symbolic Factorization Algorithm},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {LBNL-59031},
+    MONTH = {November},
+    YEAR = {2005},
+}
+
+@article{grigoridemmelli07,
+  Author = {L. Grigori and J.~W. Demmel and X.~S. Li},
+  Title = {Parallel Symbolic Factorization for Sparse {LU} with
+      Static Pivoting},
+  JOURNAL = sisc,
+  VOLUME = 29,
+  NUMBER = 3,
+  PAGES = {1289-1314},
+  YEAR = 2007
+}
+
+@article{grigoriboman10,
+author = {L. Grigori and E. Boman and S. Donfack and T. Davis},
+title = {Hypergraph-based unsymmetric nested dissection ordering for
+ sparse LU factorization},
+journal = sisc,
+volume = {32},
+number = {6},
+year = 2010
+}
+
+@ARTICLE{GLP09,
+    AUTHOR = {M. Gu and X.S. Li and P. Vassilevski},
+    TITLE = {Direction-preserving and Schur-monotonic Semi-separable
+            Approximations of Symmetric Positive Definite Matrices},
+   JOURNAL = simax,
+   VOLUME = {31},
+   NUMBER = {5},
+   YEAR = {2010},
+   PAGES = {2650-2664}
+}
+
+%  Author = {David Hysom and Alex Pothen},
+@article{hysom01,
+   Author = {D. Hysom and A. Pothen},
+  Title = {A Scalable parallel algorithm for incomplete factor preconditioning},
+  JOURNAL = sisc,
+  VOLUME = 22,
+  NUMBER = 6,
+  PAGES = {2194-2215},
+  YEAR = 2001
+}
+
+@misc{riedy02,
+    AUTHOR = {J. Riedy and J.~W. Demmel},
+    TITLE = {Parallel Bipartite Matching for Sparse Matrix computation},
+    YEAR = 2002,
+    NOTE = {In preparation}
+}
+
+@ARTICLE{SchenkGartner04,
+    author = {O.~Schenk and K.~G\"{a}rtner},
+    title = {Solving unsymmetric sparse systems of linear equations
+   with PARDISO},
+    journal = {J. of Future Generation Computer Systems},
+    year = {2004},
+    volume = {20},
+    pages = {475-487}
+}
+
+@misc{pardiso,
+     AUTHOR = {Olaf Schenk and Klaus G\"{a}rtner},
+     TITLE = {Parallel Sparse Direct Linear Solver {PARDISO},
+             {User Guide Version 1.2}},
+     MONTH = {July},
+     YEAR = {2004},
+     howpublished ="\url{http://www.computational.unibas.ch/cs/scicomp/software/pardiso/}"
+}
+
+
+@TECHREPORT{jianlin07b,
+    AUTHOR = {S. Chandrasekaran and M. Gu and X.S. Li and J. Xia},
+    TITLE = {Superfast multifrontal method for structured linear systems
+           of equations},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {LBNL-62898},
+    MONTH = {June},
+    YEAR = {2007} }
+
+@ARTICLE{xia09,
+    AUTHOR = {J. Xia and S. Chandrasekaran and M. Gu and X.S. Li},
+    TITLE = {Superfast multifrontal method for large structured linear systems
+             of equations},
+   JOURNAL = {{SIAM J. Matrix Analysis anxd Applications}},
+   VOLUME = {31},
+   NUMBER = {3},
+   PAGES = {1382-1411},
+   YEAR = 2009
+}
+
+@article{xia10,
+    AUTHOR = {J. Xia and S. Chandrasekaran and M. Gu and X.S. Li},
+    TITLE = {Fast algorithms for hierarchically semiseparable matrices},
+    journal = {{Numer. Linear Algebra Appl.}},
+    year = 2010,
+    note = {doi: 10.1002/nla.691}
+}
+
+@InBook{cdlh:05,
+author = {E. Caron and F. Desprez and J.-Y. L'Excellent and C. Hamerling
+          and M. Pantel and C. Puglisi-Amestoy},
+editor = {},
+title = "{Future Generation Grids}",
+chapter = {Use of A Network Enabled Server System for a
+             Sparse Linear Algebra Application},
+publisher = {Springer Verlag},
+year = {2005},
+volume = {2},
+series = {CoreGrid Series},
+note = {}
+}
+
+@misc{scotch,
+  author = {F. Pellegrini},
+  title = {{\sc Scotch and libScotch} 5.1 {User's Guide} (version 5.1.11)},
+  note = {INRIA Bordeaux Sud-Ouest, Universit\'{e} Bordeaux I.
+         November, 2010. \url{http://www.labri.fr/perso/pelegrin/scotch/}}
+}    
+
+@misc{pt-scotch,
+  author = {F. Pellegrini},
+  title = {{\sc PT-Scotch and libScotch} 5.1 {User's Guide} (version 5.1.11)},
+  note = {INRIA Bordeaux Sud-Ouest, Universit\'{e} Bordeaux I.
+         November, 2010. \url{http://www.labri.fr/perso/pelegrin/scotch/}}
+}    
+
+@article{pellegrini08,
+  author={C. Chevalier and F. Pellegrini},
+  title={{PT-Scotch: A tool for efficient parallel graph ordering}},
+  journal={Parallel Computing},
+  volume={34},
+  number={6-8},
+  pages={318-331},
+  year={2008}
+}
+@Article{PeRoAm2000.1,
+author = {Pellegrini, F. and Roman, J. and Amestoy, P.},
+title = "{Hybridizing Nested Dissection and Halo Approximate Minimum Degree for Efficient Sparse Matrix Ordering}",
+journal = {Concurrency: Practice and Experience},
+year = {2000},
+volume = {12},
+pages = {69-84}
+}
+
+@misc{pdslin_web,
+  key  = "pdslin_web",
+  author = "I. Yamazaki and X.S. Li",
+  title =       "{PDSLin}: Parallel Domain decomposition Schur complement based
+       Linear solver",
+  note = {\url{http://portal.nersc.gov/project/sparse/pdslin/}}
+}
+
+%@misc{superlu_web,
+% author = {X.S. Li and J. Demmel and J. Gilbert and L. Grigori and Y. Liu
+%           and P. Sao and M. Shao and I. Yamazaki},
+% key  = "superlu_web",
+% title =       "{SuperLU}: Sparse Direct Solver",
+% note="\url{http://portal.nersc.gov/project/sparse/superlu/}",
+%
+%  date = 2021
+@misc{superlu_web,
+key = {{SuperLU: Sparse Direct Solver}},
+note="\url{http://portal.nersc.gov/project/sparse/superlu/}",
+year = {2024}
+}
+
+@misc{strumpack_web,
+  key ={{STRUMPACK: STRUctured Matrices PACKages}},
+note="\url{http://portal.nersc.gov/project/sparse/strumpack/}",
+year = {2024}
+}
+
+@misc{butterflypack_web,
+  suthor = {Y. Liu},
+  key = {butterflypack_web},
+  note="\url{https://github.com/liuyangzhuan/ButterflyPACK}",
+  title = {{ButterflyPACK}},
+  date = {2019}
+}
+
+@article{ScottHu07,
+    AUTHOR = {Scott, J. A. and Hu, Y.},
+    TITLE = {Experiences of sparse direct symmetric solvers},
+    JOURNAL = toms,
+    VOLUME = {33},
+    NUMBER = {3},
+    YEAR = {2007} }
+
+@INPROCEEDINGS{SamSC07,
+    AUTHOR = {S. Williams and L. Oliker and R. Vuduc and
+              J. Shalf and K. Yelick and J.~Demmel},
+    TITLE = {Optimization of Sparse Matrix-Vector Multiplication on
+             Emerging Multicore Platforms},
+    BOOKTITLE = {Supercomputing (SC)},
+    ADDRESS = {Reno, California},
+    YEAR = {November 10-16, 2007}
+}
+
+
+@INPROCEEDINGS{wolf08,
+    AUTHOR = {M. M. Wolf and E.G. Boman and B. Hendrickson},
+    TITLE = {Optimizing Parallel Sparse Matrix-Vector Multiplication
+ by Corner Partitioning},
+    BOOKTITLE = {PARA08},
+    ADDRESS = {Trondheim, Norway},
+    MONTH = {May},
+    YEAR = {2008}
+}
+
+@ARTICLE{UcarAykanat07,
+   AUTHOR = {B. U\c{c}ar and C. Aykanat},
+   TITLE = {Revisiting Hypergraph Models for Sparse Matrix Partitioning},
+   JOURNAL = {SIAM Review},
+   YEAR	   = {2007},
+   VOLUME = {49},
+   NUMBER = {4},
+   PAGES = {595-603}
+}
+
+@ARTICLE{bisseling2005,
+   AUTHOR = {B. Vastenhouw and R.~H. Bisseling},
+   TITLE = {A two-dimensional data distribution method for
+           parallel sparse matrix-vector multiplication},
+   JOURNAL = {SIAM Review},
+   YEAR	   = {2005},
+   VOLUME = {47},
+   NUMBER = {1},
+   PAGES = {67-95}
+}
+
+@inproceedings{vuduc02b,
+   author    = {R. Vuduc and J. W. Demmel and K. A. Yelick and S. Kamil
+                and R. Nishtala},
+   title     = {Performance optimizations and bounds for sparse
+                matrix-vector multiply},
+   booktitle = {Supercomputing (SC02)},
+   address = {Baltimore, MD},
+   year = {2002},
+   month = {November 16-22}
+}
+
+@MISC{ilupack,
+    AUTHOR = {M.~Bollh\"ofer and Y.~Saad and O.~Schenk},
+    title = {{ILUPACK} - preconditioning software package},
+    howpublished = {\url{http://ilupack.tu-bs.de}, TU Braunschweig},
+    YEAR = {2006}
+}
+
+@inproceedings{hips06,
+   author    = {J. Gaidamour and P. Hénon and J. Roman and Y. Saad},
+   title     = {A hybrid direct-iterative solver based on the {Schur}
+                complement approach},
+   booktitle = {Compstat, 8th Workshop of the {ERCIM} Working group},
+   address = {Salernes, Italie},
+   year = {2006},
+   month = {September}
+}
+
+@MISC{zoltan,
+    key = {zoltan},
+    title = {Zoltan: Parallel Partitioning, Load Balancing and
+             Data-Management Services},
+    howpublished = {\url{http://www.cs.sandia.gov/zoltan/Zoltan.html}}
+}
+@Article{ZoltanIsorropiaOverview2012,
+   author = {E. G. Boman and U. V. Catalyurek and C. Chevalier and K. D. Devine},
+   title = {The {Z}oltan and {I}sorropia Parallel Toolkits for Combinatorial Scientific Computing: Partitioning, Ordering, and Coloring},
+   journal = {Scientific Programming},
+   year = {2012},
+   volume = {20},
+   number = {2},
+   pages = {129--150}
+}
+
+@MISC{gam,
+    AUTHOR = {David Culler {\em et.al.}},
+    TITLE = {Generic Active Message Interface Specification},
+    INSTITUTION = {Computer Science Division, UC Berkeley},
+    MONTH = {August},
+    YEAR = {1994} }
+
+
+@TECHREPORT{gilbertng92,
+    AUTHOR = {Gilbert, John R. and Ng, Esmond G.},
+    TITLE = {Predicting Structure in Nonsymmetric Sparse Matrix Factorizations},
+    INSTITUTION = {Oak Ridge National Laboratory},
+    NUMBER = {ORNL/TM-12204},
+    MONTH = {October},
+    YEAR = {1992} }
+
+@INCOLLECTION{GilbertNg-IMA,
+    AUTHOR = {Gilbert, John R. and Ng, Esmond G.},
+    TITLE = {Predicting Structure in Nonsymmetric Sparse Matrix Factorizations},
+    BOOKTITLE = {Graph theory and sparse matrix computation},
+    PUBLISHER = {Springer-Verlag, New York},
+    EDITOR = {George, A. and Gilbert, J.~R. and Liu, J.~W.~H.},
+    PAGES = {107-139},
+    YEAR = {1993}
+}
+
+@INPROCEEDINGS{guptakumar95,
+    AUTHOR = {Gupta, A. and Kumar, V.},
+    TITLE = {Optimally Scalable Parallel Sparse Cholesky
+		  Factorization},
+    BOOKTITLE = {The 7th SIAM Conference on Parallel Processing for 
+                 Scientific Computing},
+    PAGES = {442-447},
+    YEAR  = {1995} }
+		  
+@TECHREPORT{hadfield94,
+    AUTHOR = {Hadfield, Steven M.},
+    TITLE = {On the LU factorization of sequences of identically structured
+		sparse matrices within a distributed memory environment},
+    INSTITUTION = {Computer \& Information Sciences Department, 
+		 University of Florida},
+    TYPE = {Ph.{D} thesis},
+    YEAR = {1994} }
+
+@article{liu90-trees,
+     AUTHOR = {J. W. H. Liu},  
+     JOURNAL = simax,
+     PAGES = {134-172},  
+     TITLE = {The role of elimination trees in sparse factorization},  
+     VOLUME = {11},  
+     YEAR = {1990}
+}
+
+@ARTICLE{liu92,
+   AUTHOR = {Liu, J.~W. H.},
+   TITLE = {The Multifrontal Method for Sparse Matrix Solution: theory
+		and Practice},
+   JOURNAL = {SIAM Review},
+   YEAR	   = {1992},
+   VOLUME = {34},
+   NUMBER = {1},
+   MONTH = {March},
+   PAGES = {82--109} }
+
+@article{lubarlow96,
+     AUTHOR = {Szu-Min Lu and Jesse L. Barlow},
+     JOURNAL = simax,
+     PAGES = {658-679},  
+     TITLE = {Multifrontal computation with the orthogonal factors of 
+              sparse matrices},
+     VOLUME = {17},  
+     YEAR = {1996}
+}
+
+@ARTICLE{lucas87,
+    AUTHOR = {Robert F. Lucas and Tom Blank and Jerome J. Tiemann},
+    TITLE = {A parallel solution method for large sparse systems of equations},
+    JOURNAL = {IEEE Transactions on Computer-Aided Design},
+    VOLUME = {CAD-6},
+    NUMBER = {6},
+    MONTH = {November},
+    YEAR = {1987},
+    PAGES = {981-991} }
+
+@ARTICLE{markowitz57,
+    AUTHOR = {H. M. Markowitz},
+    TITLE = {The elimination form of the inverse and its application
+             to linear programming},
+    JOURNAL = {Management Sci.},
+    VOLUME = {3},
+    YEAR = {1957},
+    PAGES = {255-269}
+}
+		  
+% left-looking sup-col algo; experiments on Cray Y-MP.
+@ARTICLE{ngpeyton93a,
+   AUTHOR = {Ng, Esmond G. and Peyton, Barry W.},
+   TITLE = {A supernodal {C}holesky factorization algorithm for 
+            shared-memory multiprocessors},
+   JOURNAL = {SIAM J. Sci. Comput.},
+   YEAR	   = {1993},
+   VOLUME = {14},
+   NUMBER = {4},
+   MONTH = {July},
+   PAGES = {761--769} }
+
+@ARTICLE{ngpeyton93b,
+   AUTHOR = {Ng, Esmond G. and Peyton, Barry W.},
+   TITLE = {Block sparse {C}holesky algorithms on advanced uniprocessor 
+            computers},
+   JOURNAL = {SIAM J. Sci. Comput.},
+   YEAR	   = {1993},
+   VOLUME = {14},
+   NUMBER = {5},
+   MONTH = {September},
+   PAGES = {1034--1056} }
+
+%%    TITLE = {Notes on {QR} nonzero counts},
+@MISC{ng96,
+    AUTHOR = {Esmond G. Ng},
+    HOWPUBLISHED = {Personal communication},
+    YEAR = {1996} }
+
+@article{notay-dric-94,
+     author={Y. Notay},
+     title={{DRIC}: a dynamic version of the {RIC} method},
+     journal={Numer. Lin. Alg. Applic.},
+     volume = {1},
+     number = {6},
+     pages = {511-532},
+     year={1994}
+}
+
+@ARTICLE{oettliprager,
+      AUTHOR = {Oettli, W. and Prager, W.},
+      TITLE = {Compatibility of approximate solution of linear equations
+         with given error bounds for coefficients and right hand sides},
+      JOURNAL = {Num. Math.},
+      YEAR = {1964},
+      VOLUME = {6},
+      PAGES = {405--409}   }
+
+@TECHREPORT{ostroheath90,
+    AUTHOR = {Ostrouchov, L.S and Heath, M.T. and Romine, C.H.},
+    TITLE = {Modelling speedup in parallel sparse matrix factorization},
+    INSTITUTION = {Mathematical Sciences Section, Oak Ridge National Labs.},
+    TYPE = {Tech Report ORNL/TM-11786},
+    MONTH = {December},
+    YEAR = {1990} }
+
+@ARTICLE{papadimitriou90,
+    AUTHOR = {Papadimitriou, C.H. and Yannakakis, M.},
+    TITLE = {Towards an Architecture-independent Analysis of Parallel 
+              Algorithms},
+    JOURNAL = {SIAM Journal on Computing},
+    VOLUME = {Vol. 19},
+    NUMBER = {No. 2},
+    PAGES = {322--328},
+    MONTH = {April},
+    YEAR = {1990} }
+
+@ARTICLE{pothen90,
+    AUTHOR = {A. Pothen and C.-J. Fan},
+    TITLE = {Computing the block triangular form of a sparse matrix},
+    JOURNAL = toms,
+    VOLUME = {Vol. 16},
+    PAGES = {303--324},
+    YEAR = {1990} }
+
+@TECHREPORT{pothensun91,
+    AUTHOR = {A. Pothen and C. Sun},
+    TITLE = {A distributed multifrontal algorithm using clique trees},
+    INSTITUTION = {Cornell Theory Center, Cornell University},
+    TYPE = {Tech Report {CTC91TR72}},
+    MONTH = {August},
+    YEAR = {1991} }
+
+@inproceedings{pothen92,
+    AUTHOR = {A. Pothen and H. D. Simon and L. Wang and S. Barnard},
+    TITLE = {Towards a fast implementation of spectral nested
+		  dissection},
+    BOOKTITLE = {Supercomputing, ACM Press},
+    PAGES = {42-51},
+    YEAR = {1992} }
+
+@INPROCEEDINGS{pozosmith93,
+    AUTHOR = {Pozo, R and Smith, S. L.},
+    TITLE = {Performance Evaluation of the Parallel Multifrontal Method in a
+		Distributed Memory Environment},
+    BOOKTITLE = {Proceedings of the Sixth SIAM Conference on Parallel Processing
+	    for Scientific Computation, SIAM},
+    MONTH = {March},
+    YEAR = {1993} }
+
+% compute fill-in; find a perfect elimination order; min. fill-in NP-complete
+@ARTICLE{rosetarjan78,
+    AUTHOR = {Rose, D.~J. and Tarjan, R.~E.},
+    TITLE = {Algorithmic Aspects of Vertex Elimination of Directed Graphs},
+    JOURNAL = {SIAM Journal on Applied Math},
+    VOLUME = {Vol. 34},
+    NUMBER = {No. 1},
+    PAGES = {176--197},
+    MONTH = {January},
+    YEAR = {1978} }
+
+@ARTICLE{raghavan95,
+    AUTHOR = {Raghavan, P.},
+    TITLE = {Distributed Sparse Gaussian Elimination and Orthogonal
+             Factorization},
+    JOURNAL = sissc,
+    YEAR = {1995},
+    VOLUME = {16},
+    NUMBER = {6},
+    MONTH = {November},
+    PAGES = {1462-1477} }
+
+@article{rothberg96,
+     AUTHOR = {Edward Rothberg},
+     JOURNAL = sisc,
+     TITLE = {Performance of panel and block approaches to sparse
+              {C}holesky factorization on the {iPSC}/860 and
+              {P}aragon multicomputers},
+     VOLUME = {17},
+     NUMBER = {3},
+     PAGES = {699--713},
+     MONTH = May,
+     YEAR = {1996}
+}
+
+@TECHREPORT{schreiber92,
+    AUTHOR = {Schreiber, R.},
+    TITLE = {Scalability of Sparse Solvers},
+    INSTITUTION = {RIACS, NASA Ames Research Center},
+    NUMBER = {TR 92.13},
+    MONTH = {May},
+    YEAR = {1992} }
+
+@INCOLLECTION{schreiber93,
+    AUTHOR = {Schreiber, R.},
+    TITLE = {Scalability of Sparse Direct Solvers},
+    BOOKTITLE = {Graph theory and sparse matrix computation},
+    PUBLISHER = {Springer-Verlag, New York},
+    EDITOR = {George, A. and Gilbert, J.~R. and Liu, J.~W.~H.},
+    PAGES = {191-209},
+    YEAR = {1993} }
+
+@TECHREPORT{tve93,
+    AUTHOR = {Eicken, Thorsten von},
+    TITLE = {Active Messages: an Efficient Communications Architecture
+	     for Multiprocessors},
+    INSTITUTION = {Computer Science Division, University of california
+		  at Berkeley},
+    NOTE = {Ph.D thesis},
+    MONTH = {November},
+    YEAR = {1993} }
+
+@INPROCEEDINGS{yang91,
+    AUTHOR = {Yang, T. and Gerasoulis, A.},
+    TITLE = {A Fast Scheduling Algorithm for {DAG}s on an Unbounded
+		  Number of Processors},
+    BOOKTITLE = {The Proceedings of IEEE Supercomputing},
+    PAGES = {633--642},
+    YEAR = {1991} }
+
+@INPROCEEDINGS{yang92,
+    AUTHOR = {Yang, Tao and Gerasoulis, Apostolos},
+    TITLE = {PYRROS: Static Task Scheduling and Code Generation for
+		  Message Passing Multiprocessors},
+    BOOKTITLE = {Proceedings of the Sixth ACM International Conference
+		  on Supercomputing},
+    MONTH = {July},
+    YEAR = {1992} }
+
+@techreport{superlu95,
+     AUTHOR = {J.~W. Demmel and S.~C. Eisenstat and J.~R. Gilbert
+               and X.~S. Li and J.~W.~H. Liu},
+     INSTITUTION = {Computer Science Division, U.C. Berkeley},  
+     NUMBER = {UCB//CSD-95-883},  
+     TITLE = {A Supernodal Approach to Sparse Partial Pivoting},
+     YEAR = {1995},
+     NOTE = {To appear in {\em SIAM J. Matrix Anal. Appl.}},
+     kwds = {LU}
+}
+%     MONTH = {July},
+%     NOTE = {(Xerox PARC report CSL-95-03, LAPACK Working Note \#103).
+%         Software is available at http://www.netlib.org/scalapack/prototype/},
+
+
+@techreport{superlu_ug97,
+     AUTHOR = {J.~W. Demmel and J.~R. Gilbert and X.~S. Li},
+     INSTITUTION = {Computer Science Division, U.C. Berkeley},  
+     NUMBER = {UCB//CSD-97-944},  
+     TITLE = {Super{LU} {U}sers' {G}uide},
+     MONTH = {February},
+     YEAR = {1997},
+}
+
+@ARTICLE{skeel79,
+    AUTHOR = {R.D. Skeel},
+    TITLE = {Scaling for numerical stability for {G}aussian elimination},
+    JOURNAL = {J. ACM},
+    VOLUME = {26}, 
+    PAGES = {494--526},
+    YEAR = {1979} }
+
+@techreport{sles,
+     AUTHOR = {W. Gropp and B. F. Smith},
+     INSTITUTION = {Mathematics and Computer Science Division},
+     NUMBER = {ANL-93-8},  
+     TITLE = {Simplified Linear Equation Solvers User Manual},
+     MONTH = {February},
+     YEAR = {1993}
+}
+
+@article{vanderstappen93,
+     AUTHOR = {A. Frank van der Stappen and Rob H. Bisseling and
+               Johannes G. G. van der Vorst},
+     JOURNAL = simax,
+     TITLE = {Parallel sparse {LU} decomposition on a mesh network
+              of transputers},
+     VOLUME = {14},
+     NUMBER = {3},
+     PAGES = {853--879},
+     MONTH = {July},
+     YEAR = {1993}
+}
+
+%		  
+%  author = "S. A. Vavasis",
+%  title = "Stable finite elements for problems with wild coefficients",
+%  institution = "Department of Computer Science, Cornell University",
+%  address = "Ithaca, NY",
+%  number = "93--1364",
+%  year = "1993",
+%  note = "To appear in {\em SIAM J. Numerical Analysis}."}
+@article{Vava:fe,
+     AUTHOR = {S. A. Vavasis},
+     JOURNAL = sinum,
+     TITLE = {Stable finite elements for problems with wild coefficients},
+     VOLUME = {33},
+     NUMBER = {3},
+     PAGES = {890--916},
+     MONTH = {June},
+     YEAR = {1996}
+}
+
+@ARTICLE{yang98,
+    AUTHOR = {C. Fu and X. Jiao and T. Yang},
+    TITLE = {Efficient sparse {LU} factorization with partial pivoting
+		  on distributed memory architectures},
+    JOURNAL = {IEEE Trans. Parallel and Distributed Systems},
+    VOLUME = {9}, 
+    NUMBER = {2},
+    PAGES = {109--125},
+    YEAR = {1998} }
+
+@BOOK{zlatev91,
+   AUTHOR = {Zahari Zlatev},
+   TITLE = {Computational methods for general sparse matrices},
+   YEAR	   = {1991},
+   PUBLISHER = {Kluwer Academic},
+   ADDRESS = {Dordrecht; Boston} }
+
+@ARTICLE{Bientinesi:2009uhm,
+  author = {Paolo Bientinesi and Victor Eijkhout and Kyungjoo Kim and Jason Kurtz
+    and Robert van de Geijn},
+  title = {Sparse Direct Factorizations through Unassembled Hyper-Matrices},
+  journal = {Computer Methods in Applied Mechanics and Engineering},
+  note = {to appear}
+}
+
+@inproceedings{vdv-miluro-90,
+     author={H. van der Vorst},
+     title={The convergence behaviour of preconditioned {CG} and {CGS}
+         in the presence of rounding errors},
+     booktitle={Preconditioned Conjugate Gradient Methods},
+     editor={O. Axelsson and L.Y. Kolotilina},
+     publisher={vol. 1457, Lecture notes in Math.},
+     address = {Springer Verlag},
+     pages = {126-136},
+     year={1991}
+}
+
+@ARTICLE{Car1988,
+  author = {J. Carrier and L. Greengard and V. Rokhlin},
+  title = {A fast adaptive multipole algorithm for particle simulations},
+  journal = {J. Sci. Stat. Comput.},
+  volume = {9},
+  pages = {669-686},
+  year = {1988}
+}
+
+@PHDTHESIS{Xia2006,
+    AUTHOR = {Jianlin Xia},
+    TITLE = {Fast Direct Solvers for Structured Linear Systems of Equations},
+    SCHOOL = {Univ. of California, Berkeley},
+    MONTH = {July},
+    YEAR = {2006}
+}
+
+@TECHREPORT{yamazaki09,
+    AUTHOR = {I. Yamazaki and X.S. Li and E. Ng},
+    TITLE = {Preconditioning Techniques for a Hybrid Method to Solve 
+             Highly-Indefinite Linear Systems},
+    INSTITUTION = {Lawrence Berkeley National Laboratory},
+    NUMBER = {in preparation},
+    MONTH = {March},
+    YEAR = {2009},
+    note = {(Presented at the SIAM CSE Conference, March 2-6, 2009,
+             Miami, Florida.)}
+ }
+
+@INPROCEEDINGS{yamazaki10, 
+    AUTHOR = {I. Yamazaki and X. Li and E. Ng},
+    TITLE = {Preconditioning Schur complement systems of highly-indefinite
+             linear systems for a parallel hybrid solver},
+    BOOKTITLE = {Numerical Mathematics: Theory, Methods and Applications},
+    ADDRESS = {Hong Kong},
+    YEAR = {2010},
+    VOLUME = {3},
+    NUMBER = {3},
+    PAGES = {352-366}
+}
+
+@TechReport{Ya2011.1,
+author = {Y., Ichitaro and Li, X.~S. and Rouet, F.-H.
+     and Uçar, B.},
+title = "{Partitioning, Ordering and Load Balancing in a Hierarchically
+   Parallel Hybrid Linear Solver}",
+year = {2011},
+month = {octobre},
+type = {Rapport de recherche},
+number = {RT-APO-12-2},
+institution = {Institut National Polytechnique de Toulouse},
+address = {Toulouse, France},
+language = {anglais}
+}
+
+%------ GPU effort for sparse factorizations
+% Krawezik and Poole [64], Lucas et al. [69], Pierce et al. [72], and
+% Vuduc et al. [79] have worked on multifrontal factorization methods for GPUs.
+% All four methods use the GPU merely as a BLAS accelerator, by transferring
+% one frontal matrix at a time to the GPU and then retrieving the results.
+% The assembly operations are done in the CPU. As far as we know, no one has
+% yet considered a GPU-based method for multifrontal sparse QR factorization,
+% and no one has considered a GPU-based multifrontal method
+% (LU, QR, or Cholesky) where an entire subtree is transfered to the
+% GPU. Our algorithm (Tim Davis' DOE proposal) will be the first of its kind.
+
+@inproceedings{poole09,
+   author    = {G. Krawezik and G. Poole},
+   title     = {Accelerating the {ANSYS} direct sparse solver with {GPUs}},
+   booktitle = {Proc. Symposium on Application Accelerators in High
+ Performance Computing (SAAHPC)},
+   address = {Urbana-Champaign, IL, NCSA},
+   year = {2009},
+   note = {\url{http://saahpc.ncsa.illinois.edu/09}}
+}
+@inproceedings{lucas10,
+   author    = {R. Lucas and G. Wagenbreth and D. Davis and R. Grimes},
+   title     = {Multifrontal computations on {GPUs} and their multi-core hosts},
+   booktitle = {VECPAR'10: Proc. 9th Intl. Meeting for High Performance
+     Computing for Computational Science},
+   address = {Berkeley, CA},
+   year = {2010},
+   note = {\url{http://vecpar.fe.up.pt/2010/papers/5.php}}
+}
+@inproceedings{pierce09,
+   author    = {D. Pierce and Y. Hung and C.-C. Liu and Y.-H. Tsai and
+               W. Wang, and D. Yu},
+   title     = {Sparse multifrontal performance gains via NVIDIA GPU},
+   booktitle = {Workshop on {GPU} Supercomputing},
+   address = {National Taiwan University, Taipei},
+   month = {January},
+   year = {2009},
+   note = {\url{http://cqse.ntu.edu.tw/cqse/gpu2009.html}}
+}
+@article{Wang-Pierce11,
+  author = {C.D. Yu and W. Wang and D. Pierce},
+  title = {A {CPU-GPU} Hybrid Approach for the Unsymmetric Multifrontal Method},
+  journal = {Parallel Computing},
+  volume = {37},
+  pages = {759-770},
+  year = {2011}
+}
+@inproceedings{george-gupta2011,
+   author    = {T. George and V. Saxena and A. Gupta and A. Singh and A. Choudjury},
+   title     = {Multifrontal Factorization of Sparse SPD matrices on {GPUs}},
+   booktitle = {Proc. of IEEE International Parallel and Distributed Processing 
+      Symposium (IPDPS 2011)},
+   address = {Anchorage, Alaska},
+   year = {2011},
+   month = {May 16-20}
+}
+@inproceedings{vuduc2010,
+   author    = {R. Vuduc and A. Chandramowlishwaran and J. Choi and M. Guney
+                 and A. Shringarpure},
+   title     = {On the limits of {GPU} acceleration},
+   booktitle = {Proc. of the 2nd USENIX conference on Hot topics
+     in parallelism, HotPar'10},
+   address = {Berkeley, CA},
+   year = {2010}
+}
+@article{schenk2008,
+  author = {O. Schenk and M. Christen and H. Burkhart},
+  title = {Algorithmic Performance Studies on Graphics Processing Units},
+  journal = {J. Parallel and Distributed Computing},
+  volume = {68},
+  number = {10},
+  pages = {1360-1369},
+  year = {2008}
+}
+%------ GPU effort for sparse factorizations
+
+@article{wang_etal_sisc11,
+    AUTHOR = {S. Wang and X.~Li and J. Xia and Y. Situ and 
+         M.~V. de Hoop},
+    JOURNAL = sisc,
+    TITLE = {Efficient Parallel Algorithms for Hierarchically
+       Semiseparable Matrices},
+     YEAR = {2011},
+    note = {(submitted)}
+}
+
+@article{wang_etal_sisc13,
+    AUTHOR = {S. Wang and X.S. Li and J. Xia and Y. Situ and 
+         M.V. de Hoop},
+    JOURNAL = {SIAM J. Scientific Computing},
+    TITLE = {Efficient Parallel Algorithms for Solving Linear Systems
+         with Hierarchically Semiseparable Structures},
+    volume = {35},
+    number = {6},
+    pages = {C519-C544},
+     YEAR = {2013}
+}
+
+@article{wangLXdH:2011,
+  author = {S. Wang and X.S. Li and J. Xia and Y. Situ and M.V. de Hoop},
+  title = {Efficient scalable algorithms for solving linear systems with
+           hierarchically semiseparable structures},
+  journal = {SIAM J. Scientific Computing},
+  note = {in revision. Also Technical Report LBNL-5238E},
+  year = {2011}
+}
+
+@article{wangXdHL:2012,
+  author = {S. Wang and J. Xia and M.V. de Hoop and X.S. Li},
+  title = {Massively parallel structured direct solver for equations
+   describing time-harmonic qP-polarized waves in TTI media},
+  journal = {Geophysics},
+  volume = {77},
+  pages = {T69-T82},
+  year = {2012},
+}
+
+@article{wangdHXL:2012,
+  author = {S. Wang and M.V. de Hoop and J. Xia and X.S. Li},
+  title = {Massively parallel structured multifrontal solver for time-harmonic
+    elastic waves in 3D anisotropic media},
+  journal = {Geophysics J. Int.},
+  volume = {191},
+  pages = {346-366},
+  year = {2012}
+}
+
+%% wang_etal_toms13
+@article{wang_etal_toms16,
+    AUTHOR = {S. Wang and X.S. Li and F.-H. Rouet and J. Xia and 
+         M.V. de Hoop},
+    JOURNAL = toms,
+    TITLE = {A Parallel Fast Geometric Multifrontal Solver Using Hierarchically
+       Semiseparable Structure},
+    volume = {42},
+    number = {3},
+    pages = {Article 21:1-21},
+    YEAR = {2016}
+}
+
+@article{yuan13,
+  author = {X. Yuan and X.S. Li and I. Yamazaki and S.C. Jardin and
+   A.E. Koniges and D.E. Keyes},
+  title = {Application of {PDSLin} to the magnetic reconnection problem},
+  journal = {IOP Special Issue: Computational Science \& Discovery},
+  volume = {6},
+  number = {1},
+  year = {2013.}
+}
+@article{napov2016,
+    AUTHOR = {A. Napov and X.S. Li},
+    TITLE = {An Algebraic Multifrontal Preconditioner That Exploits
+       the Low-rank Property},
+    journal = {Numer. Lin. Alg. Appl.},
+    number = {23},
+    pages = {61-82},
+    NOTE = {DOI: 10.1002/nla.2006},
+    YEAR = {2016}
+}
+
+@ARTICLE{xia13,
+   AUTHOR = {J. Xia},
+   TITLE = {Randomized sparse direct solvers},
+   JOURNAL = simax,
+   YEAR	   = {2013},
+   VOLUME = {34},
+   PAGES = {197-227},
+}
+
+@article{kumar92,
+  author = {P.S. Kumar and M.K. Kumar and A. Basu},
+  title = {A parallel algorithm for elimination tree computation
+      and symbolic factorization},
+  journal = {Parallel Comput.},
+  volume = {18},
+  pages = {849-856},
+  year = {1992}
+}
+
+@inproceedings{pagallo83,
+     ADDRESS = {Springer-Verlag, New York},
+     AUTHOR = {G. Pagallo and C. Maulino},
+     BOOKTITLE = {Lecture Notes in Mathematics 1005,  Numerical Method},
+     PAGES = {227-239},
+     TITLE = {A Bipartite Quotient Graph Model for Unsymmetric Matrices},
+     YEAR = {1983}
+}
+@article{tinneywalker67,
+author = {W.F. Tinney and J.W. Walker},
+title = {Direct solutions of sparse network equations by optimally ordered
+ triangular factorization}, 
+journal = {Proc. IEEE},
+volume = {55},
+pages = {1801-1809},
+year = 1967
+}
+
+@article{yannakakis81,
+  author = {M. Yannakakis},
+  title = {Computing the minimum fill-in is {NP}-complete},
+  journal = {SIAM J . Alg. \& Disc. Meth.},
+  volume = {2},
+  pages = {77-79},
+  year = {1981}
+}
+
+@inproceedings{sao2014,
+   author    = {P. Sao and R. Vuduc and X. Li},
+   title     = {A Distributed {CPU-GPU} Sparse Direct Solver},
+   booktitle = {Proc. of Euro-Par 2014, LNCS Vol. 8632, pp. 487-498},
+   address = {Porto, Portugal},
+   year = {2014},
+   month = {August 25-29}
+}
+@inproceedings{sao2015,
+   author    = {P. Sao and X. Liu and R. Vuduc and X.S. Li},
+   title     = {A Sparse Direct Solver for Distributed Memory
+                Xeon Phi-accelerated Systems},
+   booktitle = {29th IEEE International Parallel \& Distributed Processing Symposium
+                (IPDPS)},
+   address = {Hyderabad, India},
+   year = {2015},
+   month = {May 25-29}
+}
+
+@inproceedings{sao2018,
+   author    = {P. Sao and R. Vuduc and X.S. Li},
+   title     = {{A Communication-Avoiding 3D Factorization for Sparse Matrices}},
+   booktitle = {32nd IEEE International Parallel \& Distributed Processing Symposium
+                (IPDPS)},
+   address = {Vancouver, Canada},
+   year = {2018},
+   month = {May 21-25}
+}
+
+@inproceedings{sao2019,
+   author    = {P. Sao and R. Vuduc and X.S. Li},
+   title     = {{A Communication-Avoiding 3D Sparse Triangular Solver}},
+   booktitle = {ICS 2019: International Conference on Supercomputing},
+   address = {Phoenix, AZ},
+   year = {2019},
+   month = {June 26-28},
+   doi = {10.1145/3330345.3330357}
+}
+
+@article{sao-JPDC-2019,
+  author = {P. Sao and R. Vuduc and X. Li},
+  title = {{A communication-avoiding 3D algorithm for sparse LU factorization on heterogeneous systems}},
+  journal = {J. Parallel and Distributed Computing},
+  month = {September},
+  year = {2019},
+  doi = {10.1016/j.jpdc.2019.03.004},
+  note={\url{https://www.sciencedirect.com/science/article/abs/pii/S0743731518305197}}
+}
+
+@InProceedings{10.1007/978-3-319-17353-5_12,
+author="Baboulin, Marc and Li, Xiaoye S. and Rouet, Fran{\c{c}}ois-Henry",
+editor="Dayd{\'e}, Michel and Marques, Osni and Nakajima, Kengo",
+title="Using Random Butterfly Transformations to Avoid Pivoting in Sparse Direct Methods",
+booktitle="High Performance Computing for Computational Science -- VECPAR 2014",
+year="2015",
+publisher="Springer International Publishing",
+address="Cham",
+pages="135--144"
+}
+
+@inproceedings{rouet2014,
+   author    = {M.~Baboulin and X.S.~Li and F.-H.~Rouet},
+   title = {Using Random Butterfly Transformations to Avoid Pivoting in
+            Sparse Direct Methods},
+   booktitle = {Proc. of VECPAR’14 11th International Meeting High
+           Performance Computing for Computational Science},
+   address = {Eugene, Oregon},
+   year = {2014},
+   month = {June 30 - July 3},
+doi = {10.1007/978-3-319-17353-5_12}
+}
+
+@article{rouet2014,
+    AUTHOR = {F.-H. Rouet and X.S. Li and P. Ghysels and A. Napov},
+    JOURNAL = {ACM Trans.\ Mathematical Software},
+    TITLE = {A distributed-memory package for dense 
+        hierarchically semi-separable matrix computations using randomization},
+    YEAR = {2014},
+    note = {(submitted)}
+}
+@article{rouet2016-toms,
+    AUTHOR = {F.-H. Rouet and X.S. Li and P. Ghysels and A. Napov},
+    JOURNAL = {ACM Trans.\ Mathematical Software},
+    TITLE = {A distributed-memory package for dense 
+        hierarchically semi-separable matrix computations using randomization},
+    VOLUME = {42},
+    NUMBER = {4},
+    YEAR = {2016},
+    MONTH = {June},
+    note = {arXiv preprint arXiv:1503.05464}
+}
+
+%    note = {Special Issue on SIAM CSE 2015 (Accepted). arXiv preprint arXiv:1502.07405.}
+@article{ghysels2016,
+    AUTHOR = {P. Ghysels and F.-H. Rouet and X.S. Li and S. Williams and P. Ghysels},
+    JOURNAL = {SIAM J. Sci. Comput.},
+    TITLE = {An efficient multicore implementation of a novel {HSS-structured}
+             multifrontal solver using randomized sampling},
+    volume = {38},
+    number = {5},
+    YEAR = {2016},
+    pages = {S358-S384}
+}
+@proceedings{ghysels2017-ipdps,
+   author = {P. Ghysels and C. Gorman and X.S. Li and F.-H. Rouet},
+   title = {A robust and scalable preconditioner for indefinite systems using
+   hierarchical matrices and randomized sampling},
+   booktitle = {Proceedings of IEEE International Parallel \& Distributed Processing
+                Symposium (IPDPS)},
+   month = {May 29 - June 2},
+   year = {2017},
+   address = {Orlando, USA}
+}
+
+@phdthesis{Riedy:EECS-2010-172,
+    Author = {Riedy, Jason},
+    Title = {Making Static Pivoting Scalable and Dependable},
+    School = {EECS Department, University of California, Berkeley},
+    Year = {2010},
+    Month = {Dec},
+    URL = {\url{http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-172.html}},
+    NOTE = {Thesis available at
+     {\url{http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-172.html}}.
+    Software available at
+      {\url{http://lovesgoodfood.com/jason/cgit/index.cgi/thesis/matchpres.git/}}},
+    Number = {UCB/EECS-2010-172}
+}
+
+% PaStix + BLR, shared memory
+@TECHREPORT{pichon2017,
+    AUTHOR = {Grégoire Pichon, Eric Darve, Mathieu Faverge, Pierre
+              Ramet, Jean Roman},
+    TITLE = {Sparse Supernodal Solver Using Block Low-Rank Compression},
+    INSTITUTION = {INRIA, Bordeaux Sud-Ouest.France},
+    NUMBER = {RR-9022},
+    NOTE = {Research Report},
+    MONTH = {January},
+    YEAR = {2017} }
+
+@INCOLLECTION{li2015,
+    AUTHOR = {X.S. Li},
+    TITLE = {Factorization-based Sparse Solvers and Preconditioners},
+    BOOKTITLE = {Series in Contemporary Applied Mathematics: Vol 19, 
+          Matrix Functions and Matrix Equations},
+    PUBLISHER = {World Scientific},
+    EDITOR = {Z. Bai and W. Gao and Y. Su},
+    PAGES = {109-137},
+    YEAR = {2015},
+    NOTE = {Extended Summary for 4th Gene Golub SIAM Summer School,
+       July 22-Aug. 9, 2013, Shanghai}
+}
+
+@inproceedings{LiuTriSolve2018,
+   author    = {Y. Liu and M. Jacquelin and P. Ghysels and X.S. Li},
+   title     = {Highly scalable distributed-memory sparse triangular
+                solution algorithms},
+   booktitle = {Proceedings of the SIAM Workshop on Combinatorial
+                Scientific Computing},
+   address = {Bergen, Norway},
+   year = {2018},
+   month = {June 6-8, 2018}
+}
+
+@inproceedings{DingTriSolve2019,
+   author = {N. Ding and Y. Liu and X. S. Li and S. Williams},
+   title = {Leveraging One-Sided Communication for Sparse Triangular Solvers
+ --- A Pathway to Exascale Solvers},
+   booktitle = {Proceedings of SC19},
+   address = {Denver, CO},
+   year = {2019},
+   month = {November 17-22, 2019 (submitted)}
+}
+
+@article{mfbf:2020,
+  author = {Y. Liu and P. Ghysels and L. Claus and X.S. Li},
+  title = {{Sparse Approximate Multifrontal Factorization with Off-diagonal
+            Butterfly Compression}},
+  journal = {SIAM. J. Sci. Comput.},
+  note = {in submission},
+  year = 2020
+}
+
+@article{sisc_anzt,
+	Author = {Anzt, H. and Chow, E. and Dongarra, J.},
+	Date-Added = {2018-12-13 19:42:22 +0100},
+	Date-Modified = {2019-10-28 10:30:07 +0100},
+	Doi = {10.1137/16M1079506},
+	Eprint = {https://doi.org/10.1137/16M1079506},
+	Journal = {SIAM Journal on Scientific Computing},
+	Number = {4},
+	Pages = {C503-C519},
+	Title = {{ParILUT---A New Parallel Threshold ILU Factorization}},
+	note="\url{https://doi.org/10.1137/16M1079506}",
+	Volume = {40},
+	Year = {2018},
+	Bdsk-Url-1 = {https://doi.org/10.1137/16M1079506}}
+	
+@inproceedings{ipdps_anzt,
+	Author = {H. {Anzt} and T. {Ribizel} and G. {Flegar} and E. {Chow} and J. {Dongarra}},
+	Booktitle = {2019 IEEE International Parallel and Distributed Processing Symposium (IPDPS)},
+	Date-Added = {2019-10-28 10:29:44 +0100},
+	Date-Modified = {2019-10-28 10:29:52 +0100},
+	Doi = {10.1109/IPDPS.2019.00033},
+	Issn = {1530-2075},
+	Keywords = {ParILUT, parallel threshold ILU, incomplete factorization preconditioners, parallel selection, GPU},
+	Month = {May},
+	Pages = {231-241},
+	Title = {ParILUT - A Parallel Threshold ILU for GPUs},
+	Year = {2019},
+	Bdsk-Url-1 = {https://doi.org/10.1109/IPDPS.2019.00033}}
+
+%  note = {arXiv:1801.09809v1, 30 Jan 2018. Submitted}
+@article{hwpm,
+  author = {A. Azad and A. Buluc and X.S. Li and X. Wang and J. Langguth},
+  title = {{A Distributed-Memory Algorithm for Computing a Heavy-Weight Perfect Matching
+           on Bipartite Graphs}},
+  journal = {SIAM J. Scientific Computing},
+  volume = {42},
+  number = {4},
+  pages = {C143-C168},
+  year = 2020
+}
+
+@inproceedings{Sptrsv-oneside,
+author = {Nan Ding and Samuel Williams and Yang Liu and Xiaoye S. Li},
+title = {Leveraging One-Sided Communication for Sparse Triangular Solvers},
+booktitle = {Proceedings of the 2020 SIAM Conference on Parallel Processing for Scientific Computing (PP)},
+chapter = {},
+pages = {93-105},
+doi = {10.1137/1.9781611976137.9},
+eprint = {https://epubs.siam.org/doi/pdf/10.1137/1.9781611976137.9}
+}
+
+@inproceedings{Sptrsv-nvshmem,
+author = { Nan Ding  and  Yang Liu  and  Samuel Williams  and  Xiaoye S. Li },
+title = {A Message-Driven, Multi-GPU Parallel Sparse Triangular Solver},
+booktitle = {Proceedings of the 2021 SIAM Conference on Applied and Computational Discrete Algorithms (ACDA21)},
+chapter = {},
+pages = {147-159},
+doi = {10.1137/1.9781611976830.14},
+eprint = {https://epubs.siam.org/doi/pdf/10.1137/1.9781611976830.14}
+}
+
+@ARTICLE{gsofa,
+author={Gaihre, Anil and Li, Xiaoye and Liu, Hang},
+journal={IEEE Transactions on Parallel and Distributed Systems},
+title={{GSOFA: Scalable Sparse Symbolic LU Factorization on GPUs}},
+year={2021},
+volume={},
+number={},
+pages={1-1},
+doi={10.1109/TPDS.2021.3090316}}
+
+@article{hogg:2016,
+     author = {J.D. Hogg and E. Ovtchinnikov and J.A. scott},
+     TITLE = {{A Sparse Symmetric Indefinite Direct Solver for GPU Architectures}},
+     JOURNAL = toms,
+     YEAR = 2016,
+     MONTH = {January},
+     VOLUME = {42},
+     NUMBER = {1}
+}
+%    PAGES = {110--140}
+
+@article{cholmod,
+     author = {Y. Chen and T. A. Davis and W. W. Hager and S. Rajamanickam},
+     TITLE = {{Algorithm 887: CHOLMOD, supernodal sparse Cholesky
+         factorization and update/downdate}},
+     JOURNAL = toms,
+     YEAR = 2009,
+     MONTH = {January},
+     VOLUME = {35},
+     NUMBER = {3},
+     note = "\url{http://www.cise.ufl.edu/research/sparse/cholmod/}"
+}
+
+@article{klu,
+  author = {T. A. Davis and E. Palamadai Natarajan},
+  title = {{Algorithm 907: KLU, A Direct Sparse Solver for
+         Circuit Simulation Problems}},
+  JOURNAL = toms,
+  YEAR = 2011,
+  VOLUME = {37},
+  NUMBER = {3},
+     note = "\url{https://people.engr.tamu.edu/davis/suitesparse.html}"
+}
+
+@MISC{glu,
+    AUTHOR = {S. Peng and S. X.-D. Tan},
+    TITLE = {{GLU3.0: Fast GPU-based Parallel Sparse LU Factorization for
+Circuit Simulation}},
+    NOTE="\url{https://arxiv.org/abs/1908.00204v3}",
+    HOWPUBLISHED = {IBM T.J. Watson Research Center, Yorktown Heights},
+    YEAR = {2020}
+    }
+
+@TECHREPORT{oblio,
+    AUTHOR = {F. Dobrian and A. Pothen},
+    TITLE = {{Oblio: a sparse direct solver library for serial and parallel computations}},
+    INSTITUTION = {Old Dominion University},
+    YEAR = {2000}
+    }
+
+@incollection{kundert86,
+    AUTHOR = {Kenneth Kundert},
+    TITLE = {{Sparse matrix techniques}},
+    BOOKTITLE = {Circuit Analysis, Simulation and Design},
+    PUBLISHER = {North-Holland},
+    EDITOR = {Albert Ruehli},
+    note="\url{https://arxiv.org/abs/1908.00204v3}",
+    YEAR = {1986}
+    }
+@misc{bcslib-ext,
+    key = {bcslib},
+    TITLE = {{BASLIB-EXT: Sparse matrix software}},
+    note="\url{http://www.aanalytics.com/products.htm}"
+    }
+
+@misc{lucas,
+    author = {Robert Lucas},
+    note = {Private communication (rflucas@isi.edu)},
+    year = 2015
+    }
+
+@misc{taucs,
+  author = {D. Chen and V. Rotkin and S. Toledo},
+  title = {{TAUCS: A Library of Sparse Linear Solvers}},
+  howpublished = {Tel-Aviv Univesity},
+  note = "\url{http://www.tau.ac.il/~stoledo/taucs/}"
+  }
+
+@misc{wsmp,
+  author = {Anshul Gupta},
+  title = {{WSMP: Watson Sparse Matrix Package}},
+  howpublished = {IBM T.J. Watson Research Center, Yorktown Heights},
+  note="\url{http://www-users.cs.umn.edu/~agupta/wsmp.html}"
+  }
+
+@misc{clique,
+  author = {Jack Poulson},
+  title = {{Clique: Sparse direct solver}},
+  howpublished = "\url{http://www-users.cs.umn.edu/~agupta/wsmp.html}"
+  }
+
+@ARTICLE{pastix,
+   AUTHOR = {P. Hénon and P. Ramet and J. Roman},
+   TITLE = {{PaStiX: A High-Performance Parallel Direct Solver for Sparse
+   Symmetric Definite Systems}},
+   JOURNAL = {Parallel Computing},
+   YEAR	   = {2002},
+   VOLUME = {28},
+   NUMBER = {2},
+   publisher = {Elsevier},
+   PAGES = {301-321},
+   note = "\url{https://solverstack.gitlabpages.inria.fr/pastix/index.html}"
+   }
+   
+@misc{sympack,
+  author = {M. Jacquelin and E. Ng},
+  title= {{Solver for sparse symmetric matrices}},
+  howpublished = {Lawrence Berkeley National Laboratory},
+  note="\url{http://www.sympack.org}"
+  }
+
+@article{ma27,
+author = {Duff, I. S. and Reid, J. K.},
+title = {The Multifrontal Solution of Indefinite Sparse Symmetric Linear},
+year = {1983},
+issue_date = {Sept. 1983},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {9},
+number = {3},
+issn = {0098-3500},
+url = {https://doi.org/10.1145/356044.356047},
+doi = {10.1145/356044.356047},
+journal = {ACM Trans. Math. Softw.},
+month = {sep},
+pages = {302–325},
+numpages = {24}
+}
+
+@article{ma57,
+author = {Duff, Iain S.},
+title = {MA57---a Code for the Solution of Sparse Symmetric Definite and Indefinite Systems},
+year = {2004},
+issue_date = {June 2004},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {30},
+number = {2},
+issn = {0098-3500},
+url = {https://doi.org/10.1145/992200.992202},
+doi = {10.1145/992200.992202},
+journal = {ACM Trans. Math. Softw.},
+month = {jun},
+pages = {118–144},
+numpages = {27}
+}
+
+@article{mc30,
+    author = {Curtis, A. R. and Reid, J. K.},
+    title = "{On the Automatic Scaling of Matrices for Gaussian Elimination}",
+    journal = {IMA Journal of Applied Mathematics},
+    volume = {10},
+    number = {1},
+    pages = {118-124},
+    year = {1972},
+    month = {08},
+    doi = {10.1093/imamat/10.1.118},
+    url = {https://doi.org/10.1093/imamat/10.1.118}
+}
+
+@article{ruiz2014,
+author = {Knight, Philip A. and Ruiz, Daniel and U\c{c}ar, Bora},
+title = {A Symmetry Preserving Algorithm for Matrix Scaling},
+journal = {SIAM Journal on Matrix Analysis and Applications},
+volume = {35},
+number = {3},
+pages = {931-955},
+year = {2014},
+doi = {10.1137/110825753}
+}
+
+@inproceedings{10.5555/3571885.3571919,
+author = {Abdelfattah, Ahmad and Ghysels, Pieter and Boukaram, Wajih and Tomov, Stanimire and Li, Xiaoye Sherry and Dongarra, Jack},
+title = {Addressing Irregular Patterns of Matrix Computations on GPUs and Their Impact on Applications Powered by Sparse Direct Solvers},
+year = {2022},
+isbn = {9784665454445},
+publisher = {IEEE Press},
+abstract = {Many scientific applications rely on sparse direct solvers for their numerical robustness. However, performance optimization for these solvers remains a challenging task, especially on GPUs. This is due to workloads of small dense matrices that are different in size. Matrix decompositions on such irregular workloads are rarely addressed on GPUs.This paper addresses irregular workloads of matrix computations on GPUs, and their application to accelerate sparse direct solvers. We design an interface for the basic matrix operations supporting problems of different sizes. The interface enables us to develop irrLU-GPU, an LU decomposition on matrices of different sizes. We demonstrate the impact of irrLU-GPU on sparse direct LU solvers using NVIDIA and AMD GPUs. Experimental results are shown for a sparse direct solver based on a multifrontal sparse LU decomposition applied to linear systems arising from the simulation, using finite element discretization on unstructured meshes, of a high-frequency indefinite Maxwell problem.},
+booktitle = {Proceedings of the International Conference on High Performance Computing, Networking, Storage and Analysis},
+articleno = {26},
+numpages = {14},
+keywords = {LU factorization, GPU computing, multifrontal solvers, irregular computational workloads, sparse direct solvers},
+location = {Dallas, Texas},
+series = {SC '22}
+}
+
+@inproceedings{Sao-spaa23,
+author = {Sao, Piyush and Li, Xiaoye Sherry},
+title = {Brief Announcement: Communication Optimal Sparse LU Factorization for Planar Matrices},
+year = {2023},
+isbn = {9781450395458},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3558481.3591315},
+doi = {10.1145/3558481.3591315},
+abstract = {We introduce a new parallel algorithm for solving sparse LU factorization of planar matrices, which commonly arise in the finite element method for 2D PDEs. Existing scalable methods, such as the multifrontal approach with subtree-to-subcube mapping by Gupta et al. [1] and right-looking with 3D mapping by Sao et al. [2] fail to achieve optimal communication costs for these matrices. Our new algorithm combines 3D mapping and subtree-to-subcube mapping to minimize communication costs while allowing trade-offs between extra memory and reduced communication. We demonstrate that our proposed algorithm attains the communication lower bound up to a factor of O(log log n) in the memory-optimal case and up to a factor of O(log P) in the memory-independent case for an n-dimensional planar sparse matrix on P processors.},
+booktitle = {Proceedings of the 35th ACM Symposium on Parallelism in Algorithms and Architectures},
+pages = {427–430},
+numpages = {4},
+keywords = {communication optimal algorithms, sparse lu factorization},
+location = {Orlando, FL, USA},
+series = {SPAA '23}
+}
+
+@inproceedings{Liu-SC23,
+author = {Liu, Yang and Ding, Nan and Sao, Piyush and Williams, Samuel and Li, Xiaoye Sherry},
+title = {{Unified Communication Optimization Strategies for Sparse Triangular Solver on CPU and GPU Clusters}},
+year = {2023},
+doi = {10.1145/3581784.3607092},
+booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis},
+articleno = {50},
+numpages = {15},
+location = {Denver, CO, USA},
+series = {SC '23}
+}
+
+@article{Claus-2023,
+author = {Claus, Lisa and Ghysels, Pieter and Liu, Yang and Nhan, Th\'{a}i Anh and Thirumalaisamy, Ramakrishnan and Bhalla, Amneet Pal Singh and Li, Sherry},
+title = {Sparse Approximate Multifrontal Factorization with Composite Compression Methods},
+year = {2023},
+issue_date = {September 2023},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {49},
+number = {3},
+issn = {0098-3500},
+url = {https://doi.org/10.1145/3611662},
+doi = {10.1145/3611662},
+abstract = {This article presents a fast and approximate multifrontal solver for large sparse linear systems. In a recent work by Liu et&nbsp;al., we showed the efficiency of a multifrontal solver leveraging the butterfly algorithm and its hierarchical matrix extension, HODBF (hierarchical off-diagonal butterfly) compression to compress large frontal matrices. The resulting multifrontal solver can attain quasi-linear computation and memory complexity when applied to sparse linear systems arising from spatial discretization of high-frequency wave equations. To further reduce the overall number of operations and especially the factorization memory usage to scale to larger problem sizes, in this article we develop a composite multifrontal solver that employs the HODBF format for large-sized fronts, a reduced-memory version of the nonhierarchical block low-rank format for medium-sized fronts, and a lossy compression format for small-sized fronts. This allows us to solve sparse linear systems of dimension up to 2.7 \texttimes{} larger than before and leads to a memory consumption that is reduced by 70\% while ensuring the same execution time. The code is made publicly available in GitHub.},
+journal = {ACM Trans. Math. Softw.},
+month = {sep},
+articleno = {24},
+numpages = {28},
+keywords = {Sparse direct solver, butterfly algorithm, multifrontal method, block low-rank compression;}
+}
+
+@ARTICLE{KK-batch,
+  author={Liegeois, Kim and Rajamanickam, Sivasankaran and Berger-Vergiat, Luc},
+  journal={IEEE Transactions on Parallel and Distributed Systems},
+  title={Performance Portable Batched Sparse Linear Solvers},
+  year={2023},
+  volume={34},
+  number={5},
+  pages={1524-1535},
+ keywords={Linear systems;Kernel;Graphics processing units;Tensors;Sparse matrices;Libraries;Instruction sets;Batch sparse solvers;batch BLAS;kokkos kernels;performance portable},
+ doi={10.1109/TPDS.2023.3249110}}
+
+
+@INPROCEEDINGS{ginkgo-batch,
+  author={Kashi, Aditya and Nayak, Pratik and Kulkarni, Dhruva and Scheinberg, Aaron and Lin, Paul and Anzt, Hartwig},
+  booktitle={2022 IEEE International Parallel and Distributed Processing Symposium (IPDPS)},
+  title={Batched sparse iterative solvers on GPU for the collision operator for fusion plasma simulations},
+  year={2022},
+  volume={},
+  number={},
+  pages={157-167},
+ keywords={Leadership;Plasma simulation;Software architecture;Graphics processing units;Production;Programming;Iterative methods;Sparse linear systems;batched solvers;GPU;performance portability;Ginkgo;Xgc;Iter;WDMApp;fusion;simulation},
+ doi={10.1109/IPDPS53621.2022.00024}}
+		  
+@article{TOMS_release_2023,
+author = {{Li, Xiaoye S. and Lin, Paul and Liu, Yang and Sao, Piyush}},
+title = {{Newly Released Capabilities in the Distributed-Memory SuperLU Sparse Direct Solver}},
+year = {2023},
+issue_date = {March 2023},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {49},
+number = {1},
+doi = {10.1145/3577197},
+journal = {ACM Trans. Math. Softw.},
+month = {mar},
+articleno = {10},
+numpages = {20},
+keywords = {mixed precision, GPU, communication-avoiding, Sparse direct solver}
+}
+
+@Article{karypis_et_al:DagRep.13.8.1,
+  author =ik},
+    address =
+}
+
+@article{slu-batch2024,
+author = {Wajih Boukaram and Yuxi Hong and Yang Liu and Tianyi Shi and Xiaoye S. Li},
+title ={{Batched Sparse Direct Solver Design and Evaluation in SuperLU\_DIST}},
+journal = {The International Journal of High Performance Computing Applications},
+year = {2024, accepted}
+}
+
+@book{doi:10.1142/9590,
+author = {Bai, Zhaojun and Gao, Weiguo and Su, Yangfeng},
+title = {Matrix Functions and Matrix Equations},
+publisher = {Co-published with HEP},
+year = {2015},
+doi = {10.1142/9590},
+address = {},
+edition   = {},
+URL = {https://www.worldscientific.com/doi/abs/10.1142/9590},
+eprint = {https://www.worldscientific.com/doi/pdf/10.1142/9590}
+}
+
+@INPROCEEDINGS{Chen2021,,
+author={Chen, Jinhao and Davis, Timothy A. and Lourenco, Christopher and Moreno-Centeno, Erick},
+booktitle={2021 IEEE/ACM 11th Workshop on Irregular Applications: Architectures and Algorithms (IA3)},
+title={{Sparse Exact Factorization Update}},
+year={2021},
+volume={},
+number={},
+pages={35-42},
+keywords={Codes;Conferences;Performance gain;Data structures;Sparse matrices;Open source software;sparse factorization updates;exact precision;integer-preserving Gaussian elimination},
+doi={10.1109/IA354616.2021.00012}
+}
+
+@article{batch_slu,
+author = {Wajih Boukaram and Yuxi Hong and Yang Liu and Tianyi Shi and Xiaoye S Li},
+title ={Batched sparse direct solver design and evaluation in SuperLU\_DIST},
+journal = {The International Journal of High Performance Computing Applications},
+volume = {38},
+number = {6},
+pages = {585-598},
+year = {2024},
+doi = {10.1177/10943420241268200}
+}
+
+@misc{abdelfattah2024interfacesparselinearalgebra,
+    title={Interface for Sparse Linear Algebra Operations},
+    author={Ahmad Abdelfattah and Willow Ahrens and Hartwig Anzt and Chris Armstrong and Ben Brock and Aydin Buluc and Federico Busato and Terry Cojean and Tim Davis and Jim Demmel and Grace Dinh and David Gardener and Jan Fiala and Mark Gates and Azzam Haider and Toshiyuki Imamura and Pedro Valero Lara and Jose Moreira and Sherry Li and Piotr Luszczek and Max Melichenko and Jose Moeira and Yvan Mokwinski and Riley Murray and Spencer Patty and Slaven Peles and Tobias Ribizel and Jason Riedy and Siva Rajamanickam and Piyush Sao and Manu Shantharam and Keita Teranishi and Stan Tomov and Yu-Hsiang Tsai and Heiko Weichelt},
+    year={2024},
+    eprint={2411.13259},
+    archivePrefix={arXiv},
+    primaryClass={cs.MS},
+    url={https://arxiv.org/abs/2411.13259},
+}
+
+@article{Claus25,
+author = {Lisa Claus and Pieter Ghysels and Wajih Halim Boukaram and Xiaoye Sherry Li},
+title ={A graphics processing unit accelerated sparse direct solver and preconditioner with block low rank compression},
+journal = {The International Journal of High Performance Computing Applications},
+volume = {39},
+number = {1},
+pages = {18-31},
+year = {2025},
+doi = {10.1177/10943420241288567}
+}
+
+@misc{liang2025parallelgpuacceleratedrandomizedconstruction,
+ title={{Parallel GPU-Accelerated Randomized Construction of Approximate Cholesky Preconditioners}},
+ author={Tianyu Liang and Chao Chen and Yotam Yaniv and Hengrui Luo and David Tench and Xiaoye S. Li and Aydin Buluc and James Demmel},
+ year={2025},
+ eprint={2505.02977},
+ archivePrefix={arXiv},
+ primaryClass={cs.DC},
+ url={https://arxiv.org/abs/2505.02977},
+ }

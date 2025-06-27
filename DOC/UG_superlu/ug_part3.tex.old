@@ -1,0 +1,893 @@
+\section{About {\superlud}}
+In this part, we describe the {\superlud} library designed for distributed
+memory parallel computers. The parallel programming model is SPMD.
+The library is implemented in ANSI C, using MPI~\cite{mpi-forum}
+for communication, and so is highly portable. We have tested the code on
+a number of platforms, including Cray T3E, IBM SP, and Berkeley NOW.
+The library includes routines to handle both real and complex matrices
+in double precision.
+The parallel routine names for the double-precision real version start
+with letters ``pd'' (such as {\tt pdgstrf}); the parallel routine
+names for double-precision complex version start with letters ``pz''
+(such as {\tt pzgstrf}).
+
+\section{Formats of the input matrices $A$ and $B$}
+\label{sec:InputFormat}
+We provide two input interfaces for matrices $A$ and $B$.
+One is the global interface, another is an entirely distributed interface.
+
+\subsection{Global input}\label{sec:GlobalInput}
+The input matrices $A$ and $B$ are globally
+available (replicated) on all the processes. The storage type for $A$
+is \NC, as in sequential case (see Section~\ref{sec:rep}).
+The user-callable routines with this interface
+all have the names ``xxxxxxx\_ABglobal''.
+If there is sufficient memory, this interface is faster than
+the distributed input interface described in the next section,
+because the latter requires more data re-distribution at
+different stages of the algorithm.
+
+\subsection{Distributed input}\label{sec:DistInput}
+Both input matrices $A$ and $B$ are distributed among all the processes.
+They use the same distribution based on block rows.
+That is, each process owns a block of consecutive rows of $A$ and $B$.
+Each local part of sparse matrix $A$ is stored in a compressed row
+format, called {\NRloc} storage type, which is defined below.
+\begin{verbatim}
+    typedef struct {
+        int nnz_loc;  /* number of nonzeros in the local submatrix */
+        int m_loc;    /* number of rows local to this process */
+        int fst_row;  /* row number of the first row in the local submatrix */
+        void *nzval;  /* pointer to array of nonzero values, packed by row */
+        int *rowptr;  /* pointer to array of beginning of rows in nzval[] 
+                         and colind[]  */
+        int *colind;  /* pointer to array of column indices of the nonzeros */
+    } NRformat_loc;
+\end{verbatim}
+
+Let $m_i$ be the number of rows owned by the $i$th process.
+Then the global row dimension for $A$ is $nrow = \sum_{i=0}^{P-1}m_i$.
+The global column dimension is $ncol$. Both $nrow$ and $ncol$
+are recorded in the higher level {\tt SuperMatrix} data structure,
+see Figure~\ref{fig:struct}.
+The utility routine \\
+{\tt dCreate\_CompRowLoc\_Matrix\_dist}
+can help the user to create the structure for $A$.
+The definition of this routine is
+\begin{verbatim}
+  void dCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int m, int n,
+                                      int nnz_loc, int m_loc, int fst_row,
+                                      double *nzval, int *colind, int *rowptr,
+                                      Stype_t stype, Dtype_t dtype, Mtype_t mtype);
+\end{verbatim}
+where, the first argument is output and the rest are inputs.
+
+The local full matrix $B$ is stored in the standard Fortran style column
+major format, with dimension $m\_loc\times nrhs$, and $ldb$ refers to
+the local leading dimension in the local storage.
+
+
+\section{Distributed data structures for $L$ and $U$}
+\label{sec:datastruct}
+We distribute both $L$ and $U$ matrices in a two-dimensional
+block-cyclic fashion.
+We first identify the supernode boundary based on the nonzero structure
+of $L$. This supernode partition is then used as the block
+partition in both row and column dimensions for both $L$ and $U$.
+The size of each block is matrix dependent.
+It should be clear that all the diagonal
+blocks are square and full (we store zeros from $U$ in the upper triangle
+of the diagonal block), whereas the off-diagonal blocks may be
+rectangular and may not be full.
+The matrix in~\fig{lu_2d} illustrates such a partition.
+By block-cyclic mapping we mean block $(I,J)$ ($0\le I, J\le N-1$) is
+mapped into the process at coordinate
+\{$I\ mod\ {\tt nprow}, J\ mod\ {\tt npcol}$\}
+of the ${\tt nprow}\times {\tt npcol}$ 2D process grid.
+Using this mapping, a block $L(I,J)$ in the factorization is only needed
+by the row of processes that own blocks in row $I$.
+Similarly, a block $U(I,J)$ is only needed
+by the column of processes that own blocks in column $J$.
+
+In this 2D mapping, each block column of $L$ resides on more than
+one process, namely, a column of processes. For example in~\fig{lu_2d},
+the second block column of $L$ resides on the column processes \{1, 4\}.
+Process 4 only owns two nonzero blocks, which are not contiguous
+in the global matrix.
+The schema on the right of~\fig{lu_2d} depicts the data structure
+to store the nonzero blocks on a process.
+Besides the numerical values stored in a Fortran-style
+array {\tt nzval[]} in column major order, we need the information to
+interpret the location and row subscript of each nonzero. This is stored in
+an integer array {\tt index[]}, which includes the
+information for the whole block column and for each individual block in it.
+Note that many off-diagonal blocks are zero and hence
+not stored. Neither do we store the zeros in a nonzero block.
+Both lower and upper triangles of the diagonal block are stored in the
+$L$ data structure.
+A process owns $\lceil{N/{\tt npcol}}\rceil$ block columns of $L$, so it needs
+$\lceil{N/{\tt nprow}}\rceil$ pairs of {\tt index/nzval} arrays.
+
+For $U$, we use a row oriented storage for the block
+rows owned by a process, although for the numerical values within each block
+we still use column major order.  Similar to $L$, we also use a pair
+of {\tt index/nzval} arrays to store a block row of $U$.
+Due to asymmetry, each nonzero block in $U$ has the skyline structure
+as shown in~\fig{lu_2d}
+(see~\cite{superlu99} for details on the skyline structure).
+Therefore, the organization of the {\tt index[]} array is different from
+that for $L$, which we omit showing in the figure.
+
+\ignore{
+Since currently some steps of the algorithm (steps (1) to (3)
+in~\fig{GESP_alg}) are not yet parallel,
+we start with a copy of the entire matrix $A$ on each
+process. 
+The routine {\tt symbfact} determines the nonzero patterns of $L$
+and $U$ as well as the block partition.
+The routine {\tt ddistribute} uses this information to
+sets up the $L$ and $U$ data structures
+and load the initial values of $A$ into $L$ and $U$.
+}
+
+\begin{figure}
+\centerline{\psfig{figure=lu_2d.eps,height=2.7in,width=3.8in}}
+\caption{The 2 block-cyclic layout and the data structure
+	to store a local block column of $L$.}
+\label{fig:lu_2d}
+\end{figure}
+
+
+\section{Process grid and MPI communicator}
+\label{sec:grid}
+All MPI applications begin with a default communication domain
+that includes all processes, say $N_p$, of this parallel job.
+The default communicator {\tt MPI\_COMM\_WORLD} represents
+this communication domain.
+The $N_p$ processes are identified as a linear array of process IDs in the
+range $0\;\ldots\;N_p-1$.
+
+\subsection{2D process grid}
+For {\superlud} library, we create a new process group derived from an
+existing group using $N_g$ processes. There is a good
+reason to use a new group rather than {\tt MPI\_COMM\_WORLD}, that is,
+the message passing calls of the SuperLU library will be isolated
+from those in other libraries or in the user's code.
+For better scalability of the $LU$ factorization, we map the
+1D array of $N_g$ processes into a logical 2D process grid.
+This grid will have {\tt nprow} process rows and {\tt npcol} process columns,
+such that ${\tt nprow} * {\tt npcol} = N_g$. A process can be referenced
+either by its rank in the new group or by its coordinates within
+the grid.
+The routine {\tt superlu\_gridinit} maps already-existing processes
+to a 2D process grid.
+% A typical code fragment to accomplish this task would be the following:
+
+\begin{verbatim}
+    superlu_gridinit(MPI_Comm Bcomm, int nprow, int npcol, gridinfo_t *grid);
+\end{verbatim}
+
+%{\em Note that the underlined arguments in the calling sequence
+%denote output arguments.}
+This process grid will use the first ${\tt nprow} * {\tt npcol}$
+processes from the base MPI communicator {\tt Bcomm}, and assign them
+to the grid in a row-major ordering.
+The input argument {\tt Bcomm} is an MPI communicator
+representing the existing base group upon which the new
+group will be formed. For example, it can be
+{\tt MPI\_COMM\_WORLD}. The output argument {\tt grid}
+represents the derived group to be used in {\superlud}.
+{\tt Grid} is a structure containing the following fields:
+\begin{verbatim}
+   struct {
+       MPI_Comm comm;        /* MPI communicator for this group */
+       int iam;              /* my process rank in this group   */
+       int nprow;            /* number of process rows          */
+       int npcol;            /* number of process columns       */
+       superlu_scope_t rscp; /* process row scope               */
+       superlu_scope_t cscp; /* process column scope            */
+   } grid;
+\end{verbatim}
+
+In the $LU$ factorization, some communications occur only among
+the processes in a row (column), not among all processes.
+For this purpose, we introduce two process subgroups,
+namely {\tt rscp} (row scope) and {\tt cscp} (column scope).
+For {\tt rscp} ({\tt cscp}) subgroup,
+all processes in a row (column) participate in the communication.
+
+The macros {\tt MYROW(iam, grid)} and {\tt MYCOL(iam, grid)} give
+the row and column coordinates in the 2D grid of the process 
+who has rank {\tt iam}.
+
+\paragraph\
+{\em NOTE: All processes in the base group, including those not in the
+new group, must call this grid creation routine. This is required by
+the MPI routine {\tt MPI\_Comm\_create} to create a new communicator.}
+
+
+\subsection{Arbitrary grouping of processes}
+It is sometimes desirable to divide up the processes into several subgroups,
+each of which performs independent work of a single application.
+In this situation, we cannot simply use the first ${\tt nprow} * {\tt npcol}$
+processes to define the grid.
+A more sophisticated process-to-grid mapping routine
+{\tt superlu\_gridmap} is designed to create a grid with
+processes of arbitrary ranks.
+% A typical code fragment would be the following:
+
+\begin{verbatim}
+    superlu_gridmap(MPI_Comm Bcomm, int nprow, int npcol,
+                    int usermap[], int ldumap, gridinfo_t *grid);
+\end{verbatim}
+
+The array {\tt usermap[]} contains the processes to be used
+in the newly created grid. {\tt usermap[]} is indexed like a
+Fortran-style 2D array with {\tt ldumap} as the leading dimension.
+So {\tt usermap[i+j$*$ldumap]} (i.e., {\tt usermap(i,j)} in
+Fortran notation) holds the process rank
+to be placed in \{i, j\} position of the 2D process grid.
+After grid creation, this subset of processes is logically numbered
+in a consistent manner with the initial set of processes; that is,
+they have the ranks in the range $0\;\ldots\;{\tt nprow} * {\tt npcol}-1$
+in the new grid.
+For example, if we want to map 6 processes with ranks $11\;\ldots\;16$
+into a $2\times 3$ grid, we define
+${\tt usermap} = \{11, 14, 12, 15, 13, 16\}$ and ${\tt ldumap}=2$.
+Such a mapping is shown below
+\begin{center}
+\begin{tabular}{c|c|c|c|}
+\multicolumn{1}{c}{} &\multicolumn{1}{c}{0}
+  &\multicolumn{1}{c}{1}
+  &\multicolumn{1}{c}{2}\\\cline{2-4}
+0 &11 &12 &13 \\\cline{2-4}
+1 &14 &15 &16 \\\cline{2-4}
+\end{tabular}
+\end{center}
+
+\paragraph\
+{\em NOTE: All processes in the base group, including those not in
+the new group, must call this routine.}
+
+{\tt Superlu\_gridinit} simply calls {\tt superlu\_gridmap}
+with {\tt usermap[]} holding the first ${\tt nprow} * {\tt npcol}$
+process ranks.
+
+
+\section{Basic steps to solve a linear system}
+In this section, we use a complete sample program to illustrate
+the basic steps required to use {\superlud}.
+This program is listed below, and is also available
+as {\tt EXAMPLE/pddrive\_ABglobal.c} in the source code distribution.
+All the routines must include the header file {\tt superlu\_ddefs.h}
+(or {\tt superlu\_zdefs.h}, the complex counterpart)
+which contains the definitions of the data types, the macros and
+the function prototypes.
+
+\begin{verbatim}
+#include <math.h>
+#include "superlu_ddefs.h"
+
+main(int argc, char *argv[])
+/*
+ * Purpose
+ * =======
+ *
+ * The driver program pddrive_ABglobal.
+ *
+ * This example illustrates how to use pdgssvx_ABglobal with the full
+ * (default) options to solve a linear system.
+ * 
+ * Five basic steps are required:
+ *   1. Initialize the MPI environment and the SuperLU process grid
+ *   2. Set up the input matrix and the right-hand side
+ *   3. Set the options argument
+ *   4. Call pdgssvx_ABglobal
+ *   5. Release the process grid and terminate the MPI environment
+ *
+ * On the Cray T3E, the program may be run by typing
+ *    mpprun -n <procs> pddrive -r <proc rows> -c <proc columns> <input_file>
+ *
+ */
+{
+    superlu_options_t options;
+    SuperLUStat_t stat;
+    SuperMatrix A;
+    ScalePermstruct_t ScalePermstruct;
+    LUstruct_t LUstruct;
+    gridinfo_t grid;
+    double   *berr;
+    double   *a, *b, *xtrue;
+    int_t    *asub, *xa;
+    int_t    i, m, n, nnz;
+    int_t    nprow, npcol;
+    int      iam, info, ldb, ldx, nrhs;
+    char     trans[1];
+    char     **cpp, c;
+    FILE *fp, *fopen();
+
+
+    nprow = 1;  /* Default process rows.      */
+    npcol = 1;  /* Default process columns.   */
+    nrhs = 1;   /* Number of right-hand side. */
+
+    /* Parse command line argv[]. */
+    for (cpp = argv+1; *cpp; ++cpp) {
+        if ( **cpp == '-' ) {
+            c = *(*cpp+1);
+            ++cpp;
+            switch (c) {
+              case 'h':
+        	  printf("Options:\n");
+        	  printf("\t-r <int>: process rows    (default %d)\n", nprow);
+        	  printf("\t-c <int>: process columns (default %d)\n", npcol);
+        	  exit(0);
+        	  break;
+              case 'r': nprow = atoi(*cpp);
+        	        break;
+              case 'c': npcol = atoi(*cpp);
+        	        break;
+            }
+        } else { /* Last arg is considered a filename */
+            if ( !(fp = fopen(*cpp, "r")) ) {
+                       fprintf(stderr, "File does not exist.");
+                exit(-1);
+            }
+            break;
+        }
+    }
+
+    /* ------------------------------------------------------------
+       INITIALIZE MPI ENVIRONMENT. 
+       ------------------------------------------------------------*/
+    MPI_Init( &argc, &argv );
+
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID. 
+       ------------------------------------------------------------*/
+    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+
+    /* Bail out if I do not belong in the grid. */
+    iam = grid.iam;
+    if ( iam >= nprow * npcol )	goto out;
+    
+    /* ------------------------------------------------------------
+       PROCESS 0 READS THE MATRIX A, AND THEN BROADCASTS IT TO ALL
+       THE OTHER PROCESSES.
+       ------------------------------------------------------------*/
+    if ( !iam ) {
+        /* Read the matrix stored on disk in Harwell-Boeing format. */
+        dreadhb(iam, fp, &m, &n, &nnz, &a, &asub, &xa);
+	
+        printf("\tDimension\t%dx%d\t # nonzeros %d\n", m, n, nnz);
+        printf("\tProcess grid\t%d X %d\n", grid.nprow, grid.npcol);
+
+        /* Broadcast matrix A to the other PEs. */
+        MPI_Bcast( &m,   1,   mpi_int_t,  0, grid.comm );
+        MPI_Bcast( &n,   1,   mpi_int_t,  0, grid.comm );
+        MPI_Bcast( &nnz, 1,   mpi_int_t,  0, grid.comm );
+        MPI_Bcast( a,    nnz, MPI_DOUBLE, 0, grid.comm );
+        MPI_Bcast( asub, nnz, mpi_int_t,  0, grid.comm );
+        MPI_Bcast( xa,   n+1, mpi_int_t,  0, grid.comm );
+    } else {
+        /* Receive matrix A from PE 0. */
+        MPI_Bcast( &m,   1,   mpi_int_t,  0, grid.comm );
+        MPI_Bcast( &n,   1,   mpi_int_t,  0, grid.comm );
+        MPI_Bcast( &nnz, 1,   mpi_int_t,  0, grid.comm );
+
+        /* Allocate storage for compressed column representation. */
+        dallocateA(n, nnz, &a, &asub, &xa);
+
+        MPI_Bcast( a,    nnz, MPI_DOUBLE, 0, grid.comm );
+        MPI_Bcast( asub, nnz, mpi_int_t,  0, grid.comm );
+        MPI_Bcast( xa,   n+1, mpi_int_t,  0, grid.comm );
+    }
+	
+    /* Create compressed column matrix for A. */
+    dCreate_CompCol_Matrix_dist(&A, m, n, nnz, a, asub, xa,
+                                SLU_NC, SLU_D, SLU_GE);
+
+    /* Generate the exact solution and compute the right-hand side. */
+    if ( !(b = doubleMalloc(m * nrhs)) ) ABORT("Malloc fails for b[]");
+    if ( !(xtrue = doubleMalloc(n * nrhs)) ) ABORT("Malloc fails for xtrue[]");
+    *trans = 'N';
+    ldx = n;
+    ldb = m;
+    dGenXtrue_dist(n, nrhs, xtrue, ldx);
+    dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+    if ( !(berr = doubleMalloc_dist(nrhs)) )
+        ABORT("Malloc fails for berr[].");
+
+    /* ------------------------------------------------------------
+       NOW WE SOLVE THE LINEAR SYSTEM.
+       ------------------------------------------------------------*/
+
+    /* Set the default input options. */
+    set_default_options(&options);
+
+    /* Initialize ScalePermstruct and LUstruct. */
+    ScalePermstructInit(m, n, &ScalePermstruct);
+    LUstructInit(m, n, &LUstruct);
+
+    /* Initialize the statistics variables. */
+    PStatInit(&stat);
+
+    /* Call the linear equation solver. */
+    pdgssvx_ABglobal(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		     &LUstruct, berr, &stat, &info);
+
+    /* Check the accuracy of the solution. */
+    if ( !iam ) dinf_norm_error_dist(n, nrhs, b, ldb, xtrue, ldx, &grid);
+
+    /* Print the statistics. */
+    PStatPrint(&stat, &grid);
+
+    /* ------------------------------------------------------------
+       DEALLOCATE STORAGE.
+       ------------------------------------------------------------*/
+    PStatFree(&stat);
+    Destroy_CompCol_Matrix(&A);
+    Destroy_LU(n, &grid, &LUstruct);
+    ScalePermstructFree(&ScalePermstruct);
+    LUstructFree(&LUstruct);
+    SUPERLU_FREE(b);
+    SUPERLU_FREE(xtrue);
+    SUPERLU_FREE(berr);
+
+    /* ------------------------------------------------------------
+       RELEASE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------*/
+out:
+    superlu_gridexit(&grid);
+
+    /* ------------------------------------------------------------
+       TERMINATES THE MPI EXECUTION ENVIRONMENT.
+       ------------------------------------------------------------*/
+    MPI_Finalize();
+}
+\end{verbatim}
+
+Five basic steps are required to call a SuperLU routine:
+\begin{enumerate}
+\item Initialize the MPI environment and the SuperLU process grid.\\
+	This is achieved by the calls to the MPI routine {\tt MPI\_Init}
+	and the SuperLU routine\\ {\tt superlu\_gridinit}.
+	In this example, the communication domain for SuperLU is built upon
+	the MPI default communicator {\tt MPI\_COMM\_WORLD}.
+	In general, it can be built upon any MPI communicator.
+	\sec{grid} contains the details about this step.
+\item Set up the input matrix and the right-hand side.\\
+        This example uses the interface with the global (replicated) input
+        matrices, see Section~\ref{sec:GlobalInput}.
+        Process 0 reads the input matrix stored on disk
+	in Harwell-Boeing format~\cite{duffgrimes92}, and broadcasts it
+	to all the other processes. The right-hand side matrix is generated
+	so that the exact solution matrix consists of all ones.
+\ignore{
+	Currently the library requires the input matrix and the right-hand
+	side are available on every process. In the future, we will
+	allow these two matrices being distributed on input.
+}
+\item Initialize the input arguments: {\tt options, Astruct, LUstruct, stat}.\\
+        The input argument {\tt options} controls how the linear system would
+  	be solved---use equilibration or not, how to order the rows and
+	the columns of the matrix, use iterative refinement or not.
+	The subroutine {\tt set\_default\_options} sets the {\tt options}
+ 	argument so that the solver performs all the functionality.
+        You can also set it up according to your own needs, see 
+	section~\ref{sec:options} for the fields of this structure.
+        {\tt Astruct} is the data structure in which matrix $A$ of the
+	linear system and several vectors describing the transformations
+        done to $A$ are stored. {\tt LUstruct} is the data structure
+        in which the distributed $L$ and $U$ factors are stored.
+	{\tt Stat} is a structure collecting the statistics about
+	runtime and flop count.
+\item Call the SuperLU routine {\tt pdgssvx\_ABglobal}.
+\item Release the process grid and terminate the MPI environment.\\
+	After the computation on a process grid has been completed, the
+	process grid should be released by a call to the SuperLU routine
+	{\tt superlu\_gridexit}.
+        When all computations have been completed, the MPI routine
+        {\tt MPI\_Finalize} should be called.
+\end{enumerate}
+
+%-----------------------------------------------------------------------
+\section{Algorithmic background}
+Although partial pivoting is used in both sequential and shared-memory
+parallel factorization algorithms, it is not used in the
+distributed-memory parallel algorithm, because it requires dynamic adaptation
+of data structure and load balancing, and so is hard to make it scalable.
+We use alternative techniques to stabilize the algorithm, suas as
+statically pivot large elements to the diagonal, single-precision
+diagonal adjustment to avoid small pivots, and iterative refinement.
+Figure~\ref{fig:GESP_alg} sketches our GESP algorithm
+(Gaussian elimination with Static Pivoting).
+Numerical experiments show that for a wide range of problems,
+GESP is as stable as GEPP~\cite{lidemmel03}.
+
+\begin{figure}[htbp]
+%\vspace*{-.3in}
+\caption{The outline of the GESP algorithm.}
+\label{fig:GESP_alg}
+\begin{tabbing}
+jnk \= jnk \= jnk \= jnk \= jnk \= jnk \= xxxxx \= xxxxxxxxxxxxxxx \kill
+\>(1) Perform row/column equilibration and row permutation:
+	$A \leftarrow P_r\cdot D_r\cdot A\cdot D_c$, \\
+\> \>	where $D_r$ and $D_c$ are diagonal matrices and $P_r$ is a row 
+        permutation chosen \\
+\> \>	to make the diagonal large compared to the off-diagonal.\\
+\>(2) Find a column permutation $P_c$ to preserve sparsity:
+	$A\leftarrow P_c\cdot A\cdot P_c^T$ \\
+\>(3) Perform symbolic analysis to determine the nonzero structures of $L$ and $U$.\\
+\>(4) Factorize $A=L\cdot U$ with control of diagonal magnitude: \\
+\>\>\> {\bf if} ( $|a_{ii}| < \sqrt{\varepsilon}\cdot \|A\|_1$ ) {\bf then} \\
+\>\>\>\> set $a_{ii}$ to $\sqrt{\varepsilon}\cdot \|A\|_1$\\
+\>\>\> {\bf endif} \\
+\>(5) Perform triangular solutions using $L$ and $U$.\\
+\>(6) If needed, use an iterative solver like GMRES or iterative refinement (shown below) \\
+\>\>\>{\bf iterate}:\\
+\>\>\>\>$r = b - A\cdot x$  \hspace{0.98in} $\ldots$ sparse matrix-vector 
+multiply \\
+\>\>\>\>Solve $A\cdot dx = r$     \hspace{.77in} $\ldots$ triangular solution\\
+\>\>\>\>$berr = \max_i\frac{|r|_i}{(|A|\cdot|x|+|b|)_i}$
+                    \hspace{.3in} $\ldots$ componentwise backward error \\
+\>\>\>\>{\bf if} ( $berr > \varepsilon$ and 
+		   $berr \le \frac{1}{2}\cdot lastberr$ )
+%\>\>\>\>{\bf if} ( $\frac{\|dx\|}{\|x\|} > \varepsilon$ 
+%		   and $\frac{\|r\|}{\|A\|_1\cdot\|x\|} > \varepsilon$ )
+%		   and $\|dx\| < last\_d$ )
+	{\bf then} \\
+\>\>\>\>\> $x = x + dx$   \\
+\>\>\>\>\> $lastberr = berr$\\
+\>\>\>\>\>{\bf goto iterate} \\
+\>\>\>\>{\bf endif} \\
+\>(7) If desired, estimate the condition number of $A$
+\end{tabbing}
+\end{figure}
+
+\ignore{ %%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\begin{tabbing}
+jnk \= jnk \= jnk \= jnk \= jnk \= jnk \= xxxxx \= xxxxxxxxxxxxxxx \kill
+\>(1) Row/column equilibration: $A \leftarrow D_r\cdot A\cdot D_c$ \\
+\> \>	$D_r$ and $D_c$ are diagonal matrices chosen so that the
+	largest entry of each row and \\
+\> \>   column is $\pm 1$. \\
+\>(2) Row permutation:  $A \leftarrow P_r \cdot A$ \\
+\> \>	$P_r$ is a row permutation chosen to make the diagonal large
+	compared to the off-diagonal.\\
+% \>(2) Find a row permutation $P_r$ to put large entries on the diagonal:
+% 	 $A\leftarrow P_r\cdot  A$ \\
+%\>\>\>{\bf if} ( there are zeros on diagonal of $A$ ) {\bf then} \\
+%\>\>\>\>1) drop $a_{ij}$ if $|a_{ij}| < \eta\cdot ||A||$
+%	\ \ ( $\eta = 10^{-7}, 10^{-5}, ..., 10^{-1}$ ) \\
+%\>\>\>\>2) apply maximum bipartite matching to the new $A$ \\
+%\>\>\>{\bf endif} \\
+\>(3) Find a column permutation $P_c$ to preserve sparsity:
+	$A\leftarrow P_c\cdot A\cdot P_c^T$ \\
+\>(4) Factorize $A=L\cdot U$ with control of diagonal magnitude \\
+\>\>\> {\bf if} ( $|a_{ii}| < \sqrt{\varepsilon}\cdot ||A||$ ) {\bf then} \\
+\>\>\>\> set $a_{ii}$ to $\sqrt{\varepsilon}\cdot ||A||$\\
+\>\>\> {\bf endif} \\
+\>(5) Solve $A\cdot x=b$ using the $L$ and $U$ factors, with the following
+	iterative refinement \\
+\>\>\>{\bf iterate}:\\
+\>\>\>\>$r = b - A\cdot x$  \hspace{1in} $\ldots$ sparse matrix-vector 
+multiply \\
+\>\>\>\>Solve $A\cdot dx = r$     \hspace{.78in} $\ldots$ triangular solution\\
+\>\>\>\>$berr = \max_i\frac{|r|_i}{(|A|\cdot|x|+|b|)_i}$
+                    \hspace{.3in} $\ldots$ componentwise backward error \\
+\>\>\>\>{\bf if} ( $berr > \varepsilon$ and 
+		   $berr \le \frac{1}{2}\cdot lastberr$ )
+%\>\>\>\>{\bf if} ( $\frac{||dx||}{||x||} > \varepsilon$ 
+%		   and $\frac{||r||}{||A||\cdot||x||} > \varepsilon$ )
+%		   and $||dx|| < last\_d$ )
+	{\bf then} \\
+\>\>\>\>\>$x = x + dx$   \\
+ \>\>\>\>\>$lastberr = berr$\\
+\>\>\>\>\>{\bf goto iterate} \\
+\>\>\>\>{\bf endif} \\
+\end{tabbing}
+\vspace*{-.3in}
+\caption{The outline of the GESP algorithm.}
+\label{fig:GESP_alg}
+\end{figure}
+} %%%% ignore
+
+We have parallelized the most time-consuming steps (4) to (7).
+The preprocessing and analysis steps (1) to (3) are mostly
+performed sequentially at present.
+If the distributed input interface is used (Section~\ref{sec:DistInput}),
+we first gather the distributed graph of $A$ (and the value of $A$
+if step (1) is needed) onto one processor.
+Work is underway to remove this sequential bottleneck.
+
+Step (1) is accomplished by a weighted bipartite matching algorithm
+due to Duff and Koster~\cite{duffkoster99}. Currently, process 0
+computes $P_r$ and then broadcasts it to all the other processes.
+For step (2), we provide several ordering options, such as 
+multiple minimum degree ordering~\cite{liu85} on the graphs of 
+$A+A^T$.
+% and the approximate minimum degree column ordering~\cite{davis96}.
+The user can use any other ordering in place of these,
+such as an ordering based on graph partitioning.
+(Note, since we will pivot on the diagonal in step (4),
+an ordering based on the structure of $A+A^T$ almost always yields sparser
+factors than that based on the structure of $A^TA$.
+This is different from SuperLU and SuperLU\_MT, where we
+can pivot off-diagonal.)
+In this step, every process runs the same algorithm independently.
+
+
+\section{User-callable routines}
+%% Appendix~\ref{chap:superlu_dist_spec} contains the complete specifications
+%% of the routines in SuperLU\_DIST.
+
+\subsection{Driver routine}
+There are two driver routines to solve systems of linear equations,
+which are named {\tt pdgssvx\_ABglobal} for the global input interface,
+and {\tt pdgssvx} for the distributed interface.
+We recommend that the general users, especially the beginners, 
+use a driver routine rather than the computational
+routines, because correctly using the driver routine does not require
+thorough understanding of the underlying data structures.
+Although the interface of these routines are simple, we expect their rich 
+functionality can meet the requirements of most applications.
+{\tt Pdgssvx\_ABglobal}/{\tt pdgssvx} perform the following functions:
+\begin{itemize}
+\item Equilibrate the system (scale $A$'s rows and columns to
+	have unit norm) if $A$ is poorly scaled;
+\item Find a row permutation that makes diagonal of $A$ large
+	relative to the off-diagonal;
+\item Find a column permutation that preserves the sparsity of
+	the $L$ and $U$ factors;
+\item Solve the system $AX=B$ for $X$ by factoring $A$
+	followed by forward and back substitutions;
+\item Refine the solution $X$.
+\end{itemize}
+
+\subsubsection{Options argument}
+\label{sec:options}
+One important input argument to {\tt pdgssvx\_ABglobal}/{\tt pdgssvx} is
+{\tt options}, which controls how the linear system will be solved.
+Although the algorithm presented in~\fig{GESP_alg} consists of
+seven steps, for some matrices not all steps are needed to get
+accurate solution. For example, for diagonally dominant matrices, 
+choosing the diagonal pivots ensures the stability;
+there is no need for row pivoting in step (1).
+In another situation where a sequence of matrices with the
+same sparsity pattern need be factorized, the column
+permutation $P_c$ (and also the row permutation $P_r$, if
+the numerical values are similar) need be computed only
+once, and reused thereafter. ($P_r$ and $P_c$
+are implemented as permutation vectors {\tt perm\_r} and {\tt perm\_c}.)
+For the above examples, performing all seven steps does more
+work than necessary. 
+{\tt Options} is used to accommodate the various requirements of applications;
+it contains the following fields:
+\begin{itemize}
+\item {\tt Fact}\\
+    This option specifies whether or not the factored form of the matrix
+    $A$ is supplied on entry, and if not, how the matrix $A$ will
+    be factored base on some assumptions of the previous history.
+    {\tt fact} can be one of:
+    \begin{itemize}
+    \item {\tt DOFACT}: the matrix $A$ will be factorized from scratch.
+    \item {\tt SamePattern}: the matrix $A$ will be factorized assuming
+	that a factorization of a matrix with the same sparsity pattern
+	was performed prior to this one. Therefore, this factorization
+        will reuse column permutation vector {\tt perm\_c}.
+    \item {\tt SampPattern\_SameRowPerm}: the matrix $A$ will be factorized
+	assuming that a factorization of a matrix with the same sparsity
+	pattern and similar numerical values was performed prior to this one.
+        Therefore, this factorization will reuse both row and column
+        permutation vectors {\tt perm\_r} and {\tt perm\_c}, both row and
+	column scaling factors $D_r$ and $D_c$, and the distributed data
+	structure set up from the previous symbolic factorization.
+    \item {\tt FACTORED}: the factored form of $A$ is input.
+    \end{itemize}
+\item {\tt Equil}\\
+    This option specifies whether to equilibrate the system.
+\item {\tt RowPerm}\\
+    This option specifies how to permute rows of the original matrix.
+    \begin{itemize}
+    \item {\tt NATURAL}: use the natural ordering.
+    \item {\tt LargeDiag}: use a weighted bipartite matching algorithm to
+	permute the rows to make the diagonal large relative to the
+	off-diagonal.
+    \item {\tt MY\_PERMR}: use the ordering given in {\tt perm\_r} input by the user.
+    \end{itemize}
+\item {\tt ColPerm}\\
+    This option specifies the column ordering method for fill reduction.
+    \begin{itemize}
+    \item {\tt NATURAL}: natural ordering.
+    \item {\tt MMD\_AT\_PLUS\_A}: minimum degree ordering on the
+			structure of $A^T+A$.
+    \item {\tt MMD\_ATA}: minimum degree ordering on the structure of
+			$A^TA$.
+    \item {\tt COLAMD}: approximate minimum degree column ordering.
+    \item {\tt MY\_PERMC}: use the ordering given in {\tt perm\_c} input by
+	                the user.
+     \end{itemize}
+\item {\tt ReplaceTinyPivot}\\
+    This option specifies whether to replace the tiny diagonals by
+           $\sqrt\varepsilon\cdot||A||$ during $LU$ factorization.
+\item {\tt IterRefine}\\
+    This option specifies how to perform iterative refinement.
+    \begin{itemize}
+    \item {\tt NO}: no iterative refinement.
+    \item {\tt DOUBLE}: accumulate residual in double precision.
+    \item {\tt EXTRA}:  accumulate residual in extra precision.
+	 ({\em not yet implemented.})
+    \end{itemize}
+\end{itemize}
+
+There is a routine named {\tt set\_default\_options} that sets the default
+values of these options, which are:
+\begin{verbatim}
+    fact             = DOFACT
+    equil            = YES
+    rowperm          = LargeDiag
+    colperm          = MMD_AT_PLUS_A
+    ReplaceTinyPivot = YES
+    IterRefine       = DOUBLE
+\end{verbatim}
+
+
+\subsection{Computational routines}
+The experienced users can invoke the following computational routines
+to directly control the behavior of {\superlud} in order to meet their
+requirements.
+\begin{itemize}
+\item {\tt pdgstrf}: Factorize in parallel. \\
+	This routine factorizes the input matrix $A$ (or the scaled and
+	permuted $A$). It assumes that the distributed data structures
+	for $L$ and $U$ factors are already set up, and the initial
+  	values of $A$ are loaded into the data structures.
+	If not, the routine {\tt symbfact} should be called to
+	determine the nonzero patterns of the factors, and the
+	routine {\tt pddistribute} should be called to distribute the matrix.
+	{\tt Pdgstrf} can factor non-square matrices.
+%	Currently, $A$ must be globally available on all processes.
+\item {\tt pdgstrs\_Bglobal/pdgstrs}: Triangular solve in parallel. \\
+	This routine solves the system by forward and back
+	substitutions using the the $L$ and $U$ factors
+	computed by {\tt pdgstrf}.
+	For {\tt pdgstrs\_Bglobal}, $B$ must be globally available on
+        all processes. {\tt Pdgstrs} takes distributed $B$.
+\item {\tt pdgsrfs\_ABXglobal/pdgsrfs}: Refine solution in parallel. \\
+	Given $A$, its factors $L$ and $U$, and an initial solution
+	$X$, this routine performs iterative refinement.
+	For {\tt pdgsrfs\_ABXglobal}, $A$, $B$ and $X$ must be globally
+        available on all processes. {\tt Pdgsrfs} takes distributed
+        $A$, $B$ and $X$.
+\end{itemize}
+
+
+\section{Installation}
+\label{sec:dist_install}
+\subsection{File structure}
+The top level SuperLU\_DIST/ directory is structured as follows:
+\begin{verbatim}
+    SuperLU_DIST/README    instructions on installation
+    SuperLU_DIST/CBLAS/    needed BLAS routines in C, not necessarily fast
+    SuperLU_DIST/EXAMPLE/  example programs
+    SuperLU_DIST/INSTALL/  test machine dependent parameters; the Users' Guide.
+    SuperLU_DIST/SRC/      C source code, to be compiled into a library
+    SuperLU_DIST/Makefile  top level Makefile that does installation and testing
+    SuperLU_DIST/make.inc  compiler, compile flags, library definitions and C
+                           preprocessor definitions, included in all Makefiles.
+                           (You may need to edit it to be suitable for your
+                            system before compiling the whole package.)
+\end{verbatim}
+
+Before installing the package, you may need to edit
+{\tt SuperLU\_DIST/make.inc} for your system.
+This make include file is referenced inside each of the Makefiles
+in the various subdirectories. As a result, there is no need to 
+edit the Makefiles in the subdirectories. All information that is
+machine specific has been defined in this include file. 
+
+Sample machine-specific {\tt make.inc} are provided in the top-level
+{\tt SuperLU\_DIST} directory for several systems, such as
+Cray T3E and IBM SP.
+When you have selected the machine to which you wish to install
+{\tt superlud}, you may copy the appropriate sample include file
+(if one is present) into {\tt make.inc}. For example, if you wish to run
+on a Cray T3E,  you can do:
+
+\hspace{.4in}{\tt cp make.t3e make.inc}
+
+For the systems other than those listed above, slight modifications to the
+{\tt make.inc} file will need to be made.
+In particular, the following items should be examined:
+\begin{enumerate}   
+\item The BLAS library.\\
+   If there is a BLAS library available on your machine,
+   you may define the following in {\tt make.inc}:
+
+   \hspace{.4in}{\tt BLASDEF = -DUSE\_VENDOR\_BLAS}
+
+   \vspace{-6pt}
+   \hspace{.4in}{\tt BLASLIB = <BLAS library you wish to link with>}
+
+   The {\tt CBLAS/} subdirectory contains the part of the BLAS (in C) needed by
+   {\tt SuperLU\_DIST} package. However, these routines are intended for use
+   only if there is no faster implementation of the BLAS already available
+   on your machine. In this case, you should do the following:
+   \begin{itemize}
+   \item[1)]In make.inc, undefine (comment out) BLASDEF, define:
+
+          \hspace{.4in}{\tt BLASLIB = ../blas\$(PLAT).a}
+
+   \item[2)] At the top level SuperLU\_DIST directory, type:
+
+          \hspace{.4in}{\tt make blaslib}
+
+         to create the BLAS library from the routines in {\tt CBLAS/}
+	 subdirectory.
+   \end{itemize}
+
+\item C preprocessor definition {\tt CDEFS}.\\
+   In the header file {\tt SRC/Cnames.h}, we use macros to determine how
+   C routines should be named so that they are callable by Fortran.%
+   \footnote{Some vendor-supplied BLAS libraries do not have C interfaces.
+   So the re-naming is needed in order for the SuperLU BLAS calls (in C) to 
+   interface with the Fortran-style BLAS.}
+   The possible options for {\tt CDEFS} are:
+   \begin{itemize}
+   \item {\tt -DAdd\_}: Fortran expects a C routine to have an underscore
+		        postfixed to the name;
+   \item {\tt -DNoChange}: Fortran expects a C routine name to be identical to
+		     that compiled by C;
+   \item {\tt -DUpCase}: Fortran expects a C routine name to be all uppercase.
+   \end{itemize}
+\end{enumerate}
+   
+A {\tt Makefile} is provided in each subdirectory. The installation can be
+done completely automatically by simply typing {\tt make} at the top level.
+
+\subsection{Performance-tuning parameters}
+\label{sec:SuperLU_DIST_sp_ienv}
+
+Similar to sequential SuperLU, several performance related parameters
+are set in the inquiry function {\tt sp\_ienv()}.
+The declaration of this function is
+
+\vspace{.1in}
+{\tt int sp\_ienv(int ispec);}
+\vspace{.1in}
+
+{\tt Ispec} specifies the parameter to be returned%
+\footnote{The numbering of 2, 3 and 6 is consistent with that used
+in SuperLU and SuperLU\_MT.}:
+\begin{tabbing}
+xxxxxx \= xxxx \= junk \= \kill
+\>ispec\>= 2: the relaxation parameter to control supernode amalgamation\\
+\>     \>= 3: the maximum allowable size for a block\\
+\>     \>= 6: the estimated fills factor for the adjacency structures 
+	      of $L$ and $U$
+\end{tabbing}	    
+
+The values to be returned may be set differently on different machines.
+The setting of maximum block size (parameter 3) should take into
+account the local Level 3 BLAS speed, the load balance and the 
+degree of parallelism. Small block size may result in better
+load balance and more parallelism, but poor individual node performance,
+and vice versa for large block size. 
+
+
+\section{Example programs}
+In the {\tt SuperLU\_DIST/EXAMPLE/} subdirectory, we present a few sample
+programs to illustrate the complete calling sequences to use the expert
+driver to solve systems of equations.
+These include how to set up the process grid and the input
+matrix, how to obtain a fill-reducing ordering.
+A {\tt Makefile} is provided to generate the executables.
+A {\tt README} file in this directory shows how to run these examples.
+The leading comment in each routine describes the functionality of
+the example.
+The two basic examples are {\tt pddrive\_ABglobal} and {\tt pddrive}.
+The first shows how to use the global input interface, and the
+second shows how to use the distributed input interface.

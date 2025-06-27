@@ -1,0 +1,207 @@
+\begin{thebibliography}{10}
+
+\bibitem{lapackmanual2}
+E.~Anderson, Z.~Bai, C.~Bischof, J.~Demmel, J.~Dongarra, J.~Du~Croz,
+  A.~Greenbaum, S.~Hammarling, A.~McKenney, S.~Ostrouchov, and D.~Sorensen.
+\newblock {\em {LAPACK} Users' Guide, Release 2.0}.
+\newblock {SIAM}, Philadelphia, 1995.
+\newblock 324 pages.
+
+\bibitem{arioli89}
+M.~Arioli, J.~W. Demmel, and I.~S. Duff.
+\newblock Solving sparse linear systems with sparse backward error.
+\newblock {\em SIAM J. Matrix Anal. Appl.}, 10(2):165--190, April 1989.
+
+\bibitem{scalapackmanual}
+L.~S. Blackford, J.~Choi, E.~D'Azevedo, J.~Demmel, I.~Dhillon, J.~Dongarra,
+  S.~Hammarling, G.~Henry, A.~Petitet, K.~Stanley, D.~Walker, and R.~C. Whaley.
+\newblock {\em {ScaLAPACK} Users' Guide}.
+\newblock {SIAM}, Philadelphia, 1997.
+\newblock \url{http://www.netlib.org/scalapack}.
+
+\bibitem{davisgilbert04}
+T.~A. Davis, J.~R. Gilbert, S.~Larimore, and E.~Ng.
+\newblock A column approximate minimum degree ordering algorithm.
+\newblock {\em ACM Trans.\ Mathematical Software}, 30(3):353--376, 2004.
+
+\bibitem{superlu99}
+J.~W. Demmel, S.~C. Eisenstat, J.~R. Gilbert, X.~S. Li, and J.~W.~H. Liu.
+\newblock A supernodal approach to sparse partial pivoting.
+\newblock {\em SIAM J. Matrix Analysis and Applications}, 20(3):720--755, 1999.
+\newblock \url{https://portal.nersc.gov/project/sparse/superlu/}.
+
+\bibitem{superlu_smp99}
+J.~W. Demmel, J.~R. Gilbert, and X.~S. Li.
+\newblock An asynchronous parallel supernodal algorithm for sparse gaussian
+  elimination.
+\newblock {\em SIAM J. Matrix Analysis and Applications}, 20(4):915--952, 1999.
+\newblock \url{https://portal.nersc.gov/project/sparse/superlu/}.
+
+\bibitem{blas3}
+J.~Dongarra, J.~Du~Croz, I.~S. Duff, and S.~Hammarling.
+\newblock A {S}et of {L}evel 3 {B}asic {L}inear {A}lgebra {S}ubprograms.
+\newblock {\em {ACM} Trans. Math. Soft.}, 16:1--17, 1990.
+
+\bibitem{blas2}
+J.~Dongarra, J.~Du~Croz, S.~Hammarling, and Richard~J. Hanson.
+\newblock An {E}xtended {S}et of {FORTRAN} {B}asic {L}inear {A}lgebra
+  {S}ubprograms.
+\newblock {\em {ACM} Trans. Math. Soft.}, 14(1):1--17, March 1988.
+
+\bibitem{duffkoster99}
+I.~S. Duff and J.~Koster.
+\newblock The design and use of algorithms for permuting large entries to the
+  diagonal of sparse matrices.
+\newblock {\em SIAM J. Matrix Analysis and Applications}, 20(4):889--901, 1999.
+
+\bibitem{duffkoster01}
+I.~S. Duff and J.~Koster.
+\newblock On algorithms for permuting large entries to the diagonal of a sparse
+  matrix.
+\newblock {\em SIAM J. Matrix Analysis and Applications}, 22(4):973--996, 2001.
+
+\bibitem{duffgrimes92}
+I.S. Duff, R.G. Grimes, and J.G. Lewis.
+\newblock Users' guide for the {Harwell-Boeing} sparse matrix collection
+  (release 1).
+\newblock Technical Report RAL-92-086, Rutherford Appleton Laboratory, December
+  1992.
+
+\bibitem{georgeliung88}
+A.~George, J.~Liu, and E.~Ng.
+\newblock A data structure for sparse {QR} and {LU} factorizations.
+\newblock {\em SIAM J. Sci. Stat. Comput.}, 9:100--121, 1988.
+
+\bibitem{georgeng87}
+A.~George and E.~Ng.
+\newblock Symbolic factorization for sparse {G}aussian elimination with partial
+  pivoting.
+\newblock {\em SIAM J. Sci. Stat. Comput.}, 8(6):877--898, 1987.
+
+\bibitem{glnp:01}
+J.~R. Gilbert, X.~S. Li, E.~G. Ng, and B.~W. Peyton.
+\newblock Computing row and column counts for sparse ${QR}$ and ${LU}$
+  factorization.
+\newblock {\em BIT}, 41(4):693--710, 2001.
+
+\bibitem{GilbertNg-IMA}
+John~R. Gilbert and Esmond~G. Ng.
+\newblock Predicting structure in nonsymmetric sparse matrix factorizations.
+\newblock In A.~George, J.~R. Gilbert, and J.~W.~H. Liu, editors, {\em Graph
+  theory and sparse matrix computation}, pages 107--139. Springer-Verlag, New
+  York, 1993.
+
+\bibitem{grigoridemmelli07}
+L.~Grigori, J.~W. Demmel, and X.~S. Li.
+\newblock Parallel symbolic factorization for sparse {LU} with static pivoting.
+\newblock {\em SIAM J. Scientific Computing}, 29(3):1289--1314, 2007.
+
+\bibitem{hele:95}
+B.~Hendrickson and R.~Leland.
+\newblock {The CHACO's User's Guide}.
+\newblock Technical Report SAND95-2344$\bullet$UC-405, Sandia National
+  Laboratories, Albuquerque, 1995.
+\newblock \url{http://www.cs.sandia.gov/~bahendr/chaco.html}.
+
+\bibitem{higham96}
+N.~J. Higham.
+\newblock {\em Accuracy and {S}tability of {N}umerical {A}lgorithms}.
+\newblock {SIAM}, Philadelphia, PA, 1996.
+
+\bibitem{kaku:98a}
+G.~Karypis and V.~Kumar.
+\newblock {\sc Me$\!$T$\!$iS} -- serial graph partitioning and computing
+  fill-reducing matrix ordering.
+\newblock University of Minnesota.
+  \url{http://glaros.dtc.umn.edu/gkhome/views/metis}.
+
+\bibitem{kaku:03}
+G.~Karypis, K.~Schloegel, and V.~Kumar.
+\newblock {\sc ParMe$\!$T$\!$iS}: Parallel graph partitioning and sparse matrix
+  ordering library -- version~3.1.
+\newblock {U}niversity of {M}innesota, 2003.
+  \url{http://www-users.cs.umn.edu/~karypis/metis/parmetis/}.
+
+\bibitem{blas1}
+C.~Lawson, R.~Hanson, D.~Kincaid, and F.~Krogh.
+\newblock Basic {L}inear {A}lgebra {S}ubprograms for {F}ortran usage.
+\newblock {\em {ACM} Trans. Math. Soft.}, 5:308--323, 1979.
+
+\bibitem{li96}
+X.~S. Li.
+\newblock Sparse {G}aussian elimination on high performance computers.
+\newblock Technical Report UCB//CSD-96-919, Computer Science Division, U.C.
+  Berkeley, September 1996.
+\newblock Ph.D dissertation.
+
+\bibitem{li05}
+X.~S. Li.
+\newblock {An Overview of {SuperLU}: Algorithms, Implementation, and User
+  Interface}.
+\newblock {\em ACM Trans.\ Mathematical Software}, 31(3):302--325, September
+  2005.
+
+\bibitem{lidemmel98}
+X.~S. Li and J.~W. Demmel.
+\newblock Making sparse {G}aussian elimination scalable by static pivoting.
+\newblock In {\em Proceedings of SC98: High Performance Networking and
+  Computing Conference}, Orlando, Florida, November 7--13 1998.
+
+\bibitem{lidemmel03}
+X.~S. Li and J.~W. Demmel.
+\newblock {SuperLU\_DIST}: A scalable distributed-memory sparse direct solver
+  for unsymmetric linear systems.
+\newblock {\em ACM Trans.\ Mathematical Software}, 29(2):110--140, June 2003.
+\newblock \url{https://portal.nersc.gov/project/sparse/superlu/}.
+
+\bibitem{lishao10}
+X.~S. Li and M.~Shao.
+\newblock A supernodal approach to imcomplete {LU} factorization with partial
+  pivoting.
+\newblock {\em ACM Trans.\ Mathematical Software}, 37(4), 2010.
+
+\bibitem{liu85}
+J.~W.~H. Liu.
+\newblock Modification of the minimum degree algorithm by multiple elimination.
+\newblock {\em ACM Trans.\ Mathematical Software}, 11:141--153, 1985.
+
+\bibitem{mpi-forum}
+Message {P}assing {I}nterface ({MPI}) forum.
+\newblock http://www.mpi-forum.org/.
+
+\bibitem{oettliprager}
+W.~Oettli and W.~Prager.
+\newblock Compatibility of approximate solution of linear equations with given
+  error bounds for coefficients and right hand sides.
+\newblock {\em Num. Math.}, 6:405--409, 1964.
+
+\bibitem{scotch}
+F.~Pellegrini.
+\newblock {\sc Scotch and libScotch} 5.1 {User's Guide} (version 5.1.11).
+\newblock INRIA Bordeaux Sud-Ouest, Universit\'{e} Bordeaux I. November, 2010.
+  \url{http://www.labri.fr/perso/pelegrin/scotch/}.
+
+\bibitem{posix}
+{POSIX} {S}ystem {A}pplication {A}rogram {I}nterface: Threads extension [{C}
+  {L}anguage], {POSIX} 1003.1c draft 4.
+\newblock IEEE Standards Department.
+
+\bibitem{saad94}
+Y.~Saad.
+\newblock {ILUT: A dual threshold incomplete LU factorization}.
+\newblock {\em Numerical Linear Algebra with Applications}, 1(4):387--402,
+  1994.
+
+\bibitem{sao2014}
+P.~Sao, R.~Vuduc, and X.~Li.
+\newblock A distributed {CPU-GPU} sparse direct solver.
+\newblock In {\em Proc. of Euro-Par 2014, LNCS Vol. 8632, pp. 487-498}, Porto,
+  Portugal, August 25-29 2014.
+
+\bibitem{skeel80}
+R.D. Skeel.
+\newblock Iterative refinement implies numerical stability for {G}aussian
+  elimination.
+\newblock {\em Mathematics of Computation}, 35(151):817--832, 1980.
+
+\end{thebibliography}

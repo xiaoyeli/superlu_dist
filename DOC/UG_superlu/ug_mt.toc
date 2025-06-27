@@ -1,0 +1,51 @@
+\contentsline {part}{\uppercase {i}\phspace {1em}Sequential SuperLU}{3}
+\contentsline {section}{\numberline {1}Introduction}{4}
+\contentsline {subsection}{\numberline {1.1}{About \unhbox \voidb@x \hbox {SuperLU}}}{4}
+\contentsline {subsection}{\numberline {1.2}Availability}{4}
+\contentsline {subsection}{\numberline {1.3}How to call a {\unhbox \voidb@x \hbox {SuperLU}} routine}{4}
+\contentsline {section}{\numberline {2}Matrix data structures}{6}
+\contentsline {section}{\numberline {3}Permutations}{9}
+\contentsline {subsection}{\numberline {3.1}Ordering for sparsity}{9}
+\contentsline {subsection}{\numberline {3.2}Partial pivoting with threshold}{11}
+\contentsline {section}{\numberline {4}User-callable routines}{11}
+\contentsline {subsection}{\numberline {4.1}Driver routines}{12}
+\contentsline {subsection}{\numberline {4.2}Computational routines}{12}
+\contentsline {section}{\numberline {5}Matlab interface}{13}
+\contentsline {section}{\numberline {6}Memory management for $L$ and $U$}{14}
+\contentsline {section}{\numberline {7}Installation}{15}
+\contentsline {subsection}{\numberline {7.1}File structure}{15}
+\contentsline {subsection}{\numberline {7.2}Testing}{17}
+\contentsline {subsection}{\numberline {7.3}Performance-tuning parameters}{18}
+\contentsline {subsection}{\numberline {7.4}Error handling}{18}
+\contentsline {section}{\numberline {8}Statistics}{19}
+\contentsline {section}{\numberline {9}Example programs}{19}
+\contentsline {subsection}{\numberline {9.1}Repeated factorizations}{20}
+\contentsline {subsection}{\numberline {9.2}Calling from Fortran}{20}
+\contentsline {part}{\uppercase {ii}\phspace {1em}Multithreading SuperLU}{23}
+\contentsline {section}{\numberline {10}Storage types for $L$ and $U$}{24}
+\contentsline {section}{\numberline {11}User-callable routines}{25}
+\contentsline {subsection}{\numberline {11.1}Driver routines}{25}
+\contentsline {subsection}{\numberline {11.2}Computational routines}{26}
+\contentsline {section}{\numberline {12}Installation and troubleshooting}{26}
+\contentsline {subsection}{\numberline {12.1}Availability}{26}
+\contentsline {subsection}{\numberline {12.2}File structure}{27}
+\contentsline {subsection}{\numberline {12.3}Performance issues}{27}
+\contentsline {subsubsection}{\numberline {12.3.1}Memory management for $L$ and $U$}{27}
+\contentsline {subsubsection}{\numberline {12.3.2}Symmetric structure pruning}{28}
+\contentsline {subsubsection}{\numberline {12.3.3}The inquiry function {\ptt sp\unhbox \voidb@x \kern .06em \vbox {\hrule width.3em}ienv()}}{29}
+\contentsline {section}{\numberline {13}Porting to other platforms}{29}
+\contentsline {subsection}{\numberline {13.1}Creating multiple threads}{30}
+\contentsline {subsection}{\numberline {13.2}Use of mutexes}{30}
+\contentsline {section}{\numberline {A}Specifications of routines in sequential SuperLU}{33}
+\contentsline {subsection}{\numberline {A.1}{\ptt SGSEQU}}{33}
+\contentsline {subsection}{\numberline {A.2}{\ptt SGSCON}}{34}
+\contentsline {subsection}{\numberline {A.3}{\ptt SGSRFS}}{35}
+\contentsline {subsection}{\numberline {A.4}{\ptt SGSSV}}{37}
+\contentsline {subsection}{\numberline {A.5}{\ptt SGSSVX}}{38}
+\contentsline {subsection}{\numberline {A.6}{\ptt SGSTRF}}{44}
+\contentsline {subsection}{\numberline {A.7}{\ptt SGSTRS}}{47}
+\contentsline {subsection}{\numberline {A.8}{\ptt SLAQGS}}{48}
+\contentsline {section}{\numberline {B}Specifications of routines in parallel SuperLU}{49}
+\contentsline {subsection}{\numberline {B.1}{\ptt PDGSSV}}{49}
+\contentsline {subsection}{\numberline {B.2}{\ptt PDGSSVX}}{50}
+\contentsline {subsection}{\numberline {B.3}{\ptt PDGSTRF}}{56}

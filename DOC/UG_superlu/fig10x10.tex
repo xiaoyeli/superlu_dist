@@ -1,0 +1,82 @@
+\begin{figure}[tbp]
+  \newcommand{\s}{\space}
+  \newcommand{\x}{\bullet}
+  \newcommand{\f}{\circ}
+  \begin{displaymath}
+  \begin{array}{cc}
+{\arraycolsep=3pt
+%\normalsize
+\left(
+\begin{array}{cccccccccc}
+0  & \x & \x & \s & \s & \x & \s & \s & \s & \s \\
+\x & 1  & \s & \x & \s & \s & \s & \x & \s & \s \\
+\s & \s & 2  & \s & \s & \s & \x & \x & \s & \s \\
+\s & \s & \s & 3  & \x & \x & \s & \s & \x & \s \\
+\s & \s & \s & \x & \s & \s & \x & \s & \s & \s \\
+\x & \s & \s & \s & \s & 5  & \s & \s & \x & \s \\
+\s & \s & \s & \s & \s & \s & 6  & \s & \x & \x \\
+\x & \s & \x & \s & \s & \s & \s & \s & \s & \s \\
+\s & \s & \s & \x & \s & \x & \s & \s & 8  & \s \\
+\s & \s & \x & \s & \s & \s & \x & \s & \x & 9
+\end{array}
+\right)  }  \:\:\: &
+{\arraycolsep=3pt
+%\normalsize
+\left(
+\begin{array}{cccccccccc}
+0  & \x & \x & \s & \s & \x & \s & \s & \s & \s \\
+\x & 1  & \x & \x & \s & \x & \s & \x & \s & \s \\
+\s & \s & 2  & \s & \s & \s & \x & \x & \s & \s \\
+\s & \s & \s & 3  & \x & \x & \s & \s & \x & \s \\
+\s & \s & \s & \x & 4  & \x & \x & \s & \x & \s \\
+\x & \x & \x & \x & \x & 5  & \x & \x & \x & \s \\
+\s & \s & \s & \s & \s & \s & 6  & \s & \x & \x \\
+\x & \x & \x & \x & \x & \x & \x & 7  & \x & \x \\
+\s & \s & \s & \x & \x & \x & \x & \x & 8  & \x \\
+\s & \s & \x & \s & \s & \s & \x & \x & \x & 9
+\end{array}
+\right)  }  \\
+  \: & \: \\
+  \mbox{Original matrix $A$} & \mbox{Factors $F=L+U-I$} \\
+  \end{array}
+  \end{displaymath}
+
+\begin{itemize}
+\item \begin{verbatim}
+A = { Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE; nrow = 10; ncol = 10;
+      *Store = { nnz = 32;
+                 nzval = [ ... ];
+                 rowind = [ 0, 1, 5, 7, 0, 1, 0, 2, 7, 9, 1, 3, 4, 8, 3, 0,
+                            3, 5, 8, 2, 4, 6, 9, 1, 2, 3, 5, 6, 8, 9, 6, 9 ];
+                 colptr = [ 0, 4, 6, 10, 14, 15, 19, 23, 25, 30, 32 ];
+               }
+    }
+      \end{verbatim}
+\item \begin{verbatim}
+U = { Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_TRU; nrow = 10; ncol = 10;
+      *Store = { nnz = 14;
+                 nzval = [ ... ];
+                 rowind = [ 0, 1, 1, 0, 1, 2, 4, 5, 1, 2, 5, 3, 4, 5 ];
+                 colptr = [ 0, 0, 0, 2, 3, 3, 5, 8, 11, 14, 14 ];
+               }
+    }
+      \end{verbatim}
+\item \begin{verbatim}
+L = { Stype = SLU_SC; Dtype = SLU_D; Mtype = SLU_TL; nrow = 10; ncol = 10;
+      *Store = { nnz = 43;
+                 nsuper = 4;
+                 nzval = [ ... ];
+                 nzval_colptr = [ 0, 4, 8, 12, 17, 22, 27, 31, 35, 39, 43 ];
+                 rowind = [ 0, 1, 5, 7, 2, 5, 7, 9, 3, 4, 5, 7, 8, 
+                            6, 7, 8, 9 ];
+                 rowind_colptr = [ 0, 0, 4, 8, 8, 8, 13, 13, 13, 13, 17 ];
+                 col_to_sup = [ 0, 0, 1, 2, 2, 2, 3, 3, 3, 3, 4 ];
+                 sup_to_col = [ 0, 2, 3, 6, 10 ];
+               }
+    }
+      \end{verbatim}
+\end{itemize}
+\caption{A sample matrix and its $LU$ factors, as represented in our 
+        {\tt SuperMatrix} data structure. Zero-based indexing is used.}
+  \label{fig:matrixeg}
+\end{figure}

@@ -1,0 +1,874 @@
+% \section{Introduction}
+% \label{sec:intro}
+
+\section{{Purpose of \SuperLU}}
+\label{sec:PurposeofSuperLU}
+
+% 3 kinds of routine, GE exploiting sparsity and architecture
+% routine types (driver (easy and expert) + computational routines)
+%   SuperLU: dgssv, dgssvx, dgstrf etc
+%   SuperLU_MT: pdgssv, pdgssvx, pdgstrf etc
+%   SuperLU_DIST: pdgssvx_ABglobal
+% Overall expert algorithm (mostly common, caveats below)
+%   equilibrate
+%   order
+%     All: columns
+%     SuperLU_DIST: rows too
+%   factor (computation routines handles nonsquare too).
+%   solve
+%   itref (in input precision)
+%   condest (FERR, BERR)
+% good BLAS needed for performance by all 
+% tuning params
+%   SuperLU: see page 19
+%   SuperLU_MT: see page 30, sec 12.3.3, + numthreads
+%   SuperLU_MT: ?? + processor grid
+% error handling
+%   SuperLU: page 20 (usual LAPACK-like xerbla, plus ABORT if malloc fails)
+%   SuperLU_MT: same
+%   SuperLU_DIST: ?
+% Statistics
+%   SuperLU: page 20 (panel sizes, times, flop counts)
+%   SuperLU_MT: same?
+%   SuperLU_DIST: ?
+% memory management
+%   SuperLU: malloc/free or work(lwork); 
+%            estimates space for L and U and expands if necessary;
+%   SuperLU_MT: similar, but cannot expand if first estimate wrong in first release
+%   SuperLU_DIST: ?
+% data types supported:
+%   SuperLU: S,C,D,Z
+%   SuperLU_MT: S,C,D,Z
+%   SuperLU_DIST: D,Z only
+% matrix data structures:
+%   SuperLU: SuperMatrix (NC or NR) for A, SC (Column-supernodal) for L, NC for U
+%   SuperLU_MT: A same, but L is SCP (SC permuted) and U is NCP (NC permuted)
+%   SuperLU_MT: A same, replicated; L and U 2D block cyclic ...
+% Interface issues
+%   SuperLU: matlab MEX file, callable from Fortran
+%   SuperLU_MT?
+%   SuperLU_DIST?
+% column ordering:
+%   SuperLU: Pc from natural, user supplied, MMD on A'*A, or MMD on A'+A
+%   SuperLU_MT: same
+%   SuperLU_DIST: above plus COLAMD
+% saving and reusing old partial information (all 3 functionally similar)
+%   SuperLU: 
+%       start from scratch
+%       reuse perm_c, space for L and U; 
+%       reuse perm_r, perm_c, D_r, D_c, part of L, U, associated data structures
+%       all of L and U etc. if same A but different RHS
+%   SuperLU_MT: same 
+%   SuperLU_DIST: save 
+%       start from scratch
+%       SamePattern: reuse perm_c
+%       SamePattern_SameRowPerm: reuse perm_c, perm_r, D_r, D_c, 
+%                                part of L, U  associated data structures
+%       all of L and U etc. if same A but different RHS
+% pivoting 
+%   SuperLU: threshold pivoting, none and partial as special cases
+%   SuperLU_MT: same
+%   SuperLU_DIST: "static"
+% Parallelism
+%   SuperLU: inside BLAS, if any
+%   SuperLU_MT: threads (see table 5, page 31)
+%   SuperLU_DIST: MPI
+
+
+This document describes a collection of three related 
+ANSI C subroutine libraries for solving sparse linear systems of equations 
+$AX=B$. 
+Here $A$ is a square, nonsingular, $n\times n$ sparse matrix, and
+$X$ and $B$ are dense $n\times nrhs$ matrices, where
+$nrhs$ is the number of right-hand sides and solution vectors.
+The LU factorization routines can handle non-square matrices.
+Matrix $A$ need not be symmetric or definite; indeed, SuperLU is
+particularly appropriate for matrices with very unsymmetric structure.
+All three libraries use variations of Gaussian elimination optimized
+to take advantage of both sparsity and the computer architecture,
+in particular memory hierarchies (caches) and parallelism.
+
+In this introduction we refer to all three libraries collectively as SuperLU.
+The three libraries within SuperLU are as follows. 
+Detailed references are also given (see also \cite{li96}).
+\begin{itemize}
+\item {\bf Sequential SuperLU} is designed for sequential processors with one
+  or more layers of memory hierarchy (caches)~\cite{superlu99}.
+\item {\bf Multithreaded SuperLU (\superlumt)} 
+is designed for shared memory multiprocessors (SMPs),
+and can effectively use up to 16 or 32 parallel processors on sufficiently
+large matrices in order to speed up the computation~\cite{superlu_smp99}.
+\item {\bf Distributed SuperLU (\superlud)}
+is designed for distributed memory parallel
+processors, using MPI \cite{mpi-forum} for interprocess communication.
+It can effectively use hundreds of parallel processors on sufficiently
+large matrices~\cite{lidemmel98,lidemmel03}.
+\end{itemize}
+
+Table~\ref{tab:soft_status} summarizes the current status of the software.
+All the routines are implemented in C, with parallel extensions
+using Pthreads or OpenMP for shared-memory programming, or MPI
+for distributed-memory programming. We provide Fortran
+interface for all three libraries.
+
+\begin{table}[hptb]
+\centering{
+\begin{tabular}{|l|l|l|l|} \hline
+      		&Sequential {\superlu}	&{\superlumt}	&{\superlud} \\ \hline
+Platform	&serial 	&shared-memory	&distributed-memory \\ \hline
+Language	&C            	&C + Pthreads	&C + MPI \\
+(with Fortran interface) &	&(or OpenMP) 	& \\ \hline
+Data type 	&real/complex   &real/complex   &real/complex \\ 
+ 		&single/double  &single/double 	&double \\ \hline
+\end{tabular}
+}
+\caption{SuperLU software status.}
+\label{tab:soft_status}
+\end{table}
+
+The rest of the Introduction is organized as follows.
+Section~\ref{sec:OverallAlgorithm} describes the high-level algorithm used
+by all three libraries, pointing out some common features and differences.
+Section~\ref{sec:Commonalities} describes the detailed algorithms, 
+data structures, and interface issues common to all three routines.
+Section~\ref{sec:Differences} describes how the three routines differ,
+emphasizing the differences that most affect the user.
+Section~\ref{sec:SoftwareStatus} describes the software status,
+including planned developments, bug reporting, and licensing.
+% Section~\ref{sec:DocumentOrganization} describes the organization
+% of the rest of the document.
+
+\section{Overall Algorithm}
+\label{sec:OverallAlgorithm}
+
+A simple description of the algorithm for solving linear equations by
+sparse Gaussian elimination is as follows:
+\begin{enumerate}
+\item Compute a {\em triangular factorization} $P_r D_r A D_c P_c = L U$.
+  Here $D_r$ and $D_c$ are diagonal matrices to equilibrate the system,
+  $P_r$ and $P_c$ are {\em permutation matrices}. Premultiplying $A$ by
+  $P_r$ reorders the rows of $A$, and postmultiplying $A$ by $P_c$ reorders
+  the columns of $A$. $P_r$ and $P_c$ are chosen to enhance sparsity,
+  numerical stability, and parallelism. $L$ is a unit lower triangular matrix
+  ($L_{ii}=1$) and $U$ is an upper triangular matrix.
+  The factorization can also be applied to non-square matrices.
+\item Solve $AX=B$ by evaluating 
+  $X = A^{-1}B = (D_r^{-1}P_r^{-1}LUP_c^{-1}D_c^{-1})^{-1} B
+   = D_c (P_c(U^{-1}(L^{-1}(P_r (D_r B)))))$.
+  This is done efficiently by multiplying from right to left in the last
+  expression: Scale the rows of $B$ by $D_r$.
+  Multiplying $P_rB$ means permuting the rows of $D_r B$.
+  Multiplying $L^{-1}(P_r D_r B)$ means solving $nrhs$ triangular systems
+  of equations with matrix $L$ by substitution. Similarly, multiplying
+  $U^{-1}(L^{-1}(P_r D_r B))$ means solving triangular systems with $U$.
+\end{enumerate}
+
+In addition to complete factorization, we also have limited support
+for incomplete factorization (ILU) preconditioner.
+
+The simplest implementation, used by the ``simple driver'' routines in
+SuperLU and SuperLU\_MT, is as follows:
+
+\vspace*{.1in}
+\noindent
+{\bf Simple Driver Algorithm}
+\begin{enumerate}
+\item{\em Choose $P_c$ to order the columns of $A$} to increase the 
+sparsity of the computed $L$ and $U$ factors, and hopefully increase 
+parallelism (for SuperLU\_MT).
+\item{\em Compute the LU factorization of $AP_c$.} SuperLU and SuperLU\_MT
+can perform dynamic pivoting with row interchanges for numerical stability,
+computing $P_r$, $L$ and $U$ at the same time.
+\item{\em Solve the system} using $P_r$, $P_c$, $L$ and $U$ as described above.
+    ($D_r = D_c = I$)
+\end{enumerate}
+
+The simple driver subroutines for double precision real data are called
+{\tt dgssv} and {\tt pdgssv} for SuperLU and SuperLU\_MT, respectively.
+The letter {\tt d} in the subroutine names means double precision real; 
+other options are 
+{\tt s} for single precision real,
+{\tt c} for single precision complex, and
+{\tt z} for double precision complex.
+The subroutine naming scheme is analogous to the one used in 
+LAPACK \cite{lapackmanual2}.
+SuperLU\_DIST does not include this simple driver.
+
+There is also an ``expert driver'' routine that can provide more accurate
+solutions, compute error bounds, and solve a sequence of related linear systems
+more economically. It is available in all three libraries.
+
+\vspace*{.1in}
+\noindent
+{\bf Expert Driver Algorithm}
+\begin{enumerate}
+\item {\em Equilibrate} the matrix $A$, i.e. compute diagonal matrices $D_r$
+and $D_c$ so that $\hat{A} = D_r A D_c$ is ``better conditioned'' than $A$, 
+i.e. $\hat{A}^{-1}$ is less sensitive to perturbations in $\hat{A}$
+than $A^{-1}$ is to perturbations in $A$.
+\item {\em Preorder the rows of $\hat{A}$ (SuperLU\_DIST only)},
+i.e. replace $\hat{A}$ by $P_r \hat{A}$ where $P_r$ is a permutation matrix.
+We call this step ``static pivoting'', and it is only done in the
+distributed-mmemory algorithm.
+\item {\em Order the columns of $\hat{A}$} to increase the sparsity of the
+computed $L$ and $U$ factors, and hopefully increase parallelism
+(for SuperLU\_MT and  SuperLU\_DIST). In other words,
+replace $\hat{A}$ by $\hat{A} P_c^T$ in SuperLU and SuperLU\_MT,
+or replace $\hat{A}$ by $P_c\hat{A} P_c^T$ in SuperLU\_DIST,
+where $P_c$ is a permutation matrix.
+\item {\em Compute the LU factorization of $\hat{A}$.} SuperLU and SuperLU\_MT
+can perform dynamic pivoting with row interchanges for
+numerical stability.
+In contrast, SuperLU\_DIST uses the order computed by the preordering step 
+but replaces tiny pivots by larger values for stability.
+\item {\em Solve the system} using the computed triangular factors.
+\item {\em Iteratively refine the solution}, again using the computed
+	triangular factors. This is equivalent to Newton's method.
+\item {\em Compute error bounds.} Both forward and backward error bounds
+	are computed, as described below.
+\end{enumerate}
+
+The expert driver subroutines for double precision real data are called 
+{\tt dgssvx}, {\tt pdgssvx} and {\tt pdgssvx} for 
+SuperLU, SuperLU\_MT and SuperLU\_DIST, respectively.
+\ignore{
+Sequential SuperLU also provides single precision real ({\tt s}),
+single precision complex ({\tt c}), and
+double precision complex ({\tt z}) versions.
+SuperLU\_MT only provides double precision real ({\tt d}).
+SuperLU\_DIST provides both
+double precision real ({\tt d}) and complex ({\tt z}).
+}
+The driver routines are composed of several lower level computational routines
+for computing permutations, computing LU factorization, solving triangular
+systems, and so on.
+For large matrices, the LU factorization steps takes most of the
+time, although choosing $P_c$ to order the columns can also be time-consuming.
+
+\section{What the three libraries have in common}
+\label{sec:Commonalities}
+
+% input format, data types
+% column ordering
+% itref, FERR, BERR
+% other output (error, stats)
+% reusing old data
+% need for good BLAS
+% tuning params
+
+\subsection{Input and Output Data Formats}
+
+Sequential SuperLU and {\superlumt} accept $A$ and $B$ as
+single precision real, double precision real, and
+both single and double precision complex.
+{\superlud} accepts double precision real or complex.
+
+$A$ is stored in a sparse data structure according to the struct 
+{\tt SuperMatrix},
+which is described in section~\ref{sec:mt_datastructure}.
+In particular, $A$ may be supplied in either column-compressed format 
+(``Harwell-Boeing format''), or row-compressed format 
+(i.e. $A^T$ stored in column-compressed format).
+$B$, which is overwritten by the solution $X$,
+is stored as a dense matrix in column-major order.
+In SuperLU\_DIST, $A$ and $B$ can be either replicated or
+distributed across all processes.
+
+(The storage of $L$ and $U$ differs among the three libraries, as discussed
+in section~\ref{sec:Differences}.)
+
+\subsection{Tuning Parameters for BLAS}
+
+All three libraries depend on having high performance
+BLAS (Basic Linear Algebra Subroutine) libraries 
+\cite{blas1,blas2,blas3} in order to get high performance.
+In particular, they depend on matrix-vector multiplication
+or matrix-matrix multiplication
+of relatively small dense matrices. The sizes of these
+small dense matrices can be tuned to match the ``sweet spot''
+of the BLAS by setting certain tuning parameters described
+in section~\ref{sec:parameters} for SuperLU,
+in section~\ref{sec:SuperLU_MT_sp_ienv} for SuperLU\_MT, and
+in section~\ref{sec:SuperLU_DIST_sp_ienv} for SuperLU\_DIST.
+
+(In addition, SuperLU\_MT and SuperLU\_DIST let one control
+the number of parallel processes to be used, as described 
+in section~\ref{sec:Differences}.)
+
+\subsection{Performance Statistics}
+
+Most of the computational routines use a struct to record certain
+kinds of performance data, namely the time and number of floating point
+operations in each phase of the computation, and data about the sizes
+of the matrices $L$ and $U$. These statistics are collected
+during the computation.
+A statistic variable is declared with the following type:
+\begin{verbatim}
+    typedef struct {
+        int     *panel_histo; /* histogram of panel size distribution */
+        double  *utime;       /* time spent in various phases */
+        float   *ops;         /* floating-point operations at various phases */
+        int     TinyPivots;   /* number of tiny pivots */
+        int     RefineSteps;  /* number of iterative refinement steps */
+    } SuperLUStat_t;
+\end{verbatim}
+
+For both SuperLU and SuperLU\_MT, there is only one copy of these
+statistics variable. But for SuperLU\_DIST, each process
+keeps a local copy of this variable, and records its local
+statistics. We need to use MPI reduction routines to
+find any global information, such as the sum of the floating-point operation
+count on all processes.
+
+Before the computation, routine {\tt StatInit()} should be called to malloc
+storage and perform initialization for the fields {\tt panel\_histo},
+{\tt utime}, and {\tt ops}. The algorithmic phases are defined by the
+enumeration type {\tt PhaseType} in {\tt SRC/util.h}.
+In the end, routine {\tt StatFree()} should be called to free storage of
+the above statistics fields.
+After deallocation, the statistics are no longer accessible. Therefore,
+users should extract the information they need before calling {\tt StatFree()},
+which can be accomplished by calling {\tt (P)StatPrint()}.
+
+An inquiry function {\tt dQuerySpace()} is provided to compute
+memory usage statistics. This routine should be called after
+the $LU$ factorization. It calculates the storage requirement based on
+the size of the $L$ and $U$ data structures and working arrays.
+
+
+\subsection{Error Handling}
+\label{sec:SuperLU_ErrorHandling}
+\subsubsection{Invalid arguments and (P)XERBLA}
+Similar to LAPACK, for all the SuperLU routines,
+we check the validity of the input arguments to each routine.
+If an illegal value is supplied to one of the input arguments,
+the error handler XERBLA is called, and a message is written to
+the standard output, indicating which argument has an illegal value.
+The program returns immediately from the routine,
+with a negative value of INFO.
+
+\subsubsection{Computational failures with $\mbox{INFO} > 0$}
+A positive value of INFO on return from a routine indicates
+a failure in the course of the computation, such as 
+a matrix being singular, or the amount
+of memory (in bytes) already allocated when malloc fails.
+
+\subsubsection{ABORT on unrecoverable errors}
+\label{sec:abort}
+A macro {\tt ABORT} is defined in {\tt SRC/util.h} to handle
+unrecoverable errors that occur in the middle of the computation,
+such as {\tt malloc} failure. The default action of {\tt ABORT} is to call
+
+{\tt superlu\_abort\_and\_exit(char *msg)}
+
+\noindent which prints an error message, the line number and the file name
+at which the error occurs, and calls the {\tt exit} function to terminate 
+the program.
+
+If this type of termination is not appropriate in some environment,
+users can alter the behavior of the abort function. When compiling the
+\SuperLU\ library, users may choose the C preprocessor definition 
+
+{\tt -DUSER\_ABORT = my\_abort}
+
+\noindent At the same time, users would supply the following
+{\tt my\_abort} function
+
+{\tt my\_abort(char *msg)}
+
+\noindent which overrides the behavior of {\tt superlu\_abort\_and\_exit}.
+
+
+\subsection{Ordering the Columns of $A$ for Sparse Factors}
+
+There is a choice of orderings for the columns of $A$ both in the
+simple or expert driver, in section~\ref{sec:OverallAlgorithm}:
+\begin{itemize}
+\item Natural ordering,%%%% i.e. as supplied by the user,
+\item Multiple Minimum Degree (MMD) \cite{liu85} applied to the structure of $A^TA$,
+\item Multiple Minimum Degree (MMD) \cite{liu85} applied to the structure of $A^T+A$,
+\item Column Approximate Minimum Degree (COLAMD) \cite{davisgilbert04}, and
+\item Use a $P_c$ supplied by the user as input.
+\end{itemize}
+
+COLAMD is designed particularly for unsymmetric matrices when partial
+pivoting is needed, and does not require explicit formation of $A^TA$.
+It usually gives comparable orderings
+as MMD on $A^TA$, and is faster. % and uses less storage.
+
+The orderings based on graph partitioning heuristics are also
+popular, as exemplified in the {\metis} package~\cite{kaku:98a}.
+The user can simply input this ordering in the permutation vector
+for $P_c$. Note that many graph partitioning algorithms are designed
+for symmetric matrices. The user may still apply them to the structures
+of $A^TA$ or $A^T+A$. Our routines {\tt getata()}
+and {\tt at\_plus\_a()} in the file {\tt get\_perm\_c.c} can be used
+to form $A^TA$ or $A^T+A$.
+
+\subsection{Iterative Refinement}
+
+Step 6 of the expert driver algorithm, 
+iterative refinement, serves to increase accuracy of the computed solution.
+Given the initial approximate solution $x$ from step 5, the algorithm for
+step 6 is as follows (where $x$ and $b$ are single columns of $X$ and $B$, 
+respectively):
+
+\begin{tabbing}
+asdf \= asdf \= asdf \= asdf \kill
+\> Compute residual $r = Ax-b$ \\
+\> While residual too large \\
+\> \> Solve $Ad=r$ for correction $d$ \\
+\> \> Update solution $x = x-d$ \\
+\> \> Update residual $r = Ax-b$ \\
+\> end while 
+\end{tabbing}
+
+If $r$ and then $d$ were computed exactly, the updated solution $x-d$ would
+be the exact solution. Roundoff prevents immediate convergence. 
+
+The criterion ``residual too large'' in the iterative refinement algorithm
+above is essentially that 
+\begin{equation}\label{eqn_defBERR}
+BERR \equiv \max_i |r_i|/s_i
+\end{equation}
+exceeds the machine roundoff level, or is continuing to
+decrease quickly enough. Here $s_i$ is the scale factor 
+\[
+s_i = (|A| \cdot |x| + |b|)_i = \sum_j |A_{ij}| \cdot |x_j| + |b_i|
+\]
+In this expression $|A|$ is the $n$-by-$n$ matrix with entries
+$|A|_{ij} = |A_{ij}|$, $|b|$ and $|x|$ are similarly column vectors of
+absolute entries of $b$ and $x$, respectively, 
+and $|A| \cdot |x|$ is conventional matrix-vector multiplication.
+
+The purpose of this stopping criterion is explained in the next section.
+
+\subsection{Error Bounds}
+
+Step 7 of the expert driver algorithm computes error bounds.
+
+It is shown in 
+\cite{arioli89,oettliprager} that $BERR$ defined 
+in Equation (\ref{eqn_defBERR})
+measures the 
+{\em componentwise relative backward error} of the computed solution.
+This means that the computed $x$ satisfies a slightly perturbed
+linear system of equations $(A+E)x=b+f$, where
+$|E_{ij}| \leq BERR \cdot |A_{ij}|$ and
+$|f_{i}| \leq BERR \cdot |b_{i}|$ for all $i$ and $j$.
+It is shown in~\cite{arioli89,skeel80} that one step of iterative
+refinement usually reduces $BERR$ to near machine epsilon.
+For example, if $BERR$ is 4 times machine epsilon, then
+the computed solution $x$ is identical to the
+solution one would get by changing each nonzero entry of $A$ and $b$
+by at most 4 units in their last places, and then solving this perturbed
+system {\em exactly}. If the nonzero entries of $A$ and $b$ are uncertain
+in their bottom 2 bits, then one should generally not expect a more 
+accurate solution.
+Thus $BERR$ is a measure of backward error specifically suited to
+solving sparse linear systems of equations. Despite roundoff, $BERR$ itself
+is always computed to within about $\pm n$ times machine epsilon
+(and usually much more accurately) and so $BERR$ is quite accurate.
+
+In addition to backward error, the expert driver computes a 
+{\em forward error bound} 
+\[
+FERR \geq \|x_{\rm true} - x \|_{\infty} / \| x \|_{\infty}
+\]
+Here $\|x\|_{\infty} \equiv \max_i |x_i|$. Thus, if $FERR = 10^{-6}$ then
+each component of $x$ has an error bounded by about $10^{-6}$ times the
+largest component of $x$. The algorithm used to compute $FERR$ is an
+approximation; see \cite{arioli89,higham96} for a discussion.
+Generally $FERR$ is accurate to within a factor of 10 or better, 
+which is adequate to say how many digits of the large entries of $x$ 
+are correct.
+
+(SuperLU\_DIST's algorithm for $FERR$ is slightly less reliable
+\cite{lidemmel03}.)
+
+\subsection{Solving a Sequence of Related Linear Systems}
+\label{sec_SolvingRelatedSystems}
+
+It is very common to solve a sequence of related
+linear systems 
+$A^{(1)} X^{(1)} = B^{(1)}$,
+$A^{(2)} X^{(2)} = B^{(2)}$, ...
+rather than
+just one. When $A^{(1)}$ and $A^{(2)}$ are similar enough
+in sparsity pattern and/or numerical entries, it is possible
+to save some of the work done when solving with $A^{(1)}$ to solve 
+with $A^{(2)}$. This can result in significant savings.
+Here are the options, in increasing order of ``reuse of prior information'':
+
+\begin{enumerate}
+\item {\em Factor from scratch.} No previous information is used. If one were
+solving just one linear system, or a sequence of unrelated linear systems,
+this is the option to use.
+\item {\em Reuse $P_c$, the column permutation.} The user may save the
+column permutation and reuse it. 
+This is most useful when $A^{(2)}$
+has the same sparsity structure as $A^{(1)}$, but not necessarily the same
+(or similar) numerical entries. 
+Reusing $P_c$ saves the sometimes quite expensive operation of computing it.
+\item {\em Reuse $P_c$, $P_r$ and data structures allocated for $L$ and $U$.}
+If $P_r$ and $P_c$ do not change, then the work of building the data
+structures associated with $L$ and $U$ (including the elimination
+tree~\cite{GilbertNg-IMA}) can be avoided. 
+This is most useful when $A^{(2)}$
+has the same sparsity structure and similar numerical entries as $A^{(1)}$.
+When the numerical entries are not similar, one can still use this option,
+but at a higher risk of numerical instability ($BERR$ will always report
+whether or not the solution was computed stably, so one cannot get an
+unstable answer without warning).
+\item {\em Reuse $P_c$, $P_r$, $L$ and $U$.} In other words, we reuse
+essentially everything. This is most commonly used when $A^{(2)} = A^{(1)}$,
+but $B^{(2)} \neq B^{(1)}$, i.e. when only the right-hand sides differ.
+It could also be used when $A^{(2)}$ and $A^{(1)}$ differed just slightly
+in numerical values, in the hopes that iterative refinement converges
+(using $A^{(2)}$ to compute residuals but the triangular factorization
+of $A^{(1)}$ to solve).
+\end{enumerate}
+
+Because of the different ways $L$ and $U$ are computed and
+stored in the three libraries, these 4 options are specified slightly
+differently; see Chapters~\ref{chap:superlu} through~\ref{chap:superlu_dist}
+for details.
+
+\subsection{Interfacing to other languages}
+
+It is possible to call all the drivers and the computational routines
+from Fortran. However, currently the Fortran wrapper functions are not
+complete.  The users are expected to look at the Fortran example programs
+in the FORTRAN/ directory, together with the C ``bridge''
+routine, and learn how to call SuperLU from a Fortran program.
+The users can modify the C bridge routine to fit their needs.
+
+
+\section{How the three libraries differ}
+\label{sec:Differences}
+% data types
+% output format
+% memory management
+% interface (matlab)
+% pivoting
+% parallelism
+% tuning params
+
+\subsection{Input and Output Data Formats}
+
+All Sequential SuperLU and {\superlumt} routines are available in 
+single and double precision (real or complex), but {\superlud} routines
+are available only in double precision (real or complex).
+
+$L$ and $U$ are stored in different formats in the three libraries:
+\begin{itemize}
+\item {\em $L$ and $U$ in Sequential SuperLU.}
+$L$ is a ``column-supernodal'' matrix, in storage type {\tt SCformat}.
+This means it is stored sparsely, with supernodes
+(consecutive columns with identical structures)
+stored as dense blocks.
+$U$ is stored in column-compressed format {\tt NCformat}.
+See section~\ref{sec:rep} for details.
+\item {\em $L$ and $U$ in SuperLU\_MT.}
+Because of parallelism, the columns of $L$ and $U$ may not
+be computed in consecutive order, so they may be allocated
+and stored out of order. This means we use the 
+``column-supernodal-permuted'' format {\tt SCPformat} for $L$
+and
+``column-permuted'' format {\tt NCPformat} for $U$.
+See section~\ref{sec:mt_datastructure} for details.
+\item {\em $L$ and $U$ in SuperLU\_DIST.}
+  Now $L$ and $U$ are distributed across multiple processors.
+  As described in detail in Sections~\ref{sec:datastruct} and~\ref{sec:grid},
+  we use a 2D block-cyclic format, which has been used for dense
+  matrices in libraries like ScaLAPACK \cite{scalapackmanual}.
+  But for sparse matrices, the blocks are no longer identical
+  in size, and vary depending on the sparsity structure of 
+  $L$ and $U$. The detailed storage format is discussed in
+  section~\ref{sec:datastruct} and illustrated in 
+  Figure~\ref{fig:lu_2d}.
+\end{itemize}
+
+\subsection{Parallelism}
+
+Sequential SuperLU has no explicit parallelism. Some parallelism may
+still be exploited on an SMP by using a multithreaded BLAS library
+if available. But it is likely to be more effective to
+use SuperLU\_MT on an SMP, described next.
+
+SuperLU\_MT lets the user choose the number of parallel
+threads to use. The mechanism varies from platform to
+platform and is described in section~\ref{sec:mt_port}.
+
+SuperLU\_DIST not only lets the user specify the number
+of processors, but how they are arranged into a 2D grid.
+Furthermore, MPI permits any subset of the processors allocated 
+to the user may be used for SuperLU\_DIST, not just consecutively
+numbered processors (say 0 through P-1).
+See section~\ref{sec:grid} for details.
+
+\subsection{Pivoting Strategies for Stability}
+
+Sequential SuperLU and SuperLU\_MT use the same pivoting strategy, called
+{\em threshold pivoting}, to determine the row permutation $P_r$.
+Suppose we have factored the first
+$i-1$ columns of $A$, and are seeking the pivot for column $i$.
+Let $a_{mi}$ be a largest
+entry in magnitude on or below the diagonal of the partially
+factored $A$: $|a_{mi}| = \max_{j \geq i} |a_{ji}|$.
+Depending on a threshold $0 < u \leq 1$
+input by the user, the code will use the diagonal entry
+$a_{ii}$ as the pivot in column $i$ as long as 
+$|a_{ii}| \geq u \cdot |a_{mi}|$, and otherwise use $a_{mi}$.
+So if the user sets $u=1$, $a_{mi}$ (or an equally large entry)
+will be selected as the pivot;
+this corresponds to the classical {\em partial pivoting strategy}.
+If the user has ordered the matrix so that choosing diagonal pivots
+is particularly good for sparsity or parallelism, then
+smaller values of $u$ will tend to choose those diagonal pivots,
+at the risk of less numerical stability.
+Using $u=0$ guarantees that the pivots on the diagonal will 
+be chosen, unless they are zero.
+The error bound $BERR$ measure how much stability is actually lost.
+
+Threshold pivoting turns out to be hard to parallelize on
+distributed memory machines, because of the fine-grain communication
+and dynamic data structures required. So SuperLU\_DIST uses a
+new scheme called {\em static pivoting} instead. In static pivoting
+the pivot order ($P_r$) is chosen before numerical factorization,
+using a weighted perfect matching algorithm~\cite{duffkoster99},
+and kept fixed during factorization. Since both row and column orders
+($P_r$ and $P_c$) are fixed before numerical factorization, we can
+extensively optimize the data layout, load balance, and communication
+schedule. The price is a higher risk of numeric instability,
+which is mitigated by diagonal scaling, setting very tiny pivots
+to larger values, and iterative refinement \cite{lidemmel03}.
+Again, error bound $BERR$ measure how much stability is actually lost.
+
+\subsection{Memory Management}
+
+Because of fill-in of entries during Gaussian elimination,
+$L$ and $U$ typically have many more nonzero entries than $A$.
+If $P_r$ and $P_c$ are not already known, we cannot determine
+the number and locations of these nonzeros before performing 
+the numerical factorization. This means that some kind of
+dynamic memory allocation is needed.
+
+Sequential SuperLU lets the user either supply a preallocated space
+{\tt work[]} of length {\tt lwork}, or depend on malloc/free. The variable
+{\tt FILL} can be used to help the code predict the amount of fill,
+which can reduce both fragmentation and the number of calls to malloc/free.
+If the initial estimate of the size of $L$ and $U$ from {\tt FILL} is
+too small, the routine allocates more space and copies the current $L$ and
+$U$ factors to the new space and frees the old space.
+If the routine cannot allocate enough space, it calls a user-specifiable
+routine ABORT. See sections~\ref{sec:abort} for details.
+
+SuperLU\_MT is similar, except that the current alpha version cannot reallocate
+more space for $L$ and $U$ if the initial size estimate from {\tt FILL}
+is too small. Instead, the program calls ABORT and the user must start over
+with a larger value of {\tt FILL}. See section~\ref{sec:mt_mem}.
+
+SuperLU\_DIST actually has a simpler memory management chore, because
+once $P_r$ and $P_c$ are determined, the structures of $L$ and $U$
+can be determined efficiently and just the right amount of memory
+allocated using malloc and later free. So it will call ABORT only if
+there is really not enough memory available to solve the problem.
+
+
+\subsection{Interfacing to other languages}
+
+Sequential SuperLU has a Matlab interface to the driver via a MEX file.
+See section~\ref{sec:MatlabInterface} for details.
+
+
+\section{Performance}
+\label{sec:perf}
+SuperLU library incorporates a number of novel algorithmic ideas
+developed recently. These algorithms also exploit the features
+of modern computer architectures, in particular, the multi-level
+cache organization and parallelism.
+We have conducted extensive experiments on various platforms, 
+with a large collection of test matrices.
+The Sequential SuperLU achieved up to 40\% of the theoretical floating-point
+rate on a number of processors, see~\cite{superlu99,li96}.
+The megaflop rate usually increases with increasing ratio of floating-point
+operations count over the number of nonzeros in the $L$ and $U$ factors.
+The parallel LU factorization in SuperLU\_MT demonstrated 5--10 fold
+speedups on a range of commercially popular SMPs, and up
+to 2.5 Gigaflops factorization rate, see~\cite{superlu_smp99,li96}.
+The parallel LU factorization in SuperLU\_DIST achieved up to 100 fold
+speedup on a 512-processor Cray T3E, and 10.2 Gigaflops factorization rate,
+see~\cite{lidemmel98}.
+
+
+\section{Software Status and Availability}
+\label{sec:SoftwareStatus}
+
+All three libraries are freely available for all uses, commercial
+or noncommercial, subject to the following caveats.
+No warranty is expressed or implied by the authors, although we will
+gladly answer questions and try to fix all reported bugs.
+We ask that proper credit be given to the authors and that a notice
+be included if any modifications are made.
+
+The following Copyright applies to the whole SuperLU software.
+\begin{quote}
+Copyright (c) 2003, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required 
+approvals from U.S. Dept. of Energy) 
+
+All rights reserved. 
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met: 
+
+(1) Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+(2) Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution. 
+(3) Neither the name of Lawrence Berkeley National Laboratory, U.S. Dept. of
+Energy nor the names of its contributors may be used to endorse or promote
+products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+\end{quote}
+
+Some routines carry the additional notices as follows.
+\begin{enumerate}
+%\item Each subroutine must contain the following disclaimer:
+
+\item Some subroutines carry the following notice:
+\begin{quote}
+  Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+
+  THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+  EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+
+  Permission is hereby granted to use or copy this program for any
+  purpose, provided the above notices are retained on all copies.
+  Permission to modify the code and to distribute modified code is
+  granted, provided the above notices are retained, and a notice that
+  the code was modified is included with the above copyright notice.
+\end{quote}
+
+\item The MC64 routine ({\bf only used in SuperLU\_DIST}) carries the
+      following notice:
+\begin{quote}
+  COPYRIGHT (c) 1999  Council for the Central Laboratory of the
+  Research Councils.    All rights reserved.
+  PACKAGE MC64A/AD
+  AUTHORS Iain Duff (i.duff@rl.ac.uk) and Jacko Koster (jak@ii.uib.no)
+  LAST UPDATE 20/09/99
+  
+  *** Conditions on external use ***
+ 
+  The user shall acknowledge the contribution of this
+  package in any publication of material dependent upon the use of
+  the package. The user shall use reasonable endeavours to notify
+  the authors of the package of this publication.
+  
+  The user can modify this code but, at no time
+  shall the right or title to all or any part of this package pass
+  to the user. The user shall make available free of charge
+  to the authors for any purpose all information relating to any
+  alteration or addition made to this package for the purposes of
+  extending the capabilities or enhancing the performance of this
+  package.
+  
+  The user shall not pass this code directly to a third party without the
+  express prior consent of the authors.  Users wanting to licence their
+  own copy of these routines should send email to hsl@aeat.co.uk
+  
+  None of the comments from the Copyright notice up to and including this
+  one shall be removed or altered in any way.
+\end{quote}
+
+\end{enumerate}
+
+All three libraries can be obtained from the following URLs:
+\begin{verbatim}
+        http://crd.lbl.gov/~xiaoye/SuperLU/
+        http://www.netlib.org/scalapack/prototype/
+\end{verbatim}
+
+\ignore{
+They are also available on the FTP server at UC Berkeley:
+\begin{verbatim}
+        ftp ftp.cs.berkeley.edu
+        login: anonymous
+        ftp> cd /pub/src/lapack/SuperLU
+        ftp> binary
+        ftp> get superlu_2.0.tar.gz
+\end{verbatim}
+}
+
+In the future, we will add more functionality in the software,
+such as sequential and parallel incomplete LU factorizations,
+as well as parallel symbolic and ordering algorithms for 
+SuperLU\_DIST; these latter routines would replace MC64 and have
+no restrictions on external use.
+
+All bugs reports and queries can be e-mailed to
+{\tt xsli@lbl.gov} and {\tt demmel@cs.berkeley.edu}.
+
+
+\ignore{
+\section{Document organization}
+\label{sec:DocumentOrganization}
+
+The rest of this document is organized as follows.
+Chapter~\ref{chap:superlu} describes Sequential SuperLU.
+Chapter~\ref{chap:superlu_mt} describes SuperLU\_MT.
+Chapter~\ref{chap:superlu_dist} describes SuperLU\_DIST.
+Finally, the calling sequence and the leading comment of the
+user-callable routines for all three libraries are
+listed in the appentices.
+
+% {\em Xiaoye, it would be nice if the three subsequent parts,
+% on SuperLU, SuperLU\_MT and SuperLU\_DIST had similar structures,
+% i.e. identical section heading in the same order, whenever
+% possible. We can talk about how much work is worth putting into this.}
+}
+
+
+\section{Acknowledgement}
+With great gratitude, we acknowledge Stan Eisenstat and Joesph Liu for
+their significant contributions to the development of Sequential SuperLU.
+Meiyue Shao helped the development of the incomplete factorization ILU
+routines in sequential SuperLU.
+
+We would like to thank Jinqchong Teo for helping generate the code
+in Sequential SuperLU to work with four floating-point data types,
+and Daniel Schreiber for doing this with SuperLU\_MT.
+
+Yu Wang and William F. Mitchell developed the Fortran 90
+interface for SuperLU\_DIST.  Laura Grigori developed the
+parallel symbolic factorization code for SuperLU\_DIST.
+
+We thank Tim Davis for his contribution of some subroutines related
+to column ordering and suggestions on improving the routines' interfaces.
+We thank Ed Rothberg of Silicon Graphics for discussions and providing
+us access to the SGI Power Challenge during the SuperLU\_MT development.
+% and Sivan Toledo
+
+We acknowledge the following organizations that provided the
+computer resources during our code development:
+NERSC at Lawrence Berkeley National Laboratory, Livermore Computing
+at Lawrence Livermore National Laboratory, NCSA at University of
+Illinois at Urbana-Champaign, Silicon Graphics, and
+Xerox Palo Alto Research Center. 
+We thank UC Berkeley and NSF Infrastructure grant CDA-9401156
+for providing Berkeley NOW.
+

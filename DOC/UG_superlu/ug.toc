@@ -1,0 +1,90 @@
+\contentsline {chapter}{\numberline {1}Introduction}{4}{}%
+\contentsline {section}{\numberline {1.1}{Purpose of \mbox {SuperLU}}}{4}{}%
+\contentsline {section}{\numberline {1.2}Overall Algorithm}{5}{}%
+\contentsline {section}{\numberline {1.3}What the three libraries have in common}{6}{}%
+\contentsline {subsection}{\numberline {1.3.1}Input and Output Data Formats}{6}{}%
+\contentsline {subsection}{\numberline {1.3.2}Tuning Parameters for BLAS}{7}{}%
+\contentsline {subsection}{\numberline {1.3.3}Performance Statistics}{7}{}%
+\contentsline {subsection}{\numberline {1.3.4}Error Handling}{7}{}%
+\contentsline {subsubsection}{Invalid arguments and (P)XERBLA}{7}{}%
+\contentsline {subsubsection}{Computational failures with $\mbox {INFO} > 0$}{8}{}%
+\contentsline {subsubsection}{ABORT on unrecoverable errors}{8}{}%
+\contentsline {subsection}{\numberline {1.3.5}Ordering the Columns of $A$ for Sparse Factors}{8}{}%
+\contentsline {subsection}{\numberline {1.3.6}Iterative Refinement}{9}{}%
+\contentsline {subsection}{\numberline {1.3.7}Error Bounds}{9}{}%
+\contentsline {subsection}{\numberline {1.3.8}Solving a Sequence of Related Linear Systems}{10}{}%
+\contentsline {subsection}{\numberline {1.3.9}Interfacing to other languages}{10}{}%
+\contentsline {section}{\numberline {1.4}How the three libraries differ}{11}{}%
+\contentsline {subsection}{\numberline {1.4.1}Input and Output Data Formats}{11}{}%
+\contentsline {subsection}{\numberline {1.4.2}Parallelism}{11}{}%
+\contentsline {subsection}{\numberline {1.4.3}Pivoting Strategies for Stability}{11}{}%
+\contentsline {subsection}{\numberline {1.4.4}Memory Management}{12}{}%
+\contentsline {subsection}{\numberline {1.4.5}Interfacing to other languages}{12}{}%
+\contentsline {section}{\numberline {1.5}Performance}{12}{}%
+\contentsline {section}{\numberline {1.6}Software Status and Availability}{13}{}%
+\contentsline {section}{\numberline {1.7}Acknowledgement}{14}{}%
+\contentsline {chapter}{\numberline {2}Sequential SuperLU (Version 4.2)}{16}{}%
+\contentsline {section}{\numberline {2.1}About {{\tt SuperLU}}}{16}{}%
+\contentsline {section}{\numberline {2.2}How to call a {{\tt SuperLU}} routine}{17}{}%
+\contentsline {section}{\numberline {2.3}Matrix data structures}{19}{}%
+\contentsline {section}{\numberline {2.4}{\tt Options} argument}{22}{}%
+\contentsline {section}{\numberline {2.5}Permutations}{26}{}%
+\contentsline {subsection}{\numberline {2.5.1}Ordering for sparsity}{26}{}%
+\contentsline {subsection}{\numberline {2.5.2}Partial pivoting with threshold}{27}{}%
+\contentsline {section}{\numberline {2.6}Symmetric Mode}{27}{}%
+\contentsline {section}{\numberline {2.7}Incomplete LU factorization (ILU) preconditioner}{28}{}%
+\contentsline {section}{\numberline {2.8}Memory management for $L$ and $U$}{28}{}%
+\contentsline {section}{\numberline {2.9}User-callable routines}{29}{}%
+\contentsline {subsection}{\numberline {2.9.1}Driver routines}{29}{}%
+\contentsline {subsection}{\numberline {2.9.2}Computational routines}{29}{}%
+\contentsline {subsection}{\numberline {2.9.3}Utility routines}{30}{}%
+\contentsline {section}{\numberline {2.10}Matlab interface}{31}{}%
+\contentsline {section}{\numberline {2.11}Installation}{33}{}%
+\contentsline {subsection}{\numberline {2.11.1}File structure}{33}{}%
+\contentsline {subsection}{\numberline {2.11.2}Testing}{35}{}%
+\contentsline {subsection}{\numberline {2.11.3}Performance-tuning parameters}{36}{}%
+\contentsline {section}{\numberline {2.12}Example programs}{37}{}%
+\contentsline {section}{\numberline {2.13}Calling from Fortran}{37}{}%
+\contentsline {chapter}{\numberline {3}Multithreaded SuperLU (Version 2.0)}{43}{}%
+\contentsline {section}{\numberline {3.1}About SuperLU\_MT}{43}{}%
+\contentsline {section}{\numberline {3.2}Storage types for $L$ and $U$}{43}{}%
+\contentsline {section}{\numberline {3.3}{\tt Options} argument}{44}{}%
+\contentsline {section}{\numberline {3.4}User-callable routines}{45}{}%
+\contentsline {subsection}{\numberline {3.4.1}Driver routines}{45}{}%
+\contentsline {subsection}{\numberline {3.4.2}Computational routines}{46}{}%
+\contentsline {section}{\numberline {3.5}Installation}{47}{}%
+\contentsline {subsection}{\numberline {3.5.1}File structure}{47}{}%
+\contentsline {subsection}{\numberline {3.5.2}Performance issues}{47}{}%
+\contentsline {subsubsection}{Memory management for $L$ and $U$}{47}{}%
+\contentsline {subsubsection}{Symmetric structure pruning}{49}{}%
+\contentsline {subsubsection}{The inquiry function {\tt sp\_ienv()}}{49}{}%
+\contentsline {section}{\numberline {3.6}Example programs}{50}{}%
+\contentsline {section}{\numberline {3.7}Porting to other platforms}{50}{}%
+\contentsline {subsection}{\numberline {3.7.1}Creating multiple threads}{51}{}%
+\contentsline {subsection}{\numberline {3.7.2}Use of mutexes}{51}{}%
+\contentsline {chapter}{\numberline {4}Distributed-memory SuperLU on manycore nodes (Version 4.0)}{52}{}%
+\contentsline {section}{\numberline {4.1}About {{\tt SuperLU\_DIST}}}{52}{}%
+\contentsline {section}{\numberline {4.2}Formats of the input matrices $A$ and $B$}{52}{}%
+\contentsline {subsection}{\numberline {4.2.1}Global input}{52}{}%
+\contentsline {subsection}{\numberline {4.2.2}Distributed input}{52}{}%
+\contentsline {section}{\numberline {4.3}Distributed data structures for $L$ and $U$}{53}{}%
+\contentsline {section}{\numberline {4.4}Process grid and MPI communicator}{54}{}%
+\contentsline {subsection}{\numberline {4.4.1}2D process grid}{54}{}%
+\contentsline {paragraph}{\ }{55}{}%
+\contentsline {subsection}{\numberline {4.4.2}Arbitrary grouping of processes}{55}{}%
+\contentsline {paragraph}{\ }{56}{}%
+\contentsline {section}{\numberline {4.5}Algorithmic background}{56}{}%
+\contentsline {subsection}{\numberline {4.5.1}Multicore and GPU enhancements}{57}{}%
+\contentsline {section}{\numberline {4.6}{\tt Options} argument}{58}{}%
+\contentsline {section}{\numberline {4.7}Basic steps to solve a linear system}{60}{}%
+\contentsline {section}{\numberline {4.8}User-callable routines}{64}{}%
+\contentsline {subsection}{\numberline {4.8.1}Driver routines}{64}{}%
+\contentsline {subsection}{\numberline {4.8.2}Computational routines}{65}{}%
+\contentsline {subsection}{\numberline {4.8.3}Utility routines}{65}{}%
+\contentsline {section}{\numberline {4.9}Installation}{66}{}%
+\contentsline {subsection}{\numberline {4.9.1}File structure and complilation}{66}{}%
+\contentsline {subsection}{\numberline {4.9.2}Performance-tuning parameters}{68}{}%
+\contentsline {section}{\numberline {4.10}Example programs}{69}{}%
+\contentsline {section}{\numberline {4.11}Fortran 90 Interface}{69}{}%
+\contentsline {subsection}{\numberline {4.11.1}Callable functions in the Fortran 90 module file \textsf {spuerlu\_mod.f90}}{74}{}%
+\contentsline {subsection}{\numberline {4.11.2}C wrapper functions callable by Fortran in file \textsf {spuerlu\_c2f\_wrap.c}}{75}{}%

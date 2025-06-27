@@ -1,0 +1,2177 @@
+\appendix
+\chapter{Specifications of routines in sequential SuperLU}
+\label{chap:superlu_spec}
+
+\section{dgsequ}
+\begin{verbatim}
+void
+dgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
+       double *colcnd, double *amax, int *info)
+
+    Purpose   
+    =======   
+
+    DGSEQU computes row and column scalings intended to equilibrate an   
+    M-by-N sparse matrix A and reduce its condition number. R returns the row
+    scale factors and C the column scale factors, chosen to try to make   
+    the largest element in each row and column of the matrix B with   
+    elements B(i,j)=R(i)*A(i,j)*C(j) have absolute value 1.   
+
+    R(i) and C(j) are restricted to be between SMLNUM = smallest safe   
+    number and BIGNUM = largest safe number.  Use of these scaling   
+    factors is not guaranteed to reduce the condition number of A but   
+    works well in practice.   
+
+    See supermatrix.h for the definition of 'SuperMatrix' structure.
+ 
+    Arguments   
+    =========   
+
+    A       (input) SuperMatrix*
+            The matrix of dimension (A->nrow, A->ncol) whose equilibration
+            factors are to be computed. The type of A can be:
+            Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
+	    
+    R       (output) double*, size A->nrow
+            If INFO = 0 or INFO > M, R contains the row scale factors   
+            for A.
+	    
+    C       (output) double*, size A->ncol
+            If INFO = 0,  C contains the column scale factors for A.
+	    
+    rowcnd  (output) double*
+            If INFO = 0 or INFO > M, ROWCND contains the ratio of the   
+            smallest R(i) to the largest R(i).  If ROWCND >= 0.1 and   
+            AMAX is neither too large nor too small, it is not worth   
+            scaling by R.
+	    
+    colcnd  (output) double*
+            If INFO = 0, COLCND contains the ratio of the smallest   
+            C(i) to the largest C(i).  If COLCND >= 0.1, it is not   
+            worth scaling by C.
+	    
+    amax    (output) double*
+            Absolute value of largest matrix element.  If AMAX is very   
+            close to overflow or very close to underflow, the matrix   
+            should be scaled.
+	    
+    info    (output) int*
+            = 0:  successful exit   
+            < 0:  if info = -i, the i-th argument had an illegal value   
+            > 0:  if info = i,  and i is   
+                  <= A->nrow:  the i-th row of A is exactly zero   
+                  >  A->ncol:  the (i-M)-th column of A is exactly zero
+
+\end{verbatim}
+
+\section{dgscon}
+\begin{verbatim}
+void
+dgscon(char *norm, SuperMatrix *L, SuperMatrix *U,
+       double anorm, double *rcond, int *info)
+
+    Purpose   
+    =======   
+
+    DGSCON estimates the reciprocal of the condition number of a general 
+    real matrix A, in either the 1-norm or the infinity-norm, using   
+    the LU factorization computed by DGETRF.   
+
+    An estimate is obtained for norm(inv(A)), and the reciprocal of the   
+    condition number is computed as   
+       RCOND = 1 / ( norm(A) * norm(inv(A)) ).   
+
+    See supermatrix.h for the definition of 'SuperMatrix' structure.
+ 
+    Arguments   
+    =========   
+
+    norm    (input) char*
+            Specifies whether the 1-norm condition number or the   
+            infinity-norm condition number is required:   
+            = '1' or 'O':  1-norm;   
+            = 'I':         Infinity-norm.
+	    
+    L       (input) SuperMatrix*
+            The factor L from the factorization Pr*A*Pc=L*U as computed by
+            dgstrf(). Use compressed row subscripts storage for supernodes,
+            i.e., L has types: Stype = SLU_SC, Dtype = SLU_D, Mtype = SLU_TRLU.
+ 
+    U       (input) SuperMatrix*
+            The factor U from the factorization Pr*A*Pc=L*U as computed by
+            dgstrf(). Use column-wise storage scheme, i.e., U has types:
+            Stype = SLU_NC, Dtype = SLU_D, Mtype = SLU_TRU.
+	    
+    anorm   (input) double
+            If NORM = '1' or 'O', the 1-norm of the original matrix A.   
+            If NORM = 'I', the infinity-norm of the original matrix A.
+	    
+    rcond   (output) double*
+            The reciprocal of the condition number of the matrix A,   
+            computed as RCOND = 1/(norm(A) * norm(inv(A))).
+	    
+    info    (output) int*
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value   
+
+\end{verbatim}
+
+\section{dgsrfs}
+\begin{verbatim}
+void
+dgsrfs(char *trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+       int *perm_r, int *perm_c, char *equed, double *R, double *C,
+       SuperMatrix *B, SuperMatrix *X, 
+       double *ferr, double *berr, int *info)
+
+    Purpose   
+    =======   
+ 
+    DGSRFS improves the computed solution to a system of linear   
+    equations and provides error bounds and backward error estimates for 
+    the solution.   
+ 
+    If equilibration was performed, the system becomes:
+            (diag(R)*A_original*diag(C)) * X = diag(R)*B_original.
+ 
+    See supermatrix.h for the definition of 'SuperMatrix' structure.
+ 
+    Arguments   
+    =========   
+ 
+    trans   (input) char*
+            Specifies the form of the system of equations:   
+            = 'N':  A * X = B     (No transpose)   
+            = 'T':  A**T * X = B  (Transpose)   
+            = 'C':  A**H * X = B  (Conjugate transpose = Transpose)
+    
+    A       (input) SuperMatrix*
+            The original matrix A in the system, or the scaled A if
+            equilibration was done. The type of A can be:
+            Stype = SLU_NC, Dtype = SLU_D, Mtype = SLU_GE.
+     
+    L       (input) SuperMatrix*
+            The factor L from the factorization Pr*A*Pc=L*U. Use
+            compressed row subscripts storage for supernodes, 
+            i.e., L has types: Stype = SLU_SC, Dtype = SLU_D, Mtype = SLU_TRLU.
+  
+    U       (input) SuperMatrix*
+            The factor U from the factorization Pr*A*Pc=L*U as computed by
+            dgstrf(). Use column-wise storage scheme, 
+            i.e., U has types: Stype = SLU_NC, Dtype = SLU_D, Mtype = SLU_TRU.
+ 
+    perm_r  (input) int*, dimension (A->nrow)
+            Row permutation vector, which defines the permutation matrix Pr;
+            perm_r[i] = j means row i of A is in position j in Pr*A.
+ 
+    perm_c  (input) int*, dimension (A->ncol)
+            Column permutation vector, which defines the 
+            permutation matrix Pc; perm_c[i] = j means column i of A is 
+            in position j in A*Pc.
+ 
+    equed   (input) Specifies the form of equilibration that was done.
+            = 'N': No equilibration.
+            = 'R': Row equilibration, i.e., A was premultiplied by diag(R).
+            = 'C': Column equilibration, i.e., A was postmultiplied by
+                   diag(C).
+            = 'B': Both row and column equilibration, i.e., A was replaced 
+                   by diag(R)*A*diag(C).
+ 
+    R       (input) double*, dimension (A->nrow)
+            The row scale factors for A.
+            If equed = 'R' or 'B', A is premultiplied by diag(R).
+            If equed = 'N' or 'C', R is not accessed.
+  
+    C       (input) double*, dimension (A->ncol)
+            The column scale factors for A.
+            If equed = 'C' or 'B', A is postmultiplied by diag(C).
+            If equed = 'N' or 'R', C is not accessed.
+ 
+    B       (input) SuperMatrix*
+            B has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE.
+            The right hand side matrix B.
+            if equed = 'R' or 'B', B is premultiplied by diag(R).
+ 
+    X       (input/output) SuperMatrix*
+            X has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE.
+            On entry, the solution matrix X, as computed by dgstrs().
+            On exit, the improved solution matrix X.
+            if *equed = 'C' or 'B', X should be premultiplied by diag(C)
+                in order to obtain the solution to the original system.
+ 
+    FERR    (output) double*, dimension (B->ncol)   
+            The estimated forward error bound for each solution vector   
+            X(j) (the j-th column of the solution matrix X).   
+            If XTRUE is the true solution corresponding to X(j), FERR(j) 
+            is an estimated upper bound for the magnitude of the largest 
+            element in (X(j) - XTRUE) divided by the magnitude of the   
+            largest element in X(j).  The estimate is as reliable as   
+            the estimate for RCOND, and is almost always a slight   
+            overestimate of the true error.
+ 
+    BERR    (output) double*, dimension (B->ncol)   
+            The componentwise relative backward error of each solution   
+            vector X(j) (i.e., the smallest relative change in   
+            any element of A or B that makes X(j) an exact solution).
+ 
+    info    (output) int*   
+             = 0:  successful exit   
+             < 0:  if INFO = -i, the i-th argument had an illegal value   
+ 
+\end{verbatim}
+
+\section{dgssv}
+\begin{verbatim}
+void
+dgssv(SuperMatrix *A, int *perm_c, int *perm_r, SuperMatrix *L,
+      SuperMatrix *U, SuperMatrix *B, int *info )
+
+    Purpose
+    =======
+  
+    DGSSV solves the system of linear equations A*X=B, using the
+    LU factorization from DGSTRF. It performs the following steps:
+ 
+    1. If A is stored column-wise (A->Stype = SLU_NC):
+ 
+       1.1. Permute the columns of A, forming A*Pc, where Pc
+            is a permutation matrix. For more details of this step, 
+            see sp_preorder.c.
+ 
+       1.2. Factor A as Pr*A*Pc=L*U with the permutation Pr determined
+            by Gaussian elimination with partial pivoting.
+            L is unit lower triangular with offdiagonal entries
+            bounded by 1 in magnitude, and U is upper triangular.
+ 
+       1.3. Solve the system of equations A*X=B using the factored
+            form of A.
+ 
+    2. If A is stored row-wise (A->Stype = SLU_NR), apply the
+       above algorithm to the transpose of A:
+ 
+       2.1. Permute columns of transpose(A) (rows of A),
+            forming transpose(A)*Pc, where Pc is a permutation matrix. 
+            For more details of this step, see sp_preorder.c.
+ 
+       2.2. Factor A as Pr*transpose(A)*Pc=L*U with the permutation Pr
+            determined by Gaussian elimination with partial pivoting.
+            L is unit lower triangular with offdiagonal entries
+            bounded by 1 in magnitude, and U is upper triangular.
+ 
+       2.3. Solve the system of equations A*X=B using the factored
+            form of A.
+ 
+    See supermatrix.h for the definition of 'SuperMatrix' structure.
+  
+    Arguments
+    =========
+ 
+    A       (input) SuperMatrix*
+            Matrix A in A*X=B, of dimension (A->nrow, A->ncol). The number
+            of linear equations is A->nrow. Currently, the type of A can be:
+            Stype = SLU_NC or SLU_NR; Dtype = SLU_D; Mtype = SLU_GE.
+            In the future, more general A may be handled.
+   
+    perm_c  (input/output) int*
+            If A->Stype = SLU_NC, column permutation vector of size A->ncol
+            which defines the permutation matrix Pc; perm_c[i] = j means 
+            column i of A is in position j in A*Pc.
+            On exit, perm_c may be overwritten by the product of the input
+            perm_c and a permutation that postorders the elimination tree
+            of Pc'*A'*A*Pc; perm_c is not changed if the elimination tree
+            is already in postorder.
+   
+            If A->Stype = SLU_NR, column permutation vector of size A->nrow
+            which describes permutation of columns of transpose(A) 
+            (rows of A) as described above.
+    
+    perm_r  (output) int*
+            If A->Stype = SLU_NC, row permutation vector of size A->nrow, 
+            which defines the permutation matrix Pr, and is determined 
+            by partial pivoting.  perm_r[i] = j means row i of A is in 
+            position j in Pr*A.
+   
+            If A->Stype = SLU_NR, permutation vector of size A->ncol, which
+            determines permutation of rows of transpose(A)
+            (columns of A) as described above.
+   
+    L       (output) SuperMatrix*
+            The factor L from the factorization 
+                Pr*A*Pc=L*U              (if A->Stype = SLU_NC) or
+                Pr*transpose(A)*Pc=L*U   (if A->Stype = SLU_NR).
+            Uses compressed row subscripts storage for supernodes, i.e.,
+            L has types: Stype = SLU_SC, Dtype = SLU_D, Mtype = SLU_TRLU.
+            
+    U       (output) SuperMatrix*
+            The factor U from the factorization 
+                Pr*A*Pc=L*U              (if A->Stype = SLU_NC) or
+                Pr*transpose(A)*Pc=L*U   (if A->Stype = SLU_NR).
+            Uses column-wise storage scheme, i.e., U has types:
+            Stype = SLU_NC, Dtype = SLU_D, Mtype = SLU_TRU.
+   
+    B       (input/output) SuperMatrix*
+            B has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE.
+            On entry, the right hand side matrix.
+            On exit, the solution matrix if info = 0;
+   
+    info    (output) int*
+            = 0: successful exit
+            > 0: if info = i, and i is
+                <= A->ncol: U(i,i) is exactly zero. The factorization has
+                   been completed, but the factor U is exactly singular,
+                   so the solution could not be computed.
+                > A->ncol: number of bytes allocated when memory allocation
+                   failure occurred, plus A->ncol.
+
+\end{verbatim}
+
+\section{dgssvx}
+\begin{verbatim}
+void
+dgssvx(char *fact, char *trans, char *refact,
+       SuperMatrix *A, factor_param_t *factor_params, int *perm_c,
+       int *perm_r, int *etree, char *equed, double *R, double *C,
+       SuperMatrix *L, SuperMatrix *U, void *work, int lwork,
+       SuperMatrix *B, SuperMatrix *X, double *recip_pivot_growth, 
+       double *rcond, double *ferr, double *berr, 
+       mem_usage_t *mem_usage, int *info )
+
+    Purpose
+    =======
+   
+    DGSSVX solves the system of linear equations A*X=B or A'*X=B, using
+    the LU factorization from dgstrf(). Error bounds on the solution and
+    a condition estimate are also provided. It performs the following steps:
+   
+      1. If A is stored column-wise (A->Stype = SLU_NC):
+     
+         1.1. If fact = 'E', scaling factors are computed to equilibrate the
+              system:
+                trans = 'N':  diag(R)*A*diag(C)     *inv(diag(C))*X = diag(R)*B
+                trans = 'T': (diag(R)*A*diag(C))**T *inv(diag(R))*X = diag(C)*B
+                trans = 'C': (diag(R)*A*diag(C))**H *inv(diag(R))*X = diag(C)*B
+              Whether or not the system will be equilibrated depends on the
+              scaling of the matrix A, but if equilibration is used, A is
+              overwritten by diag(R)*A*diag(C) and B by diag(R)*B (if trans='N')
+              or diag(C)*B (if trans = 'T' or 'C').
+   
+         1.2. Permute columns of A, forming A*Pc, where Pc is a permutation
+              matrix that usually preserves sparsity.
+              For more details of this step, see sp_preorder.c.
+   
+         1.3. If fact = 'N' or 'E', the LU decomposition is used to factor the
+              matrix A (after equilibration if fact = 'E') as Pr*A*Pc = L*U,
+              with Pr determined by partial pivoting.
+   
+         1.4. Compute the reciprocal pivot growth factor.
+   
+         1.5. If some U(i,i) = 0, so that U is exactly singular, then the
+              routine returns with info = i. Otherwise, the factored form of 
+              A is used to estimate the condition number of the matrix A. If
+              the reciprocal of the condition number is less than machine
+              precision, info = A->ncol+1 is returned as a warning, but the
+              routine still goes on to solve for X and computes error bounds
+              as described below.
+   
+         1.6. The system of equations is solved for X using the factored form
+              of A.
+   
+         1.7. Iterative refinement is applied to improve the computed solution
+              matrix and calculate error bounds and backward error estimates
+              for it.
+   
+         1.8. If equilibration was used, the matrix X is premultiplied by
+              diag(C) (if trans = 'N') or diag(R) (if trans = 'T' or 'C') so
+              that it solves the original system before equilibration.
+   
+      2. If A is stored row-wise (A->Stype = SLU_NR), apply the above algorithm
+         to the transpose of A:
+   
+         2.1. If fact = 'E', scaling factors are computed to equilibrate the
+              system:
+                trans = 'N':  diag(R)*A'*diag(C)     *inv(diag(C))*X = diag(R)*B
+                trans = 'T': (diag(R)*A'*diag(C))**T *inv(diag(R))*X = diag(C)*B
+                trans = 'C': (diag(R)*A'*diag(C))**H *inv(diag(R))*X = diag(C)*B
+              Whether or not the system will be equilibrated depends on the
+              scaling of the matrix A, but if equilibration is used, A' is
+              overwritten by diag(R)*A'*diag(C) and B by diag(R)*B 
+              (if trans='N') or diag(C)*B (if trans = 'T' or 'C').
+   
+         2.2. Permute columns of transpose(A) (rows of A), 
+              forming transpose(A)*Pc, where Pc is a permutation matrix that 
+              usually preserves sparsity.
+              For more details of this step, see sp_preorder.c.
+   
+         2.3. If fact = 'N' or 'E', the LU decomposition is used to factor the
+              transpose(A) (after equilibration if fact = 'E') as 
+              Pr*transpose(A)*Pc = L*U with the permutation Pr determined by
+              partial pivoting.
+   
+         2.4. Compute the reciprocal pivot growth factor.
+   
+         2.5. If some U(i,i) = 0, so that U is exactly singular, then the
+              routine returns with info = i. Otherwise, the factored form 
+              of transpose(A) is used to estimate the condition number of the
+              matrix A. If the reciprocal of the condition number
+              is less than machine precision, info = A->nrow+1 is returned as
+              a warning, but the routine still goes on to solve for X and
+              computes error bounds as described below.
+   
+         2.6. The system of equations is solved for X using the factored form
+              of transpose(A).
+   
+         2.7. Iterative refinement is applied to improve the computed solution
+              matrix and calculate error bounds and backward error estimates
+              for it.
+   
+         2.8. If equilibration was used, the matrix X is premultiplied by
+              diag(C) (if trans = 'N') or diag(R) (if trans = 'T' or 'C') so
+              that it solves the original system before equilibration.
+   
+      See supermatrix.h for the definition of 'SuperMatrix' structure.
+   
+    Arguments
+    =========
+   
+    fact    (input) char*
+            Specifies whether or not the factored form of the matrix
+            A is supplied on entry, and if not, whether the matrix A should
+            be equilibrated before it is factored.
+            = 'F': On entry, L, U, perm_r and perm_c contain the factored
+                   form of A. If equed is not 'N', the matrix A has been
+                   equilibrated with scaling factors R and C.
+                   A, L, U, perm_r are not modified.
+            = 'N': The matrix A will be factored, and the factors will be
+                   stored in L and U.
+            = 'E': The matrix A will be equilibrated if necessary, then
+                   factored into L and U.
+   
+    trans   (input) char*
+            Specifies the form of the system of equations:
+            = 'N': A * X = B        (No transpose)
+            = 'T': A**T * X = B     (Transpose)
+            = 'C': A**H * X = B     (Transpose)
+   
+    refact  (input) char*
+            Specifies whether we want to re-factor the matrix.
+            = 'N': Factor the matrix A.
+            = 'Y': Matrix A was factored before, now we want to re-factor
+                   matrix A with perm_r and etree as inputs. Use
+                   the same storage for the L\U factors previously allocated,
+                   expand it if necessary. User should insure to use the same
+                   memory model.
+            If fact = 'F', then refact is not accessed.
+   
+    A       (input/output) SuperMatrix*
+            Matrix A in A*X=B, of dimension (A->nrow, A->ncol). The number
+            of the linear equations is A->nrow. Currently, the type of A can be:
+            Stype = SLU_NC or SLU_NR, Dtype = SLU_D, Mtype = SLU_GE.
+            In the future, more general A may be handled.
+   
+            On entry, If fact = 'F' and equed is not 'N', then A must have
+            been equilibrated by the scaling factors in R and/or C.  
+            A is not modified if fact = 'F' or 'N', or if fact = 'E' and 
+            equed = 'N' on exit.
+   
+            On exit, if fact = 'E' and equed is not 'N', A is scaled as follows:
+            If A->Stype = SLU_NC:
+              equed = 'R':  A := diag(R) * A
+              equed = 'C':  A := A * diag(C)
+              equed = 'B':  A := diag(R) * A * diag(C).
+            If A->Stype = SLU_NR:
+              equed = 'R':  transpose(A) := diag(R) * transpose(A)
+              equed = 'C':  transpose(A) := transpose(A) * diag(C)
+              equed = 'B':  transpose(A) := diag(R) * transpose(A) * diag(C).
+   
+    factor_params (input) factor_param_t*
+            The structure defines the input scalar parameters, consisting of
+            the following fields. If factor_params = NULL, the default
+            values are used for all the fields; otherwise, the values
+            are given by the user.
+            - panel_size (int): Panel size. A panel consists of at most
+                panel_size consecutive columns. If panel_size = -1, use 
+                default value 8.
+            - relax (int): To control degree of relaxing supernodes. If the
+                number of nodes (columns) in a subtree of the elimination
+                tree is less than relax, this subtree is considered as one
+                supernode, regardless of the row structures of those columns.
+                If relax = -1, use default value 8.
+            - diag_pivot_thresh (double): Diagonal pivoting threshold.
+                At step j of the Gaussian elimination, if
+                    abs(A_jj) >= diag_pivot_thresh * (max_(i>=j) abs(A_ij)),
+                then use A_jj as pivot. 0 <= diag_pivot_thresh <= 1.
+                If diag_pivot_thresh = -1, use default value 1.0,
+                which corresponds to standard partial pivoting.
+            - drop_tol (double): Drop tolerance threshold. (NOT IMPLEMENTED)
+                At step j of the Gaussian elimination, if
+                    abs(A_ij)/(max_i abs(A_ij)) < drop_tol,
+                then drop entry A_ij. 0 <= drop_tol <= 1.
+                If drop_tol = -1, use default value 0.0, which corresponds to
+                standard Gaussian elimination.
+   
+    perm_c  (input/output) int*
+            If A->Stype = SLU_NC, Column permutation vector of size A->ncol,
+            which defines the permutation matrix Pc; perm_c[i] = j means
+            column i of A is in position j in A*Pc.
+            On exit, perm_c may be overwritten by the product of the input
+            perm_c and a permutation that postorders the elimination tree
+            of Pc'*A'*A*Pc; perm_c is not changed if the elimination tree
+            is already in postorder.
+   
+            If A->Stype = SLU_NR, column permutation vector of size A->nrow,
+            which describes permutation of columns of transpose(A) 
+            (rows of A) as described above.
+    
+    perm_r  (input/output) int*
+            If A->Stype = SLU_NC, row permutation vector of size A->nrow, 
+            which defines the permutation matrix Pr, and is determined
+            by partial pivoting.  perm_r[i] = j means row i of A is in 
+            position j in Pr*A.
+   
+            If A->Stype = SLU_NR, permutation vector of size A->ncol, which
+            determines permutation of rows of transpose(A)
+            (columns of A) as described above.
+   
+            If refact is not 'Y', perm_r is output argument;
+            If refact = 'Y', the pivoting routine will try to use the input
+            perm_r, unless a certain threshold criterion is violated.
+            In that case, perm_r is overwritten by a new permutation
+            determined by partial pivoting or diagonal threshold pivoting.
+    
+    etree   (input/output) int*,  dimension (A->ncol)
+            Elimination tree of Pc'*A'*A*Pc.
+            If fact is not 'F' and refact = 'Y', etree is an input argument,
+            otherwise it is an output argument.
+            Note: etree is a vector of parent pointers for a forest whose
+            vertices are the integers 0 to A->ncol-1; etree[root]==A->ncol.
+   
+    equed   (input/output) char*
+            Specifies the form of equilibration that was done.
+            = 'N': No equilibration.
+            = 'R': Row equilibration, i.e., A was premultiplied by diag(R).
+            = 'C': Column equilibration, i.e., A was postmultiplied by diag(C).
+            = 'B': Both row and column equilibration, i.e., A was replaced 
+                   by diag(R)*A*diag(C).
+            If fact = 'F', equed is an input argument, otherwise it is
+            an output argument.
+   
+    R       (input/output) double*, dimension (A->nrow)
+            The row scale factors for A or transpose(A).
+            If equed = 'R' or 'B', A (if A->Stype = SLU_NC) or transpose(A) (if
+                A->Stype = SLU_NR) is multiplied on the left by diag(R).
+            If equed = 'N' or 'C', R is not accessed.
+            If fact = 'F', R is an input argument; otherwise, R is output.
+            If fact = 'F' and equed = 'R' or 'B', each element of R must
+               be positive.
+    
+    C       (input/output) double*, dimension (A->ncol)
+            The column scale factors for A or transpose(A).
+            If equed = 'C' or 'B', A (if A->Stype = SLU_NC) or transpose(A) (if 
+                A->Stype = SLU_NR) is multiplied on the right by diag(C).
+            If equed = 'N' or 'R', C is not accessed.
+            If fact = 'F', C is an input argument; otherwise, C is output.
+            If fact = 'F' and equed = 'C' or 'B', each element of C must
+               be positive.
+            
+    L       (output) SuperMatrix*
+            The factor L from the factorization
+                Pr*A*Pc=L*U              (if A->Stype = SLU_NC) or
+                Pr*transpose(A)*Pc=L*U   (if A->Stype = SLU_NR).
+            Uses compressed row subscripts storage for supernodes, i.e.,
+            L has types: Stype = SLU_SC, Dtype = SLU_D, Mtype = SLU_TRLU.
+   
+    U       (output) SuperMatrix*
+            The factor U from the factorization
+                Pr*A*Pc=L*U              (if A->Stype = SLU_NC) or
+                Pr*transpose(A)*Pc=L*U   (if A->Stype = SLU_NR).
+            Uses column-wise storage scheme, i.e., U has types:
+            Stype = SLU_NC, Dtype = SLU_D, Mtype = SLU_TRU.
+   
+    work    (workspace/output) void*, size (lwork) (in bytes)
+            User supplied workspace, should be large enough
+            to hold data structures for factors L and U.
+            On exit, if fact is not 'F', L and U point to this array.
+   
+    lwork   (input) int
+            Specifies the size of work array in bytes.
+            = 0:  allocate space internally by system malloc;
+            > 0:  use user-supplied work array of length lwork in bytes,
+                  returns error if space runs out.
+            = -1: the routine guesses the amount of space needed without
+                  performing the factorization, and returns it in
+                  mem_usage->total_needed; no other side effects.
+   
+            See argument 'mem_usage' for memory usage statistics.
+   
+    B       (input/output) SuperMatrix*
+            B has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE.
+            On entry, the right hand side matrix.
+            On exit,
+               if equed = 'N', B is not modified; otherwise
+               if A->Stype = SLU_NC:
+                  if trans = 'N' and equed = 'R' or 'B', B is overwritten by
+                     diag(R)*B;
+                  if trans = 'T' or 'C' and equed = 'C' of 'B', B is
+                     overwritten by diag(C)*B;
+               if A->Stype = SLU_NR:
+                  if trans = 'N' and equed = 'C' or 'B', B is overwritten by
+                     diag(C)*B;
+                  if trans = 'T' or 'C' and equed = 'R' of 'B', B is
+                     overwritten by diag(R)*B.
+   
+    X       (output) SuperMatrix*
+            X has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE. 
+            If info = 0 or info = A->ncol+1, X contains the solution matrix
+            to the original system of equations. Note that A and B are modified
+            on exit if equed is not 'N', and the solution to the equilibrated
+            system is inv(diag(C))*X if trans = 'N' and equed = 'C' or 'B',
+            or inv(diag(R))*X if trans = 'T' or 'C' and equed = 'R' or 'B'.
+   
+    recip_pivot_growth (output) double*
+            The reciprocal pivot growth factor max_j( norm(A_j)/norm(U_j) ).
+            The infinity norm is used. If recip_pivot_growth is much less
+            than 1, the stability of the LU factorization could be poor.
+   
+    rcond   (output) double*
+            The estimate of the reciprocal condition number of the matrix A
+            after equilibration (if done). If rcond is less than the machine
+            precision (in particular, if rcond = 0), the matrix is singular
+            to working precision. This condition is indicated by a return
+            code of info > 0.
+   
+    FERR    (output) double*, dimension (B->ncol)   
+            The estimated forward error bound for each solution vector   
+            X(j) (the j-th column of the solution matrix X).   
+            If XTRUE is the true solution corresponding to X(j), FERR(j) 
+            is an estimated upper bound for the magnitude of the largest 
+            element in (X(j) - XTRUE) divided by the magnitude of the   
+            largest element in X(j).  The estimate is as reliable as   
+            the estimate for RCOND, and is almost always a slight   
+            overestimate of the true error.
+   
+    BERR    (output) double*, dimension (B->ncol)
+            The componentwise relative backward error of each solution   
+            vector X(j) (i.e., the smallest relative change in   
+            any element of A or B that makes X(j) an exact solution).
+   
+    mem_usage (output) mem_usage_t*
+            Record the memory usage statistics, consisting of following fields:
+            - for_lu (float)
+              The amount of space used in bytes for L\U data structures.
+            - total_needed (float)
+              The amount of space needed in bytes to perform factorization.
+            - expansions (int)
+              The number of memory expansions during the LU factorization.
+   
+    info    (output) int*
+            = 0: successful exit   
+            < 0: if info = -i, the i-th argument had an illegal value   
+            > 0: if info = i, and i is   
+                 <= A->ncol: U(i,i) is exactly zero. The factorization has   
+                       been completed, but the factor U is exactly   
+                       singular, so the solution and error bounds   
+                       could not be computed.   
+                 = A->ncol+1: U is nonsingular, but RCOND is less than machine
+                       precision, meaning that the matrix is singular to
+                       working precision. Nevertheless, the solution and
+                       error bounds are computed because there are a number
+                       of situations where the computed solution can be more
+                       accurate than the value of RCOND would suggest.   
+                 > A->ncol+1: number of bytes allocated when memory allocation
+                       failure occurred, plus A->ncol.
+   
+\end{verbatim}
+
+
+\section{dgstrf}
+\begin{verbatim}
+void
+dgstrf(char *refact, SuperMatrix *A, double diag_pivot_thresh, 
+       double drop_tol, int relax, int panel_size, int *etree, 
+       void *work, int lwork, int *perm_r, int *perm_c, 
+       SuperMatrix *L, SuperMatrix *U, int *info)
+
+    Purpose
+    =======
+   
+    DGSTRF computes an LU factorization of a general sparse m-by-n
+    matrix A using partial pivoting with row interchanges.
+    The factorization has the form
+        Pr * A = L * U
+    where Pr is a row permutation matrix, L is lower triangular with unit
+    diagonal elements (lower trapezoidal if A->nrow > A->ncol), and U is upper 
+    triangular (upper trapezoidal if A->nrow < A->ncol).
+   
+    See supermatrix.h for the definition of 'SuperMatrix' structure.
+   
+    Arguments
+    =========
+   
+    refact   (input) char*
+             Specifies whether we want to use perm_r from a previous factor.
+             = 'Y': re-use perm_r; perm_r is input, unchanged on exit.
+             = 'N': perm_r is determined by partial pivoting, and output.
+   
+    A        (input) SuperMatrix*
+             Original matrix A, permuted by columns, of dimension
+             (A->nrow, A->ncol). The type of A can be:
+             Stype = SLU_NCP; Dtype = SLU_D; Mtype = SLU_GE.
+   
+    diag_pivot_thresh (input) double
+             Diagonal pivoting threshold. At step j of the Gaussian elimination,
+             if abs(A_jj) >= thresh * (max_(i>=j) abs(A_ij)), use A_jj as pivot.
+             0 <= thresh <= 1. The default value of thresh is 1, corresponding
+             to partial pivoting.
+   
+    drop_tol (input) double (NOT IMPLEMENTED)
+             Drop tolerance parameter. At step j of the Gaussian elimination,
+             if abs(A_ij)/(max_i abs(A_ij)) < drop_tol, drop entry A_ij.
+             0 <= drop_tol <= 1. The default value of drop_tol is 0.
+   
+    relax    (input) int
+             To control degree of relaxing supernodes. If the number
+             of nodes (columns) in a subtree of the elimination tree is less
+             than relax, this subtree is considered as one supernode,
+             regardless of the row structures of those columns.
+   
+    panel_size (input) int
+             A panel consists of at most panel_size consecutive columns.
+   
+    etree    (input) int*, dimension (A->ncol)
+             Elimination tree of A'*A.
+             Note: etree is a vector of parent pointers for a forest whose
+             vertices are the integers 0 to A->ncol-1; etree[root]==A->ncol.
+             On input, the columns of A should be permuted so that the
+             etree is in a certain postorder.
+   
+    work     (input/output) void*, size (lwork) (in bytes)
+             User-supplied work space and space for the output data structures.
+             Not referenced if lwork = 0;
+   
+    lwork    (input) int
+             Specifies the size of work array in bytes.
+             = 0:  allocate space internally by system malloc;
+             > 0:  use user-supplied work array of length lwork in bytes,
+                   returns error if space runs out.
+             = -1: the routine guesses the amount of space needed without
+                   performing the factorization, and returns it in
+                   *info; no other side effects.
+   
+    perm_r   (input/output) int*, dimension (A->nrow)
+             Row permutation vector which defines the permutation matrix Pr,
+             perm_r[i] = j means row i of A is in position j in Pr*A.
+             If refact is not 'Y', perm_r is output argument;
+             If refact = 'Y', the pivoting routine will try to use the input
+             perm_r, unless a certain threshold criterion is violated.
+             In that case, perm_r is overwritten by a new permutation
+             determined by partial pivoting or diagonal threshold pivoting.
+   
+    perm_c   (input) int*, dimension (A->ncol)
+             Column permutation vector, which defines the 
+             permutation matrix Pc; perm_c[i] = j means column i of A is 
+             in position j in A*Pc.
+             When searching for diagonal, perm_c[*] is applied to the
+             row subscripts of A, so that diagonal threshold pivoting
+             can find the diagonal of A, rather than that of A*Pc.
+   
+    L        (output) SuperMatrix*
+             The factor L from the factorization Pr*A=L*U; use compressed row 
+             subscripts storage for supernodes, i.e., L has type: 
+             Stype = SLU_SC, Dtype = SLU_D, Mtype = SLU_TRLU.
+   
+    U        (output) SuperMatrix*
+             The factor U from the factorization Pr*A*Pc=L*U. Use column-wise
+             storage scheme, i.e., U has types: Stype = SLU_NC, 
+             Dtype = SLU_D, Mtype = SLU_TRU.
+   
+    info     (output) int*
+             = 0: successful exit
+             < 0: if info = -i, the i-th argument had an illegal value
+             > 0: if info = i, and i is
+                <= A->ncol: U(i,i) is exactly zero. The factorization has
+                   been completed, but the factor U is exactly singular,
+                   and division by zero will occur if it is used to solve a
+                   system of equations.
+                > A->ncol: number of bytes allocated when memory allocation
+                   failure occurred, plus A->ncol. If lwork = -1, it is
+                   the estimated amount of space needed, plus A->ncol.
+   
+\end{verbatim}
+
+\section{dgstrs}
+\begin{verbatim}
+void
+dgstrs(char *trans, SuperMatrix *L, SuperMatrix *U,
+       int *perm_r, int *perm_c, SuperMatrix *B, int *info)
+
+    Purpose
+    =======
+   
+    DGSTRS solves a system of linear equations A*X=B or A'*X=B
+    with A sparse and B dense, using the LU factorization computed by
+    DGSTRF.
+   
+    See supermatrix.h for the definition of 'SuperMatrix' structure.
+   
+    Arguments
+    =========
+   
+    trans   (input) char*
+            Specifies the form of the system of equations:
+            = 'N':  A * X = B  (No transpose)
+            = 'T':  A'* X = B  (Transpose)
+            = 'C':  A**H * X = B  (Conjugate transpose)
+   
+    L       (input) SuperMatrix*
+            The factor L from the factorization Pr*A*Pc=L*U as computed by
+            dgstrf(). Use compressed row subscripts storage for supernodes,
+            i.e., L has types: Stype = SLU_SC, Dtype = SLU_D, Mtype = SLU_TRLU.
+   
+    U       (input) SuperMatrix*
+            The factor U from the factorization Pr*A*Pc=L*U as computed by
+            dgstrf(). Use column-wise storage scheme, i.e., U has types:
+            Stype = SLU_NC, Dtype = SLU_D, Mtype = SLU_TRU.
+   
+    perm_r  (input) int*, dimension (L->nrow)
+            Row permutation vector, which defines the permutation matrix Pr; 
+            perm_r[i] = j means row i of A is in position j in Pr*A.
+   
+    perm_c  (input) int*, dimension (L->ncol)
+            Column permutation vector, which defines the 
+            permutation matrix Pc; perm_c[i] = j means column i of A is 
+            in position j in A*Pc.
+   
+    B       (input/output) SuperMatrix*
+            B has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE.
+            On entry, the right hand side matrix.
+            On exit, the solution matrix if info = 0;
+   
+    info    (output) int*
+            = 0: successful exit
+            < 0: if info = -i, the i-th argument had an illegal value
+   
+\end{verbatim}
+
+
+\section{dlaqgs}
+\begin{verbatim}
+void
+dlaqgs(SuperMatrix *A, double *r, double *c, 
+       double rowcnd, double colcnd, double amax, char *equed)
+
+    Purpose   
+    =======   
+
+    DLAQGS equilibrates a general sparse M by N matrix A using the row and   
+    scaling factors in the vectors R and C.   
+
+    See supermatrix.h for the definition of 'SuperMatrix' structure.
+
+    Arguments   
+    =========   
+
+    A       (input/output) SuperMatrix*
+            On exit, the equilibrated matrix.  See EQUED for the form of 
+            the equilibrated matrix. The type of A can be:
+            Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
+	    
+    R       (input) double*, dimension (A->nrow)
+            The row scale factors for A.
+	    
+    C       (input) double*, dimension (A->ncol)
+            The column scale factors for A.
+	    
+    rowcnd  (input) double
+            Ratio of the smallest R(i) to the largest R(i).
+	    
+    colcnd  (input) double
+            Ratio of the smallest C(i) to the largest C(i).
+	    
+    amax    (input) double
+            Absolute value of largest matrix entry.
+	    
+    equed   (output) char*
+            Specifies the form of equilibration that was done.   
+            = 'N':  No equilibration   
+            = 'R':  Row equilibration, i.e., A has been premultiplied by  
+                    diag(R).   
+            = 'C':  Column equilibration, i.e., A has been postmultiplied  
+                    by diag(C).   
+            = 'B':  Both row and column equilibration, i.e., A has been
+                    replaced by diag(R) * A * diag(C).   
+
+\end{verbatim}
+
+
+\chapter{Specifications of routines in multithreaded SuperLU\_MT}
+\label{chap:superlu_mt_spec}
+
+\section{pdgssv}
+\begin{verbatim}
+void
+pdgssv(int nprocs, SuperMatrix *A, int *perm_c, int *perm_r, 
+       SuperMatrix *L, SuperMatrix *U, SuperMatrix *B, int *info )
+
+
+    Purpose
+    =======
+
+    pdgssv() solves the system of linear equations A*X=B, using the parallel
+    LU factorization routine pdgstrf(). It performs the following steps:
+
+      1. If A is stored column-wise (A->Stype = SLU_NC):
+
+         1.1. Permute the columns of A, forming A*Pc, where Pc is a 
+              permutation matrix. 
+              For more details of this step, see sp_preorder.c.
+
+         1.2. Factor A as Pr*A*Pc=L*U with the permutation Pr determined
+              by Gaussian elimination with partial pivoting.
+              L is unit lower triangular with offdiagonal entries
+              bounded by 1 in magnitude, and U is upper triangular.
+
+         1.3. Solve the system of equations A*X=B using the factored
+              form of A.
+
+      2. If A is stored row-wise (A->Stype = SLU_NR), apply the above algorithm
+         to the transpose of A:
+
+         2.1. Permute columns of transpose(A) (rows of A),
+              forming transpose(A)*Pc, where Pc is a permutation matrix. 
+              For more details of this step, see sp_preorder.c.
+
+         2.2. Factor A as Pr*transpose(A)*Pc=L*U with the permutation Pr
+              determined by Gaussian elimination with partial pivoting.
+              L is unit lower triangular with offdiagonal entries
+              bounded by 1 in magnitude, and U is upper triangular.
+
+         2.3. Solve the system of equations A*X=B using the factored
+
+    
+      See supermatrix.h for the definition of "SuperMatrix" structure.
+
+    Arguments
+    =========
+
+    nprocs (input) int
+           Number of processes (or threads) to be spawned and used to perform
+           the LU factorization by pdgstrf(). There is a single thread of
+           control to call pdgstrf(), and all threads spawned by pdgstrf()
+           are terminated before returning from pdgstrf().
+
+    A      (input) SuperMatrix*
+           Matrix A in A*X=B, of dimension (A->nrow, A->ncol), where
+           A->nrow = A->ncol. Currently, the type of A can be:
+           Stype = SLU_NC or SLU_NR; Dtype = SLU_D; Mtype = SLU_GE.
+           In the future, more general A may be handled.
+
+    perm_c (input/output) int*
+           If A->Stype = SLU_NC, column permutation vector of size A->ncol,
+           which defines the permutation matrix Pc; perm_c[i] = j means 
+           column i of A is in position j in A*Pc.
+           On exit, perm_c may be overwritten by the product of the input
+           perm_c and a permutation that postorders the elimination tree
+           of Pc'*A'*A*Pc; perm_c is not changed if the elimination tree
+           is already in postorder.
+
+           If A->Stype = SLU_NR, column permutation vector of size A->nrow
+           which describes permutation of columns of transpose(A) 
+           (rows of A) as described above.
+
+    perm_r (output) int*,
+           If A->Stype = SLU_NR, row permutation vector of size A->nrow, 
+           which defines the permutation matrix Pr, and is determined 
+           by partial pivoting.  perm_r[i] = j means row i of A is in 
+           position j in Pr*A.
+
+           If A->Stype = SLU_NC, permutation vector of size A->ncol, which
+           determines permutation of rows of transpose(A)
+           (columns of A) as described above.
+
+    L      (output) SuperMatrix*
+           The factor L from the factorization 
+               Pr*A*Pc=L*U              (if A->Stype=SLU_NC) or
+               Pr*transpose(A)*Pc=L*U   (if A->Stype=SLU_NR).
+           Uses compressed row subscripts storage for supernodes, i.e.,
+           L has types: Stype = SLU_SCP, Dtype = SLU_D, Mtype = SLU_TRLU.
+
+    U      (output) SuperMatrix*
+           The factor U from the factorization
+               Pr*A*Pc=L*U              (if A->Stype=SLU_NC) or
+               Pr*transpose(A)*Pc=L*U   (if A->Stype=SLU_NR).
+           Use column-wise storage scheme, i.e., U has types:
+           Stype = SLU_NCP, Dtype = SLU_D, Mtype = SLU_TRU.
+
+    B      (input/output) SuperMatrix*
+           B has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE.
+           On entry, the right hand side matrix.
+           On exit, the solution matrix if info = 0;
+
+    info   (output) int*
+           = 0: successful exit
+           > 0: if info = i, and i is
+                <= A->ncol: U(i,i) is exactly zero. The factorization has
+                   been completed, but the factor U is exactly singular,
+                   so the solution could not be computed.
+                > A->ncol: number of bytes allocated when memory allocation
+                   failure occurred, plus A->ncol.
+\end{verbatim}
+
+
+\section{pdgssvx}
+\begin{verbatim}
+void
+pdgssvx(int nprocs, pdgstrf_options_t *pdgstrf_options, SuperMatrix *A, 
+        int *perm_c, int *perm_r, equed_t *equed, double *R, double *C,
+        SuperMatrix *L, SuperMatrix *U,
+        SuperMatrix *B, SuperMatrix *X, double *recip_pivot_growth, 
+        double *rcond, double *ferr, double *berr, 
+        superlu_memusage_t *superlu_memusage, int *info)
+
+
+    Purpose
+    =======
+
+    PDGSSVX solves the system of linear equations A*X=B or A'*X=B, using
+    the LU factorization from dgstrf(). Error bounds on the solution and
+    a condition estimate are also provided. It performs the following steps:
+
+    1. If A is stored column-wise (A->Stype = SLU_NC):
+
+       1.1. If fact = EQUILIBRATE, scaling factors are computed to equilibrate
+            the system:
+              trans = NOTRANS: diag(R)*A*diag(C)*inv(diag(C))*X = diag(R)*B
+              trans = TRANS:  (diag(R)*A*diag(C))**T *inv(diag(R))*X = diag(C)*B
+              trans = CONJ:   (diag(R)*A*diag(C))**H *inv(diag(R))*X = diag(C)*B
+            Whether or not the system will be equilibrated depends on the
+            scaling of the matrix A, but if equilibration is used, A is
+            overwritten by diag(R)*A*diag(C) and B by diag(R)*B 
+            (if trans = NOTRANS) or diag(C)*B (if trans = TRANS or CONJ).
+
+       1.2. Permute columns of A, forming A*Pc, where Pc is a permutation matrix
+            that usually preserves sparsity.
+            For more details of this step, see sp_colorder.c.
+
+       1.3. If fact = DOFACT or EQUILIBRATE, the LU decomposition is used to 
+            factor the matrix A (after equilibration if fact = EQUILIBRATE) as
+            Pr*A*Pc = L*U, with Pr determined by partial pivoting.
+
+       1.4. Compute the reciprocal pivot growth factor.
+
+       1.5. If some U(i,i) = 0, so that U is exactly singular, then the routine
+            returns with info = i. Otherwise, the factored form of A is used to
+            estimate the condition number of the matrix A. If the reciprocal of
+            the condition number is less than machine precision, 
+            info = A->ncol+1 is returned as a warning, but the routine still
+            goes on to solve for X and computes error bounds as described below.
+
+       1.6. The system of equations is solved for X using the factored form
+            of A.
+
+       1.7. Iterative refinement is applied to improve the computed solution
+            matrix and calculate error bounds and backward error estimates
+            for it.
+
+       1.8. If equilibration was used, the matrix X is premultiplied by
+            diag(C) (if trans = NOTRANS) or diag(R) (if trans = TRANS or CONJ)
+            so that it solves the original system before equilibration.
+
+    2. If A is stored row-wise (A->Stype = SLU_NR), apply the above algorithm
+       to the transpose of A:
+
+       2.1. If fact = EQUILIBRATE, scaling factors are computed to equilibrate
+            the system:
+              trans = NOTRANS:diag(R)*A'*diag(C)*inv(diag(C))*X = diag(R)*B
+              trans = TRANS: (diag(R)*A'*diag(C))**T *inv(diag(R))*X = diag(C)*B
+              trans = CONJ:  (diag(R)*A'*diag(C))**H *inv(diag(R))*X = diag(C)*B
+            Whether or not the system will be equilibrated depends on the
+            scaling of the matrix A, but if equilibration is used, A' is
+            overwritten by diag(R)*A'*diag(C) and B by diag(R)*B 
+            (if trans = NOTRANS) or diag(C)*B (if trans = TRANS or CONJ).
+
+       2.2. Permute columns of transpose(A) (rows of A), 
+            forming transpose(A)*Pc, where Pc is a permutation matrix that
+            usually preserves sparsity.
+            For more details of this step, see sp_colorder.c.
+
+       2.3. If fact = DOFACT or EQUILIBRATE, the LU decomposition is used to 
+            factor the matrix A (after equilibration if fact = EQUILIBRATE) as
+            Pr*transpose(A)*Pc = L*U, with the permutation Pr determined by
+            partial pivoting.
+
+       2.4. Compute the reciprocal pivot growth factor.
+
+       2.5. If some U(i,i) = 0, so that U is exactly singular, then the routine
+            returns with info = i. Otherwise, the factored form of transpose(A)
+            is used to estimate the condition number of the matrix A.
+            If the reciprocal of the condition number is less than machine
+            precision, info = A->nrow+1 is returned as a warning, but the
+            routine still goes on to solve for X and computes error bounds
+            as described below.
+
+       2.6. The system of equations is solved for X using the factored form
+            of transpose(A).
+
+       2.7. Iterative refinement is applied to improve the computed solution
+            matrix and calculate error bounds and backward error estimates
+            for it.
+
+       2.8. If equilibration was used, the matrix X is premultiplied by
+            diag(C) (if trans = NOTRANS) or diag(R) (if trans = TRANS or CONJ)
+            so that it solves the original system before equilibration.
+
+      See supermatrix.h for the definition of 'SuperMatrix' structure.
+
+    Arguments
+    =========
+ 
+    procs (input) int
+            Number of processes (or threads) to be spawned and used to perform
+            the LU factorization by pdgstrf(). There is a single thread of
+            control to call pdgstrf(), and all threads spawned by pdgstrf() 
+            are terminated before returning from pdgstrf().
+
+    pdgstrf_options (input) pdgstrf_options_t*
+            The structure defines the input parameters and data structure
+            to control how the LU factorization will be performed.
+            The following fields should be defined for this structure:
+
+            o fact (fact_t)
+              Specifies whether or not the factored form of the matrix
+              A is supplied on entry, and if not, whether the matrix A should
+              be equilibrated before it is factored.
+              = FACTORED: On entry, L, U, perm_r and perm_c contain the 
+                factored form of A. If equed is not NOEQUIL, the matrix A has
+                been equilibrated with scaling factors R and C.
+                A, L, U, perm_r are not modified.
+              = DOFACT: The matrix A will be factored, and the factors will be
+                stored in L and U.
+              = EQUILIBRATE: The matrix A will be equilibrated if necessary,
+                then factored into L and U.
+
+            o trans (trans_t)
+              Specifies the form of the system of equations:
+              = NOTRANS: A * X = B        (No transpose)
+              = TRANS:   A**T * X = B     (Transpose)
+              = CONJ:    A**H * X = B     (Transpose)
+
+            o refact (yes_no_t)
+              Specifies whether this is first time or subsequent factorization.
+              = NO:  this factorization is treated as the first one;
+              = YES: it means that a factorization was performed prior to this
+                  one. Therefore, this factorization will reuse some
+                  existing data structures, such as L and U storage, column
+                  elimination tree, and the symbolic information of the
+                  Householder matrix.
+
+            o panel_size (int)
+              A panel consists of at most panel_size consecutive columns.
+
+            o relax (int)
+              To control degree of relaxing supernodes. If the number
+              of nodes (columns) in a subtree of the elimination tree is less
+              than relax, this subtree is considered as one supernode,
+              regardless of the row structures of those columns.
+
+            o diag_pivot_thresh (double)
+              Diagonal pivoting threshold. At step j of the Gaussian 
+              elimination, if 
+                  abs(A_jj) >= diag_pivot_thresh * (max_(i>=j) abs(A_ij)),
+              use A_jj as pivot, else use A_ij with maximum magnitude. 
+              0 <= diag_pivot_thresh <= 1. The default value is 1, 
+              corresponding to partial pivoting.
+
+            o usepr (yes_no_t)
+              Whether the pivoting will use perm_r specified by the user.
+              = YES: use perm_r; perm_r is input, unchanged on exit.
+              = NO:  perm_r is determined by partial pivoting, and is output.
+
+            o drop_tol (double) (NOT IMPLEMENTED)
+              Drop tolerance parameter. At step j of the Gaussian elimination,
+              if abs(A_ij)/(max_i abs(A_ij)) < drop_tol, drop entry A_ij.
+              0 <= drop_tol <= 1. The default value of drop_tol is 0,
+              corresponding to not dropping any entry.
+
+            o work (void*) of size lwork
+              User-supplied work space and space for the output data structures.
+              Not referenced if lwork = 0;
+
+            o lwork (int)
+              Specifies the length of work array.
+              = 0:  allocate space internally by system malloc;
+              > 0:  use user-supplied work array of length lwork in bytes,
+                    returns error if space runs out.
+              = -1: the routine guesses the amount of space needed without
+                    performing the factorization, and returns it in
+                    superlu_memusage->total_needed; no other side effects.
+
+    A       (input/output) SuperMatrix*
+            Matrix A in A*X=B, of dimension (A->nrow, A->ncol), where
+            A->nrow = A->ncol. Currently, the type of A can be:
+            Stype = SLU_NC or SLU_NR, Dtype = SLU_D, Mtype = SLU_GE.
+            In the future, more general A may be handled.
+
+            On entry, If pdgstrf_options->fact = FACTORED and equed is not 
+            NOEQUIL, then A must have been equilibrated by the scaling factors
+            in R and/or C.  On exit, A is not modified 
+            if pdgstrf_options->fact = FACTORED or DOFACT, or 
+            if pdgstrf_options->fact = EQUILIBRATE and equed = NOEQUIL.
+
+            On exit, if pdgstrf_options->fact = EQUILIBRATE and equed is not
+            NOEQUIL, A is scaled as follows:
+            If A->Stype = SLU_NC:
+              equed = ROW:  A := diag(R) * A
+              equed = COL:  A := A * diag(C)
+              equed = BOTH: A := diag(R) * A * diag(C).
+            If A->Stype = SLU_NR:
+              equed = ROW:  transpose(A) := diag(R) * transpose(A)
+              equed = COL:  transpose(A) := transpose(A) * diag(C)
+              equed = BOTH: transpose(A) := diag(R) * transpose(A) * diag(C).
+
+    perm_c  (input/output) int*
+            If A->Stype = SLU_NC, Column permutation vector of size A->ncol,
+            which defines the permutation matrix Pc; perm_c[i] = j means
+            column i of A is in position j in A*Pc.
+            On exit, perm_c may be overwritten by the product of the input
+            perm_c and a permutation that postorders the elimination tree
+            of Pc'*A'*A*Pc; perm_c is not changed if the elimination tree
+            is already in postorder.
+
+            If A->Stype = SLU_NR, column permutation vector of size A->nrow,
+            which describes permutation of columns of transpose(A) 
+            (rows of A) as described above.
+    
+    perm_r  (input/output) int*
+            If A->Stype = SLU_NC, row permutation vector of size A->nrow, 
+            which defines the permutation matrix Pr, and is determined
+            by partial pivoting.  perm_r[i] = j means row i of A is in 
+            position j in Pr*A.
+
+            If A->Stype = SLU_NR, permutation vector of size A->ncol, which
+            determines permutation of rows of transpose(A)
+            (columns of A) as described above.
+
+            If pdgstrf_options->usepr = NO, perm_r is output argument;
+            If pdgstrf_options->usepr = YES, the pivoting routine will try 
+               to use the input perm_r, unless a certain threshold criterion
+               is violated. In that case, perm_r is overwritten by a new
+               permutation determined by partial pivoting or diagonal 
+               threshold pivoting.
+
+    equed   (input/output) equed_t*
+            Specifies the form of equilibration that was done.
+            = NOEQUIL: No equilibration.
+            = ROW:  Row equilibration, i.e., A was premultiplied by diag(R).
+            = COL:  Column equilibration, i.e., A was postmultiplied by diag(C).
+            = BOTH: Both row and column equilibration, i.e., A was replaced 
+                    by diag(R)*A*diag(C).
+            If pdgstrf_options->fact = FACTORED, equed is an input argument, 
+            otherwise it is an output argument.
+
+    R       (input/output) double*, dimension (A->nrow)
+            The row scale factors for A or transpose(A).
+            If equed = ROW or BOTH, A (if A->Stype = SLU_NC) or transpose(A)
+               (if A->Stype = SLU_NR) is multiplied on the left by diag(R).
+            If equed = NOEQUIL or COL, R is not accessed.
+            If fact = FACTORED, R is an input argument; otherwise, R is output.
+            If fact = FACTORED and equed = ROW or BOTH, each element of R must
+               be positive.
+
+    C       (input/output) double*, dimension (A->ncol)
+            The column scale factors for A or transpose(A).
+            If equed = COL or BOTH, A (if A->Stype = SLU_NC) or transpose(A)
+               (if A->Stype = SLU_NR) is multiplied on the right by diag(C).
+            If equed = NOEQUIL or ROW, C is not accessed.
+            If fact = FACTORED, C is an input argument; otherwise, C is output.
+            If fact = FACTORED and equed = COL or BOTH, each element of C must
+               be positive.
+
+    L       (output) SuperMatrix*
+            The factor L from the factorization
+                Pr*A*Pc=L*U              (if A->Stype = SLU_NC) or
+                Pr*transpose(A)*Pc=L*U   (if A->Stype = SLU_NR).
+            Uses compressed row subscripts storage for supernodes, i.e.,
+            L has types: Stype = SLU_SCP, Dtype = SLU_D, Mtype = SLU_TRLU.
+
+    U       (output) SuperMatrix*
+            The factor U from the factorization
+                Pr*A*Pc=L*U              (if A->Stype = SLU_NC) or
+                Pr*transpose(A)*Pc=L*U   (if A->Stype = SLU_NR).
+            Uses column-wise storage scheme, i.e., U has types:
+            Stype = SLU_NCP, Dtype = SLU_D, Mtype = SLU_TRU.
+
+    B       (input/output) SuperMatrix*
+            B has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE.
+            On entry, the right hand side matrix.
+            On exit,
+               if equed = NOEQUIL, B is not modified; otherwise
+               if A->Stype = SLU_NC:
+                  if trans = NOTRANS and equed = ROW or BOTH, B is overwritten
+                     by diag(R)*B;
+                  if trans = TRANS or CONJ and equed = COL of BOTH, B is
+                     overwritten by diag(C)*B;
+               if A->Stype = SLU_NR:
+                  if trans = NOTRANS and equed = COL or BOTH, B is overwritten
+                     by diag(C)*B;
+                  if trans = TRANS or CONJ and equed = ROW of BOTH, B is
+                     overwritten by diag(R)*B.
+
+    X       (output) SuperMatrix*
+            X has types: Stype = SLU_DN, Dtype = SLU_D, Mtype = SLU_GE. 
+            If info = 0 or info = A->ncol+1, X contains the solution matrix
+            to the original system of equations. Note that A and B are modified
+            on exit if equed is not NOEQUIL, and the solution to the 
+            equilibrated system is inv(diag(C))*X if trans = NOTRANS and
+            equed = COL or BOTH, or inv(diag(R))*X if trans = TRANS or CONJ
+            and equed = ROW or BOTH.
+
+    recip_pivot_growth (output) double*
+            The reciprocal pivot growth factor computed as
+                max_j ( max_i(abs(A_ij)) / max_i(abs(U_ij)) ).
+            If recip_pivot_growth is much less than 1, the stability of the
+            LU factorization could be poor.
+
+    rcond   (output) double*
+            The estimate of the reciprocal condition number of the matrix A
+            after equilibration (if done). If rcond is less than the machine
+            precision (in particular, if rcond = 0), the matrix is singular
+            to working precision. This condition is indicated by a return
+            code of info > 0.
+
+    ferr    (output) double*, dimension (B->ncol)   
+            The estimated forward error bound for each solution vector   
+            X(j) (the j-th column of the solution matrix X).   
+            If XTRUE is the true solution corresponding to X(j), FERR(j) 
+            is an estimated upper bound for the magnitude of the largest 
+            element in (X(j) - XTRUE) divided by the magnitude of the   
+            largest element in X(j).  The estimate is as reliable as   
+            the estimate for RCOND, and is almost always a slight   
+            overestimate of the true error.
+
+    berr    (output) double*, dimension (B->ncol)
+            The componentwise relative backward error of each solution   
+            vector X(j) (i.e., the smallest relative change in   
+            any element of A or B that makes X(j) an exact solution).
+
+    superlu_memusage (output) superlu_memusage_t*
+            Record the memory usage statistics, consisting of following fields:
+            - for_lu (float)
+              The amount of space used in bytes for L\U data structures.
+            - total_needed (float)
+              The amount of space needed in bytes to perform factorization.
+            - expansions (int)
+              The number of memory expansions during the LU factorization.
+
+    info    (output) int*
+            = 0: successful exit   
+            < 0: if info = -i, the i-th argument had an illegal value   
+            > 0: if info = i, and i is   
+                 <= A->ncol: U(i,i) is exactly zero. The factorization has   
+                       been completed, but the factor U is exactly   
+                       singular, so the solution and error bounds   
+                       could not be computed.   
+                 = A->ncol+1: U is nonsingular, but RCOND is less than machine
+                       precision, meaning that the matrix is singular to
+                       working precision. Nevertheless, the solution and
+                       error bounds are computed because there are a number
+                       of situations where the computed solution can be more
+                       accurate than the value of RCOND would suggest.   
+                 > A->ncol+1: number of bytes allocated when memory allocation
+                       failure occurred, plus A->ncol.
+
+\end{verbatim}
+
+
+\section{pdgstrf}
+\begin{verbatim}
+void
+pdgstrf(pdgstrf_options_t *pdgstrf_options, SuperMatrix *A, int *perm_r,
+        SuperMatrix *L, SuperMatrix *U,	Gstat_t *Gstat, int *info)
+
+   Purpose
+   =======
+  
+   PDGSTRF computes an LU factorization of a general sparse nrow-by-ncol
+   matrix A using partial pivoting with row interchanges. The factorization
+   has the form
+       Pr * A = L * U
+   where Pr is a row permutation matrix, L is lower triangular with unit
+   diagonal elements (lower trapezoidal if A->nrow > A->ncol), and U is
+   upper triangular (upper trapezoidal if A->nrow < A->ncol).
+  
+   Arguments
+   =========
+   
+   pdgstrf_options (input) pdgstrf_options_t*
+          The structure defines the parameters to control how the sparse
+          LU factorization is performed. The following fields must be set 
+          by the user:
+  
+          o nprocs (int)
+            Number of processes to be spawned and used for factorization.
+  
+          o refact (yes_no_t)
+            Specifies whether this is first time or subsequent factorization.
+            = NO:  this factorization is treated as the first one;
+            = YES: it means that a factorization was performed prior to this
+                   one. Therefore, this factorization will reuse some
+                   existing data structures, such as L and U storage, column
+                   elimination tree, and the symbolic information of the
+                   Householder matrix.
+  
+          o panel_size (int)
+            A panel consists of at most panel_size consecutive columns.
+  
+          o relax (int)
+            Degree of relaxing supernodes. If the number of nodes (columns)
+            in a subtree of the elimination tree is less than relax, this 
+            subtree is considered as one supernode, regardless of the row
+            structures of those columns.
+  
+          o diag_pivot_thresh (double)
+            Diagonal pivoting threshold. At step j of Gaussian elimination,
+            if abs(A_jj) >= diag_pivot_thresh * (max_(i>=j) abs(A_ij)),
+            use A_jj as pivot. 0 <= diag_pivot_thresh <= 1. The default
+            value is 1.0, corresponding to partial pivoting.
+  
+          o usepr (yes_no_t)
+            Whether the pivoting will use perm_r specified by the user.
+            = YES: use perm_r; perm_r is input, unchanged on exit.
+            = NO:  perm_r is determined by partial pivoting, and is output.
+  
+          o drop_tol (double) (NOT IMPLEMENTED)
+            Drop tolerance parameter. At step j of the Gaussian elimination,
+            if abs(A_ij)/(max_i abs(A_ij)) < drop_tol, drop entry A_ij.
+            0 <= drop_tol <= 1. The default value of drop_tol is 0,
+            corresponding to not dropping any entry.
+  
+          o perm_c (int*)
+            Column permutation vector of size A->ncol, which defines the 
+            permutation matrix Pc; perm_c[i] = j means column i of A is 
+            in position j in A*Pc.
+  
+          o perm_r (int*)
+            Column permutation vector of size A->nrow.
+            If pdgstrf_options->usepr = NO, this is an output argument.
+  
+          o work (void*) of size lwork
+            User-supplied work space and space for the output data structures.
+            Not referenced if lwork = 0;
+  
+          o lwork (int)
+            Specifies the length of work array.
+              = 0:  allocate space internally by system malloc;
+              > 0:  use user-supplied work array of length lwork in bytes,
+                    returns error if space runs out.
+              = -1: the routine guesses the amount of space needed without
+                    performing the factorization, and returns it in
+                    superlu_memusage->total_needed; no other side effects.
+  
+   A      (input) SuperMatrix*
+          Original matrix A, permuted by columns, of dimension
+          (A->nrow, A->ncol). The type of A can be:
+          Stype = SLU_NCP; Dtype = SLU_D; Mtype = SLU_GE.
+  
+   perm_r (input/output) int*, dimension A->nrow
+          Row permutation vector which defines the permutation matrix Pr,
+          perm_r[i] = j means row i of A is in position j in Pr*A.
+          If pdgstrf_options->usepr = NO, perm_r is output argument;
+          If pdgstrf_options->usepr = YES, the pivoting routine will try 
+             to use the input perm_r, unless a certain threshold criterion
+             is violated. In that case, perm_r is overwritten by a new
+             permutation determined by partial pivoting or diagonal 
+             threshold pivoting.
+  
+   L      (output) SuperMatrix*
+          The factor L from the factorization Pr*A=L*U; use compressed row 
+          subscripts storage for supernodes, i.e., L has type: 
+          Stype = SLU_SCP, Dtype = SLU_D, Mtype = SLU_TRLU.
+  
+   U      (output) SuperMatrix*
+          The factor U from the factorization Pr*A*Pc=L*U. Use column-wise
+          storage scheme, i.e., U has types: Stype = SLU_NCP, Dtype = SLU_D,
+          Mtype = SLU_TRU.
+  
+   Gstat  (output) Gstat_t*
+          Record all the statistics about the factorization; 
+          See Gstat_t structure defined in util.h.
+  
+   info   (output) int*
+          = 0: successful exit
+          < 0: if info = -i, the i-th argument had an illegal value
+          > 0: if info = i, and i is
+               <= A->ncol: U(i,i) is exactly zero. The factorization has
+                  been completed, but the factor U is exactly singular,
+                  and division by zero will occur if it is used to solve a
+                  system of equations.
+               > A->ncol: number of bytes allocated when memory allocation
+                  failure occurred, plus A->ncol.
+  
+\end{verbatim}
+
+
+\newpage
+\chapter{Specifications of routines in MPI-based SuperLU\_DIST}
+\label{chap:superlu_dist_spec}
+
+\section{pdgssvx\_ABglobal}
+\begin{verbatim}
+void
+pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A, 
+                 ScalePermstruct_t *ScalePermstruct,
+                 double B[], int ldb, int nrhs, gridinfo_t *grid,
+                 LUstruct_t *LUstruct, double *berr,
+                 SuperLUStat_t *stat, int *info)
+
+   Purpose
+   =======
+  
+   pdgssvx_ABglobal solves a system of linear equations A*X=B,
+   by using Gaussian elimination with "static pivoting" to
+   compute the LU factorization of A.
+  
+   Static pivoting is a technique that combines the numerical stability
+   of partial pivoting with the scalability of Cholesky (no pivoting),
+   to run accurately and efficiently on large numbers of processors.
+  
+   See our paper at http://www.nersc.gov/~xiaoye/SuperLU/ for a detailed
+   description of the parallel algorithms.
+  
+   Here are the options for using this code:
+  
+     1. Independent of all the other options specified below, the
+        user must supply
+  
+        -  B, the matrix of right hand sides, and its dimensions ldb and nrhs
+        -  grid, a structure describing the 2D processor mesh
+        -  options->IterRefine, which determines whether or not to
+              improve the accuracy of the computed solution using 
+              iterative refinement
+  
+        On output, B is overwritten with the solution X.
+  
+     2. Depending on options->Fact, the user has several options
+        for solving A*X=B. The standard option is for factoring
+        A "from scratch". (The other options, described below,
+        are used when A is sufficiently similar to a previously 
+        solved problem to save time by reusing part or all of 
+        the previous factorization.)
+  
+        -  options->Fact = DOFACT: A is factored "from scratch"
+  
+        In this case the user must also supply
+  
+        -  A, the input matrix
+  
+        as well as the following options, which are described in more 
+        detail below:
+  
+        -  options->Equil,   to specify how to scale the rows and columns
+                             of A to "equilibrate" it (to try to reduce its
+                             condition number and so improve the
+                             accuracy of the computed solution)
+  
+        -  options->RowPerm, to specify how to permute the rows of A
+                             (typically to control numerical stability)
+  
+        -  options->ColPerm, to specify how to permute the columns of A
+                             (typically to control fill-in and enhance
+                              parallelism during factorization)
+  
+        -  options->ReplaceTinyPivot, to specify how to deal with tiny
+                             pivots encountered during factorization
+                             (to control numerical stability)
+  
+        The outputs returned include
+           
+        -  ScalePermstruct,  modified to describe how the input matrix A
+                             was equilibrated and permuted:
+           -  ScalePermstruct->DiagScale, indicates whether the rows and/or
+                                          columns of A were scaled
+           -  ScalePermstruct->R, array of row scale factors
+           -  ScalePermstruct->C, array of column scale factors
+           -  ScalePermstruct->perm_r, row permutation vector
+           -  ScalePermstruct->perm_c, column permutation vector
+  
+              (part of ScalePermstruct may also need to be supplied on input,
+               depending on options->RowPerm and options->ColPerm as described 
+               later).
+  
+        -  A, the input matrix A overwritten by the scaled and permuted matrix
+                  Pc*Pr*diag(R)*A*diag(C)
+               where 
+                  Pr and Pc are row and columns permutation matrices determined
+                    by ScalePermstruct->perm_r and ScalePermstruct->perm_c, 
+                    respectively, and 
+                  diag(R) and diag(C) are diagonal scaling matrices determined
+                    by ScalePermstruct->DiagScale, ScalePermstruct->R and 
+                    ScalePermstruct->C
+  
+        -  LUstruct, which contains the L and U factorization of A1 where
+  
+                  A1 = Pc*Pr*diag(R)*A*diag(C)*Pc^T = L*U
+  
+                (Note that A1 = Aout * Pc^T, where Aout is the matrix stored
+                 in A on output.)
+  
+     3. The second value of options->Fact assumes that a matrix with the same
+        sparsity pattern as A has already been factored:
+       
+        -  options->Fact = SamePattern: A is factored, assuming that it has
+              the same nonzero pattern as a previously factored matrix. In this
+              case the algorithm saves time by reusing the previously computed
+              column permutation vector stored in ScalePermstruct->perm_c
+              and the "elimination tree" of A stored in LUstruct->etree
+  
+        In this case the user must still specify the following options
+        as before:
+  
+        -  options->Equil
+        -  options->RowPerm
+        -  options->ReplaceTinyPivot
+  
+        but not options->ColPerm, whose value is ignored. This is because the
+        previous column permutation from ScalePermstruct->perm_c is used as
+        input. The user must also supply 
+  
+        -  A, the input matrix
+        -  ScalePermstruct->perm_c, the column permutation
+        -  LUstruct->etree, the elimination tree
+  
+        The outputs returned include
+           
+        -  A, the input matrix A overwritten by the scaled and permuted matrix
+              as described above
+        -  ScalePermstruct,  modified to describe how the input matrix A was
+                             equilibrated and row permuted
+        -  LUstruct, modified to contain the new L and U factors
+  
+     4. The third value of options->Fact assumes that a matrix B with the same
+        sparsity pattern as A has already been factored, and where the
+        row permutation of B can be reused for A. This is useful when A and B
+        have similar numerical values, so that the same row permutation
+        will make both factorizations numerically stable. This lets us reuse
+        all of the previously computed structure of L and U.
+  
+        -  options->Fact = SamePattern_SameRowPerm: A is factored,
+              assuming not only the same nonzero pattern as the previously
+              factored matrix B, but reusing B's row permutation.
+  
+        In this case the user must still specify the following options
+        as before:
+  
+        -  options->Equil
+        -  options->ReplaceTinyPivot
+  
+        but not options->RowPerm or options->ColPerm, whose values are ignored.
+        This is because the permutations from ScalePermstruct->perm_r and
+        ScalePermstruct->perm_c are used as input.
+  
+        The user must also supply 
+  
+        -  A, the input matrix
+        -  ScalePermstruct->DiagScale, how the previous matrix was row and/or
+                                       column scaled
+        -  ScalePermstruct->R, the row scalings of the previous matrix, if any
+        -  ScalePermstruct->C, the columns scalings of the previous matrix, 
+                               if any
+        -  ScalePermstruct->perm_r, the row permutation of the previous matrix
+        -  ScalePermstruct->perm_c, the column permutation of the previous 
+                                    matrix
+        -  all of LUstruct, the previously computed information about L and U
+                  (the actual numerical values of L and U stored in
+                   LUstruct->Llu are ignored)
+  
+        The outputs returned include
+           
+        -  A, the input matrix A overwritten by the scaled and permuted matrix
+              as described above
+        -  ScalePermstruct,  modified to describe how the input matrix A was
+                             equilibrated 
+                    (thus ScalePermstruct->DiagScale, R and C may be modified)
+        -  LUstruct, modified to contain the new L and U factors
+  
+     5. The fourth and last value of options->Fact assumes that A is
+        identical to a matrix that has already been factored on a previous 
+        call, and reuses its entire LU factorization
+  
+        -  options->Fact = Factored: A is identical to a previously
+              factorized matrix, so the entire previous factorization
+              can be reused.
+  
+        In this case all the other options mentioned above are ignored
+        (options->Equil, options->RowPerm, options->ColPerm, 
+         options->ReplaceTinyPivot)
+  
+        The user must also supply 
+  
+        -  A, the unfactored matrix, only in the case that iterative refinment
+              is to be done (specifically A must be the output A from 
+              the previous call, so that it has been scaled and permuted)
+        -  all of ScalePermstruct
+        -  all of LUstruct, including the actual numerical values of L and U
+  
+        all of which are unmodified on output.
+           
+  
+   Arguments
+   =========
+  
+   options (input) superlu_options_t*
+           The structure defines the input parameters to control
+           how the LU decomposition will be performed.
+           The following fields should be defined for this structure:
+           
+           o Fact (fact_t)
+             Specifies whether or not the factored form of the matrix
+             A is supplied on entry, and if not, how the matrix A should
+             be factorized based on the previous history.
+  
+             = DOFACT: The matrix A will be factorized from scratch.
+                   Inputs:  A
+                            options->Equil, RowPerm, ColPerm, ReplaceTinyPivot
+                   Outputs: modified A
+                               (possibly row and/or column scaled and/or 
+                                permuted)
+                            all of ScalePermstruct
+                            all of LUstruct
+  
+             = SamePattern: the matrix A will be factorized assuming
+               that a factorization of a matrix with the same sparsity
+               pattern was performed prior to this one. Therefore, this
+               factorization will reuse column permutation vector 
+               ScalePermstruct->perm_c and the elimination tree
+               LUstruct->etree
+                   Inputs:  A
+                            options->Equil, RowPerm, ReplaceTinyPivot
+                            ScalePermstruct->perm_c
+                            LUstruct->etree
+                   Outputs: modified A
+                               (possibly row and/or column scaled and/or 
+                                permuted)
+                            rest of ScalePermstruct (DiagScale, R, C, perm_r)
+                            rest of LUstruct (GLU_persist, Llu)
+  
+             = SamePattern_SameRowPerm: the matrix A will be factorized
+               assuming that a factorization of a matrix with the same
+               sparsity	pattern and similar numerical values was performed
+               prior to this one. Therefore, this factorization will reuse
+               both row and column scaling factors R and C, and the
+               both row and column permutation vectors perm_r and perm_c,
+               distributed data structure set up from the previous symbolic
+               factorization.
+                   Inputs:  A
+                            options->Equil, ReplaceTinyPivot
+                            all of ScalePermstruct
+                            all of LUstruct
+                   Outputs: modified A
+                               (possibly row and/or column scaled and/or 
+                                permuted)
+                            modified LUstruct->Llu
+             = FACTORED: the matrix A is already factored.
+                   Inputs:  all of ScalePermstruct
+                            all of LUstruct
+  
+           o Equil (yes_no_t)
+             Specifies whether to equilibrate the system.
+             = NO:  no equilibration.
+             = YES: scaling factors are computed to equilibrate the system:
+                        diag(R)*A*diag(C)*inv(diag(C))*X = diag(R)*B.
+                    Whether or not the system will be equilibrated depends
+                    on the scaling of the matrix A, but if equilibration is
+                    used, A is overwritten by diag(R)*A*diag(C) and B by
+                    diag(R)*B.
+  
+           o RowPerm (rowperm_t)
+             Specifies how to permute rows of the matrix A.
+             = NATURAL:   use the natural ordering.
+             = LargeDiag: use the Duff/Koster algorithm to permute rows of
+                          the original matrix to make the diagonal large
+                          relative to the off-diagonal.
+             = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
+                          input by the user.
+             
+           o ColPerm (colperm_t)
+             Specifies what type of column permutation to use to reduce fill.
+             = NATURAL:       use the natural ordering.
+             = COLAMD:        use approximate minimum degree column ordering.
+             = MMD_ATA:       use minimum degree ordering on structure of A'*A.
+             = MMD_AT_PLUS_A: use minimum degree ordering on structure of A'+A.
+             = MY_PERMC:      use the ordering given in ScalePermstruct->perm_c.
+
+           o ReplaceTinyPivot (yes_no_t)
+             = NO:  do not modify pivots
+             = YES: replace tiny pivots by sqrt(epsilon)*norm(A) during 
+                    LU factorization.
+  
+           o IterRefine (IterRefine_t)
+             Specifies how to perform iterative refinement.
+             = NO:     no iterative refinement.
+             = DOUBLE: accumulate residual in double precision.
+             = EXTRA:  accumulate residual in extra precision.
+  
+           NOTE: all options must be indentical on all processes when
+                 calling this routine.
+  
+   A (input/output) SuperMatrix*
+           On entry, matrix A in A*X=B, of dimension (A->nrow, A->ncol).
+           The number of linear equations is A->nrow. The type of A must be:
+           Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE. That is, A is stored in
+           compressed column format (also known as Harwell-Boeing format).
+           See supermatrix.h for the definition of 'SuperMatrix'.
+           This routine only handles square A, however, the LU factorization
+           routine pdgstrf_Aglobal can factorize rectangular matrices.
+           On exit, A may be overwritten by Pc*Pr*diag(R)*A*diag(C),
+           depending on ScalePermstruct->DiagScale, options->RowPerm and
+           options->colpem:
+               if ScalePermstruct->DiagScale != NOEQUIL, A is overwritten by
+                  diag(R)*A*diag(C).
+               if options->RowPerm != NATURAL, A is further overwritten by
+                  Pr*diag(R)*A*diag(C).
+               if options->ColPerm != NATURAL, A is further overwritten by
+                  Pc*Pr*diag(R)*A*diag(C).
+           If all the above condition are true, the LU decomposition is
+           performed on the matrix Pc*Pr*diag(R)*A*diag(C)*Pc^T.
+  
+           NOTE: Currently, A must reside in all processes when calling
+                 this routine.
+  
+   ScalePermstruct (input/output) ScalePermstruct_t*
+           The data structure to store the scaling and permutation vectors
+           describing the transformations performed to the matrix A.
+           It contains the following fields:
+  
+           o DiagScale (DiagScale_t)
+             Specifies the form of equilibration that was done.
+             = NOEQUIL: no equilibration.
+             = ROW:     row equilibration, i.e., A was premultiplied by
+                        diag(R).
+             = COL:     Column equilibration, i.e., A was postmultiplied
+                        by diag(C).
+             = BOTH:    both row and column equilibration, i.e., A was 
+                        replaced by diag(R)*A*diag(C).
+             If options->Fact = FACTORED or SamePattern_SameRowPerm,
+             DiagScale is an input argument; otherwise it is an output
+             argument.
+  
+           o perm_r (int*)
+             Row permutation vector, which defines the permutation matrix Pr;
+             perm_r[i] = j means row i of A is in position j in Pr*A.
+             If options->RowPerm = MY_PERMR, or
+             options->Fact = SamePattern_SameRowPerm, perm_r is an
+             input argument; otherwise it is an output argument.
+  
+           o perm_c (int*)
+             Column permutation vector, which defines the 
+             permutation matrix Pc; perm_c[i] = j means column i of A is 
+             in position j in A*Pc.
+             If options->ColPerm = MY_PERMC or options->Fact = SamePattern
+             or options->Fact = SamePattern_SameRowPerm, perm_c is an
+             input argument; otherwise, it is an output argument.
+             On exit, perm_c may be overwritten by the product of the input
+             perm_c and a permutation that postorders the elimination tree
+             of Pc*A'*A*Pc'; perm_c is not changed if the elimination tree
+             is already in postorder.
+  
+           o R (double*) dimension (A->nrow)
+             The row scale factors for A.
+             If DiagScale = ROW or BOTH, A is multiplied on the left by 
+                            diag(R).
+             If DiagScale = NOEQUIL or COL, R is not defined.
+             If options->Fact = FACTORED or SamePattern_SameRowPerm, R is
+             an input argument; otherwise, R is an output argument.
+  
+           o C (double*) dimension (A->ncol)
+             The column scale factors for A.
+             If DiagScale = COL or BOTH, A is multiplied on the right by 
+                            diag(C).
+             If DiagScale = NOEQUIL or ROW, C is not defined.
+             If options->Fact = FACTORED or SamePattern_SameRowPerm, C is
+             an input argument; otherwise, C is an output argument.
+           
+   B       (input/output) double*
+           On entry, the right-hand side matrix of dimension (A->nrow, nrhs).
+           On exit, the solution matrix if info = 0;
+  
+           NOTE: Currently, B must reside in all processes when calling
+                 this routine.
+  
+   ldb     (input) int (global)
+           The leading dimension of matrix B.
+  
+   nrhs    (input) int (global)
+           The number of right-hand sides.
+           If nrhs = 0, only LU decomposition is performed, the forward
+           and back substitution are skipped.
+  
+   grid    (input) gridinfo_t*
+           The 2D process mesh. It contains the MPI communicator, the number
+           of process rows (NPROW), the number of process columns (NPCOL),
+           and my process rank. It is an input argument to all the
+           parallel routines.
+           Grid can be initialized by subroutine SUPERLU_GRIDINIT.
+           See superlu_ddefs.h for the definition of 'gridinfo_t'.
+  
+   LUstruct (input/output) LUstruct_t*
+           The data structures to store the distributed L and U factors.
+           It contains the following fields:
+  
+           o etree (int*) dimension (A->ncol)
+             Elimination tree of A'*A, dimension A->ncol.
+             It is computed in sp_colorder() during the first factorization,
+             and is reused in the subsequent factorizations of the matrices
+             with the same nonzero pattern.
+             On exit of sp_colorder(), the columns of A are permuted so that
+             the etree is in a certain postorder. This postorder is reflected
+             in ScalePermstruct->perm_c.
+
+             NOTE: Etree is a vector of parent pointers for a forest whose 
+                   vertices are the integers 0 to A->ncol-1;
+                   etree[root] = A->ncol.
+  
+           o Glu_persist (Glu_persist_t*)
+             Global data structure (xsup, supno) replicated on all processes,
+             describing the supernode partition in the factored matrices
+             L and U:
+               xsup[s] is the leading column of the s-th supernode,
+               supno[i] is the supernode number to which column i belongs.
+  
+           o Llu (LocalLU_t*)
+             The distributed data structures to store L and U factors.
+             See superlu_ddefs.h for the definition of 'LocalLU_t'.
+  
+   berr    (output) double*, dimension (nrhs)
+           The componentwise relative backward error of each solution   
+           vector X(j) (i.e., the smallest relative change in   
+           any element of A or B that makes X(j) an exact solution).
+  
+   stat   (output) SuperLUStat_t*
+          Record the statistics on runtime and floating-point operation count.
+          See util.h for the definition of 'SuperLUStat_t'.
+  
+   info    (output) int*
+           = 0: successful exit
+           > 0: if info = i, and i is
+               <= A->ncol: U(i,i) is exactly zero. The factorization has
+                  been completed, but the factor U is exactly singular,
+                  so the solution could not be computed.
+               > A->ncol: number of bytes allocated when memory allocation
+                  failure occurred, plus A->ncol.
+  
+\end{verbatim}
+
+
+\section{pdgstrf}
+\begin{verbatim}
+void
+pdgstrf(superlu_options_t *options, int m, int n, double anorm,
+        LUstruct_t *LUstruct, gridinfo_t *grid, SuperLUStat_t *stat, int *info)
+
+   Purpose
+   =======
+    
+   pdgstrf performs the LU factorization in parallel.
+  
+   Arguments
+   =========
+   
+   options (input) superlu_options_t*
+           The structure defines the input parameters to control
+           how the LU decomposition will be performed.
+           The following field should be defined:
+           o ReplaceTinyPivot (yes_no_t)
+             Specifies whether to replace the tiny diagonals by
+             sqrt(epsilon)*norm(A) during LU factorization.
+  
+   m      (input) int
+          Number of rows in the matrix.
+  
+   n      (input) int
+          Number of columns in the matrix.
+  
+   anorm  (input) double
+          The norm of the original matrix A, or the scaled A if
+          equilibration was done.
+  
+   LUstruct (input/output) LUstruct_t*
+           The data structures to store the distributed L and U factors.
+           The following fields should be defined:
+  
+           o Glu_persist (input) Glu_persist_t*
+             Global data structure (xsup, supno) replicated on all processes,
+             describing the supernode partition in the factored matrices
+             L and U:
+  	       xsup[s] is the leading column of the s-th supernode,
+               supno[i] is the supernode number to which column i belongs.
+  
+           o Llu (input/output) LocalLU_t*
+             The distributed data structures to store L and U factors.
+             See superlu_ddefs.h for the definition of 'LocalLU_t'.
+  
+   grid   (input) gridinfo_t*
+          The 2D process mesh. It contains the MPI communicator, the number
+          of process rows (NPROW), the number of process columns (NPCOL),
+          and my process rank. It is an input argument to all the
+          parallel routines.
+          Grid can be initialized by subroutine SUPERLU_GRIDINIT.
+          See superlu_ddefs.h for the definition of 'gridinfo_t'.
+  
+   stat   (output) SuperLUStat_t*
+          Record the statistics on runtime and floating-point operation count.
+          See util.h for the definition of 'SuperLUStat_t'.
+  
+   info   (output) int*
+          = 0: successful exit
+          < 0: if info = -i, the i-th argument had an illegal value
+          > 0: if info = i, U(i,i) is exactly zero. The factorization has
+               been completed, but the factor U is exactly singular,
+               and division by zero will occur if it is used to solve a
+               system of equations.
+  
+\end{verbatim}
+
+\section{pdgstrs\_Bglobal}
+\begin{verbatim}
+void
+pdgstrs_Bglobal(int n, LUstruct_t *LUstruct, gridinfo_t *grid, double *B,
+		int ldb, int nrhs, SuperLUStat_t *stat, int *info)
+
+   Purpose
+   =======
+  
+   pdgstrs_Bglobal solves a system of distributed linear equations
+   A*X = B with a general N-by-N matrix A using the LU factorization
+   computed by pdgstrf.
+   
+   Arguments
+   =========
+  
+   n      (input) int (global)
+          The order of the system of linear equations.
+  
+   LUstruct (input) LUstruct_t*
+          The distributed data structures storing L and U factors.
+          The L and U factors are obtained from pdgstrf for
+          the possibly scaled and permuted matrix A.
+          See superlu_ddefs.h for the definition of 'LUstruct_t'.
+  
+   grid   (input) gridinfo_t*
+          The 2D process mesh. It contains the MPI communicator, the number
+          of process rows (NPROW), the number of process columns (NPCOL),
+          and my process rank. It is an input argument to all the
+          parallel routines.
+          Grid can be initialized by subroutine SUPERLU_GRIDINIT.
+          See superlu_ddefs.h for the definition of 'gridinfo_t'.
+  
+   B      (input/output) double*
+          On entry, the right-hand side matrix of the possibly equilibrated
+          and row permuted system.
+          On exit, the solution matrix of the possibly equilibrated
+          and row permuted system if info = 0;
+  
+          NOTE: Currently, the N-by-NRHS  matrix B must reside on all 
+                processes when calling this routine.
+  
+   ldb    (input) int (global)
+          Leading dimension of matrix B.
+  
+   nrhs   (input) int (global)
+          Number of right-hand sides.
+  
+   stat   (output) SuperLUStat_t*
+          Record the statistics about the triangular solves.
+          See util.h for the definition of 'SuperLUStat_t'.
+  
+   info   (output) int*
+           = 0: successful exit
+           < 0: if info = -i, the i-th argument had an illegal value
+
+\end{verbatim}
+
+
+\section{pdgsrfs\_ABXglobal}
+\begin{verbatim}
+void
+pdgsrfs_ABXglobal(int n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
+                  gridinfo_t *grid, double *B, int ldb, double *X, int ldx,
+                  int nrhs, double *berr, SuperLUStat_t *stat, int *info)
+
+   Purpose
+   =======
+  
+   pdgsrfs_ABXglobal improves the computed solution to a system of linear   
+   equations and provides error bounds and backward error estimates
+   for the solution. 
+  
+   Arguments
+   =========
+  
+   n      (input) int (global)
+          The order of the system of linear equations.
+  
+   A      (input) SuperMatrix*
+          The original matrix A, or the scaled A if equilibration was done.
+          A is also permuted into the form Pc*Pr*A*Pc', where Pr and Pc
+          are permutation matrices. The type of A can be:
+          Stype = SLU_NCP; Dtype = SLU_D; Mtype = SLU_GE.
+  
+          NOTE: Currently, A must reside in all processes when calling
+                this routine.
+  
+   anorm  (input) double
+          The norm of the original matrix A, or the scaled A if
+          equilibration was done.
+  
+   LUstruct (input) LUstruct_t*
+          The distributed data structures storing L and U factors.
+          The L and U factors are obtained from pdgstrf for
+          the possibly scaled and permuted matrix A.
+          See superlu_ddefs.h for the definition of 'LUstruct_t'.
+  
+   grid   (input) gridinfo_t*
+          The 2D process mesh. It contains the MPI communicator, the number
+          of process rows (NPROW), the number of process columns (NPCOL),
+          and my process rank. It is an input argument to all the
+          parallel routines.
+          Grid can be initialized by subroutine SUPERLU_GRIDINIT.
+          See superlu_ddefs.h for the definition of 'gridinfo_t'.
+  
+   B      (input) double* (global)
+          The N-by-NRHS right-hand side matrix of the possibly equilibrated
+          and row permuted system.
+         
+          NOTE: Currently, B must reside on all processes when calling
+                this routine.
+  
+   ldb    (input) int (global)
+          Leading dimension of matrix B.
+  
+   X      (input/output) double* (global)
+          On entry, the solution matrix X, as computed by PDGSTRS.
+          On exit, the improved solution matrix X.
+          If DiagScale = COL or BOTH, X should be premultiplied by diag(C)
+          in order to obtain the solution to the original system.
+  
+          NOTE: Currently, X must reside on all processes when calling
+                this routine.
+  
+   ldx    (input) int (global)
+          Leading dimension of matrix X.
+  
+   nrhs   (input) int
+          Number of right-hand sides.
+  
+   berr   (output) double*, dimension (nrhs)
+          The componentwise relative backward error of each solution   
+          vector X(j) (i.e., the smallest relative change in   
+          any element of A or B that makes X(j) an exact solution).
+  
+   stat   (output) SuperLUStat_t*
+          Record the statistics about the refinement steps.
+          See util.h for the definition of SuperLUStat_t.
+  
+   info   (output) int*
+          = 0: successful exit
+          < 0: if info = -i, the i-th argument had an illegal value
+          
+\end{verbatim}

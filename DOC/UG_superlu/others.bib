@@ -1,0 +1,1652 @@
+@string{IEEEPDS  = "IEEE Trans. Parallel and Distributed Systems"}
+@string{IJSA     = "Int. Journal of Supercomputer Applications"}
+@string{siad     = "SIAM J. Algebraic and Discrete Methods"}
+@string{sicomp   = "SIAM J. Computing"}
+@string{simax    = "SIAM J. Matrix Analysis and Applications"}
+@string{sinum    = "SIAM J. Numerical Analysis"}
+@string{sissc    = "SIAM J. Scientific and Statistical Computing"}
+@string{sisc     = "SIAM J. Scientific Computing"}
+@string{sirev    = "SIAM Review"}
+@string{toms     = "ACM Trans.\ Mathematical Software"}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  netlib libraries
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+@misc{BLAS,
+  key = {blas},
+  author = {},
+  year = {},
+  title = {http://www.netlib.org/blas},
+  volume = {},
+  pages = {}
+}
+
+@misc{BLACS,
+  key = {blacs},
+  author = {},
+  year = {},
+  title = {{BLACS, http://www.netlib.org/blacs}},
+  volume = {},
+  pages = {}
+}
+
+@misc{Lapack,
+  key = {lapack},
+  year = {},
+  title = {{LAPACK--Linear Algebra PACKage, http://www.netlib.org/lapack}},
+  volume = {},
+  pages = {}
+}
+
+@misc{Scalapack,
+  key = {scalapack},
+  year = {},
+  title = {{ScaLAPACK--Scalable Linear Algebra PACKage, http://www.netlib.org/scalapack}},
+  volume = {},
+  pages = {}
+}
+
+@article{ipm,
+  key = {ipm},
+  year = {},
+  title = {{Integrated Performance Monitoring: IPM, http://ipm-hpc.sourceforge.net/}},
+  volume = {},
+  pages = {}
+}
+
+@BOOK{scalapackmanual,
+      AUTHOR = {L. S. Blackford and J. Choi and E. D'Azevedo and
+		  J. Demmel and I. Dhillon and J. Dongarra and
+		  S. Hammarling and G. Henry and A. Petitet and 
+		  K. Stanley and D. Walker and R. C. Whaley},
+      TITLE = {{ScaLAPACK} Users' Guide},
+      PUBLISHER = {{SIAM}},
+      YEAR = {1997},
+      NOTE = {\url{http://www.netlib.org/scalapack}},
+      ADDRESS = {Philadelphia} }
+
+@techreport{blacsmanual,
+      AUTHOR = {J. Dongarra and R. C. Whaley},
+      TITLE = "A User's Guide to the BLACS v1.1",
+      TYPE = {{LAPACK Working Note \#94}},
+      NOTE = {\url{http://www.netlib.org/blacs}},
+      YEAR = {1997} }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@INPROCEEDINGS{amdahl1967,
+    AUTHOR = {G. Amdahl},
+    TITLE = {Validity of the Single Processor Approach to Achieving Large-Scale Computing Capabilities},
+    BOOKTITLE = {AFIPS Conference Proceedings (30)},
+    pages = {483–485},
+    ADDRESS = {Washington, D.C.},
+    YEAR = {1967},
+    MONTH = {April}
+}
+
+@techreport{omega3p,
+   AUTHOR = {L-Q. Lee and Z. Li and C.-K. Ng and K. Ko},
+   TITLE = {{Omega3P}: A parallel finite-element eigenmode analysis code for accelerator cavities},
+   INSTITUTION = {Stanford Linear Accelerator Center},
+   NUMBER = {SLAC-PUB-13529},
+   YEAR = {2009}
+}
+
+@techreport{ast-scidac,
+   author = "K. Ko and N. Folwell and L. Ge and A. Guetz and V. Ivanov
+             and L. Lee and Z. Li and I. Malik and W. Mi and C. Ng and 
+             M. Wolf",
+   year   = "2003",
+   title = "Electromagnetic Systems Simulation - From Simulation to 
+            Fabrication",
+   institution = "Stanford Linear Accelerator Center",
+   address = "Menlo Park, CA",
+   type = "Sci{DAC} Report",
+}
+
+@misc{alpha8400,
+    key = {Digital},
+    TITLE = {{AlphaServer} 8200 and {AlphaServer} 8400},
+    howpublished = {Digital},
+    NOTE = {Technical Summary},
+    YEAR = {1996} }
+		  
+@article{arioli:413,
+author = {Mario Arioli and Marc Baboulin and Serge Gratton},
+collaboration = {},
+title = {A Partial Condition Number for Linear Least Squares Problems},
+publisher = {SIAM},
+year = {2007},
+journal = simax,
+volume = {29},
+number = {2},
+pages = {413-433},
+keywords = {linear least squares; normwise condition number; statistical condition estimate; parameter estimation},
+url = {http://link.aip.org/link/?SML/29/413/1},
+doi = {10.1137/050643088}
+}
+
+@TECHREPORT{bacon93,
+     AUTHOR = {David F. Bacon and Susan L. Graham and Oliver J. Sharp},
+     title = {Compiler Transformations for High-Performance Computing},
+     INSTITUTION = {Computer Science Division, University of California,
+                    Berkeley},
+     YEAR = {1993},
+     MONTH = {November},
+     TYPE = {Technical {R}eport UCB/CSD-93-781}
+}
+
+@BOOK{bertsekas89,
+      AUTHOR = {Dimitri P. Bertsekas and John N. Tsitsiklis},
+      TITLE = {Parallel and Distributed Computation: Numerical Methods},
+      PUBLISHER = {Prentice Hall},
+      YEAR = {1989},
+      ADDRESS = {Englewood Cliffs, New Jersey 07632}
+}
+
+@Article{Bindel:2002:CGR,
+  author =       "David Bindel and James Demmel and William Kahan and
+                 Osni Marques",
+  title =        "On computing {Givens} rotations reliably and
+                 efficiently",
+  journal =      "{ACM} Transactions on Mathematical Software",
+  volume =       "28",
+  number =       "2",
+  pages =        "206--238",
+  month =        jun,
+  year =         "2002",
+  CODEN =        "ACMSCU",
+  ISSN =         "0098-3500",
+  bibsource =    "http://www.acm.org/pubs/contents/journals/toms/",
+  URL =          "http://doi.acm.org/10.1145/567806.567809",
+}
+
+@ARTICLE{bjorck67,
+    AUTHOR = {{\AA}ke Bj\"{o}rck},
+    TITLE = {Iterative Refinement of Linear Least Squares Solutions {I}},
+    JOURNAL = {{BIT}},
+    VOLUME = {7},
+    PAGES = {257--278},
+    YEAR = {1967} }
+
+@ARTICLE{bjorckgolub67,
+    AUTHOR = {{\AA}ke Bj\"{o}rck and Gene Golub},
+    TITLE = {Iterative Refinement of Linear Least Squares
+             Solution by {Householder} Transformation ({Algol Programming})},
+    JOURNAL = {{BIT}},
+    VOLUME = {7},
+    PAGES = {322--337},
+    YEAR = {1967} }
+
+@ARTICLE{bjorck91,
+    AUTHOR = {{\AA}ke Bj\"{o}rck},
+    TITLE = {Component-wise Perturbation Analysis and Error Bounds for
+             Linear Least Squares Solutions},
+    JOURNAL = {{BIT}},
+    VOLUME = {31},
+    PAGES = {238-244},
+    YEAR = {1991} }
+
+@BOOK{bjorck96,
+      AUTHOR = {Bj\"{o}rck, {\AA}ke},
+      TITLE = {Numerical Methods for Least Squares Problems},
+      PUBLISHER = {SIAM},
+      YEAR = {1996},
+      ADDRESS = {Philadelphia}   }
+
+@ARTICLE{blas1,
+      AUTHOR = {Lawson, C. and Hanson, R. and Kincaid, D. and Krogh, F.},
+      TITLE = {Basic {L}inear {A}lgebra {S}ubprograms for {F}ortran Usage},
+      JOURNAL = {{ACM} Trans. Math. Soft.},
+      YEAR = {1979},
+      VOLUME = {5},
+      PAGES = {308--323}}
+
+@ARTICLE{blas2,
+      AUTHOR = {Dongarra, J. and Du Croz, J. and Hammarling, S. and
+                 Hanson, Richard J. },
+      TITLE = {An {E}xtended {S}et of {FORTRAN} {B}asic {L}inear
+		  {A}lgebra {S}ubprograms},
+      JOURNAL = {{ACM} Trans. Math. Soft.},
+      YEAR = {1988},
+      VOLUME = {14},
+      NUMBER = {1},
+      PAGES = {1--17},
+      MONTH = {March}    }
+
+@ARTICLE{blas3,
+      AUTHOR = {Dongarra, J. and Du Croz, J. and Duff, I. S. and 
+                 Hammarling, S. },
+      TITLE = {A {S}et of {L}evel 3 {B}asic {L}inear
+		  {A}lgebra {S}ubprograms},
+      JOURNAL = {{ACM} Trans. Math. Soft.},
+      YEAR = {1990},
+      VOLUME = {16},
+      PAGES = {1--17} }
+
+@misc{BLAS,
+  key = {blas},
+  author = {},
+  year = {},
+  title = {http://www.netlib.org/blas},
+  volume = {},
+  pages = {}
+}
+
+@misc{BLACS,
+  key = {blacs},
+  author = {},
+  year = {},
+  title = {{BLACS, http://www.netlib.org/blacs}},
+  volume = {},
+  pages = {}
+}
+
+@misc{Lapack,
+  key = {lapack},
+  year = {},
+  title = {{LAPACK--Linear Algebra PACKage, http://www.netlib.org/lapack}},
+  volume = {},
+  pages = {}
+}
+
+@misc{Scalapack,
+  key = {scalapack},
+  year = {},
+  title = {{ScaLAPACK--Scalable Linear Algebra PACKage, http://www.netlib.org/scalapack}},
+  volume = {},
+  pages = {}
+}
+
+@techreport{blacsmanual,
+      AUTHOR = {J. Dongarra and R. C. Whaley},
+      TITLE = "A User's Guide to the BLACS v1.1",
+      TYPE = {{LAPACK Working Note \#94}},
+      NOTE = {\url{http://www.netlib.org/blacs}},
+      YEAR = {1997} }
+
+@BOOK{scalapackmanual,
+      AUTHOR = {L. S. Blackford and J. Choi and E. D'Azevedo and
+		  J. Demmel and I. Dhillon and J. Dongarra and
+		  S. Hammarling and G. Henry and A. Petitet and 
+		  K. Stanley and D. Walker and R. C. Whaley},
+      TITLE = {{ScaLAPACK} Users' Guide},
+      PUBLISHER = {{SIAM}},
+      YEAR = {1997},
+      NOTE = {\url{http://www.netlib.org/scalapack}},
+      ADDRESS = {Philadelphia} }
+
+@BOOK{clr90,
+      AUTHOR = {Thomas~H.~Cormen and Charles~E.~Leiserson and Ronald~L.~Rivest},
+      TITLE = {Introduction to Algorithms},
+      PUBLISHER = {{MIT Press}},
+      YEAR = {1990},
+      ADDRESS = {Cambridge, MA} }
+
+@BOOK{clrs09,
+      AUTHOR = {Thomas~H.~Cormen and Charles~E.~Leiserson and Ronald~L.~Rivest
+                and Clifford Stein},
+      TITLE = {Introduction to Algorithms},
+      NOTE = {Third Edition},
+      PUBLISHER = {{MIT Press}},
+      YEAR = {2009},
+      ADDRESS = {Cambridge, MA}
+}
+
+%  note  = "Article electronically published on November 2, 2006"
+@Article{CuckerDiaoWei07,
+  author = "Felipe Cucker and Huaian Diao and Yimin Wei",
+  title =  "On Mixed and Componentwise Condition Numbers for
+            {Moore-Penrose} Inverse and Linear Least Squares Problems",
+  journal =  "Mathematics of Computation",
+  volume = 76,
+  number = 258,
+  year = 2007,
+  month = {April},
+  pages = {947-963}
+}
+
+@Misc{dhb-dd,
+  OPTkey = 	 {},
+  author = {David Bailey},		  
+  title = {A {F}ortran-90 double-double precision library},
+  OPThowpublished = {},
+  OPTyear = 	 {},
+  OPTmonth = 	 {},
+  note = {{\tt http://crd.lbl.gov\linebreak[0]/$\sim$dhbailey/mpdist}},
+  OPTannote = 	 {}
+}
+
+@Misc{colella2004,
+  author = {P. Colella},
+  title = {Defining Software Requirements for Scientific Computing}, 
+  OPTyear =  {2004},
+  note = {presentation}
+}
+
+@ARTICLE{dm02,
+     AUTHOR = {Elizabeth~D.~Dolan and Jorge~J.~Mor\'e},
+     TITLE = {Benchmarking optimization software with performance profiles},
+     JOURNAL = {Mathematical Programming},
+     VOLUME = {91},
+     NUMBER = {2},
+     PAGES = {201-203},
+     YEAR = {2002} }
+
+@BOOK{GareyJohnson79,
+      AUTHOR = {M. R. Garey and D. S. Johnson},
+      TITLE = {Computers and Intractability: A Guide to the Theory of 
+               NP-Completeness},
+      PUBLISHER = {W. H. Freeman},
+      YEAR = {1979},
+      ADDRESS = {New York}
+}
+
+@BOOK{jain91,
+      AUTHOR = {Raj Jain},
+      TITLE = {The Art of Computer Systems Performance Analysis},
+      PUBLISHER = {John Wiley \& Sons, Inc.},
+      YEAR = {1991},
+      ADDRESS = {New York}
+}
+
+@ARTICLE{jbf07,
+  AUTHOR = {S.~C.~Jardin and J.~Breslau and N.~Ferraro},
+  TITLE = {A high-order implicit finite element method for integrating the
+two-fluid magnetohydrodynamic equations in two dimensions},
+  JOURNAL = {Journal of Computational Physics},
+  VOLUME = {226},
+  PAGES = {2146-2174},
+  YEAR = {2007}
+}
+
+@ARTICLE{BLAST:HPCA:02a,
+   AUTHOR  = {BLAS Technical Forum},
+   TITLE   = {{Basic Linear Algebra Subprograms Technical (BLAST) Forum
+              Standard I}},
+   JOURNAL = {Int. J. High Perform. Comput. Applic.},
+   VOLUME  = {16},
+   NUMBER  = {1-111},
+   YEAR    = {2002}, 
+  url = 	 {http://www.netlib.org/blas/blast-forum/}
+}
+
+@ARTICLE{BLAST:HPCA:02b,
+   AUTHOR  = {BLAS Technical Forum},
+   TITLE   = {{Basic Linear Algebra Subprograms Technical (BLAST) Forum
+              Standard II}},
+   JOURNAL = {Int. J. High Perform. Comput. Applic.},
+   VOLUME  = {16},
+   NUMBER  = {115-199},
+   YEAR    = {2002},
+  url = 	 {http://www.netlib.org/blas/blast-forum/}
+}
+
+
+@ARTICLE{newBLASfull,
+     AUTHOR = {Blackford, L. S. and Demmel, J. and Dongarra, J. and
+               Duff, I. and Hammarling, S. and Henry, G. and Heroux, M. and
+               Kaufman, L. and Lumsdaine, A. and Petitet, A. and Pozo, R. and
+               Remington, K. and Whaley, R. C. and Maany, Z. and Krough, F.
+               and Corliss, G. and Hu, C. and Keafott, B. and Walster, W. and
+               Wolff v. Gudenberg, J.},
+     TITLE = {{B}asic {L}inear {A}lgebra {S}ubprograms {T}echical ({BLAST})
+              {F}orum {S}tandard},
+     JOURNAL = {Intern. J. High Performance Comput.},
+     VOLUME = {15},
+     NUMBER = {3-4},
+     YEAR = {2001} }
+
+@ARTICLE{newBLAS,
+     AUTHOR = {Blackford, L. S. and Demmel, J. and Dongarra, J. and
+               Duff, I. and Hammarling, S. and Henry, G. and Heroux, M. and
+               Kaufman, L. and Lumsdaine, A. and Petitet, A. and Pozo, R. and
+               Remington, K. and Whaley, R. C.},
+     TITLE = {An Updated Set of {B}asic {L}inear {A}lgebra {S}ubroutines
+              ({BLAS})},
+     JOURNAL = {ACM Trans. Math. Soft.},
+     VOLUME = {28},
+     NUMBER = {2},
+     MONTH = {June},
+     YEAR = {2002} }
+
+
+@article{shiv05,
+    AUTHOR = {S. Chandrasekaran and P. Dewilde and M. Gu and T. Pals
+              and X. Sun and A.-J. van der Veen and D. White},
+    TITLE = {Some Fast Algorithms for Sequentially Semiseparable
+             Representations},
+    JOURNAL = simax,
+    PAGES = {341-364},
+    VOLUME = {27},
+    NUMBER = {2},
+    YEAR = {2005}
+}
+
+@article{shiv10,
+    AUTHOR = {S. Chandrasekaran and P. Dewilde and M. Gu and 
+              N. Somasunderam},
+    TITLE = {On the Numerical Rank of the Off-Diagonal Blocks of Schur
+             Complements of Discretized Elliptic {PDEs}},
+    JOURNAL = simax,
+    PAGES = {2261-2290},
+    VOLUME = {31},
+    NUMBER = {5},
+    YEAR = {2010}
+ }
+
+
+@techreport{gulivas09,
+author  = {S. Chandrasekaran and M. Gu and X.S. Li and P.S. Vassilevski},
+title   = {Direction-preserving and Schur-monotonic Semi-separable
+           Approximations of Symmetric Positive Definite Matrices},
+    NUMBER = {in preparation},
+    MONTH = {March},
+    YEAR = {2009},
+    note = {(Presented at the SIAM CSE Conference, March 2-6, 2009, Miami, Florida.)}
+}
+
+@ARTICLE{xia10,
+  author = {J. Xia and S. Chandrasekaran and M. Gu and X. S. Li},
+  title = {Fast Algorithms for Hierarchically Semiseparable Matrices},
+  journal = {Numerical Linear Algebra with Applications},
+  year = {2010},
+  note = {To appear}
+}
+
+@misc{decthreads,
+    key = {Digital},
+    TITLE = {Guide to {DEC}threads},
+    howpublished = {Digital Equipment Corporation},
+    MONTH = {July},
+    YEAR = {1994} }
+		  
+%      NOTE = {419 pages},
+@BOOK{demmel97,
+      AUTHOR = {James W. Demmel},
+      TITLE = {Applied Numerical Linear Algebra},
+      PUBLISHER = {SIAM},
+      YEAR = {1997},
+      ADDRESS = {Philadelphia} }
+
+@ARTICLE{alpha8000,
+    AUTHOR = {David M. Fenwick and Denis J. Foley and William B. Gist
+              and Stephen R. VanDoren and Daniel Wissel},
+    TITLE = {The {AlphaServer} 8000 Series: High-end Server Platform
+             Development},
+    JOURNAL = {Digital Technical Journal},
+    YEAR = {1995},
+    VOLUME = {7},
+    NUMBER = {1},
+    PAGES = {43--65} }
+		  
+@INPROCEEDINGS{baertschyli01,
+    AUTHOR = {M. Baertschy and X. S. Li},
+    TITLE = {Solution of a Three-Body Poblem in Quantum Mechanics},
+    BOOKTITLE = {Proceedings of SC2001: High Performance Networking and
+                 Computing Conference},
+    ADDRESS = {Denver, Colorado},
+    YEAR = {2001},
+    MONTH = {November 10--16}
+}
+
+@INPROCEEDINGS{yuan11,
+    AUTHOR = {Xuefei Yuan, Xiaoye S. Li, Ichitaro Yamazaki, Stephen C. Jardin, Alice E. Koniges, David E. Keyes},
+    TITLE = {Whistler waves dominated reconnection model and its recent improvement},
+    BOOKTITLE = {Twenty Second International Conference on Numerical Simulations of Plasmas (ICNSP 2011)},
+    ADDRESS = {Long Beach, New Jersey},
+    YEAR = {2011},
+    MONTH = {Sept. 7-9}
+}
+
+
+
+@misc{crayc90,
+    key = "web",
+    title = "The {C}ray {C}90 series",
+    howpublished = {http://www.cray.com/PUBLIC/product-info/C90/},
+    note = {Cray Research, Inc.},
+    }
+
+@misc{crayj90,
+    key = "web",
+    title = "The {C}ray {J}90 series",
+    howpublished = {http://www.cray.com/PUBLIC/product-info/J90/},
+    note = {Cray Research, Inc.},
+    }
+
+@BOOK{forsythemoler67,
+      AUTHOR = {George E. Forsythe and Cleve B. Moler},
+      TITLE = {Computer Solution of Linear Algebraic Systems},
+      PUBLISHER = {Prentics-Hall},
+      ADDRESS = {Englewood Cliffs, NJ, USA},
+      YEAR = {1967} }
+
+@MISC{gam,
+    AUTHOR = {David Culler {\em et.al.}},
+    TITLE = {Generic Active Message Interface Specification},
+    INSTITUTION = {Computer Science Division, UC Berkeley},
+    MONTH = {August},
+    YEAR = {1994} }
+
+@BOOK{golubvanloan,
+      AUTHOR = {Golub, G. and Van Loan, C.},
+      TITLE = {Matrix Computations},
+      PUBLISHER = {Johns Hopkins University Press},
+      EDITION = {{T}hird},
+      YEAR = {1996},
+      ADDRESS = {Baltimore, MD}   }
+
+@BOOK{greenbaum97,
+      AUTHOR = {Anne Greenbaum},
+      TITLE = {Iterative Methods for Solving Linear Systems},
+      PUBLISHER = {{SIAM}},
+      ADDRESS = {Philadelphia, PA},
+      YEAR = {1997} }
+
+@article{hauser96,
+     AUTHOR = {John R. Hauser},
+     title = {Handling Floating-Point Exceptions in Numeric Programs},
+     journal = {ACM Transactions on Programming Languages and Systems},
+     volume = 18,
+     number = 2,
+     pages = {139-174},  
+     YEAR = {1996},
+}
+
+@ARTICLE{higham88,
+      AUTHOR = {Higham, N. J.},
+      TITLE = {Algorithm 674: {FORTRAN} codes for estimating the one-norm of a
+               real or complex matrix, with applications to condition 
+               estimation},
+      JOURNAL = toms,
+      YEAR = {1988},
+      VOLUME = {14},
+      PAGES = {381--396} }
+
+@BOOK{higham96,
+      AUTHOR = {Higham, N. J.},
+      TITLE = {Accuracy and {S}tability of {N}umerical {A}lgorithms},
+      PUBLISHER = {{SIAM}},
+      ADDRESS = {Philadelphia, PA},
+      ISBN = {0-89871-355-2},
+      YEAR = {1996} }
+
+@ARTICLE{higham97,
+      AUTHOR = {Higham, Nicholas J.},
+      TITLE = {Iterative refinement for linear systems and {LAPACK}},
+      JOURNAL = {IMA Journal of Numerical Analysis},
+      YEAR = {1997},
+      VOLUME = {17},
+      PAGES = {495--507} }
+
+
+@misc{hsl,
+    key = "HSL",
+    title = "{H}arwell {S}ubroutine {L}ibrary,
+             http://www.rl.ac.uk/departments/ccd/numerical/hsl/hsl.html",
+    }
+
+@BOOK{lapackmanual2,
+      AUTHOR = {Anderson, E. and Bai, Z. and Bischof, C. and Demmel, J. and
+                Dongarra, J. and Du Croz, J. and Greenbaum, A. and
+                Hammarling, S. and McKenney, A. and Ostrouchov, S. and
+                Sorensen, D.},
+      TITLE = {{LAPACK} Users' Guide, Release 2.0},
+      PUBLISHER = {{SIAM}},
+      YEAR = {1995},
+      NOTE = {324 pages},
+      ADDRESS = {Philadelphia} }
+
+@BOOK{lapackmanual3,
+      AUTHOR = {Anderson, E. and Bai, Z. and Bischof, C. and
+		Blackford, S. and Demmel, J. and
+                Dongarra, J. and Du Croz, J. and Greenbaum, A. and
+                Hammarling, S. and McKenney, A. and 
+                Sorensen, D.},
+      TITLE = {{LAPACK} Users' Guide, Release 3.0},
+      PUBLISHER = {{SIAM}},
+      YEAR = {1999},
+      NOTE = {407 pages},
+      ADDRESS = {Philadelphia} }
+
+@BOOK{linpack,
+      AUTHOR = {Dongarra, J. and J. R. Bunch and C. B. Moler and
+                G. W. Stewart},
+      TITLE = {{LINPACK} Users' Guide},
+      PUBLISHER = {{SIAM}},
+      YEAR = {1979},
+      ADDRESS = {Philadelphia} }
+
+@ARTICLE{dongarra84,
+    AUTHOR = {Dongarra, J. and Gustavson, F. and Karp, A.},
+    TITLE = {Implementing linear algebra algorithms for dense matrices
+		  on a vector pipeline machine},
+    JOURNAL = {SIAM Review},
+    YEAR = {1984},
+    VOLUME = {26},
+    NUMBER = {1},
+    MONTH = {January},
+    PAGES = {91--112} }
+		  
+@ARTICLE{Gulliksson94,
+    AUTHOR = {M. Gulliksson},
+    TITLE = {Iterative refinement for constrained and weighted 
+             linear least squares},
+    JOURNAL = {{BIT}},
+    VOLUME = {34},
+    NUMBER = {2},
+    PAGES = {239-253},
+    YEAR = {1994} }
+
+@TECHREPORT{lapwn95,
+      AUTHOR = {Choi, J. and Demmel, J. and Dhillon, I. and Dongarra, J. and 
+                Ostrouchov, S. and Petitet, A. and Stanley, K. and Walker, D.
+                and Whaley, R. C.},
+      TITLE = {{ScaLAPACK}: A Portable Linear Algebra Library for Distributed 
+               Memory Computers - {D}esign Issues and Performance},
+      INSTITUTION = {University of Tennessee},
+      YEAR = {1995},
+      MONTH = {March},
+      TYPE = {{C}omputer {S}cience {D}ept. {T}echnical {R}eport {CS}-95-283},
+      NOTE = {(LAPACK Working Note \#95)},
+      ADDRESS = {Knoxville} }
+
+@TECHREPORT{lawn111,
+     AUTHOR = {J. Bilmes and K. Asanovic and J. Demmel and D. Lam and
+               C.-W. Chin},
+     TITLE = {{O}ptimizing Matrix Multiply using {PHiPAC}:  a
+        Portable, High-Performance, {ANSI C} Coding Methodology},
+     INSTITUTION = {University of Tennessee},
+     YEAR = {1996},
+     MONTH = {May},
+     TYPE = {{C}omputer {S}cience {D}ept. {T}echnical {R}eport {CS}-96-326},
+     NOTE = {(LAPACK Working Note \#111)},
+     ADDRESS = {Knoxville} }
+
+@inbook{lizenios92,
+   AUTHOR = "X. Li and S. A. Zenios" ,
+   TITLE = "A Massively Parallel $\epsilon$-relaxation Algorithm
+            for Linear Transportation Problems",
+   BOOKTITLE = "Advances in Optimization and Parallel Computing" ,
+   EDITOR = "P. Pardalos" ,
+   PUBLISHER = "Elsevier Science Publications" ,
+   PAGES = "164--176" ,
+   YEAR = "1992"  }
+
+@ARTICLE{markb99,		  
+   AUTHOR = {M. Baertschy and T. N. Rescigno and C. W. McCurdy},
+   TITLE = {Accurate amplitudes for electron-impact ionization},
+   JOURNAL = "Phys. Rev. A",
+   volume = 64,
+   pages = "022709",
+   year = 2001
+}
+		  
+@ARTICLE{markb01,
+   AUTHOR = {M. Baertschy and T.N. Rescigno and W.A. Isaacs and
+             X. Li and C.W. McCurdy},
+   TITLE = {Electron-impact ionization of atomic hydrogen},
+   JOURNAL = {Physical Review A},
+   VOLUME = {63},
+   PAGES = {022712},
+   MONTH = {January},
+   YEAR = {2001}
+}
+
+@article{ScienceECSeH,
+  author = "T. N. Rescigno and M. Baertschy and W. A. Isaacs
+            and C. W. McCurdy",
+  title = "Collisional Breakup in a Quantum System of Three Charged Particles",
+  journal = "Science",
+  volume = 286,
+  number = 5449,
+  pages = "2474-2479",
+  month = "December 24,",
+  year = 1999
+}
+
+@misc{posix,
+    key = {POSIX threads},
+    TITLE = {{POSIX} {S}ystem {A}pplication {A}rogram {I}nterface:
+             Threads Extension [{C} {L}anguage],
+             {POSIX} 1003.1c Draft 4},
+    howpublished = {IEEE Standards Department}}
+
+@ARTICLE{Reid2000,
+    AUTHOR = {J.K. Reid},
+    TITLE = {Implicit Scaling of Linear Least Squares Problems},
+    JOURNAL = {{BIT}},
+    VOLUME = {40},
+    NUMBER = {1},
+    PAGES = {146-157},
+    YEAR = {2000} }
+
+@misc{sgi,
+    key = {Silicon Graphics},
+    TITLE = {{SGI} {P}ower {C}hallenge},
+    howpublished = {Silicon Graphics},
+    NOTE = {Technical Report},		  
+    YEAR = {1995} }
+
+@misc{sparc2000,
+    key = {Sun Microsystems, Inc.},		  
+    TITLE = {{SPARC}center 2000 Architecture and Implementation},
+    howpublished = {Sun Microsystems, Inc.},		  
+    NOTE = {Technical White Paper},		  
+    month = {November},		  
+    YEAR = {1993} }
+		  
+@misc{sunthread,
+    key = {Sun Microsystems, Inc.},		  
+    TITLE = {Solaris {SunOS} 5.0 Multithread Architecture},
+    howpublished = {Sun Microsystems, Inc.},		  
+    NOTE = {Technical White Paper},		  
+    month = {November},		  
+    YEAR = {1991} }
+		  
+@misc{mpi-forum,
+    key = "MPI",
+    title = "Message {P}assing {I}nterface ({MPI}) Forum",
+    howpublished = {http://www.mpi-forum.org/},
+    note = {}
+    }
+
+@misc{mpi-tutorial,
+    key = "MPI-tutorial",
+    title = {MPI Tutorial},
+    howpublished = {\url{https://computing.llnl.gov/tutorials/mpi/}},
+    note = {}
+    }
+
+@misc{openmp,
+    key = "openmp",
+    title = {{OpenMP API Specification for Parallel Programming}},
+    howpublished = {\url{www.openmp.org}},
+    note = {}
+    }
+
+@misc{openmp-tutorial,
+    key = "openmp-tutorial",
+    title = {{OpenMP Tutorial}},
+    howpublished = {\url{https://computing.llnl.gov/tutorials/openMP/}},
+    note = {}
+    }
+
+@misc{cuda,
+    key = "cuda",
+    title = {{CUDA Parallel Computing Platform}},
+    howpublished = {\url{http://www.nvidia.com/object/cuda_home_new.html}},
+    note = {}
+    }
+
+@misc{opencl,
+    key = "opencl",
+    title = {{Open Computing Language}},
+    howpublished = {\url{http://www.khronos.org/opencl/}},
+    note = {}
+    }
+
+@TECHREPORT{xblas,
+     AUTHOR = {X. S. Li and J. W. Demmel and D. H. Bailey and G. Henry
+	      and Y. Hida and J. Iskandar and W. Kahan and A. Kapur
+	      and M. C. Martin and T. Tung and D. J. Yoo},
+     title = {{Design, Implementation and Testing of
+	      Extended and Mixed Precision BLAS}},
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     YEAR = {2000},
+     MONTH = {June},
+     TYPE = {Technical {R}eport {LBNL}-45991},
+     ADDRESS = {http://www.nersc.gov/\~{ }xiaoye/XBLAS},
+     NOTE = {Submitted to ACM Trans. Mathematical Software}
+}
+
+@article{xblas:toms,
+     AUTHOR = {X. S. Li and J. W. Demmel and D. H. Bailey and G. Henry
+	      and Y. Hida and J. Iskandar and W. Kahan and S. Y. Kang and
+              A. Kapur and M. C. Martin and B. J. Thompson and T. Tung
+              and D. J. Yoo},
+     title = {Design, Implementation and Testing of
+	      Extended and Mixed Precision {BLAS}},
+     journal = {{ACM} Trans. Math. Softw.},
+     volume = 28,
+     number = 2,
+     pages = {152-205},  
+     YEAR = {2002}
+}
+
+@INPROCEEDINGS{QD-Arith15,
+  author={Hida, Y. and Li, X.S. and Bailey, D.H.},
+  booktitle={Proceedings 15th IEEE Symposium on Computer Arithmetic. ARITH-15 2001}, 
+  title={Algorithms for quad-double precision floating point arithmetic}, 
+  year={2001},
+  volume={},
+  number={},
+  pages={155-162},
+  doi={10.1109/ARITH.2001.930115},
+  url={https://www.davidhbailey.com/dhbsoftware/}
+}
+
+@TECHREPORT{quad-double,
+     AUTHOR = {Y. Hida and X. S. Li and D. H. Bailey},
+     title = {{Quad-double Arithmetic: Algorithms, Implementation
+               and Application}}, 
+     INSTITUTION = {Lawrence Berkeley National Laboratory},
+     YEAR = {2000},
+     MONTH = {June},
+     TYPE = {Technical {R}eport {LBNL}-46996},
+     ADDRESS = {Berkeley},
+     NOTE = {{\tt http://www.nersc.gov/\~{ }dhbailey/mpdist/mpdist.html}. 
+             Shortened version submitted to 15th IEEE Symposium on
+             Computer Arithmetic}
+}
+
+@BOOK{kumar94-book,
+      AUTHOR = {Vipin Kumar and Ananth Grama and Anshul Gupta and
+                George Karypis},
+      TITLE = {Introduction to Parallel Computing},
+      PUBLISHER = {The Benjamin/Cummings Publishing Company, Inc.},
+      YEAR = {1994},
+      ADDRESS = {Redwood City, California}
+}
+
+@BOOK{quinn87,
+      AUTHOR = {Michael J. Quinn},
+      TITLE = {Design Efficient Algorithms for Parallel Computers},
+      PUBLISHER = {McGraw-Hill Book Company},
+      YEAR = {1987},
+      ADDRESS = {New York}
+}
+
+@ARTICLE{petzold01,
+      AUTHOR = {SIAM WOrking Group on CSE Education},
+      TITLE = {Graduate Education in Computational Science and Engineering},
+      JOURNAL = {{SIAM Review}},
+      YEAR = {2001},
+      VOLUME = {43},
+      NUMBER = {1},
+      PAGES = {163--177} }
+
+@MANUAL{ieee754,
+      TITLE = {{IEEE} {S}tandard for {B}inary {F}loating {P}oint {A}rithmetic},
+      ORGANIZATION = {{ANSI/IEEE}},
+      EDITION = {{S}td 754-1985},
+      ADDRESS = {New York},
+      YEAR = {1985}   }
+
+@MANUAL{ieee854,
+ TITLE = {{IEEE} {S}tandard for {R}adix {I}ndependent {F}loating {P}oint 
+      {A}rithmetic},
+      ORGANIZATION = {{ANSI/IEEE}},
+      EDITION = {{S}td 854-1987},
+      ADDRESS = {New York},
+      YEAR = {1987}   }
+
+@BOOK{reevesrowe03,
+      AUTHOR = {Colin R. Reeves and Jonathan E. Rowe},
+      TITLE = {Genetic Algorithms: Principles and Perspectives:
+               A Guide to GA Theory},
+      PUBLISHER = {Kluwer Academic Publishers},
+      YEAR = {2003},
+      ADDRESS = {Norwell, Massachusetts}
+}
+
+@TECHREPORT{m3d-c1,
+     AUTHOR = {S.~C.~Jardin and J.A. Breslau},
+     title = {{Implicit solution of the 4-field extended-magnetohydrodynamic
+         equations using high-order high continuity finite elements}}, 
+     INSTITUTION = {Plasma Physics Laboratory, Princeton University},
+     YEAR = {2004},
+}
+
+@ARTICLE{nimrod,
+  AUTHOR = {C.R. Sovinec and A.H. Glasser and D.C. Barnes and
+   T.A. Gianakon and R.A. Nebel and S.E. Kruger and D.D. Schnack and
+   S.J. Plimpton and A. Tarditi and M.S. Chu and the NIMROD Team},
+   TITLE = {Nonlinear Magnetohydrodynamics with High-order Finite Elements},
+   JOURNAL = {{Computational Physics}},
+   YEAR = {2004},
+   VOLUME = {195},
+   PAGES = {355}
+}
+
+@misc{cemm,
+    KEY = {cemm},
+    TITLE = {{SciDAC: Center for Extended MHD Modeling (CEMM)}},
+    howpublished = {URL: http://w3.pppl.gov/cemm/},
+}
+
+@misc{m3dc1_web,
+  author = {},
+  key  = "m3dc1\_web",
+  title = "{M3D-C1}",
+  url = {https://w3.pppl.gov/~nferraro/m3dc1.html}
+}
+
+@misc{nimrod_web,
+  author = {},
+  key  = "nimrod\_web",
+  title = "{NIMROD}",
+  url = {https://nimrodteam.org/}
+}
+
+@misc{compass,
+    KEY = {compass},
+    TITLE = {{SciDAC: Community Petascale Project for Accelerator Science
+              and Simulation (COMPASS)}},
+    howpublished = {URL: https://compass.fnal.gov/},
+}
+
+@misc{phoenix,
+  KEY = {phoenix},
+  TITLE = {{Modeling atmospheres with PHOENIX}},
+  howpublished = {URL: http://www.hs.uni-hamburg.de/EN/For/ThA/phoenix/}
+}
+
+@misc{tops,
+  KEY = {tops},
+  TITLE = {{Terascale Optimal PDE Simulation}},
+  howpublished = {URL: http://www-unix.mcs.anl.gov/scidac-tops/}
+}
+
+@misc{sovinec,
+  author = {Carl Sovinec},
+  howpublished = {Private communications}
+}
+
+@BOOK{follandPDE,
+      AUTHOR = {Gerald~B. Folland},
+      TITLE = {Introduction to Partial Differential Equations},
+      PUBLISHER = {Princeton University Press},
+      YEAR = { 1995}
+}
+
+@misc{atlas,
+    key = {atlas},
+    TITLE = {Automatically Tuned Linear Algebra Software {(ATLAS)}},
+    howpublished = {\url{http://math-atlas.sourceforge.net/}}
+}
+
+@misc{bebop-url,
+    key = {bebop},
+    title = {{Berkeley Benchmark and Optimization group}},
+    howpublished = {\url{http://bebop.cs.berkeley.edu}}
+}
+
+@misc{oski,
+    key = {oski},
+    TITLE = {{OSKI}: Optimized Sparse Kernel Interface},
+    howpublished = {\url{http://bebop.cs.berkeley.edu/oski/}},
+    note = {{Berkeley Benchmarking and OPtimization Group}}
+}
+
+
+@ARTICLE{lin_itref06,
+  author = {J. Demmel and Y. Hida and W. Kahan and X.S. Li and 
+           S. Mukherjee and E.J. Riedy},
+  title =  {Error Bounds from Extra-Precise Iterative Refinement},
+  journal = {{ACM} Trans. Math. Softw.},
+  volume =   {32},
+  number =   {2},
+  pages =    {325-351},
+  month =    {June},
+  year =     {2006}
+}
+@article{lsq_itref09,
+  title={Extra-precise iterative refinement for overdetermined least squares problems},
+  author={Demmel, J. and Hida, Y. and Riedy, E.J. and Li, X.S.},
+  journal={ACM Transactions on Mathematical Software (TOMS)},
+  volume={35},
+  number={4},
+  pages={28},
+  year={2009},
+  publisher={ACM}
+}
+
+@ARTICLE{XuWeiQiao06,
+    AUTHOR = {W. Xu and Y. Wei and S. Qiao},
+    TITLE = {Condition numbers for structured least squares problems},
+    JOURNAL = {{BIT} Numerical Mathematics},
+    VOLUME = {46},
+    PAGES = {203-225},
+    YEAR = {2006}
+}
+
+@techreport{lawn175,
+   author = {Julie Langou and Julien Langou and Piotr Luszczek and
+             Jakub Kurzak and Alfredo Buttari and Jack Dongarra},
+   title = {Exploiting the Performance of 32 bit Floating Point Arithmetic
+           in Obtaining 64 bit Accuracy (Revisiting Iterative Refinement
+           for Linear Systems)},
+   month = {June},
+   year   = "2006",
+   institution = {University of Tennessee},
+   address = "Knoxville, TN"
+}
+
+@techreport{lawn180,
+   author = {Alfredo Buttari and Jack Dongarra and Jakub Kurzak and
+             Piotr Luszczek and Stanmire Tomov},
+   title = {Using Mixed Precision for Sparse Matrix Computations to Enhance
+            the Performance while Achieving 64-bit Accuracy},
+   number = {UT-CS-06-584},
+   month = {November},
+   year   = "2006",
+   institution = {University of Tennessee},
+   address = "Knoxville, TN"
+}
+
+@ARTICLE{Wampler70,
+    AUTHOR = {Roy H. Wampler}, 
+    TITLE = {A Report on the Accuracy of Some Widely Used Least Squares
+             Computer Programs (in Applications)},
+    JOURNAL = {Journal of the American Statistical Association},
+    VOLUME = {65},
+    NUMBER = {330},
+    PAGES = {549-565},
+    YEAR = {1970}
+}
+  
+@INPROCEEDINGS{Phillips07,
+    AUTHOR = {Stephen Phillips},
+    TITLE = {VictoriaFalls: Scaling Highly-Threaded Processor Cores},
+    BOOKTITLE = {HOT CHIPS 19: A Symposium on High Performance Chips},
+    ADDRESS = {Stanford, California},
+    YEAR = {August 19-21, 2007}
+}
+
+@misc{shalf,
+  author = {John Shalf},
+  howpublished = {Private communications}
+}
+
+@misc{sam,
+  author = {Samuel Williams},
+  howpublished = {Private communications}
+}
+
+@article{williams2009,
+author = {S. Williams and A. Waterman and D. Patterson}, 
+title = {{Roofline: An Insightful Visual Performance Model for Floating-Point
+ Programs and Multicore Architectures}},
+journal= {Communications of the ACM (CACM)},
+month = {April},
+year = {2009}
+}
+
+@misc{mpich,
+    key = "MPICH",
+    title = "{MPICH - A Portable Implementation of MPI}",
+    howpublished = {\url{http://www-unix.mcs.anl.gov/mpi/mpich1/}},
+    note = {}
+    }
+
+@misc{papi,
+    key = "PAPI",
+    title = {{PAPI - Performance Application Programming Interface}},
+    howpublished = {\url{http://icl.cs.utk.edu/papi/}},
+    note = {}
+}
+
+@misc{craypat,
+    key = "CRAYPAT",
+    title = {{CrayPatCray Performance Analysis Tools}},
+    howpublished = {\url{http://docs.cray.com/books/S-2376-41/S-2376-41.pdf}},
+    note = {}
+}
+
+@Book{Forsythe:1967:CSL,
+  author =      "George E. Forsythe and Cleve B. Moler",
+  title =       "Computer Solution of Linear Algebraic Systems",
+  publisher =   "Prent{\-}ice-Hall, Inc.",
+  address =     "Englewood Cliffs, NJ 07632, USA",
+  pages =       "xi + 148",
+  year =        "1967",
+  LCCN =        "QA297 .F57 1967",
+  MRclass =     "65.35",
+  MRnumber =    "MR0219223 (36 \#2306)",
+  mrreviewer =  "N. Gastinel",
+  bibdate =     "Tue Nov 22 09:08:17 MST 2005",
+  bibsource =   "ftp://ftp.math.utah.edu/pub/bibnet/authors/f/forsythe-george-elmer.bib;
+                 ftp://ftp.math.utah.edu/pub/bibnet/authors/m/moler-cleve-b.bib;
+                 ftp://ftp.math.utah.edu/pub/bibnet/subjects/acc-stab-num-alg-2ed.bib;
+                 ftp://ftp.math.utah.edu/pub/bibnet/subjects/acc-stab-num-alg.bib;
+                 ftp://ftp.math.utah.edu/pub/tex/bib/gvl.bib",
+  acknowledgement = "Nelson H. F. Beebe, University of Utah, Department
+                 of Mathematics, 110 LCB, 155 S 1400 E RM 233, Salt Lake
+                 City, UT 84112-0090, USA, Tel: +1 801 581 5254, FAX: +1
+                 801 581 4148, e-mail: \path|beebe@math.utah.edu|,
+                 \path|beebe@acm.org|, \path|beebe@computer.org|
+                 (Internet), URL:
+                 \path|http://www.math.utah.edu/~beebe/|",
+  keywords =    "numerical analysis; software",
+  zmnumber =    "0154.40401",
+  mrnumber-url = "http://www.ams.org/mathscinet-getitem?mr=36%232306",
+}
+
+%   author = "Krste Asanovic and Ras Bodik and Bryan Christopher Catanzaro
+%            and Joseph James Gebis and Parry Husbands and Kurt Keutzer
+%            and David A. Patterson and William Lester Plishker
+%            and John Shalf and Samuel Webb Williams and Katherine A. Yelick",
+@techreport{landscape,
+   author = "K. Asanovic and R. Bodik and B.~C. Catanzaro
+            and J.~J. Gebis and P. Husbands and K. Keutzer
+            and D.~A. Patterson and W.~L. Plishker
+            and J. Shalf and S.~W Williams and K.~A. Yelick",
+   title = "{The Landscape of Parallel Computing Research:
+             A View from Berkeley}",
+   institution = "EECS Department, Univ. of California, Berkeley",
+   year  = "2006",
+   month = "December 18",
+   type = {Technical {R}eport No. UCB/EECS-2006-183}
+}
+
+@BOOK{hennessy-patterson2012,
+      AUTHOR = {J.~L. Hennessy and D.~A. Patterson},
+      TITLE = {Computer Architecture: A Quantitative Approach, Fifth Edition},
+      PUBLISHER = {Elsevier},
+      YEAR = {2012}
+}
+
+@techreport{saavedra93,
+   author = "R.~H. Saavedra and A.~J. Smith",
+   title = "Measuring Cache and TLB Performance and Their Effect
+           on Benchmark Run Times",
+   institution = "University of Southern California",
+   year  = "1993",
+   type = {Technical Report No. USC-CS-93-546}
+}
+
+@inproceedings{tarragon,
+ author = {Pietro Cicotti and Scott B. Baden},
+ title = {Poster reception---Asynchronous programming with Tarragon},
+ booktitle = {{SC '06: Proceedings of the 2006 ACM/IEEE conference on Supercomputing}},
+ year = {2006},
+ isbn = {0-7695-2700-0},
+ pages = {159},
+ location = {{Tampa, Florida}},
+ doi = {http://doi.acm.org/10.1145/1188455.1188620},
+ publisher = {{ACM Press}},
+ address = {{New York, NY, USA}},
+}
+
+@INPROCEEDINGS{snavelySC02,
+    AUTHOR = {Allan Snavely and Laura Carrington and Nicole Wolter and
+              Jesus Labarta and Rosa Badia and Avi Purkayastha},
+    TITLE = {A Framework for Application Performance Modeling and Prediction},
+    BOOKTITLE = {Supercomputing (SC02)},
+    ADDRESS = {Baltimore, MD},
+    YEAR = {November 16-22, 2002}
+}
+
+@INPROCEEDINGS{snavelySC07,
+    AUTHOR = {Mustafa M Tikir and Laura Carrington and Erich Strohmaier and
+              Allan Snavely},
+    TITLE = {A Genetic Algorithms Approach to Modeling the Performance
+            of Memory-bound Computations},
+    BOOKTITLE = {Supercomputing (SC07)},
+    ADDRESS = {Reno, California},
+    YEAR = {November 10-16, 2007}
+}
+
+@INPROCEEDINGS{strohmaier04,
+    AUTHOR = {E. Strohmaier and H. Shan},
+    TITLE = {Architecture Independent Performance Characterization and
+             Benchmarking for Scientific Applications},
+    BOOKTITLE = {International Symposium on Modeling, Analysis and Simulation
+                 of Computer and Telecommunication Systems},
+    ADDRESS = {Volendam, The Netherlands},
+    YEAR = {Oct. 2004}
+}
+
+@misc{imp,
+    key = "imp",
+    title = "Intel$\tiny\textcircled{{\tiny R}}$ {MPI Benchmarks 3.2}",
+    howpublished = {\url{http://software.intel.com/en-us/articles/intel-mpi-benchmarks/}}
+    }
+%    title = {Intel MPI Benchmarks 3.2},
+
+@misc{intel-avx,
+    key = "avx",
+    title = "Intel$\tiny\textcircled{{\tiny R}}$ 
+   {Architecture Instruction Set Extensions Programming Reference}",
+    howpublished = {\url{http://download-software.intel.com/sites/default/files/319433-016.pdf}},
+    year = 2013
+    }
+
+@inproceedings{vuduc02,
+   author    = {R. Vuduc and S. Kamil and J Hsu and R. Nishtala and
+                J. W. Demmel and K. A. Yelick},
+   title     = {Automatic Performance Tuning and Analysis of Sparse
+                Triangular Solve},
+   booktitle = {Proceedings of the ICS 2002: Workshop on Performation
+                Optimizations via High-Level Languages and Libraies},
+   address = {New York},
+   year = {2002},
+   month = {June}
+}
+
+@misc{stream,
+    author = {McCalpin, John D.},
+    title = "Memory Bandwidth and Machine Balance in Current High Performance
+           Computers",
+    howpublished = {IEEE Computer Society Technical Committee on Computer
+           Architecture (TCCA) Newsletter},
+    year = {December 1995}
+}
+
+@article{qiangli10,
+    AUTHOR = {Ji Qiang and Xiaoye Li},
+    TITLE = {Particle-Field Decomposition and
+    Domain Decomposition in Parallel Particle-In-Cell Beam Dynamic
+    Simulations},
+    JOURNAL = {Computer Physics Communications},
+    VOLUME = 181,
+    YEAR = {2011},
+    PAGES = {2024-2034}
+}
+
+
+@inproceedings{dazevedo11,
+   author    = {Ed D'Azevedo},
+   title     = {Performance of a Boundary Element method Solver on General
+      Purpose Graphics Processing Unit},
+   booktitle = {SIAM CSE11 (abstract)},
+   address = {Reno, Nevada},
+   year = {2011},
+   month = {Feburary 28-March 4}
+}
+
+@article{Thakur05,
+  author = {R. Thakur and R. Rabenseifner and W. Gropp},
+  title = {Optimization of Collective Communication Operations in {MPICH}},
+  journal = {Int'l Journal of High Performance Computing Applications},
+  volume = {19},
+  number = {1},
+  pages = {49-66},
+  year = 2005
+}
+
+
+@INPROCEEDINGS{solomonik11,
+    AUTHOR = {Edgar Solomonik and James Demmel},
+    TITLE = {Communication-optimal parallel 2.5D matrix multiplication
+            and LU factorization algorithms},
+    BOOKTITLE = {Lecture Notes in Computer Science, Euro-Par},
+    ADDRESS = {Bordeaux, France},
+    YEAR = {2011},
+    MONTH = {August}
+}
+
+@article{liu2016-butterfly,
+   author = {Y. Liu and H. Guo and E. Michielssen},
+   title =  {A HSS matrix-inspired butterfly-based direct solver
+              for analyzing scattering from two-dimensional objects},
+   journal = {IEEE AntennasWireless Propag. Lett.},
+   year = {2016. doi:10.1109/LAWP.2016.2626786}
+}
+@article{michielssen1996,
+  author = {E. Michielssen and A. Boag},
+  title = {A multilevel matrix decomposition algorithm for analyzing
+            scattering from large structures},
+  journal = {IEEE Trans. Antennas Propag.},
+  volume = {44},
+  pages = {1086-1093},
+  year = {1996}
+}
+
+@incollection{ss-testing,
+  author = {R.A. Bartlett and A. Dubey and X.S. Li and J.D. Moulton and
+            J.M. Willenbring and U.M. Yang},
+  title = {{Testing in Scientific Software: Impacts on Research Credibility,
+            Development Productivity, Maturation, and Sustainability}},
+  booktitle = {Software Engineering for Science},
+  editor = {J. Carver and N.P. Chue Hong and G.K. Thiruvathukal},
+  dmonth = {October},
+  year = {2016},
+  pages = {89-118},
+  publisher = {CRC Press}
+}
+
+@article{Liu_HBACA:2020,
+  author = {Y. Liu and W. Sid-Lakhdar and E. Rebrova and P. Ghysels and X.S. Li},
+  title = {{A Parallel Hierarchical Blocked Adaptive Cross Approximation Algorithm}},
+  journal = {Int. Journal of High Performance Computing Applications},
+  doi = {10.1177/1094342020918305},
+  year = 2020
+}
+%  note = {September 2019. Submitted},
+
+@article{liu_butterfly:2020,
+  title={Butterfly factorization via randomized matrix-vector multiplications},
+  author={Y. Liu and X. Xing and H. Guo and E. Michielssen and P. Ghysels and X.S. Li},
+  journal={SIAM. J. Sci. Comput.},
+  volume = {43},
+  number = {2}
+  pages = {A883-A907},
+  year = {2021},
+  doi = {10.1137/20M1315853}
+}
+
+TY  - JOUR
+AU  - Ajo-Franklin, Jonathan B.
+AU  - Dou, Shan
+AU  - Lindsey, Nathaniel J.
+AU  - Monga, Inder
+AU  - Tracy, Chris
+AU  - Robertson, Michelle
+AU  - Rodriguez Tribaldos, Veronica
+AU  - Ulrich, Craig
+AU  - Freifeld, Barry
+AU  - Daley, Thomas
+AU  - Li, Xiaoye
+PY  - 2019
+DA  - 2019/02/04
+TI  - Distributed Acoustic Sensing Using Dark Fiber for Near-Surface Characterization and Broadband Seismic Event Detection
+JO  - Scientific Reports
+SP  - 1328
+VL  - 9
+IS  - 1
+AB  - We present one of the first case studies demonstrating the use of distributed acoustic sensing deployed on regional unlit fiber-optic telecommunication infrastructure (dark fiber) for broadband seismic monitoring of both near-surface soil properties and earthquake seismology. We recorded 7 months of passive seismic data on a 27 km section of dark fiber stretching from West Sacramento, CA to Woodland, CA, densely sampled at 2 m spacing. This dataset was processed to extract surface wave velocity information using ambient noise interferometry techniques; the resulting VS profiles were used to map both shallow structural profiles and groundwater depth, thus demonstrating that basin-scale variations in hydrological state could be resolved using this technique. The same array was utilized for detection of regional and teleseismic earthquakes and evaluated for long period response using records from the M8.1 Chiapas, Mexico 2017, Sep 8th event. The combination of these two sets of observations conclusively demonstrates that regionally extensive fiber-optic networks can effectively be utilized for a host of geoscience observation tasks at a combination of scale and resolution previously inaccessible.
+SN  - 2045-2322
+UR  - https://doi.org/10.1038/s41598-018-36675-8
+DO  - 10.1038/s41598-018-36675-8
+ID  - Ajo-Franklin2019
+ER  - 
+
+@INPROCEEDINGS{Austin2015,
+    AUTHOR = {B. Austin and E. Roman and X. Li},
+    TITLE = {{Resilient Matrix Multiplication of Hierarchical
+              Semi-Separable Matrices}},
+    BOOKTITLE = {Proceedings of the 5th Workshop on Fault Tolerance
+    for HPC at eXtreme Scale (FTXS)},
+    PAGES = {19-26},
+    YEAR = {2015},
+    MONTH = {June},
+    ADDRESS = {Portland, Oregon},
+    DOI = {10.1145/2751504.2751507}
+    }
+
+@Article{giraud_et_al:DR:2020:13429,
+  author = {Luc Giraud and Ulrich R{\"u}de and Linda Stals},
+  title = {{Resiliency in Numerical Algorithm Design for Extreme Scale Simulations (Dagstuhl Seminar 20101)}},
+  pages = {1--57},
+  journal = {Dagstuhl Reports},
+  ISSN = {2192-5283},
+  year = 2020,
+  volume = 10,
+  number = 3,
+  editor = {Luc Giraud and Ulrich R{\"u}de and Linda Stals},
+  publisher = {Schloss Dagstuhl--Leibniz-Zentrum f{\"u}r Informatik},
+  address = {Dagstuhl, Germany},
+  URL =	{https://drops.dagstuhl.de/opus/volltexte/2020/13429},
+  URN =	{urn:nbn:de:0030-drops-134290},
+  doi =	{10.4230/DagRep.10.3.1},
+  annote = {eywords: Numerical algorithms, Parallel computer architecture, Fault tolerance, Resilience}
+}
+
+
+%%%% Mixed-precision
+%%Higham's paper on shared-memory sparse direct solvers
+
+%%---- Randomized algo
+@article{KaneNelson14,
+author = {D.M. Kane and J. Nelson},
+title = {{Sparser Johnson-Lindenstrauss Transforms}},
+year = {2014},
+journal = {Journal of the ACM},
+volume = {61},
+number = {1},
+note = {https://arxiv.org/abs/1012.1577v6}
+}
+
+@inproceedings{AilonChazelle06,
+   author    = {N. Ailon and B. Chazelle},
+   title     = {{Approximate Nearest Neighbors and the Fast Johnson-Lindenstrauss Transform}},
+   booktitle = {Proceedings of the thirty-eighth annual ACM symposium on Theory of Computing (STOC)},
+   address = {Portsmouth, Virginia},
+   year = {2006},
+   month = {May},
+   pages = {557-563}
+}
+
+@ARTICLE{halko2011,
+    AUTHOR = {N. Halko and P.G. Martinsson and J.A. Tropp},
+    TITLE = {Finding Structure with Randomness: Probabilistic Algorithms for
+       Constructing Approximate Matrix Decompositions},
+   JOURNAL = {SIAM Review},
+   VOLUME = {53},
+   NUMBER = {2},
+   YEAR = {2011},
+   PAGES = {217-288}
+}
+@phdthesis{liberty2009,
+  title={Accelerated Dense Random Projections},
+  author={Edo Liberty},
+  year={2009},
+  school={Yale University, New Haven}
+}
+
+%%---- Tensor
+@phdthesis{shi2022,
+  title={Tensor Computations with Dimensionality Manipulations},
+  author={Tianyi Shi},
+  year={2022},
+  school={Cornell University, Ithaca}
+}
+@Article{xing2020,
+  author = "Xin Xing and Hua Huang and Edmond Chow",
+  title = {A Linear Scaling Hierarchical Block Low-rank Representation
+  of the Electron Repulsion Integral Tensor},
+  journal =  "J. Chem. Phys.",
+  volume = 153,
+  number = 8,
+  year = 2020
+}
+
+@article{martin1999,
+author = {Lee,Michael S.  and Maslen,Paul E.  and Head-Gordon,Martin },
+title = {Closely approximating second-order Moller–Plesset perturbation theory with a local triatomics in molecules model},
+journal = {J. Chem. Phys.},
+volume = {112},
+number = {8},
+pages = {3592-3601},
+year = {2000},
+doi = {10.1063/1.480512}
+}
+
+@article{Qchem21,
+author = {Evgeny Epifanovsky and Andrew TB Gilbert and Xintian Feng and Joonho Lee and
+Yuezhi Mao and Narbe Mardirossian and Pavel Pokhilko and Alec F White and Marc P
+Coons and Adrian L Dempwolff and et al.},
+title = {{Software for the frontiers of quantum
+chemistry: An overview of developments in the Q-Chem 5 package}},
+journal = {J. Chem. Phys.},
+volume = {155},
+number = {8},
+pages = {084801},
+year = {2021},
+url = {https://www.q-chem.com/}
+}
+@article{wang2023local,
+  title={Local Second-Order M{\o}ller--Plesset Theory with a Single Threshold Using Orthogonal Virtual Orbitals: Theory, Implementation, and Assessment},
+  author={Wang, Zhenling and Aldossary, Abdulrahman and Shi, Tianyi and Liu, Yang and Li, Xiaoye S and Head-Gordon, Martin},
+  journal={J.~Chem.\ Theory Comput.},
+ publisher={ACS Publications}
+}
+
+@article{shi2024-jctc,
+author = {Shi, Tianyi and Wang, Zhenling and Aldossary, Abdulrahman and Liu, Yang and Li, Xiaoye S. and Head-Gordon, Martin},
+title = {Local Second Order Mo̷ller-Plesset Theory with a Single Threshold Using Orthogonal Virtual Orbitals: A Distributed Memory Implementation},
+journal = {Journal of Chemical Theory and Computation},
+volume = {20},
+number = {18},
+pages = {8010-8023},
+year = {2024},
+doi = {10.1021/acs.jctc.4c01016}
+}
+
+% needs 1D cyclic-reduction solver
+@article{Qpad21,
+author = {F. Li and W. An and V. K. Decyk and X. Xu and M. J. Hogan and W. B. Mori},
+title = {{ A quasi-static particle-in-cell
+algorithm based on an azimuthal fourier decomposition for highly e cient simulations of
+plasma-based acceleration: Qpad}},
+journal = {Computer Physics Communications},
+volume = {261:107784},
+year = {2021}
+}
+
+@INPROCEEDINGS{Chroma,
+    AUTHOR = {R. G. Edwards (LHPC Collaboration) and B. Joó (UKQCD Collaboration)},
+    TITLE = {{The Chroma Software System for Lattice QCD}},
+    BOOKTITLE = {Proceedings of the 22nd International Symposium for Lattice Field Theory (Lattice2004)},
+    pages = {p832},
+    YEAR = {2005},
+    NOTE = {Nucl. Phys B1 40 (Proc. Suppl)}
+}
+
+@INPROCEEDINGS {10027518,
+author = {J. Demmel and J. Dongarra and M. Gates and G. Henry and J. Langou and X. Li and P. Luszczek and W. Pereira and J. Riedy and C. Rubio-Gonzalez},
+booktitle = {2022 IEEE/ACM Sixth International Workshop on Software Correctness for HPC Applications (Correctness)},
+title = {Proposed Consistent Exception Handling for the BLAS and LAPACK},
+year = {2022},
+volume = {},
+issn = {},
+pages = {1-9},
+doi = {10.1109/Correctness56720.2022.00006},
+publisher = {IEEE Computer Society},
+address = {Los Alamitos, CA, USA},
+month = {nov}
+}
+
+@Article{karypis_et_al:DagRep.13.8.1,
+ author = {Karypis, George and Schulz, Christian and Strash, Darren and Ajwani, Deepak and Bisseling, Rob H. and Casel, Katrin and \c{C}ataly\"{u}rek, \"{U}mit V. and Chevalier, C\'{e}dric and Chudigiewitsch, Florian and Faraj, Marcelo Fonseca and Fellows, Michael and Gottesb\"{u}ren, Lars and Heuer, Tobias and Kaya, Kamer and Lacki, Jakub and Langguth, Johannes and Li, Xiaoye Sherry and Mayer, Ruben and Meintrup, Johannes and Mizutani, Yosuke and Pellegrini, Fran\c{c}ois and Petrini, Fabrizio and Rosamond, Frances and Safro, Ilya and Schlag, Sebastian and Sharma, Roohani and Sullivan, Blair D. and U\c{c}ar, Bora and Yzelman, Albert-Jan},
+title =	{{Recent Trends in Graph Decomposition (Dagstuhl Seminar 23331)}},
+pages =	{1--45},
+journal =	{Dagstuhl Reports},
+ISSN =	{2192-5283},
+year =	{2024},
+volume =	{13},
+number =	{8},
+editor =	{Karypis, George and Schulz, Christian and Strash, Darren},
+publisher =	{Schloss Dagstuhl -- Leibniz-Zentrum f{\"u}r Informatik},
+address =	{Dagstuhl, Germany},
+URL = 	{https://drops.dagstuhl.de/entities/document/10.4230/DagRep.13.8.1},
+URN =		{urn:nbn:de:0030-drops-198114},
+doi =		{10.4230/DagRep.13.8.1},
+annote ={Keywords: combinatorial optimization, experimental algorithmics, parallel algorithms}
+}
+			      
+@ARTICLE{10238712,
+ author={Liu, Yang and Luo, Tianhuan and Rani, Aman and Luo, Hengrui and Li, Xiaoye Sherry},
+ journal={IEEE Journal on Multiscale and Multiphysics Computational Techniques},
+ title={{Detecting Resonance of Radio-Frequency Cavities Using Fast Direct Integral Equation Solvers and Augmented Bayesian Optimization}},
+ year={2023},
+ volume={8},
+ number={},
+ pages={361-371},
+ keywords={Resonant frequency;Eigenvalues and eigenfunctions;Optimization;Transmission line matrix methods;Finite element analysis;Radio frequency;Surface waves;Bayes methods;Higher order statistics;RF cavity;eigen solver;fast direct solver;Bayesian optimization;high-order resonance mode;down-hill simplex algorithm},
+ doi={10.1109/JMMCT.2023.3311322}
+ }
+
+@article{carson2018accelerating,
+  title={Accelerating the solution of linear systems by iterative refinement in three precis\
+  ions},
+  author={Carson, Erin and Higham, Nicholas J},
+  journal={SIAM Journal on Scientific Computing},
+  volume={40},
+  number={2},
+  pages={A817--A847},
+  year={2018},
+  publisher={SIAM}
+}
+
+@article{survey-mixed-prec2021,
+author = {Ahmad Abdelfattah and Hartwig Anzt and Erik G Boman and Erin Carson and Terry Cojean and Jack Dongarra and Alyson Fox and Mark Gates and Nicholas J Higham and Xiaoye S Li and Jennifer Loe and Piotr Luszczek and Srikara Pranesh and Siva Rajamanickam and Tobias Ribizel and Barry F Smith and Kasia Swirydowicz and Stephen Thomas and Stanimire Tomov and Yaohung M Tsai and Ulrike Meier Yang},
+title ={A survey of numerical linear algebra methods utilizing mixed-precision arithmetic},
+journal = {The International Journal of High Performance Computing Applications},
+volume = {35},
+number = {4},
+pages = {344-369},
+year = {2021},
+doi = {10.1177/10943420211003313}
+}
+
+@inproceedings{gu:ipac2024-mopc25,
+author = {X. Gu et al.},
+title = {Enhancing beam intensity in RHIC EBIS beamline via GPTune machine learning-driven optimization},
+booktitle = {Proc. IPAC'24},
+%  booktitle = {Proc. 15th International Particle Accelerator Conference},
+pages = {118-120},
+paper = {MOPC25},
+venue = {Nashville, TN},
+series = {IPAC'24 - 15th International Particle Accelerator Conference},
+number = {15},
+publisher = {JACoW Publishing, Geneva, Switzerland},
+month = {05},
+year = {2024},
+issn = {2673-5490},
+isbn = {978-3-95450-247-9},
+doi = {10.18429/JACoW-IPAC2024-MOPC25}
+}
+								    
+@ARTICLE{cise2024,
+  author={Anzt, Hartwig and Huebl, Axel and Li, Xiaoye S.},
+  journal={Computing in Science & Engineering},
+  title={{Then and Now: Improving Software Portability, Productivity, and 100× Performance}},
+  year={2024},
+  volume={26},
+  number={1},
+  pages={61-70},
+  doi={10.1109/MCSE.2024.3387302}
+ }
+ 
+@article{doi:10.1177/10943420241271005,
+author = {Michael A Heroux and Lois Curfman McInnes and James Ahrens and Todd Gamblin and Timothy C Germann and Xiaoye Sherry Li and Kathryn Mohror and Todd Munson and Sameer Shende and Rajeev Thakur and Jeffrey Vetter and James Willenbring},
+title ={{ECP libraries and tools: An overview}},
+journal = {The International Journal of High Performance Computing Applications},
+volume = {0},
+number = {0},
+pages = {10943420241271005},
+year = {0},
+doi = {10.1177/10943420241271005}
+}
+
+@inproceedings{qiang:ipac2024-thpc72,
+  author = {J. Qiang and Y. Kan and X. Li and Y. Liu and X.Gu and W. Fang and Y. Hao},
+  title = {Advanced modeling and optimization of nuclear physics colliders},
+  booktitle = {Proc. IPAC'24},
+%  booktitle = {Proc. 15th International Particle Accelerator Conference},
+  pages = {3194-3197},
+  paper = {THPC72},
+   venue = {Nashville, TN},
+  series = {IPAC'24 - 15th International Particle Accelerator Conference},
+  number = {15},
+  publisher = {JACoW Publishing, Geneva, Switzerland},
+  month = {05},
+  year = {2024},
+  doi = {10.18429/JACoW-IPAC2024-THPC72}
+}
+
+@Misc{petsc-web-page,
+title         = {{PETS}c {W}eb page},
+url           = {https://petsc.org/},
+howpublished  = {\url{https://petsc.org/}},
+year          = {2025}
+}
+
+@Misc{trilinos-web-page,
+title         = {{Trilinos} {W}eb page},
+url           = {https://trilinos.github.io/},
+howpublished  = {\url{https://trilinos.github.io/}},
+year          = {2025}
+}
+
+@Misc{scipy-web-page,
+title         = {{SciPy} {W}eb page},
+url           = {https://scipy.org/},
+howpublished  = {\url{https://scipy.org/}},
+year          = {2025}
+}
