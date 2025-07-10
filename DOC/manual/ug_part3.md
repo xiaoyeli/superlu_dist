@@ -44,6 +44,7 @@ process owns a block of consecutive rows of $A$ and $B$. Each local part
 of sparse matrix $A$ is stored in a *compressed row* format, called
 storage type, which is defined below.
 
+```c
         typedef struct {
             int nnz_loc;  /* number of nonzeros in the local submatrix */
             int m_loc;    /* number of rows local to this process */
@@ -53,6 +54,7 @@ storage type, which is defined below.
                              and colind[]  */
             int *colind;  /* pointer to array of column indices of the nonzeros */
         } NRformat_loc;
+```
 
 Let $m_i$ be the number of rows owned by the $i$th process. Then the
 global row dimension for $A$ is $nrow = \sum_{i=0}^{P-1}m_i$. The global
@@ -62,10 +64,12 @@ Figure [\[fig:struct\]](#fig:struct). The utility routine\
 `dCreate_CompRowLoc_Matrix_dist` can help the user to create the
 structure for $A$. The definition of this routine is
 
+```c
       void dCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int m, int n,
                                           int nnz_loc, int m_loc, int fst_row,
                                           double *nzval, int *colind, int *rowptr,
                                           Stype_t stype, Dtype_t dtype, Mtype_t mtype);
+```
 
 where, the first argument is output and the rest are inputs.
 
@@ -140,7 +144,9 @@ either by its rank in the new group or by its coordinates within the
 grid. The routine `superlu_gridinit` maps already-existing processes to
 a 2D process grid.
 
+```c
         superlu_gridinit(MPI_Comm Bcomm, int nprow, int npcol, gridinfo_t *grid);
+```
 
 This process grid will use the first ${\tt nprow} * {\tt npcol}$
 processes from the base MPI communicator `Bcomm`, and assign them to the
@@ -150,6 +156,7 @@ group will be formed. For example, it can be `MPI_COMM_WORLD`. The
 output argument `grid` represents the derived group to be used in .
 `Grid` is a structure containing the following fields:
 
+```c
        struct {
            MPI_Comm comm;        /* MPI communicator for this group */
            int iam;              /* my process rank in this group   */
@@ -158,6 +165,7 @@ output argument `grid` represents the derived group to be used in .
            superlu_scope_t rscp; /* process row scope               */
            superlu_scope_t cscp; /* process column scope            */
        } grid;
+```
 
 In the $LU$ factorization, some communications occur only among the
 processes in a row (column), not among all processes. For this purpose,
@@ -181,8 +189,10 @@ ${\tt nprow} * {\tt npcol}$ processes to define the grid. A more
 sophisticated process-to-grid mapping routine `superlu_gridmap` is
 designed to create a grid with processes of arbitrary ranks.
 
+```c
         superlu_gridmap(MPI_Comm Bcomm, int nprow, int npcol,
                         int usermap[], int ldumap, gridinfo_t *grid);
+```
 
 The array `usermap[]` contains the processes to be used in the newly
 created grid. `usermap[]` is indexed like a Fortran-style 2D array with
@@ -505,6 +515,7 @@ the routines must include the header file `superlu_ddefs.h` (or
 `superlu_zdefs.h`, the complex counterpart) which contains the
 definitions of the data types, the macros and the function prototypes.
 
+```c
     #include <math.h>
     #include "superlu_ddefs.h"
 
@@ -529,7 +540,7 @@ definitions of the data types, the macros and the function prototypes.
      *    mpprun -n <procs> pddrive -r <proc rows> -c <proc columns> <input_file>
      *
      */
-    {
+   {
         superlu_options_t options;
         SuperLUStat_t stat;
         SuperMatrix A;
@@ -653,6 +664,7 @@ definitions of the data types, the macros and the function prototypes.
         MPI_Finalize();
 
     }
+```
 
 Five basic steps are required to call a SuperLU routine:
 
@@ -765,6 +777,7 @@ Section [\[sec:slu_utility\]](#sec:slu_utility). Here, we only list those new r
 specific to . Note that in order to avoid name clash between and , we
 append "`_dist`" to each routine name in .
 
+```c
         /* Create a supermatrix in distributed compressed row format. A is output. */
         dCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int_t m, int_t n,
                                        int_t nnz_loc, int_t m_loc, int_t fst_row,
@@ -799,6 +812,7 @@ append "`_dist`" to each routine name in .
 
         /* Deallocate the statistics variable. */
         PStatFree(SuperLUStat_t *stat);
+```
 
 (sec:dist_install)=
 # 4.9 Installation 
@@ -912,7 +926,8 @@ and set the number of threads to be used in the environment variable:
 
 needs to be set to enable this feature.
 
-## Performance-tuning parameters {#sec:SuperLU_DIST_sp_ienv}
+(sec:SuperLU_DIST_sp_ienv)=
+## 4.9.2 Performance-tuning parameters 
 
 Similar to sequential SuperLU, several performance related parameters
 are set in the inquiry function `sp_ienv()`. The declaration of this
@@ -922,13 +937,15 @@ function is
 
 `Ispec` specifies the parameter to be returned [^2]:
 
-::: {.tabbing}
-xxxxxx x̄xxx j̄unk ̄ ispec= 2: the relaxation parameter to control
-supernode amalgamation\
-= 3: the maximum allowable size for a block (supernode)\
-= 6: the estimated fills factor for the adjacency structures of $L$ and
-$U$
-:::
+ispec = 
+
+      = 2: the relaxation parameter to control supernode amalgamation \((relax)\)
+
+      = 3: the maximum allowable size for a supernode \((maxsup)\)
+    
+      = 6: size of the array to store the values of the L supernodes \((nzval)\)
+
+<br>
 
 The values to be returned may be set differently on different machines.
 The setting of maximum block size (parameter 3) should take into account
@@ -952,7 +969,7 @@ The following parameters are related to GPU usage:
 These parameters are described in detail in various algorithm papers,
 see [@li05; @sao2014].
 
-# Example programs
+# 4.10 Example programs
 
 In the `SuperLU_DIST/EXAMPLE/` directory, we present a few sample
 programs to illustrate the complete calling sequences to use the expert
@@ -965,37 +982,37 @@ example. The two basic examples are `pddrive_ABglobal()` and
 `pddrive()`. The first shows how to use the global input interface, and
 the second shows how to use the distributed input interface.
 
-# Fortran 90 Interface {#sec:slud_fortran}
+(sec:slud_fortran)=
+# 4.11 Fortran 90 Interface 
 
 We developed a complete Fortran 90 interface for . All the interface
 files and an example driver program are located in the
 `SuperLU_DIST/FORTRAN/` directory.
 Table [1](#tab:f90_files) lists all the files.
 
-::: {#tab:f90_files}
-  ----------------------- ---------------------------------------------------------------------
-  f_pddrive.f90           An example Fortran driver routine.
-                          
-  superlu_mod.f90         Fortran 90 module that defines the interface functions to access 's
-                          data structures.
-                          
-  superlupara.f90         It contains parameters that correspond to 's enums.
-                          
-  hbcode1.f90             Fortran function for reading a sparse Harwell-Boeing matrix from
-                          the file.
-                          
-  superlu_c2f_wrap.c      C wrapper functions, callable from Fortran. The functions fall
-                          into three classes: 1) Those that allocate a structure and return
-                          a handle, or deallocate the memory of a structure. 2) Those that
-                          get or set the value of a component of a struct. 3) Those that
-                          are wrappers for functions.
-                          
-  dcreate_dist_matrix.c   C function for distributing the matrix in a distributed
-                          compressed row format.
-  ----------------------- ---------------------------------------------------------------------
 
-  : The Fortran 90 interface files and an example driver routine.
-:::
+`f_pddrive.f90`  
+: An example Fortran driver routine.
+
+`superlu_mod.f90`  
+: Fortran 90 module that defines the interface functions to access **SuperLU_DIST**'s data structures.
+
+`superlupara.f90`  
+: It contains parameters that correspond to **SuperLU_DIST**'s enums.
+
+`hbcode1.f90`  
+: Fortran function for reading a sparse Harwell-Boeing matrix from the file.
+
+`superlu_c2f_wrap.c`  
+: C wrapper functions, callable from Fortran. The functions fall into three classes: 1) Those that allocate a structure and return a handle, or deallocate the memory of a structure. 2) Those that get or set the value of a component of a struct. 3) Those that are wrappers for **SuperLU_DIST** functions.
+
+`dcreate_dist_matrix.c`  
+: C function for distributing the matrix in a distributed compressed row format.
+
+<div style="text-align:center;">
+Table 4.1: The Fortran 90 interface files and an example driver routine.
+</div>
+<br>
 
 Note that in this interface, all objects (such as ***grid***,
 ***options***, etc.) in are *opaque*, meaning their size and
@@ -1022,7 +1039,7 @@ definitions of all parameters and the Fortran wrapper functions. A
 ***Makefile*** is provided to generate the executable. A
 ***README*** file in this directory shows how to run the
 example.
-
+```c
           program f_pddrive
     ! 
     ! Purpose
@@ -1165,7 +1182,7 @@ example.
 
           stop
           end
-
+```
 Similar to the driver routine ***pddrive.c*** in C, seven basic
 steps are required to call a routine in Fortran:
 
@@ -1249,7 +1266,7 @@ optional arguments, so the users do not have to provide the full set of
 parameters. `Superlu_mod` module uses `superluparam_mod` module that
 defines all the integer constants corresponding to the enumeration
 constants in . Below are the calling sequences of all the routines.
-
+```c
     subroutine get_GridInfo(grid, iam, nprow, npcol)
       integer(superlu_ptr) :: grid
       integer, optional :: iam, nprow, npcol
@@ -1285,7 +1302,7 @@ constants in . Below are the calling sequences of all the routines.
       integer, optional :: Fact, Trans, Equil, RowPerm, ColPerm, &
                            ReplaceTinyPivot, IterRefine, SolveInitialized, &
                            RefineInitialized
-
+```
 ## C wrapper functions callable by Fortran in ***file spuerlu_c2f_wrap.c***
 
 This file contains the Fortran-callable C functions which wraps around
@@ -1295,7 +1312,7 @@ deallocate the memory of of a C structure given its Fortran handle; 2)
 get or set the value of certain fields of a C structure given its
 Fortran handle; 3) wrapper functions for the C functions. Below are the
 calling sequences of these routines.
-
+```c
     /* functions that allocate memory for a structure and return a handle */
     void f_create_gridinfo(fptr *handle)
     void f_create_options(fptr *handle)
@@ -1359,3 +1376,4 @@ calling sequences of these routines.
 
 [^2]: The numbering of 2, 3 and 6 is consistent with that used in
     SuperLU and SuperLU_MT.
+```

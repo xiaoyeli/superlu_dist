@@ -51,6 +51,8 @@ single-precision complex version start with letter "c" (such as
 `cgstrf.c`); the file names for the double-precision complex version
 start with letter "z" (such as `zgstrf.c`).
 
+(tab:5x5)=
+
 $$
 \begin{aligned}
 &\left(
@@ -88,7 +90,7 @@ Figure 2.1: A 5 x 5 matrix and its L and U factors.
 
 As a simple example, let us consider how to solve a $5\times 5$ sparse
 linear system $AX=B$, by calling a driver routine `dgssv()`.
-Figure [\[5x5\]](#5x5) shows matrix $A$, and its $L$ and $U$ factors. This sample program is located
+Figure [5x5](tab:5x5) shows matrix $A$, and its $L$ and $U$ factors. This sample program is located
 in `SuperLU/EXAMPLE/superlu.c.`
 
 The program first initializes the three arrays, `a[], asub[]` and
@@ -106,7 +108,7 @@ matrix is overwritten by the solution matrix $X$. In the end, all the
 dynamically allocated data structures are de-allocated by calling
 various utility routines.
 SuperLU can perform more general tasks, which will be explained later.
-
+```c
     #include "slu_ddefs.h"
 
     main(int argc, char *argv[])
@@ -181,13 +183,14 @@ SuperLU can perform more general tasks, which will be explained later.
         Destroy_CompCol_Matrix(&U);
         StatFree(&stat);
     }
+```
 
 (sec:rep)=
 # 2.3 Matrix data structures
 
- uses a principal data structure `SuperMatrix` (defined in
+ *SuperLU* uses a principal data structure `SuperMatrix` (defined in
 `SRC/supermatrix.h`) to represent a general matrix, sparse or dense.
-Figure [\[fig:struct\]](#fig:struct) gives the specification of the `SuperMatrix`
+[Figure](fig:struct) gives the specification of the `SuperMatrix`
 structure. The `SuperMatrix` structure contains two levels of fields.
 The first level defines all the properties of a matrix which are
 independent of how it is stored in memory. In particular, it specifies
@@ -197,8 +200,34 @@ encodes the four precisions; mathematical type (`Mtype`) specifies some
 mathematical properties. The second level (`Store`) points to the actual
 storage used to store the matrix. We associate with each `Stype XX` a
 storage format called `XXformat`, such as `NCformat`, `SCformat`, etc.
+    The `SuperMatrix` type so defined can accommodate various types of
+matrix structures and appropriate operations to be applied on them,
+although currently  implements only a subset of this collection.
+Specifically, matrices $A$, $L$, $U$, $B$, and $X$ can have the
+following types:
 
 
+
+|           | $A$            | $L$      | $U$      | $B$      | $X$      |
+|-----------|------------------|------------|------------|------------|------------|
+| `Stype`   | SLU_NC or SLU_NR | SLU_SC     | SLU_NC     | SLU_DN     | SLU_DN     |
+| `Dtype`¹  | any              | any        | any        | any        | any        |
+| `Mtype`   | SLU_GE           | SLU_TRLU   | SLU_TRU    | SLU_GE     | SLU_GE     |
+
+<br>
+
+In what follows, we illustrate the storage schemes defined by `Stype`.
+Following C's convention, all array indices and locations below are
+zero-based.
+
+
+-   $A$ may have storage type *SLU_NC* or *SLU_NR* . The format is the same as the
+    Harwell-Boeing sparse matrix format [@duffgrimes92], that is, the
+    compressed column storage.
+
+(fig:struct)=
+
+```c
     typedef struct {
         Stype_t Stype; /* Storage type: indicates the storage format of *Store. */
         Dtype_t Dtype; /* Data type. */
@@ -238,29 +267,13 @@ storage format called `XXformat`, such as `NCformat`, `SCformat`, etc.
         SLU_HEL,       /* Hermitian, store lower half */
         SLU_HEU        /* Hermitian, store upper half */
     } Mtype_t;
+```
 
-The `SuperMatrix` type so defined can accommodate various types of
-matrix structures and appropriate operations to be applied on them,
-although currently  implements only a subset of this collection.
-Specifically, matrices $A$, $L$, $U$, $B$, and $X$ can have the
-following types:
+<div style="text-align:center;">
+Figure 2.2: SuperMatrix data structure.
+</div>
 
-::: {.center}
-             $A$   $L$   $U$   $B$   $X$
-  --------- ----- ----- ----- ----- -----
-  `Stype`     or                    
-  `Dtype`    any   any   any   any   any
-  `Mtype`                           
-:::
-
-In what follows, we illustrate the storage schemes defined by `Stype`.
-Following C's convention, all array indices and locations below are
-zero-based.
-
--   $A$ may have storage type or . The format is the same as the
-    Harwell-Boeing sparse matrix format [@duffgrimes92], that is, the
-    compressed column storage.
-
+```c
             typedef struct {
                 int  nnz;     /* number of nonzeros in the matrix */
                 void *nzval;  /* array of nonzero values packed by column */
@@ -270,7 +283,7 @@ zero-based.
                                  and colptr[ncol] = nnz. */
             } NCformat;
 
-    The format is the compressed row storage defined below.
+    The SLU_NR format is the compressed row storage defined below.
 
             typedef struct {
                 int  nnz;     /* number of nonzeros in the matrix */
@@ -280,34 +293,24 @@ zero-based.
                                  which starts row j. It has nrow+1 entries,
                                  and rowptr[nrow] = nnz. */
             } NRformat;
+``` 
 
-    The factorization and solve routines in are designed to handle
-    column-wise storage only. If the input matrix $A$ is in row-oriented
-    storage, i.e., in format, then the driver routines (`dgssv()` and
-    `dgssvx()`) actually perform the $LU$ decomposition on $A^T$, which
-    is column-wise, and solve the system using the $L^T$ and $U^T$
-    factors. The data structures holding $L$ and $U$ on output are
-    different (swapped) from the data structures you get from
-    column-wise input. For more detailed descriptions about this
-    process, please refer to the leading comments of the routines
-    `dgssv()` and `dgssvx()`.
+The factorization and solve routines in are designed to handle column-wise storage only. If the input matrix $A$ is in row-oriented storage, i.e., in format, then the driver routines (`dgssv()` and `dgssvx()`) actually perform the $LU$ decomposition on $A^T$, which is column-wise, and solve the system using the $L^T$ and $U^T$ factors. The data structures holding $L$ and $U$ on output are different (swapped) from the data structures you get from column-wise input. For more detailed descriptions about this process, please refer to the leading comments of the routines `dgssv()` and `dgssvx()`.
 
-    Alternatively, the users may call a utility routine
-    `dCompRow_to_CompCol()` to convert the input matrix in format to
-    another matrix in format, before calling SuperLU. The definition of
-    this routine is
+Alternatively, the users may call a utility routine `dCompRow_to_CompCol()` to convert the input matrix in format to another matrix in format, before calling SuperLU. The definition of this routine is
 
+```c
             void dCompRow_to_CompCol(int m, int n, int nnz,
                                      double *a, int *colind, int *rowptr,
                                      double **at, int **rowind, int **colptr);
+```
 
-    This conversion takes time proportional to the number of nonzeros in
-    $A$. However, it requires storage for a separate copy of matrix $A$.
+This conversion takes time proportional to the number of nonzeros in $A$. However, it requires storage for a separate copy of matrix $A$.
 
--   $L$ is a supernodal matrix with the storage type . Due to the
-    supernodal structure, $L$ is in fact stored as a sparse block lower
-    triangular matrix [@superlu99].
+-   $L$ is a supernodal matrix with the storage type . Due to the supernodal structure, $L$ is in fact stored as a sparse block lower
+triangular matrix [@superlu99].
 
+```c
             typedef struct {
                 int  nnz;           /* number of nonzeros in the matrix */
                 int  nsuper;        /* index of the last supernode */
@@ -323,18 +326,19 @@ zero-based.
                 int  *sup_to_col;   /* sup_to_col[s] points to the starting column
                                        of the s-th supernode */
             } SCformat;
+```
 
--   Both $B$ and $X$ are stored as conventional two-dimensional arrays
-    in column-major order, with the storage type .
+-   Both $B$ and $X$ are stored as conventional two-dimensional arrays in column-major order, with the storage type.
 
+```c
             typedef struct {
                 int lda;     /* leading dimension */
                 void *nzval; /* array of size lda-by-ncol to represent 
                                 a dense matrix */
             } DNformat;
-
-Figure [\[matrixeg\]](#fig:matrixeg) shows the data structures for the example
-matrices in Figure [\[5x5\]](#5x5).
+```
+Figure [matrixeg](fig:matrixeg) shows the data structures for the example
+matrices in Figure [5x5](tab:5x5).
 
 For a description of `NCPformat`, see
 section [5.1](#sec:permX).
@@ -377,6 +381,47 @@ containing the following fields:
         structure set up from the previous symbolic factorization.
 
     -   `FACTORED`: the factored form of $A$ is input.
+
+
+(fig:matrixeg)=
+
+```c
+
+-   A = { Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE; nrow = 5; ncol = 5;
+          *Store = { nnz = 12;
+                   nzval = [ 19.00, 12.00, 12.00, 21.00, 12.00, 12.00, 21.00,
+                           16.00, 21.00, 5.00, 21.00, 18.00 ];
+                   rowind = [ 0, 1, 4, 1, 2, 4, 0, 2, 0, 3, 3, 4 ];
+                   colptr = [ 0, 3, 6, 8, 10, 12 ];
+                   }
+        }
+
+-   U = { Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_TRU; nrow = 5; ncol = 5;
+          *Store = { nnz = 11;
+                   nzval = [ 21.00, -13.26, 7.58, 21.00 ];
+                   rowind = [ 0, 1, 2, 0 ];
+                   colptr = [ 0, 0, 0, 1, 4, 4 ];
+                   }
+        }
+
+-   L = { Stype = SLU_SC; Dtype = SLU_D; Mtype = SLU_TRLU; nrow = 5; ncol = 5;
+          *Store = { nnz = 11;
+                   nsuper = 2;
+                   nzval = [ 19.00, 0.63, 0.63, 21.00, 0.57, 0.57, -13.26,
+                                23.58, -0.24, 5.00, -0.77, 21.00, 34.20 ];
+                   nzval_colptr = [ 0 3, 6, 9, 11, 13 ];
+                   rowind = [ 0, 1, 4, 1, 2, 4, 3, 4 ];
+                   rowind_colptr = [ 0, 3, 6, 6, 8, 8 ];
+                   col_to_sup = [ 0, 1, 1, 2, 2 ];
+                   sup_to_col = [ 0, 1, 3, 5 ];
+                   }
+        }
+```
+<div style="text-align:center;">
+Figure 2.3: The data structures for a 5 x 5 matrix and its LU factors, as represented in the SuperMatrix data structure. Zero-based indexing is used.
+</div>
+
+<br>
 
 -   `Equil` { `YES` $|$ `NO` }\
     Specifies whether to equilibrate the system (scale $A$'s rows and
@@ -565,6 +610,7 @@ nonzeros may not be stored contiguously in memory. Therefore, we need
 two separate arrays of pointers, `colbeg[]` and `colend[]`, to indicate
 the beginning and end of each column in `nzval[]` and `rowind[]`.
 
+```c
         typedef struct {
             int  nnz;     /* number of nonzeros in the matrix */
             void *nzval;  /* array of nonzero values, packed by column */
@@ -574,6 +620,7 @@ the beginning and end of each column in `nzval[]` and `rowind[]`.
             int  *colend; /* colend[j] points to one past the location in nzval[]
                              and rowind[] which ends column j */
         } NCPformat;
+```
 
 ## 2.5.2 Partial pivoting with threshold
 
@@ -640,7 +687,8 @@ incorporated several heuristics for adaptively modifying various
 threshold parameters as the factorization proceeds, which improves the
 robustness of the algorithm. The details can be found in [@lishao10].
 
-# 2.8 Memory management for $L$ and $U$ {#sec:mem}
+(sec:mem)=
+# 2.8 Memory management for $L$ and $U$ 
 
 In the sparse $LU$ algorithm, the amount of space needed to hold the
 data structures of $L$ and $U$ cannot be accurately predicted prior to
@@ -669,8 +717,7 @@ fills in the factors and allocate corresponding storage for the above
 four arrays, where `nnz(A)` is the number of nonzeros in original matrix
 $A$, and `FILL` is an integer, say 20. (The value of `FILL` can be set
 in an inquiry function `sp_ienv()`, see
-section [11.3](#sec:parameters){reference-type="ref"
-reference="sec:parameters"}.) If this initial request exceeds the
+section [11.3](#sec:parameters)) If this initial request exceeds the
 physical memory constraint, the `FILL` factor is repeatedly reduced, and
 attempts are made to allocate smaller arrays, until the initial
 allocation succeeds.
@@ -797,6 +844,7 @@ routines that are precision-independent;\
 `SRC/{s,d,c,z}util.c` contains the routines dependent on precision.
 Here, we list the prototypes of these routines.
 
+```c
         /* Create a supermatrix in compressed column format. A is the output. */
         dCreate_CompCol_Matrix(SuperMatrix *A, int m, int n, int nnz, 
                                double *nzval, int *rowind, int *colptr,
@@ -848,6 +896,7 @@ Here, we list the prototypes of these routines.
 
         /* Deallocate the supermatrix structure in dense format. */
         Destroy_Dense_Matrix(SuperMatrix *A)
+```
 
 (sec:MatlabInterface)=
 # 2.10 Matlab interface 
@@ -864,6 +913,7 @@ callable by invoking `superlu` and `lusolve` in Matlab, respectively.
 
 you will find the following description about `superlu`'s functionality
 and how to use it.
+
 
       SUPERLU : Supernodal LU factorization
      
@@ -913,6 +963,7 @@ and how to use it.
 For a description about `lusolve`'s functionality and how to use it, you
 can type
 
+
       LUSOLVE : Solve linear systems by supernodal LU factorization.
      
       x = lusolve(A, b) returns the solution to the linear system A*x = b,
@@ -940,6 +991,7 @@ number of input/output arguments.
 ## 2.11.1 File structure
 
 The top level SuperLU/ directory is structured as follows:
+
 
         SuperLU/README    instructions on installation
         SuperLU/CBLAS/    needed BLAS routines in C, not necessarily fast
@@ -1015,6 +1067,107 @@ items should be examined:
     you may go to the `MATLAB/` subdirectory to test the correctness by
     typing (in Matlab):
 
+<div style="display: flex; justify-content: center; gap: 60px; align-items: flex-start;">
+
+<table style="margin-left:auto; margin-right:auto; border-collapse: collapse;" border="1">
+  <thead>
+    <tr>
+      <th>Matrix type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>sparse matrix <code>g10</code></td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>diagonal</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>upper triangular</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>lower triangular</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>random, \( \kappa = 2 \)</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>first column zero</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>last column zero</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>last \( n/2 \) columns zero</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>random, \( \kappa = \sqrt{0.1/\varepsilon} \)</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>random, \( \kappa = 0.1/\varepsilon \)</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>scaled near underflow</td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>scaled near overflow</td>
+    </tr>
+  </tbody>
+</table>
+
+<table style="margin-left:auto; margin-right:auto; border-collapse: collapse;" border="1">
+  <thead>
+    <tr>
+      <th>Test Type</th>
+      <th>Test ratio</th>
+      <th>Routines</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>\( \frac{||LU - A||}{n||A||\varepsilon} \)</td>
+      <td><code>dgstrf</code></td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>\( \frac{||b - Ax||}{||A||\,||x||\varepsilon} \)</td>
+      <td><code>dgssv</code>, <code>dgssvx</code></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>\( \frac{||x - x^*||}{||x^*||\kappa\varepsilon} \)</td>
+      <td><code>dgssvx</code></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>\( \frac{||x - x^*||}{||x^*||\,FERR} \)</td>
+      <td><code>dgssvx</code></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>\( \frac{BERR}{\varepsilon} \)</td>
+      <td><code>dgssvx</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div>
+
+
 A `Makefile` is provided in each subdirectory. The installation can be
 done completely automatically by simply typing `make` at the top level.
 
@@ -1036,45 +1189,8 @@ The Unix shell script files `xtest.csh` are used to invoke tests with
 varying parameter settings. The input matrices include an actual sparse
 matrix `/EXAMPLE/g10` of dimension $100\times 100$, [^2] and numerous
 matrices with special properties from the  test suite.
-Table [\[tab:testmats\]](#tab:testmats){reference-type="ref"
-reference="tab:testmats"} describes the properties of the test matrices.
+Table [\[tab:testmats\]](#tab:testmats) describes the properties of the test matrices.
 
-::: {.center}
-::: {#tab:tests}
-  Matrix type   Description
-  ------------- -----------------------------------------
-  0             sparse matrix `g10`
-  1             diagonal
-  2             upper triangular
-  3             lower triangular
-  4             random, $\kappa=2$
-  5             first column zero
-  6             last column zero
-  7             last $n/2$ columns zero
-  8             random, $\kappa=\sqrt{0.1/\varepsilon}$
-  9             random, $\kappa=0.1/\varepsilon$
-  10            scaled near underflow
-  11            scaled near overflow
-
-  : Types of tests. $x^*$ is the true solution, $FERR$ is the error
-  bound, and $BERR$ is the backward error.
-:::
-:::
-
-::: {.center}
-::: {#tab:tests}
-  Test Type   Test ratio                               Routines
-  ----------- ---------------------------------------- -------------------
-  0           $||LU-A||/(n||A||\varepsilon)$           `dgstrf`
-  1           $||b-Ax|| / (||A||\;||x||\varepsilon)$   `dgssv`, `dgssvx`
-  2           $||x-x^*||/(||x^*||\kappa\varepsilon)$   `dgssvx`
-  3           $||x-x^*|| / (||x^*||\; FERR)$           `dgssvx`
-  4           $BERR / \varepsilon$                     `dgssvx`
-
-  : Types of tests. $x^*$ is the true solution, $FERR$ is the error
-  bound, and $BERR$ is the backward error.
-:::
-:::
 
 For each command line option specified in `dtest.csh`, the test program
 `ddrive` reads in or generates an appropriate matrix, calls the driver
@@ -1082,7 +1198,7 @@ routines, and computes a number of test ratios to verify that each
 operation has performed correctly. If the test ratio is smaller than a
 preset threshold, the operation is considered to be correct. Each test
 matrix is subject to the tests listed in
-Table [2](#tab:tests){reference-type="ref" reference="tab:tests"}.
+Table [2](#tab:tests).
 
 Let $r$ be the residual $r=b-Ax$, and let $m_i$ be the number of
 nonzeros in row $i$ of $A$. Then the componentwise backward error $BERR$
@@ -1131,8 +1247,7 @@ detailed methodology for setting these parameters for high performance.
 
 The $relax$ parameter is usually set between 4 and 8. The other
 parameter values which give good performance on several machines are
-listed in Table [3](#tab:block_params){reference-type="ref"
-reference="tab:block_params"}. In a supernode-panel update, if the
+listed in Table [3](#tab:block_params). In a supernode-panel update, if the
 updating supernode is too large to fit in cache, then a 2D block
 partitioning of the supernode is used, in which $rowblk$ and $colblk$
 determine that a block of size $rowblk\times colblk$ is used to update
@@ -1187,7 +1302,7 @@ descriptions of the double precision version of the examples:
     same sparsity pattern of matrix A.
 
 -   `superlu`: the small 5x5 sample program in
-    Section [2](#sec:ex5x5){reference-type="ref" reference="sec:ex5x5"}.
+    Section [2](#sec:ex5x5).
 
 In this directory, a `Makefile` is provided to generate the executables,
 and a `README` file describes how to run these examples.
