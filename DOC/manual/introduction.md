@@ -1,10 +1,8 @@
 # Introduction
 
-**I like superlu**
-
-
 (sec:PurposeofSuperLU)=
-# 1.1 Purpose of SuperLU
+
+## 1.1 Purpose of SuperLU
 
 This document describes a collection of three related ANSI C subroutine
 libraries for solving sparse linear systems of equations $AX=B$. Here
@@ -20,45 +18,43 @@ parallelism.
 
 In this introduction we refer to all three libraries collectively as
 SuperLU. The three libraries within SuperLU are as follows. Detailed
-references are also given (see also [@li96]).
+references are also given (see also [22](#ref:22)).
 
 - **Sequential SuperLU** is designed for sequential processors with one
-  or more layers of memory hierarchy (caches) ([superlu99](#simple-driver-algorithm)).
+  or more layers of memory hierarchy (caches) ([5](#ref:5)).
 
-- **Multithreaded SuperLU ()** is designed for shared memory
+- **Multithreaded SuperLU** (***SuperLU_MT***) is designed for shared memory
   multiprocessors (SMPs), and can effectively use up to 16 or 32
   parallel processors on sufficiently large matrices in order to speed
-  up the computation ([superlu_smp99](#performance-statistics)).
+  up the computation ([6](#ref:6)).
 
-- **Distributed SuperLU ()** is designed for distributed memory parallel
-  processors, using MPI [@mpi-forum] for interprocess communication. It
+- **Distributed SuperLU** (***SuperLU_DIST***) is designed for distributed memory parallel
+  processors, using MPI [(28)](#ref:28) for interprocess communication. It
   can effectively use hundreds of parallel processors on sufficiently
-  large matrices [@lidemmel98; @lidemmel03].
-
-```{table} SuperLU software status.
-:name: tab:soft_status
-
-|                           | Sequential **SuperLU** | **SuperLU_MT**           | **SuperLU_DIST**   |
-|---------------------------|------------------------|--------------------------|--------------------|
-| **Platform**              | serial                 | shared-memory            | distributed-memory |
-| **Language** **(with Fortran interface)**             | C                      | C + Pthreads (or OpenMP) | C + MPI            |
-| **Data type**             | real/complex , single/double               | real/complex , single/double               | real/complex , double      |
-```
-Table 1.1 summarizes the current status of the
-software. All the routines are implemented in C, with parallel
-extensions using Pthreads or OpenMP for shared-memory programming, or
-MPI for distributed-memory programming. We provide Fortran interface for
-all three libraries.
+  large matrices [[24,25]](#ref:24).
 
 The rest of the Introduction is organized as follows.
-Section [2](#sec:OverallAlgorithm) describes the high-level algorithm
+Section [1.2](#sec:OverallAlgorithm) describes the high-level algorithm
 used by all three libraries, pointing out some common features and
-differences. Section [3](#sec:Commonalities) describes the detailed algorithms, data
+differences. Section [1.3](#sec:Commonalities) describes the detailed algorithms, data
 structures, and interface issues common to all three routines.
-Section [4](#sec:Differences) describes how the three routines differ,
+Section [1.4](#sec:Differences) describes how the three routines differ,
 emphasizing the differences that most affect the user.
-Section [6](#sec:SoftwareStatus) describes the software status, including
+Section [1.6](#sec:SoftwareStatus) describes the software status, including
 planned developments, bug reporting, and licensing.
+**Table 1.1** summarizes the current status of the software. All the routines are implemented in C, with parallel extensions using Pthreads or OpenMP for shared-memory programming, or MPI for distributed-memory programming. We provide a Fortran interface for all three libraries.
+
+|                          | Sequential **SuperLU** | **SuperLU_MT**             | **SuperLU_DIST**            |
+|--------------------------|------------------------|----------------------------|-----------------------------|
+| **Platform**             | serial                 | shared-memory              | distributed-memory          |
+| **Language**<br>(with Fortran interface) | C                      | C + Pthreads (or OpenMP)   | C + MPI                     |
+| **Data type**            | real/complex,<br>single/double | real/complex,<br>single/double | real/complex,<br>double |
+
+:::{div align="center"}
+
+**Table 1.1**: SuperLU software status
+
+:::
 
 (sec:OverallAlgorithm)=
 # 1.2 Overall Algorithm
@@ -110,7 +106,7 @@ The simple driver subroutines for double precision real data are called
 letter `d` in the subroutine names means double precision real; other
 options are `s` for single precision real, `c` for single precision
 complex, and `z` for double precision complex. The subroutine naming
-scheme is analogous to the one used in LAPACK [@lapackmanual2].
+scheme is analogous to the one used in LAPACK [(1)](#ref:1).
 SuperLU_DIST does not include this simple driver.
 
 There is also an "expert driver" routine that can provide more accurate
@@ -171,8 +167,7 @@ accepts double precision real or complex.
 
 $A$ is stored in a sparse data structure according to the struct
 `SuperMatrix`, which is described in
-section [\[sec:mt_datastructure\]](#sec:mt_datastructure){reference-type="ref"
-reference="sec:mt_datastructure"}. In particular, $A$ may be supplied in
+section [3.2](#sec:mt_datastructure). In particular, $A$ may be supplied in
 either column-compressed format ("Harwell-Boeing format"), or
 row-compressed format (i.e. $A^T$ stored in column-compressed format).
 $B$, which is overwritten by the solution $X$, is stored as a dense
@@ -180,29 +175,24 @@ matrix in column-major order. In SuperLU_DIST, $A$ and $B$ can be either
 replicated or distributed across all processes.
 
 (The storage of $L$ and $U$ differs among the three libraries, as
-discussed in section [4](#sec:Differences){reference-type="ref"
-reference="sec:Differences"}.)
+discussed in section [4](#sec:Differences))
 
 ## 1.3.2 Tuning Parameters for BLAS
 
 All three libraries depend on having high performance BLAS (Basic Linear
-Algebra Subroutine) libraries [@blas1; @blas2; @blas3] in order to get
+Algebra Subroutine) libraries [[21](#ref:21),[8](#ref:8),[7](#ref:7)] in order to get
 high performance. In particular, they depend on matrix-vector
 multiplication or matrix-matrix multiplication of relatively small dense
 matrices. The sizes of these small dense matrices can be tuned to match
 the "sweet spot" of the BLAS by setting certain tuning parameters
 described in
-section [\[sec:parameters\]](#sec:parameters){reference-type="ref"
-reference="sec:parameters"} for SuperLU, in
-section [\[sec:SuperLU_MT_sp_ienv\]](#sec:SuperLU_MT_sp_ienv){reference-type="ref"
-reference="sec:SuperLU_MT_sp_ienv"} for SuperLU_MT, and in
-section [\[sec:SuperLU_DIST_sp_ienv\]](#sec:SuperLU_DIST_sp_ienv){reference-type="ref"
-reference="sec:SuperLU_DIST_sp_ienv"} for SuperLU_DIST.
+section [2.11.3](#sec:parameters) for SuperLU, in
+section [3.5.2](#sec:SuperLU_MT_sp_ienv) for SuperLU_MT, and in
+section [4.9.2](#sec:SuperLU_DIST_sp_ienv) for SuperLU_DIST.
 
 (In addition, SuperLU_MT and SuperLU_DIST let one control the number of
 parallel processes to be used, as described in
-section [4](#sec:Differences){reference-type="ref"
-reference="sec:Differences"}.)
+section [1.4](#sec:Differences)
 
 ## 1.3.3 Performance Statistics
 
@@ -212,6 +202,7 @@ operations in each phase of the computation, and data about the sizes of
 the matrices $L$ and $U$. These statistics are collected during the
 computation. A statistic variable is declared with the following type:
 
+```c
         typedef struct {
             int     *panel_histo; /* histogram of panel size distribution */
             double  *utime;       /* time spent in various phases */
@@ -219,6 +210,7 @@ computation. A statistic variable is declared with the following type:
             int     TinyPivots;   /* number of tiny pivots */
             int     RefineSteps;  /* number of iterative refinement steps */
         } SuperLUStat_t;
+```
 
 For both SuperLU and SuperLU_MT, there is only one copy of these
 statistics variable. But for SuperLU_DIST, each process keeps a local
@@ -287,18 +279,17 @@ which overrides the behavior of `superlu_abort_and_exit`.
 
 There is a choice of orderings for the columns of $A$ both in the simple
 or expert driver, in
-section [2](#sec:OverallAlgorithm){reference-type="ref"
-reference="sec:OverallAlgorithm"}:
+section [1.2](#sec:OverallAlgorithm):
 
 - Natural ordering,
 
-- Multiple Minimum Degree (MMD) [@liu85] applied to the structure of
+- Multiple Minimum Degree (MMD) [(27)](#ref:27) applied to the structure of
   $A^TA$,
 
-- Multiple Minimum Degree (MMD) [@liu85] applied to the structure of
+- Multiple Minimum Degree (MMD) [(27](#ref:27)) applied to the structure of
   $A^T+A$,
 
-- Column Approximate Minimum Degree (COLAMD) [@davisgilbert04], and
+- Column Approximate Minimum Degree (COLAMD) [(4)](#ref:4), and
 
 - Use a $P_c$ supplied by the user as input.
 
@@ -307,7 +298,7 @@ pivoting is needed, and does not require explicit formation of $A^TA$.
 It usually gives comparable orderings as MMD on $A^TA$, and is faster.
 
 The orderings based on graph partitioning heuristics are also popular,
-as exemplified in the package [@kaku:98a]. The user can simply input
+as exemplified in the **MeTiS** package [(19)](#ref:19). The user can simply input
 this ordering in the permutation vector for $P_c$. Note that many graph
 partitioning algorithms are designed for symmetric matrices. The user
 may still apply them to the structures of $A^TA$ or $A^T+A$. Our
@@ -322,42 +313,46 @@ approximate solution $x$ from step 5, the algorithm for step 6 is as
 follows (where $x$ and $b$ are single columns of $X$ and $B$,
 respectively):
 
-::: tabbing
-asdf āsdf āsdf āsdf Compute residual $r = Ax-b$\
+```text
+Compute residual $r = Ax-b$\
 While residual too large\
-Solve $Ad=r$ for correction $d$\
-Update solution $x = x-d$\
-Update residual $r = Ax-b$\
+    Solve $Ad=r$ for correction $d$\
+    Update solution $x = x-d$\
+    Update residual $r = Ax-b$\
 end while
-:::
+```
 
 If $r$ and then $d$ were computed exactly, the updated solution $x-d$
 would be the exact solution. Roundoff prevents immediate convergence.
 
-The criterion "residual too large" in the iterative refinement algorithm
-above is essentially that $$\label{eqn_defBERR}
-BERR \equiv \max_i |r_i|/s_i$$ exceeds the machine roundoff level, or is
-continuing to decrease quickly enough. Here $s_i$ is the scale factor
-$$s_i = (|A| \cdot |x| + |b|)_i = \sum_j |A_{ij}| \cdot |x_j| + |b_i|$$
-In this expression $|A|$ is the $n$-by-$n$ matrix with entries
-$|A|_{ij} = |A_{ij}|$, $|b|$ and $|x|$ are similarly column vectors of
-absolute entries of $b$ and $x$, respectively, and $|A| \cdot |x|$ is
-conventional matrix-vector multiplication.
+The criterion "residual too large" in the iterative refinement algorithm above is essentially that
 
-The purpose of this stopping criterion is explained in the next section.
+(eqn:eqn_defBERR)=
+
+$$
+BERR \equiv \max_i \frac{|r_i|}{s_i}
+$$
+
+exceeds the machine roundoff level, or is continuing to decrease quickly enough. Here $ s_i $ is the scale factor
+
+$$
+s_i = (|A|\cdot|x| + |b|)_i = \sum_j |A_{ij}|\cdot|x_j| + |b_i|
+$$
+
+In this expression, $|A|$ is the $n \times n$ matrix with entries $|A|_{ij} = |A_{ij}|$, and $|b|$ and $|x|$ are similarly column vectors of absolute entries of $b$ and $x$, respectively. The operation $|A|\cdot|x|$ represents conventional matrix-vector multiplication.
+    The purpose of this stopping criterion is explained in the next section.
 
 ## 1.3.7 Error Bounds
 
 Step 7 of the expert driver algorithm computes error bounds.
 
-It is shown in [@arioli89; @oettliprager] that $BERR$ defined in
-Equation ([\[eqn_defBERR\]](#eqn_defBERR){reference-type="ref"
-reference="eqn_defBERR"}) measures the *componentwise relative backward
+It is shown in [[2](#ref:2),[29](#ref:29)] that $BERR$ defined in
+Equation [1.1](#eqn:eqn_defBERR)) measures the *componentwise relative backward
 error* of the computed solution. This means that the computed $x$
 satisfies a slightly perturbed linear system of equations $(A+E)x=b+f$,
 where $|E_{ij}| \leq BERR \cdot |A_{ij}|$ and
 $|f_{i}| \leq BERR \cdot |b_{i}|$ for all $i$ and $j$. It is shown
-in [@arioli89; @skeel80] that one step of iterative refinement usually
+in [[2](#ref:2),[34](#ref:34)] that one step of iterative refinement usually
 reduces $BERR$ to near machine epsilon. For example, if $BERR$ is 4
 times machine epsilon, then the computed solution $x$ is identical to
 the solution one would get by changing each nonzero entry of $A$ and $b$
@@ -370,18 +365,22 @@ Despite roundoff, $BERR$ itself is always computed to within about
 $\pm n$ times machine epsilon (and usually much more accurately) and so
 $BERR$ is quite accurate.
 
-In addition to backward error, the expert driver computes a *forward
-error bound*
-$$FERR \geq \|x_{\rm true} - x \|_{\infty} / \| x \|_{\infty}$$ Here
-$\|x\|_{\infty} \equiv \max_i |x_i|$. Thus, if $FERR = 10^{-6}$ then
-each component of $x$ has an error bounded by about $10^{-6}$ times the
-largest component of $x$. The algorithm used to compute $FERR$ is an
-approximation; see [@arioli89; @higham96] for a discussion. Generally
-$FERR$ is accurate to within a factor of 10 or better, which is adequate
-to say how many digits of the large entries of $x$ are correct.
+In addition to backward error, the expert driver computes a *forward error bound*
+
+$$
+FERR \geq \frac{\|x_{\mathrm{true}} - x\|_{\infty}}{\|x\|_{\infty}}
+$$
+
+Here, the infinity norm $\|x\|_{\infty}$ is defined as:
+
+$$
+\|x\|_{\infty} \equiv \max_i |x_i|
+$$
+
+Thus, if $FERR = 10^{-6}$, then each component of $x$ has an error bounded by about $10^{-6}$ times the largest component of $x$. The algorithm used to compute $FERR$ is an approximation; see [@arioli89; @higham96] for a discussion. Generally, $FERR$ is accurate to within a factor of 10 or better, which is adequate to determine how many digits of the largest entries of $x$ are correct.
 
 (SuperLU_DIST's algorithm for $FERR$ is slightly less reliable
-[@lidemmel03].)
+[(25)](#ref:25).)
 
 (sec:SolvingRelatedSystems)=
 ## 1.3.8 Solving a Sequence of Related Linear Systems
@@ -407,7 +406,7 @@ increasing order of "reuse of prior information":
 3.  *Reuse $P_c$, $P_r$ and data structures allocated for $L$ and $U$.*
     If $P_r$ and $P_c$ do not change, then the work of building the data
     structures associated with $L$ and $U$ (including the elimination
-    tree [@GilbertNg-IMA]) can be avoided. This is most useful when
+    tree [(15)](#ref:15)) can be avoided. This is most useful when
     $A^{(2)}$ has the same sparsity structure and similar numerical
     entries as $A^{(1)}$. When the numerical entries are not similar,
     one can still use this option, but at a higher risk of numerical
@@ -425,10 +424,8 @@ increasing order of "reuse of prior information":
 
 Because of the different ways $L$ and $U$ are computed and stored in the
 three libraries, these 4 options are specified slightly differently; see
-Chapters [\[chap:superlu\]](#chap:superlu){reference-type="ref"
-reference="chap:superlu"}
-through [\[chap:superlu_dist\]](#chap:superlu_dist){reference-type="ref"
-reference="chap:superlu_dist"} for details.
+Chapters [2](#sec:ch2)
+through [4](#sec:ch4) for details.
 
 ## 1.3.9 Interfacing to other languages
 
@@ -454,31 +451,25 @@ $L$ and $U$ are stored in different formats in the three libraries:
   matrix, in storage type `SCformat`. This means it is stored sparsely,
   with supernodes (consecutive columns with identical structures) stored
   as dense blocks. $U$ is stored in column-compressed format `NCformat`.
-  See section [\[sec:rep\]](#sec:rep){reference-type="ref"
-  reference="sec:rep"} for details.
+  See section [2.3](#sec:rep) for details.
 
 - *$L$ and $U$ in SuperLU_MT.* Because of parallelism, the columns of
   $L$ and $U$ may not be computed in consecutive order, so they may be
   allocated and stored out of order. This means we use the
   "column-supernodal-permuted" format `SCPformat` for $L$ and
   "column-permuted" format `NCPformat` for $U$. See
-  section [\[sec:mt_datastructure\]](#sec:mt_datastructure){reference-type="ref"
-  reference="sec:mt_datastructure"} for details.
+  section [3.2](#sec:mt_datastructure) for details.
 
 - *$L$ and $U$ in SuperLU_DIST.* Now $L$ and $U$ are distributed across
   multiple processors. As described in detail in
-  Sections [\[sec:datastruct\]](#sec:datastruct){reference-type="ref"
-  reference="sec:datastruct"}
-  and [\[sec:grid\]](#sec:grid){reference-type="ref"
-  reference="sec:grid"}, we use a 2D block-cyclic format, which has been
+  Sections [4.3](#sec:datastruct)
+  and [4.4](#sec:grid), we use a 2D block-cyclic format, which has been
   used for dense matrices in libraries like ScaLAPACK
   [@scalapackmanual]. But for sparse matrices, the blocks are no longer
   identical in size, and vary depending on the sparsity structure of $L$
   and $U$. The detailed storage format is discussed in
-  section [\[sec:datastruct\]](#sec:datastruct){reference-type="ref"
-  reference="sec:datastruct"} and illustrated in
-  Figure [\[fig:lu_2d\]](#fig:lu_2d){reference-type="ref"
-  reference="fig:lu_2d"}.
+  section [4.3](#sec:datastruct) and illustrated in
+  Figure [4.1](#sec:grid).
 
 ## 1.4.2 Parallelism
 
@@ -489,15 +480,13 @@ SMP, described next.
 
 SuperLU_MT lets the user choose the number of parallel threads to use.
 The mechanism varies from platform to platform and is described in
-section [\[sec:mt_port\]](#sec:mt_port){reference-type="ref"
-reference="sec:mt_port"}.
+section [3.7](#sec:mt_port).
 
 SuperLU_DIST not only lets the user specify the number of processors,
 but how they are arranged into a 2D grid. Furthermore, MPI permits any
 subset of the processors allocated to the user may be used for
 SuperLU_DIST, not just consecutively numbered processors (say 0 through
-P-1). See section [\[sec:grid\]](#sec:grid){reference-type="ref"
-reference="sec:grid"} for details.
+P-1). See section [4.4](#sec:grid) for details.
 
 ## 1.4.3 Pivoting Strategies for Stability
 
@@ -549,15 +538,13 @@ the initial estimate of the size of $L$ and $U$ from `FILL` is too
 small, the routine allocates more space and copies the current $L$ and
 $U$ factors to the new space and frees the old space. If the routine
 cannot allocate enough space, it calls a user-specifiable routine ABORT.
-See sections [3.4.3](#sec:abort){reference-type="ref"
-reference="sec:abort"} for details.
+See sections [3.4.3](#sec:abort) for details.
 
 SuperLU_MT is similar, except that the current alpha version cannot
 reallocate more space for $L$ and $U$ if the initial size estimate from
 `FILL` is too small. Instead, the program calls ABORT and the user must
 start over with a larger value of `FILL`. See
-section [\[sec:mt_mem\]](#sec:mt_mem){reference-type="ref"
-reference="sec:mt_mem"}.
+section [3.5.2](#sec:mt_mem).
 
 SuperLU_DIST actually has a simpler memory management chore, because
 once $P_r$ and $P_c$ are determined, the structures of $L$ and $U$ can
@@ -569,8 +556,7 @@ really not enough memory available to solve the problem.
 
 Sequential SuperLU has a Matlab interface to the driver via a MEX file.
 See
-section [\[sec:MatlabInterface\]](#sec:MatlabInterface){reference-type="ref"
-reference="sec:MatlabInterface"} for details.
+section [2.10](#sec:MatlabInterface) for details.
 
 (sec:perf)=
 # 1.5 Performance

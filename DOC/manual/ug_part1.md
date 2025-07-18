@@ -1,9 +1,10 @@
-## Chapter 2
+(sec:ch2)=
 
-# Sequential SuperLU (Version 4.2)
+# Chapter 2
 
+## Sequential SuperLU (Version 4.2)
 
-## 2.1 About SuperLU
+### 2.1 About SuperLU
 
 In this chapter, SuperLU will always mean Sequential SuperLU. package
 contains a set of subroutines to solve sparse linear systems $AX=B$.
@@ -337,6 +338,7 @@ triangular matrix [@superlu99].
                                 a dense matrix */
             } DNformat;
 ```
+
 Figure [matrixeg](fig:matrixeg) shows the data structures for the example
 matrices in Figure [5x5](tab:5x5).
 
@@ -417,6 +419,7 @@ containing the following fields:
                    }
         }
 ```
+
 <div style="text-align:center;">
 Figure 2.3: The data structures for a 5 x 5 matrix and its LU factors, as represented in the SuperMatrix data structure. Zero-based indexing is used.
 </div>
@@ -635,19 +638,17 @@ threshold, the maximum magnitude element in the column will be used as
 the pivot. The pseudo-code of the pivoting policy for column $j$ is
 given below.
 
-::: {.tabbing}
-junk j̄unk j̄unk ̄ (1) compute $thresh = u~|a_{mj}|$, where
-$|a_{mj}|=\max_{i\ge j}|a_{ij}|$;\
-\
-(2) **if** user specifies pivot row $k$ **and** $|a_{kj}|\ge thresh$
-**and** $a_{kj}\ne 0$ **then**\
-pivot row $= k$;\
-**else if** $|a_{jj}| \ge thresh$ **and** $a_{jj}\ne 0$ **then**\
-pivot row $= j$;\
-**else**\
-pivot row $= m$;\
-**endif**;
-:::
+```text
+(1) compute thresh = u * |a_mj|, where |a_mj| = max_{i ≥ j} |a_ij|
+
+(2) if user specifies pivot row k and |a_kj| ≥ thresh and a_kj ≠ 0 then
+        pivot row = k;
+    else if |a_jj| ≥ thresh and a_jj ≠ 0 then
+        pivot row = j;
+    else
+        pivot row = m;
+    end if;
+```
 
 Two special values of $u$ result in the following two strategies:
 
@@ -717,7 +718,7 @@ fills in the factors and allocate corresponding storage for the above
 four arrays, where `nnz(A)` is the number of nonzeros in original matrix
 $A$, and `FILL` is an integer, say 20. (The value of `FILL` can be set
 in an inquiry function `sp_ienv()`, see
-section [11.3](#sec:parameters)) If this initial request exceeds the
+section [2.11.3](#sec:parameters)) If this initial request exceeds the
 physical memory constraint, the `FILL` factor is repeatedly reduced, and
 attempts are made to allocate smaller arrays, until the initial
 allocation succeeds.
@@ -1067,105 +1068,47 @@ items should be examined:
     you may go to the `MATLAB/` subdirectory to test the correctness by
     typing (in Matlab):
 
-<div style="display: flex; justify-content: center; gap: 60px; align-items: flex-start;">
+(tab:2.1)=
 
-<table style="margin-left:auto; margin-right:auto; border-collapse: collapse;" border="1">
-  <thead>
-    <tr>
-      <th>Matrix type</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>0</td>
-      <td>sparse matrix <code>g10</code></td>
-    </tr>
-    <tr>
-      <td>1</td>
-      <td>diagonal</td>
-    </tr>
-    <tr>
-      <td>2</td>
-      <td>upper triangular</td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td>lower triangular</td>
-    </tr>
-    <tr>
-      <td>4</td>
-      <td>random, \( \kappa = 2 \)</td>
-    </tr>
-    <tr>
-      <td>5</td>
-      <td>first column zero</td>
-    </tr>
-    <tr>
-      <td>6</td>
-      <td>last column zero</td>
-    </tr>
-    <tr>
-      <td>7</td>
-      <td>last \( n/2 \) columns zero</td>
-    </tr>
-    <tr>
-      <td>8</td>
-      <td>random, \( \kappa = \sqrt{0.1/\varepsilon} \)</td>
-    </tr>
-    <tr>
-      <td>9</td>
-      <td>random, \( \kappa = 0.1/\varepsilon \)</td>
-    </tr>
-    <tr>
-      <td>10</td>
-      <td>scaled near underflow</td>
-    </tr>
-    <tr>
-      <td>11</td>
-      <td>scaled near overflow</td>
-    </tr>
-  </tbody>
-</table>
+::::{grid}
+:gutter: 2
 
-<table style="margin-left:auto; margin-right:auto; border-collapse: collapse;" border="1">
-  <thead>
-    <tr>
-      <th>Test Type</th>
-      <th>Test ratio</th>
-      <th>Routines</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>0</td>
-      <td>\( \frac{||LU - A||}{n||A||\varepsilon} \)</td>
-      <td><code>dgstrf</code></td>
-    </tr>
-    <tr>
-      <td>1</td>
-      <td>\( \frac{||b - Ax||}{||A||\,||x||\varepsilon} \)</td>
-      <td><code>dgssv</code>, <code>dgssvx</code></td>
-    </tr>
-    <tr>
-      <td>2</td>
-      <td>\( \frac{||x - x^*||}{||x^*||\kappa\varepsilon} \)</td>
-      <td><code>dgssvx</code></td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td>\( \frac{||x - x^*||}{||x^*||\,FERR} \)</td>
-      <td><code>dgssvx</code></td>
-    </tr>
-    <tr>
-      <td>4</td>
-      <td>\( \frac{BERR}{\varepsilon} \)</td>
-      <td><code>dgssvx</code></td>
-    </tr>
-  </tbody>
-</table>
+:::{grid-item}
+```{table} 2.1 Properties of the test matrices. $\varepsilon$ is the machine epsilon and $\kappa$ is the condition number of matrix $A$. Matrix types with one or more columns set to zero are used to test the error return codes.
+:name: tab:test_matrices
 
-<div>
+| Matrix type | Description                  |
+|-------------|------------------------------|
+| 0           | sparse matrix g10            |
+| 1           | diagonal                     |
+| 2           | upper triangular             |
+| 3           | lower triangular             |
+| 4           | random, $\kappa = 2$         |
+| 5           | first column zero            |
+| 6           | last column zero             |
+| 7           | last $n/2$ columns zero      |
+| 8           | random, $\kappa = \sqrt{0.1/\varepsilon}$ |
+| 9           | random, $\kappa = 0.1/\varepsilon$        |
+| 10          | scaled near underflow        |
+| 11          | scaled near overflow         |
+```
+:::
+
+:::{grid-item}
+```{table} 2.2 Types of tests. $x^*$ is the true solution, $FERR$ is the error bound, and $BERR$ is the backward error.
+:name: tab:test_types
+
+| Test Type | Test ratio                                | Routines          |
+|-----------|-------------------------------------------|-------------------|
+| 0         | $\frac{\|LU - A\|}{(n\|A\|\varepsilon)}$  | dgstrf            |
+| 1         | $\frac{\|b - Ax\|}{(\|A\|\|x\|\varepsilon)}$ | dgssv, dgssvx |
+| 2         | $\frac{\|x - x^*\|}{(\|x^*\|\kappa\varepsilon)}$ | dgssvx        |
+| 3         | $\frac{\|x - x^*\|}{(\|x^*\|FERR)}$       | dgssvx            |
+| 4         | $BERR/\varepsilon$                        | dgssvx            |
+```
+:::
+
+::::
 
 
 A `Makefile` is provided in each subdirectory. The installation can be
@@ -1189,7 +1132,7 @@ The Unix shell script files `xtest.csh` are used to invoke tests with
 varying parameter settings. The input matrices include an actual sparse
 matrix `/EXAMPLE/g10` of dimension $100\times 100$, [^2] and numerous
 matrices with special properties from the  test suite.
-Table [\[tab:testmats\]](#tab:testmats) describes the properties of the test matrices.
+Table [2.1](#tab:2.1) describes the properties of the test matrices.
 
 
 For each command line option specified in `dtest.csh`, the test program
@@ -1198,22 +1141,35 @@ routines, and computes a number of test ratios to verify that each
 operation has performed correctly. If the test ratio is smaller than a
 preset threshold, the operation is considered to be correct. Each test
 matrix is subject to the tests listed in
-Table [2](#tab:tests).
+Table [2.2](#tab:2.1).
 
-Let $r$ be the residual $r=b-Ax$, and let $m_i$ be the number of
-nonzeros in row $i$ of $A$. Then the componentwise backward error $BERR$
-and forward error $FERR$ [@lapackmanual2] are calculated by:
-$$BERR = \max_i\frac{|r|_i}{(|A|~|x|+|b|)_i}\ .$$
-$$FERR = \frac{||~|A^{-1}|~f~||_\infty}{||x||_\infty}\ .$$ Here, $f$ is
-a nonnegative vector whose components are computed as
-$f_i=|r|_i + m_i~\varepsilon~(|A|~|x|+|b|)_i$, and the norm in the
-numerator is estimated using the same subroutine used for estimating the
-condition number. $BERR$ measures the smallest relative perturbation one
-can make to each entry of A and of b so that the computed solution is an
-exact solution of the perturbed problem. $FERR$ is an estimated bound on
-the error $\| x^* - x \|_{\infty} / \| x \|_{\infty}$, where $x^*$ is
-the true solution. For further details on error analysis and error
-bounds estimation, see [@lapackmanual2 Chapter 4] and  [@arioli89].
+Let $( r )$ be the residual defined as $( r = b - Ax )$, and let $( m_i )$ be the number of nonzeros in row $( i )$ of $( A )$. Then the componentwise backward error $( BERR )$ and forward error $( FERR )$ [@lapackmanual2] are calculated by:
+
+$$
+BERR = \max_i \frac{|r|_i}{\left(|A|\cdot|x| + |b|\right)_i}
+$$
+
+and
+
+$$
+FERR = \frac{\left\|\,|A^{-1}|\cdot f\,\right\|_{\infty}}{\|x\|_{\infty}}.
+$$
+
+Here, $( f )$ is a nonnegative vector whose components are computed as:
+
+$$
+f_i = |r|_i + m_i\,\varepsilon\,\left(|A|\cdot|x| + |b|\right)_i,
+$$
+
+and the norm in the numerator is estimated using the same subroutine used for estimating the condition number. 
+
+The backward error $( BERR )$ measures the smallest relative perturbation one can make to each entry of $( A )$ and $( b )$, such that the computed solution is an exact solution of the perturbed problem. The forward error $( FERR )$ is an estimated bound on the error:
+
+$$
+\frac{\| x^* - x \|_{\infty}}{\| x \|_{\infty}},
+$$
+
+where $( x^* )$ is the true solution. For further details on error analysis and error bound estimation, see [@lapackmanual2, Chapter 4] and [@arioli89].
 
 (sec:parameters)=
 ## 2.11.3 Performance-tuning parameters
@@ -1227,15 +1183,19 @@ values on different machines. The declaration of this function is
 `Ispec` specifies the parameter to be returned, (See
 reference [@superlu99] for their definitions.)
 
-::: {.tabbing}
-xxxxxx x̄xxx j̄unk ̄ ispec= 1: the panel size ($w$)\
-= 2: the relaxation parameter to control supernode amalgamation
-($relax$)\
-= 3: the maximum allowable size for a supernode ($maxsup$)\
-= 4: the minimum row dimension for 2D blocking to be used ($rowblk$)\
-= 5: the minimum column dimension for 2D blocking to be used ($colblk$)\
-= 6: the estimated fills factor for L and U, compared with A
-:::
+ispec = 
+
+      = 1: the panel size (W)
+
+      = 2: the relaxation parameter to control supernode amalgamation (relax)
+
+      = 3: the maximum allowable size for a supernode (maxsup)
+
+      = 4: the minimum row dimension for 2D blocking to be used (rowblk)
+
+      = 5: the minimum column dimension for 2D blocking to be used (colblk)
+    
+      = 6: size of the array to store the values of the L supernodes (nzval)
 
 Users are encouraged to modify this subroutine to set the tuning
 parameters for their own local environment. The optimal values depend
@@ -1258,26 +1218,20 @@ use 2D blocking. For example, for the Cray J90 (which does not have
 cache), $w=1$ and 1D blocking give good performance; more levels of
 blocking only increase overhead.
 
-::: {.small}
-::: {.center}
-::: {#tab:block_params}
-  -------------- ---------- ---------- ----- ---------- ---------- ----------
-                    On-chip   External                             
-  Machine             Cache      Cache   $w$   $maxsup$   $rowblk$   $colblk$
-  RS/6000-590        256 KB         --     8        100        200         40
-  MIPS R8000          16 KB       4 MB    20        100        800        100
-  Alpha 21064          8 KB     512 KB     8        100        400         40
-  Alpha 21164       8 KB-L1       4 MB    16         50        100         40
-                   96 KB-L2                                        
-  Sparc 20            16 KB       1 MB     8        100        400         50
-  UltraSparc-I        16 KB     512 KB     8        100        400         40
-  Cray J90               --         --     1        100       1000        100
-  -------------- ---------- ---------- ----- ---------- ---------- ----------
+```{table} 2.3 Recommended parameter settings for various machines.
+:name: tab:machine_params
+:align: center
 
-  : Typical blocking parameter values for several machines.
-:::
-:::
-:::
+| Machine       | On-chip Cache      | External Cache | *w* | *maxsup* | *rowblk* | *colblk* |
+|---------------|--------------------|----------------|-----|----------|----------|----------|
+| RS/6000-590   | 256 KB             | --             | 8   | 100      | 200      | 40       |
+| MIPS R8000    | 16 KB              | 4 MB           | 20  | 100      | 800      | 100      |
+| Alpha 21064   | 8 KB               | 512 KB         | 8   | 100      | 400      | 40       |
+| Alpha 21164   | 8 KB-L1<br>96 KB-L2| 4 MB           | 16  | 50       | 100      | 40       |
+| Sparc 20      | 16 KB              | 1 MB           | 8   | 100      | 400      | 50       |
+| UltraSparc-I  | 16 KB              | 512 KB         | 8   | 100      | 400      | 40       |
+| Cray J90      | --                 | --             | 1   | 100      | 1000     | 100      |
+```
 
 (sec:example)=
 # 2.12 Example programs 

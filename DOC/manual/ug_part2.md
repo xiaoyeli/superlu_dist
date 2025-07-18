@@ -1,9 +1,9 @@
-## Chapter 3
+# Chapter 3
 
-# Multithreaded SuperLU (Version 2.0)
+## Multithreaded SuperLU (Version 2.0)
 
 
-## 3.1 About SuperLU_MT
+### 3.1 About SuperLU_MT
 
 Among the various steps of the solution process in the sequential
 SuperLU, the $LU$ factorization dominates the computation; it usually
@@ -20,27 +20,26 @@ Table [1](#tab:diff_superlu) and their impacts on performance are
 studied thoroughly in [@superlu_smp99; @li96]. In this part of the
 Users' Guide, we describe only the changes that the user should be aware
 of. Other than these differences, most of the material in
-chapter [\[chap:superlu\]](#chap:superlu) is still applicable.
+chapter [2](#sec:ch2) is still applicable.
 
-::: {.center}
-::: {#tab:diff_superlu}
-  Construct           Parallel algorithm
-  ------------------- ----------------------------------------------------------------------------------------------------------------------
-  panel               restricted so it does not contain branchings in the elimination tree
-  supernode           restricted to be a fundamental supernode in the elimination tree
-  supernode storage   use either static or dynamic upper bound (section [5.2.1](#sec:mt_mem))
-  pruning & DFS       use both $G(L^T)$ and pruned $G(L^T)$ to avoid locking
+```{table} Table 3.1: The differences between the parallel and the sequential algorithms.
+:name: tab:diff_superlu
+:align: center
 
-  : The differences between the parallel and the sequential algorithms.
-:::
-:::
+| Construct          | Parallel algorithm                                                                                     |
+|--------------------|--------------------------------------------------------------------------------------------------------|
+| panel              | restricted so it does not contain branchings in the elimination tree                                   |
+| supernode          | restricted to be a fundamental supernode in the elimination tree                                       |
+| supernode storage  | use either static or dynamic upper bound (section [5.2.1](#sec:mt_mem))                                |
+| pruning & DFS      | use both $G(L^T)$ and pruned $G(L^T)$ to avoid locking                                                 |
+```
 
 (sec:mt_datastructure)=
 # 3.2 Storage types for $L$ and $U$ 
 
 As in the sequential code, the type for the factored matrices $L$ and
 $U$ is `SuperMatrix`
-Figure [\[fig:struct\]](#fig:struct), however, their storage formats (stored in
+Figure [2.2](#fig:struct), however, their storage formats (stored in
 `Store`) are changed. In the parallel algorithm, the adjacent panels of
 the columns may be assigned to different processes, and they may be
 finished and put in global memory out of order. That is, the consecutive
@@ -88,13 +87,41 @@ The storage type for $U$ is `NCP`, defined as:
 The table below summarizes the data and storage types of all the
 matrices involved in the parallel routines:
 
-::: {.center}
-             $A$   $L$   $U$   $B$   $X$
-  --------- ----- ----- ----- ----- -----
-  `Stype`     or                    
-  `Dtype`    any   any   any   any   any
-  `Mtype`                           
-:::
+<table style="margin-left:auto; margin-right:auto; text-align:center; border-collapse:collapse;">
+  <tr>
+    <th style="border:1px solid white; padding:5px;"></th>
+    <th style="border:1px solid white; padding:5px;"><i>A</i></th>
+    <th style="border:1px solid white; padding:5px;"><i>L</i></th>
+    <th style="border:1px solid white; padding:5px;"><i>U</i></th>
+    <th style="border:1px solid white; padding:5px;"><i>B</i></th>
+    <th style="border:1px solid white; padding:5px;"><i>X</i></th>
+  </tr>
+  <tr>
+    <td style="border:1px solid white; padding:5px;"><b>Stype</b></td>
+    <td style="border:1px solid white; padding:5px;">SLU_NC or SLU_NR</td>
+    <td style="border:1px solid white; padding:5px;">SLU_SCP</td>
+    <td style="border:1px solid white; padding:5px;">SLU_NCP</td>
+    <td style="border:1px solid white; padding:5px;">SLU_DN</td>
+    <td style="border:1px solid white; padding:5px;">SLU_DN</td>
+  </tr>
+  <tr>
+    <td style="border:1px solid white; padding:5px;"><b>Dtype</b></td>
+    <td style="border:1px solid white; padding:5px;">any</td>
+    <td style="border:1px solid white; padding:5px;">any</td>
+    <td style="border:1px solid white; padding:5px;">any</td>
+    <td style="border:1px solid white; padding:5px;">any</td>
+    <td style="border:1px solid white; padding:5px;">any</td>
+  </tr>
+  <tr>
+    <td style="border:1px solid white; padding:5px;"><b>Mtype</b></td>
+    <td style="border:1px solid white; padding:5px;">SLU_GE</td>
+    <td style="border:1px solid white; padding:5px;">SLU_TRLU</td>
+    <td style="border:1px solid white; padding:5px;">SLU_TRU</td>
+    <td style="border:1px solid white; padding:5px;">SLU_GE</td>
+    <td style="border:1px solid white; padding:5px;">SLU_GE</td>
+  </tr>
+</table>
+
 
 # 3.3 Options argument
 
@@ -255,7 +282,7 @@ about the porting instructions.
 
 The rest of the installation and testing procedure is similar to that
 described in
-section [\[sec:install\]](#sec:install) for the serial SuperLU. Then, you can type
+section [2.11](#sec:install) for the serial SuperLU. Then, you can type
 `make` at the top level directory to finish installation. In the
 `SuperLU_MT/TESTING` subdirectory, you can type `pdtest.csh` to perform
 testings.
@@ -268,7 +295,7 @@ testings.
 
 In the sequential SuperLU, four data arrays associated with the $L$ and
 $U$ factors can be expanded dynamically, as described in
-section [\[sec:mem\]](#sec:mem). In the parallel code, the expansion is hard and
+section [2.8](#sec:mem). In the parallel code, the expansion is hard and
 costly to implement, because when a process detects that an array bound
 is exceeded, it has to send a signal to and suspend the execution of the
 other processes. Then the detecting process can proceed with the array
@@ -294,11 +321,11 @@ reduced until the initial allocation succeeds.
 
 ispec =
 
-      = 6: size of the array to store the values of the L supernodes \((nzval)\)
+      = 6: size of the array to store the values of the $L$ supernodes (nzval)
 
-      = 7: size of the array to store the columns in U \((nzval/rowind)\)
+      = 7: size of the array to store the columns in $U$ (nzval/rowind)
 
-      = 8: size of the array to store the subscripts of the L supernodes \((rowind)\)
+      = 8: size of the array to store the subscripts of the $L$ supernodes (rowind)
 
 If the actual fill exceeds any array size, the program will abort with a
 message showing the current column when failure occurs, and indicating
@@ -425,21 +452,22 @@ ispec = ...
 <br>
 <br>
 
+```{table} Figure 3.2: Platforms on which SuperLU_MT was tested.
+:name: tab:superlu_mt_platforms
+:align: center
 
-| make.inc      | Platforms                   | Programming Model | Environment Variable |
-|---------------|-----------------------------|-------------------|----------------------|
-| make.pthreads | Machines with POSIX threads | pthreads          |                      |
-| make.openmp   | Machines with OpenMP        | OpenMP            | `OMP_NUM_THREADS`    |
-| make.alpha    | DEC Alpha Servers           | DECthreads        |                      |
-| make.cray     | Cray C90/J90                | microtasking      | `NCPUS`              |
-| make.ibm      | IBM Power series            | pthreads          |                      |
-| make.origin   | SGI/Cray Origin2000         | parallel C        | `MP_SET_NUMTHREADS`  |
-| make.sgi      | SGI Power Challenge         | parallel C        | `MPC_NUM_THREADS`    |
-| make.sun      | Sun Ultra Enterprise        | Solaris threads   |                      |
-<div style="text-align:center;">
-Figure 3.2: Platforms on which SuperLU_MT was tested.
-</div>
-<br>
+| `make.inc`         | Platforms                | Programming Model | Environment Variable   |
+|--------------------|--------------------------|-------------------|------------------------|
+| `make.pthreads`    | Machines with POSIX threads | pthreads          |                        |
+| `make.openmp`      | Machines with OpenMP     | OpenMP            | `OMP_NUM_THREADS`      |
+| `make.alpha`       | DEC Alpha Servers        | DECthreads        |                        |
+| `make.cray`        | Cray C90/J90             | microtasking      | `NCPUS`                |
+| `make.ibm`         | IBM Power series         | pthreads          |                        |
+| `make.origin`      | SGI/Cray Origin2000      | parallel C        | `MP_SET_NUMTHREADS`    |
+| `make.sgi`         | SGI Power Challenge      | parallel C        | `MPC_NUM_THREADS`      |
+| `make.sun`         | Sun Ultra Enterprise     | Solaris threads   |                        |
+```
+
 <br>
 
 We should take into account the trade-off between cache reuse and amount
@@ -450,7 +478,7 @@ uniprocessor performance. We recommend that $w$ and $maxsup$ be set a
 bit smaller than the best values used in the sequential code.
 
 The settings for parameters 2, 4 and 5 are the same as those described
-in section [\[sec:parameters\]](#sec:parameters). The settings for parameters 6, 7 and 8 are
+in section [2.11.3](#sec:parameters). The settings for parameters 6, 7 and 8 are
 discussed in section [5.2.1](#sec:mt_mem).
 
 In the file `SRC/sp_ienv.c`, we provide sample settings of these
@@ -485,20 +513,23 @@ to be set in order to use multiple CPUs. For example, to use 4 CPUs on
 the Origin2000, you need to set the following before running the
 program:
 
-`setenv MP_SET_NUMTHREADS 4`
+**setenv MP_SET_NUMTHREADS 4**
 
-| Mutex         | Critical region                                      |
-|---------------|------------------------------------------------------|
-| `ULOCK`       | allocate storage for a column of matrix $U$          |
-| `LLOCK`       | allocate storage for row subscripts of matrix $L$    |
-| `LULOCK`      | allocate storage for the values of the supernodes    |
-| `NSUPER_LOCK` | increment supernode number `nsuper`                  |
-| `SCHED_LOCK`  | invoke `Scheduler()` which may update global task queue |
+(tab:mutexes)=
 
-<div style="text-align:center;">
-Table 3.3: Five mutex variables.
-</div>
-<br>
+```{table} Table 3.3: Five mutex variables.
+:name: tab:mutex_variables
+:align: center
+
+| Mutex          | Critical region                                           |
+|----------------|-----------------------------------------------------------|
+| `ULOCK`        | allocate storage for a column of matrix $U$               |
+| `LLOCK`        | allocate storage for row subscripts of matrix $L$         |
+| `LULOCK`       | allocate storage for the values of the supernodes         |
+| `NSUPER_LOCK`  | increment supernode number nsuper                       |
+| `SCHED_LOCK`   | invoke Scheduler() which may update global task queue   |
+```
+
 <br>
 
 In the source code, all the platform specific constructs are enclosed in
@@ -531,7 +562,7 @@ mutually exclusive. There are five critical regions in the program that
 must be protected by mutual exclusion. Since we want to allow different
 processors to enter different critical regions simultaneously, we use
 five mutex variables as listed in
-Table [3](#tab:mutexes).
+Table [3.3](#tab:mutexes).
 The user should properly initialize them in routine `ParallelInit`, and
 destroy them in routine `ParallelFinalize`. Both these routines are in
 file `pxgstrf_synch.c`.

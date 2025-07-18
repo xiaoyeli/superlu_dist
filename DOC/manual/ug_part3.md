@@ -1,9 +1,9 @@
-## Chapter 4
+(sec:ch4)=
+# Chapter 4
 
-# Distributed-memory SuperLU on manycore nodes (Version 4.0)
+## Distributed-memory SuperLU on manycore nodes (Version 4.0)
 
-
-## 4.1 About SuperLU_DIST
+### 4.1 About SuperLU_DIST
 
 In this part, we describe the library designed for distributed-memory
 pearallel computers using SPMD parallel programming model, together with
@@ -29,7 +29,7 @@ global, and the other is entirely distributed.
 The input matrices $A$ and $B$ are globally available (replicated) on
 all the processes. The storage type for $A$ is (*compressed column*), as
 in sequential case (see
-Section [\[sec:rep\]](#sec:rep)). The user-callable routines with this interface
+Section [2.3](#sec:rep)). The user-callable routines with this interface
 all have the names "xxxxxxx_ABglobal". If there is sufficient memory,
 this interface is faster than the distributed input interface described
 in the next section, because the latter requires more data
@@ -60,7 +60,7 @@ Let $m_i$ be the number of rows owned by the $i$th process. Then the
 global row dimension for $A$ is $nrow = \sum_{i=0}^{P-1}m_i$. The global
 column dimension is $ncol$. Both $nrow$ and $ncol$ are recorded in the
 higher level `SuperMatrix` data structure, see
-Figure [\[fig:struct\]](#fig:struct). The utility routine\
+Figure [2.2](#fig:struct). The utility routine\
 `dCreate_CompRowLoc_Matrix_dist` can help the user to create the
 structure for $A$. The definition of this routine is
 
@@ -97,7 +97,7 @@ processes that own blocks in row $I$. Similarly, a block $U(I,J)$ is
 only needed by the column of processes that own blocks in column $J$.
 
 In this 2D mapping, each block column of $L$ resides on more than one
-process, namely, a column of processes. For example in , the second
+process, namely, a column of processes. For example in Figure 4.1, the second
 block column of $L$ resides on the column processes {1, 4}. Process 4
 only owns two nonzero blocks, which are not contiguous in the global
 matrix. The schema on the right of  depicts the data structure to store
@@ -245,7 +245,7 @@ it scalable. We use alternative techniques to stabilize the algorithm,
 which include statically pivot large elements to the diagonal,
 single-precision diagonal adjustment to avoid small pivots, and
 iterative refinement.
-Figure [\[fig:GESP_alg\]](#fig:GESP_alg) sketches our GESP algorithm (Gaussian
+Figure [4.2](#fig:GESP_alg) sketches our GESP algorithm (Gaussian
 elimination with Static Pivoting). Numerical experiments show that for a
 wide range of problems, GESP is as stable as GEPP [@lidemmel03].
 
@@ -329,7 +329,7 @@ a NUMA node, possibly with GPU-like accelerators, and the amount of
 memory per-core becomes smaller, the pure MPI model does not match the
 light-weight processor architecture. We need to resort to other forms of
 parallelism at node level. In sparse factorization (step (4) in
-Figure [\[fig:GESP_alg\]](#fig:GESP_alg)), the Schur complement update after each panel
+Figure [4.2](#fig:GESP_alg)), the Schur complement update after each panel
 factorization step exhibits ample fine-grid parallelism. We have
 designed the OpenMP + CUDA code to exploit the on-node parallelism. For
 each MPI task of the Schur complement update, we aggegrate the small $L$
@@ -773,7 +773,7 @@ The following utility routines can help users create and destroy the
 matrices. These routines reside in three places: `SRC/util.c`,
 `SRC/{d,z}util.c`, and `SRC/p{d,z}util.c`. Most of the utility routines
 in sequential can also be used in for the local data, see
-Section [\[sec:slu_utility\]](#sec:slu_utility). Here, we only list those new routines
+Section [2.9.3](#sec:slu_utility). Here, we only list those new routines
 specific to . Note that in order to avoid name clash between and , we
 append "`_dist`" to each routine name in .
 
@@ -945,7 +945,7 @@ ispec =
     
       = 6: size of the array to store the values of the L supernodes \((nzval)\)
 
-<br>
+<!-- <br> -->
 
 The values to be returned may be set differently on different machines.
 The setting of maximum block size (parameter 3) should take into account
@@ -1009,10 +1009,10 @@ Table [1](#tab:f90_files) lists all the files.
 `dcreate_dist_matrix.c`  
 : C function for distributing the matrix in a distributed compressed row format.
 
-<div style="text-align:center;">
+<!-- <div style="text-align:center;">
 Table 4.1: The Fortran 90 interface files and an example driver routine.
 </div>
-<br>
+<br> -->
 
 Note that in this interface, all objects (such as ***grid***,
 ***options***, etc.) in are *opaque*, meaning their size and
@@ -1039,26 +1039,27 @@ definitions of all parameters and the Fortran wrapper functions. A
 ***Makefile*** is provided to generate the executable. A
 ***README*** file in this directory shows how to run the
 example.
-```c
+
+```tex
           program f_pddrive
-    ! 
-    ! Purpose
-    ! =======
-    !
-    ! The driver program F_PDDRIVE.
-    !
-    ! This example illustrates how to use F_PDGSSVX with the full
-    ! (default) options to solve a linear system.
-    ! 
-    ! Seven basic steps are required:
-    !   1. Create C structures used in SuperLU
-    !   2. Initialize the MPI environment and the SuperLU process grid
-    !   3. Set up the input matrix and the right-hand side
-    !   4. Set the options argument
-    !   5. Call f_pdgssvx
-    !   6. Release the process grid and terminate the MPI environment
-    !   7. Release all structures
-    !
+     
+    #Purpose
+    # =======
+    #
+    #The driver program F_PDDRIVE.
+    #
+    #This example illustrates how to use F_PDGSSVX with the full
+    #(default) options to solve a linear system.
+    # 
+    #Seven basic steps are required:
+    #   1. Create C structures used in SuperLU
+    #   2. Initialize the MPI environment and the SuperLU process grid
+    #   3. Set up the input matrix and the right-hand side
+    #   4. Set the options argument
+    #   5. Call f_pdgssvx
+    #   6. Release the process grid and terminate the MPI environment
+    #   7. Release all structures
+    #
           use superlu_mod
           include 'mpif.h'
           implicit none
@@ -1079,7 +1080,7 @@ example.
           integer(superlu_ptr) :: stat
 
 
-    ! Create Fortran handles for the C structures used in SuperLU_DIST
+    # Create Fortran handles for the C structures used in SuperLU_DIST
           call f_create_gridinfo(grid)
           call f_create_options(options)
           call f_create_ScalePermstruct(ScalePermstruct)
@@ -1088,15 +1089,15 @@ example.
           call f_create_SuperMatrix(A)
           call f_create_SuperLUStat(stat)
 
-    ! Initialize MPI environment 
+    # Initialize MPI environment 
           call mpi_init(ierr)
 
-    ! Initialize the SuperLU_DIST process grid
+    # Initialize the SuperLU_DIST process grid
           nprow = 2
           npcol = 2
           call f_superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, grid)
 
-    ! Bail out if I do not belong in the grid. 
+    # Bail out if I do not belong in the grid. 
           call get_GridInfo(grid, iam=iam)
           if ( iam >= nprow * npcol ) then 
              go to 100
@@ -1105,13 +1106,13 @@ example.
              write(*,*) ' Process grid ', nprow, ' X ', npcol
           endif
 
-    ! Read Harwell-Boeing matrix, and adjust the pointers and indices
-    ! to 0-based indexing, as required by C routines.
+    # Read Harwell-Boeing matrix, and adjust the pointers and indices
+    # to 0-based indexing, as required by C routines.
           if ( iam == 0 ) then 
              open(file = "g20.rua", status = "old", unit = 5)
              call hbcode1(m, n, nnz, values, rowind, colptr)
              close(unit = 5)
-    !
+    #
              do i = 1, n+1
                 colptr(i) = colptr(i) - 1
              enddo
@@ -1120,31 +1121,31 @@ example.
              enddo
           endif
 
-    ! Distribute the matrix to the gird
+    # Distribute the matrix to the gird
           call  f_dcreate_matrix_dist(A, m, n, nnz, values, rowind, colptr, grid)
 
-    ! Setup the right hand side
+    # Setup the right hand side
           nrhs = 1
           call  get_CompRowLoc_Matrix(A, nrow_loc=ldb)
           do i = 1, ldb
              b(i) = 1.0
           enddo
 
-    ! Set the default input options
+    # Set the default input options
           call f_set_default_options(options)
 
-    ! Change one or more options
-    !      call set_superlu_options(options,Fact=FACTORED)
+    # Change one or more options
+    #      call set_superlu_options(options,Fact=FACTORED)
 
-    ! Initialize ScalePermstruct and LUstruct
+    # Initialize ScalePermstruct and LUstruct
           call get_SuperMatrix(A,nrow=m,ncol=n)
           call f_ScalePermstructInit(m, n, ScalePermstruct)
           call f_LUstructInit(m, n, LUstruct)
 
-    ! Initialize the statistics variables
+    # Initialize the statistics variables
           call f_PStatInit(stat)
 
-    ! Call the linear equation solver
+    # Call the linear equation solver
           call f_pdgssvx(options, A, ScalePermstruct, b, ldb, nrhs, &
                          grid, LUstruct, SOLVEstruct, berr, stat, info)
 
@@ -1154,7 +1155,7 @@ example.
              write(*,*) 'INFO from f_pdgssvx = ', info
           endif
 
-    ! Deallocate SuperLU allocated storage
+    # Deallocate SuperLU allocated storage
           call f_PStatFree(stat)
           call f_Destroy_CompRowLoc_Matrix_dist(A)
           call f_ScalePermstructFree(ScalePermstruct)
@@ -1165,13 +1166,13 @@ example.
              call f_dSolveFinalize(options, SOLVEstruct)
           endif
 
-    ! Release the SuperLU process grid
+    # Release the SuperLU process grid
     100   call f_superlu_gridexit(grid)
 
-    ! Terminate the MPI execution environment
+    # Terminate the MPI execution environment
           call mpi_finalize(ierr)
 
-    ! Destroy all C structures
+    # Destroy all C structures
           call f_destroy_gridinfo(grid)
           call f_destroy_options(options)
           call f_destroy_ScalePermstruct(ScalePermstruct)
@@ -1183,6 +1184,7 @@ example.
           stop
           end
 ```
+
 Similar to the driver routine ***pddrive.c*** in C, seven basic
 steps are required to call a routine in Fortran:
 
@@ -1303,6 +1305,7 @@ constants in . Below are the calling sequences of all the routines.
                            ReplaceTinyPivot, IterRefine, SolveInitialized, &
                            RefineInitialized
 ```
+
 ## C wrapper functions callable by Fortran in ***file spuerlu_c2f_wrap.c***
 
 This file contains the Fortran-callable C functions which wraps around
@@ -1312,6 +1315,7 @@ deallocate the memory of of a C structure given its Fortran handle; 2)
 get or set the value of certain fields of a C structure given its
 Fortran handle; 3) wrapper functions for the C functions. Below are the
 calling sequences of these routines.
+
 ```c
     /* functions that allocate memory for a structure and return a handle */
     void f_create_gridinfo(fptr *handle)
@@ -1369,6 +1373,7 @@ calling sequences of these routines.
                    int *ldb, int *nrhs, fptr *grid, fptr *LUstruct,
                    fptr *SOLVEstruct, double *berr, fptr *stat, int *info)
     void f_check_malloc(int *iam)
+```
 
 [^1]: Some vendor-supplied BLAS libraries do not have C interfaces. So
     the re-naming is needed in order for the SuperLU BLAS calls (in C)
@@ -1376,4 +1381,3 @@ calling sequences of these routines.
 
 [^2]: The numbering of 2, 3 and 6 is consistent with that used in
     SuperLU and SuperLU_MT.
-```
