@@ -34,6 +34,11 @@ images:
 website-deploy: images
 	$(SPHINXBUILD) -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)"  -T -E -j auto $(SPHINXOPTS)
 
+# use to convert Latex to Markdown
+latex2md:
+	pandoc --from=latex --to=markdown --no-highlight $$FILE.tex -o $$FILE.md
+
+
 # use this rule to build the documentation on your machine
 docs:
 	cd .. ; export SUPERLU_DOC=DOC ; python3 -m venv superlu-doc-env ; . superlu-doc-env/bin/activate ; python3 -m pip install --quiet -r DOC/requirements.txt ; cd $${SUPERLU_DOC} ;  make  SPHINXOPTS="-T -E -W --keep-going -j 8" html  ;  deactivate

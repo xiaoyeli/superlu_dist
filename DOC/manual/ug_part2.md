@@ -17,7 +17,7 @@ number of non-trivial modifications to the serial SuperLU, mostly
 related to the matrix data structures and memory organization. All these
 changes are summarized in
 Table [1](#tab:diff_superlu) and their impacts on performance are
-studied thoroughly in [@superlu_smp99; @li96]. In this part of the
+studied thoroughly in {cite}`superlu_smp99`; {cite}`li96`. In this part of the
 Users' Guide, we describe only the changes that the user should be aware
 of. Other than these differences, most of the material in
 chapter [2](#sec:ch2) is still applicable.
@@ -146,7 +146,7 @@ following fields:
 
     -   `FACTORED`: the factored form of $A$ is input.
 
--   `Trans` { `NOTRANS` $|$ `TRANS` $|$ `CONJ` }\
+-   `Trans` { *NOTRANS* $|$ *TRANS* $|$ *CONJ* }\
     Specifies whether to solve the transposed system.
 
 -   `panel_size`\
@@ -157,17 +157,17 @@ following fields:
     Specifies the number of columns to be grouped as a relaxed
     supernode.
 
--   `refact` { `YES` $|$ `NO` }\
+-   `refact` { *YES* $|$ *NO* }\
     Specifies whether this is first time or subsequent factorization.
 
 -   `diag_pivot_thresh` $[0.0, 1.0]$\
     Specifies the threshold used for a diagonal entry to be an
     acceptable pivot.
 
--   `SymmetricMode` { `YES` $|$ `NO` }\
+-   `SymmetricMode` { *YES* $|$ *NO* }\
     Specifies whether to use the symmetric mode.
 
--   `PrintStat` { `YES` $|$ `NO` }\
+-   `PrintStat` { *YES* $|$ *NO* }\
     Specifies whether to print the solver's statistics.
 
 # 3.4 User-callable routines
@@ -230,7 +230,7 @@ appeared in the sequential superlu.
 
     Given the matrix $A$ and its factors $L$ and $U$, this estimates the
     condition number in the one-norm or infinity-norm. The algorithm is
-    due to Hager and Higham [@higham96], and is the same as `condest` in
+    due to Hager and Higham {cite}`higham96`, and is the same as `condest` in
     sparse Matlab.
 
 -   `dgsequ/dlaqgs`: Equilibrate.
@@ -321,11 +321,11 @@ reduced until the initial allocation succeeds.
 
 ispec =
 
-      = 6: size of the array to store the values of the $L$ supernodes (nzval)
+      = 6: size of the array to store the values of the L supernodes (nzval)
 
-      = 7: size of the array to store the columns in $U$ (nzval/rowind)
+      = 7: size of the array to store the columns in U (nzval/rowind)
 
-      = 8: size of the array to store the subscripts of the $L$ supernodes (rowind)
+      = 8: size of the array to store the subscripts of the L supernodes (rowind)
 
 If the actual fill exceeds any array size, the program will abort with a
 message showing the current column when failure occurs, and indicating
@@ -336,7 +336,7 @@ program.
 To make the storage allocation more efficient for the supernodes in $L$,
 we devised a special storage scheme. The need for this special treatment
 and how we implement it are fully explained and studied
-in [@superlu_smp99; @li96]. Here, we only sketch the main idea. Recall
+in {cite}`superlu_smp99`; {cite}`li96`. Here, we only sketch the main idea. Recall
 that the parallel algorithm assigns one panel of columns to one process.
 Two consecutive panels may be assigned to two different processes, even
 though they may belong to the same supernode discovered later. Moreover,
@@ -347,21 +347,21 @@ directly call BLAS routines using this supernode unless we pay the cost
 of copying the columns into contiguous memory first. To overcome this
 problem, we exploited the observation that the nonzero structure for $L$
 is contained in that of the Householder matrix $H$ from the Householder
-sparse $QR$ transformation [@georgeliung88; @georgeng87]. Furthermore,
+sparse $QR$ transformation {cite}`georgeliung88`; {cite}`georgeng87`. Furthermore,
 it can be shown that a fundamental supernode of $L$ is always contained
 in a fundamental supernode of $H$. This containment property is true for
 any row permutation $P_r$ in $P_rA = LU$. Therefore, we can pre-allocate
 storage for the $L$ supernodes based on the size of $H$ supernodes.
 Fortunately, there exists a fast algorithm (almost linear in the number
 of nonzeros of $A$) to compute the size of $H$ and the supernodes
-partition in $H$ [@glnp:01].
+partition in $H$ {cite}`glnp:01`.
 
 In practice, the above static prediction is fairly tight for most
 problems. However, for some others, the number of nonzeros in $H$
 greatly exceeds the number of nonzeros in $L$. To handle this situation,
 we implemented an algorithm that still uses the supernodes partition in
 $H$, but dynamically searches the supernodal graph of $L$ to obtain a
-much tighter bound for the storage. Table 6 in [@superlu_smp99]
+much tighter bound for the storage. Table 6 in {cite}`superlu_smp99`
 demonstrates the storage efficiency achieved by both static and dynamic
 approach.
 
@@ -421,7 +421,7 @@ scheme, the user should recompile the code by defining the macro:
 for the C preprocessor.
 
 (sec:SuperLU_MT_sp_ienv)=
-### The inquiry function `sp_ienv()` 
+### The inquiry function ***sp_ienv()*** 
 
 For some user controllable constants, such as the blocking parameters
 and the size of the global storage for $L$ and $U$, SuperLU_MT calls the
@@ -432,25 +432,27 @@ of this function is
 
 The full meanings of the returned values are as follows:
 
-ispec = ...
+ispec = 
 
-      = 1: the panel size \(w\)
+      = 1: the panel size (w)
 
-      = 2: the relaxation parameter to control supernode amalgamation \((relax)\)
+      = 2: the relaxation parameter to control supernode amalgamation (relax)
 
-      = 3: the maximum allowable size for a supernode \((maxsup)\)
+      = 3: the maximum allowable size for a supernode (maxsup)
 
-      = 4: the minimum row dimension for 2D blocking to be used \((rowblk)\)
+      = 4: the minimum row dimension for 2D blocking to be used (rowblk)
 
-      = 5: the minimum column dimension for 2D blocking to be used \((colblk)\)
+      = 5: the minimum column dimension for 2D blocking to be used (colblk)
     
-      = 6: size of the array to store the values of the L supernodes \((nzval)\)
+      = 6: size of the array to store the values of the L supernodes (nzval)
 
-      = 7: size of the array to store the columns in U \((nzval/rowind)\)
+      = 7: size of the array to store the columns in U (nzval/rowind)
 
-      = 8: size of the array to store the subscripts of the L supernodes \((rowind)\)
+      = 8: size of the array to store the subscripts of the L supernodes (rowind)
 <br>
 <br>
+
+(tab:mt_machines)=
 
 ```{table} Figure 3.2: Platforms on which SuperLU_MT was tested.
 :name: tab:superlu_mt_platforms
@@ -501,9 +503,9 @@ functionality of the example.
 # 3.7 Porting to other platforms 
 
 We have provided the parallel interfaces for a number of shared-memory
-machines. Table [2](#tab:mt_machines) lists the platforms on which we have tested
+machines. Table [2](tab:mt_machines) lists the platforms on which we have tested
 the library, and the respective `make.inc` files. The most portable
-interface for shared memory programming is POSIX threads [@posix], since
+interface for shared memory programming is POSIX threads {cite}`posix`, since
 nowadays many commercial UNIX operating systems have support for it. We
 call our POSIX threads interface the `Pthreads` interface. To use this
 interface, you can copy `make.pthreads` into `make.inc` and then compile

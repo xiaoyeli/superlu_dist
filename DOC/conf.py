@@ -65,7 +65,7 @@ extensions = [
 
 copybutton_prompt_text = '$ '
 
-bibtex_bibfiles = ['superlu.bib']
+bibtex_bibfiles = ['others.bib', 'sparse.bib']
 
 myst_enable_extensions = ["fieldlist", "dollarmath", "amsmath", "deflist", "colon_fence"]
 

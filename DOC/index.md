@@ -1,4 +1,4 @@
-# SuperLU_DIST
+<!-- # SuperLU_DIST
 
 SuperLU_DIST contains a set of subroutines to solve a sparse linear system A*X=B. It uses Gaussian elimination with static pivoting (GESP). Static pivoting is a technique that combines the numerical stability of partial pivoting with the scalability of Cholesky (no pivoting), to run accurately and efficiently on large numbers of processors. SuperLU_DIST is a parallel extension to the serial SuperLU library. It is targeted for the distributed memory parallel machines. SuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism and MPI for off-node communications. Numerical LU factorization and triangular solvers can be performed on multiple GPU nodes for Nvidia, AMD, and Intel GPUs.
 
@@ -27,4 +27,4 @@ For general citations on SuperLU_DIST please use the following:
 :end-at: year
 :language: none
 :start-at: superlu_v8
-```
+``` -->

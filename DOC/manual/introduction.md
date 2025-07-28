@@ -18,20 +18,20 @@ parallelism.
 
 In this introduction we refer to all three libraries collectively as
 SuperLU. The three libraries within SuperLU are as follows. Detailed
-references are also given (see also [22](#ref:22)).
+references are also given (see also {cite}`li96`).
 
 - **Sequential SuperLU** is designed for sequential processors with one
-  or more layers of memory hierarchy (caches) ([5](#ref:5)).
+  or more layers of memory hierarchy (caches) {cite}`superlu99`,{cite}`lidemmel03`.
 
 - **Multithreaded SuperLU** (***SuperLU_MT***) is designed for shared memory
   multiprocessors (SMPs), and can effectively use up to 16 or 32
   parallel processors on sufficiently large matrices in order to speed
-  up the computation ([6](#ref:6)).
+  up the computation {cite}`superlu99`.
 
 - **Distributed SuperLU** (***SuperLU_DIST***) is designed for distributed memory parallel
-  processors, using MPI [(28)](#ref:28) for interprocess communication. It
+  processors, using MPI {cite}`liu85` for interprocess communication. It
   can effectively use hundreds of parallel processors on sufficiently
-  large matrices [[24,25]](#ref:24).
+  large matrices  {cite}`li03`.
 
 The rest of the Introduction is organized as follows.
 Section [1.2](#sec:OverallAlgorithm) describes the high-level algorithm
@@ -106,7 +106,7 @@ The simple driver subroutines for double precision real data are called
 letter `d` in the subroutine names means double precision real; other
 options are `s` for single precision real, `c` for single precision
 complex, and `z` for double precision complex. The subroutine naming
-scheme is analogous to the one used in LAPACK [(1)](#ref:1).
+scheme is analogous to the one used in LAPACK {cite}`lapackmanual2`.
 SuperLU_DIST does not include this simple driver.
 
 There is also an "expert driver" routine that can provide more accurate
@@ -180,12 +180,7 @@ discussed in section [4](#sec:Differences))
 ## 1.3.2 Tuning Parameters for BLAS
 
 All three libraries depend on having high performance BLAS (Basic Linear
-Algebra Subroutine) libraries [[21](#ref:21),[8](#ref:8),[7](#ref:7)] in order to get
-high performance. In particular, they depend on matrix-vector
-multiplication or matrix-matrix multiplication of relatively small dense
-matrices. The sizes of these small dense matrices can be tuned to match
-the "sweet spot" of the BLAS by setting certain tuning parameters
-described in
+Algebra Subroutine) libraries {cite}`blas1`,{cite}`blas3`,{cite}`superlu_smp99` in order to get high performance. In particular, they depend on matrix-vector multiplication or matrix-matrix multiplication of relatively small dense matrices. The sizes of these small dense matrices can be tuned to match the "sweet spot" of the BLAS by setting certain tuning parameters described in
 section [2.11.3](#sec:parameters) for SuperLU, in
 section [3.5.2](#sec:SuperLU_MT_sp_ienv) for SuperLU_MT, and in
 section [4.9.2](#sec:SuperLU_DIST_sp_ienv) for SuperLU_DIST.
@@ -283,13 +278,13 @@ section [1.2](#sec:OverallAlgorithm):
 
 - Natural ordering,
 
-- Multiple Minimum Degree (MMD) [(27)](#ref:27) applied to the structure of
+- Multiple Minimum Degree (MMD) {cite}`lishao10` applied to the structure of
   $A^TA$,
 
-- Multiple Minimum Degree (MMD) [(27](#ref:27)) applied to the structure of
+- Multiple Minimum Degree (MMD) {cite}`lishao10` applied to the structure of
   $A^T+A$,
 
-- Column Approximate Minimum Degree (COLAMD) [(4)](#ref:4), and
+- Column Approximate Minimum Degree (COLAMD) {cite}`davis96`, and
 
 - Use a $P_c$ supplied by the user as input.
 
@@ -298,12 +293,7 @@ pivoting is needed, and does not require explicit formation of $A^TA$.
 It usually gives comparable orderings as MMD on $A^TA$, and is faster.
 
 The orderings based on graph partitioning heuristics are also popular,
-as exemplified in the **MeTiS** package [(19)](#ref:19). The user can simply input
-this ordering in the permutation vector for $P_c$. Note that many graph
-partitioning algorithms are designed for symmetric matrices. The user
-may still apply them to the structures of $A^TA$ or $A^T+A$. Our
-routines `getata()` and `at_plus_a()` in the file `get_perm_c.c` can be
-used to form $A^TA$ or $A^T+A$.
+as exemplified in the **MeTiS** package {cite}`higham96`. The user can simply input this ordering in the permutation vector for $P_c$. Note that many graph partitioning algorithms are designed for symmetric matrices. The user may still apply them to the structures of $A^TA$ or $A^T+A$. Our routines `getata()` and `at_plus_a()` in the file `get_perm_c.c` can be used to form $A^TA$ or $A^T+A$.
 
 ## 1.3.6 Iterative Refinement
 
@@ -313,14 +303,12 @@ approximate solution $x$ from step 5, the algorithm for step 6 is as
 follows (where $x$ and $b$ are single columns of $X$ and $B$,
 respectively):
 
-```text
-Compute residual $r = Ax-b$\
-While residual too large\
-    Solve $Ad=r$ for correction $d$\
-    Update solution $x = x-d$\
-    Update residual $r = Ax-b$\
-end while
-```
+&nbsp;&nbsp;&nbsp;&nbsp;Compute residual $r = Ax - b$  
+&nbsp;&nbsp;&nbsp;&nbsp;While residual too large  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Solve $Ad = r$ for correction $d$  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Update solution $x = x - d$  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Update residual $r = Ax - b$  
+&nbsp;&nbsp;&nbsp;&nbsp;End while
 
 If $r$ and then $d$ were computed exactly, the updated solution $x-d$
 would be the exact solution. Roundoff prevents immediate convergence.
@@ -329,15 +317,20 @@ The criterion "residual too large" in the iterative refinement algorithm above i
 
 (eqn:eqn_defBERR)=
 
-$$
-BERR \equiv \max_i \frac{|r_i|}{s_i}
-$$
+<p align="center">
+\(
+\displaystyle BERR \equiv \max_i \frac{|r_i|}{s_i}
+\)
+</p>
 
-exceeds the machine roundoff level, or is continuing to decrease quickly enough. Here $ s_i $ is the scale factor
+exceeds the machine roundoff level, or is continuing to decrease quickly enough. Here $s_i$ is the scale factor:
 
-$$
-s_i = (|A|\cdot|x| + |b|)_i = \sum_j |A_{ij}|\cdot|x_j| + |b_i|
-$$
+<p align="center">
+\(
+\displaystyle s_i = (|A|\cdot|x| + |b|)_i = \sum_j |A_{ij}|\cdot|x_j| + |b_i|
+\)
+</p>
+
 
 In this expression, $|A|$ is the $n \times n$ matrix with entries $|A|_{ij} = |A_{ij}|$, and $|b|$ and $|x|$ are similarly column vectors of absolute entries of $b$ and $x$, respectively. The operation $|A|\cdot|x|$ represents conventional matrix-vector multiplication.
     The purpose of this stopping criterion is explained in the next section.
@@ -346,41 +339,27 @@ In this expression, $|A|$ is the $n \times n$ matrix with entries $|A|_{ij} = |A
 
 Step 7 of the expert driver algorithm computes error bounds.
 
-It is shown in [[2](#ref:2),[29](#ref:29)] that $BERR$ defined in
-Equation [1.1](#eqn:eqn_defBERR)) measures the *componentwise relative backward
-error* of the computed solution. This means that the computed $x$
-satisfies a slightly perturbed linear system of equations $(A+E)x=b+f$,
-where $|E_{ij}| \leq BERR \cdot |A_{ij}|$ and
-$|f_{i}| \leq BERR \cdot |b_{i}|$ for all $i$ and $j$. It is shown
-in [[2](#ref:2),[34](#ref:34)] that one step of iterative refinement usually
-reduces $BERR$ to near machine epsilon. For example, if $BERR$ is 4
-times machine epsilon, then the computed solution $x$ is identical to
-the solution one would get by changing each nonzero entry of $A$ and $b$
-by at most 4 units in their last places, and then solving this perturbed
-system *exactly*. If the nonzero entries of $A$ and $b$ are uncertain in
-their bottom 2 bits, then one should generally not expect a more
-accurate solution. Thus $BERR$ is a measure of backward error
-specifically suited to solving sparse linear systems of equations.
-Despite roundoff, $BERR$ itself is always computed to within about
-$\pm n$ times machine epsilon (and usually much more accurately) and so
-$BERR$ is quite accurate.
+It is shown in {cite}`arioli89`,{cite}`oettliprager` that $BERR$ defined in Equation [1.1](#eqn:eqn_defBERR) measures the *componentwise relative backward error* of the computed solution. This means that the computed $x$ satisfies a slightly perturbed linear system of equations $(A+E)x=b+f$, where $|E_{ij}| \leq BERR \cdot |A_{ij}|$ and $|f_{i}| \leq BERR \cdot |b_{i}|$ for all $i$ and $j$. It is shown in {cite}`arioli89`,{cite}`skeel80` that one step of iterative refinement usually reduces $BERR$ to near machine epsilon. For example, if $BERR$ is 4 times machine epsilon, then the computed solution $x$ is identical to the solution one would get by changing each nonzero entry of $A$ and $b$ by at most 4 units in their last places, and then solving this perturbed system **exactly**. If the nonzero entries of $A$ and $b$ are uncertain in their bottom 2 bits, then one should generally not expect a more accurate solution. Thus $BERR$ is a measure of backward error specifically suited to solving sparse linear systems of equations. Despite roundoff, $BERR$ itself is always computed to within about $\pm n$ times machine epsilon (and usually much more accurately) and so $BERR$ is quite accurate.
 
 In addition to backward error, the expert driver computes a *forward error bound*
 
-$$
-FERR \geq \frac{\|x_{\mathrm{true}} - x\|_{\infty}}{\|x\|_{\infty}}
-$$
+<p align="center">
+\(
+\displaystyle FERR \geq \frac{\|x_{\mathrm{true}} - x\|_{\infty}}{\|x\|_{\infty}}
+\)
+</p>
 
-Here, the infinity norm $\|x\|_{\infty}$ is defined as:
+Here, the infinity norm is defined as:
 
-$$
-\|x\|_{\infty} \equiv \max_i |x_i|
-$$
+<p align="center">
+\(
+\displaystyle \|x\|_{\infty} \equiv \max_i |x_i|
+\)
+</p>
 
-Thus, if $FERR = 10^{-6}$, then each component of $x$ has an error bounded by about $10^{-6}$ times the largest component of $x$. The algorithm used to compute $FERR$ is an approximation; see [@arioli89; @higham96] for a discussion. Generally, $FERR$ is accurate to within a factor of 10 or better, which is adequate to determine how many digits of the largest entries of $x$ are correct.
+Thus, if $FERR = 10^{-6}$, then each component of $x$ has an error bounded by about $10^{-6}$ times the largest component of $x$. The algorithm used to compute $FERR$ is an approximation; see {cite}`arioli89`; {cite}`higham96` for a discussion. Generally, $FERR$ is accurate to within a factor of 10 or better, which is adequate to determine how many digits of the largest entries of $x$ are correct.
 
-(SuperLU_DIST's algorithm for $FERR$ is slightly less reliable
-[(25)](#ref:25).)
+(SuperLU_DIST's algorithm for $FERR$ is slightly less reliable {cite}`lidemmel03`)
 
 (sec:SolvingRelatedSystems)=
 ## 1.3.8 Solving a Sequence of Related Linear Systems
@@ -406,7 +385,7 @@ increasing order of "reuse of prior information":
 3.  *Reuse $P_c$, $P_r$ and data structures allocated for $L$ and $U$.*
     If $P_r$ and $P_c$ do not change, then the work of building the data
     structures associated with $L$ and $U$ (including the elimination
-    tree [(15)](#ref:15)) can be avoided. This is most useful when
+    tree {cite}`GilbertNg-IMA`) can be avoided. This is most useful when
     $A^{(2)}$ has the same sparsity structure and similar numerical
     entries as $A^{(1)}$. When the numerical entries are not similar,
     one can still use this option, but at a higher risk of numerical
@@ -465,7 +444,7 @@ $L$ and $U$ are stored in different formats in the three libraries:
   Sections [4.3](#sec:datastruct)
   and [4.4](#sec:grid), we use a 2D block-cyclic format, which has been
   used for dense matrices in libraries like ScaLAPACK
-  [@scalapackmanual]. But for sparse matrices, the blocks are no longer
+  {cite}`scalapackmanual`. But for sparse matrices, the blocks are no longer
   identical in size, and vary depending on the sparsity structure of $L$
   and $U$. The detailed storage format is discussed in
   section [4.3](#sec:datastruct) and illustrated in
@@ -513,13 +492,13 @@ memory machines, because of the fine-grain communication and dynamic
 data structures required. So SuperLU_DIST uses a new scheme called
 *static pivoting* instead. In static pivoting the pivot order ($P_r$) is
 chosen before numerical factorization, using a weighted perfect matching
-algorithm [@duffkoster99], and kept fixed during factorization. Since
+algorithm {cite}`duffkoster99`, and kept fixed during factorization. Since
 both row and column orders ($P_r$ and $P_c$) are fixed before numerical
 factorization, we can extensively optimize the data layout, load
 balance, and communication schedule. The price is a higher risk of
 numeric instability, which is mitigated by diagonal scaling, setting
 very tiny pivots to larger values, and iterative refinement
-[@lidemmel03]. Again, error bound $BERR$ measure how much stability is
+{cite}`lidemmel03`. Again, error bound $BERR$ measure how much stability is
 actually lost.
 
 ## 1.4.4 Memory Management
@@ -538,7 +517,7 @@ the initial estimate of the size of $L$ and $U$ from `FILL` is too
 small, the routine allocates more space and copies the current $L$ and
 $U$ factors to the new space and frees the old space. If the routine
 cannot allocate enough space, it calls a user-specifiable routine ABORT.
-See sections [3.4.3](#sec:abort) for details.
+See sections [1.3.4](#sec:abort) for details.
 
 SuperLU_MT is similar, except that the current alpha version cannot
 reallocate more space for $L$ and $U$ if the initial size estimate from
@@ -567,15 +546,15 @@ computer architectures, in particular, the multi-level cache
 organization and parallelism. We have conducted extensive experiments on
 various platforms, with a large collection of test matrices. The
 Sequential SuperLU achieved up to 40% of the theoretical floating-point
-rate on a number of processors, see [@superlu99; @li96]. The megaflop
+rate on a number of processors, see {cite}`superlu99`; {cite}`li96`. The megaflop
 rate usually increases with increasing ratio of floating-point
 operations count over the number of nonzeros in the $L$ and $U$ factors.
 The parallel LU factorization in SuperLU_MT demonstrated 5--10 fold
 speedups on a range of commercially popular SMPs, and up to 2.5
-Gigaflops factorization rate, see [@superlu_smp99; @li96]. The parallel
+Gigaflops factorization rate, see {cite}`superlu_smp99`; {cite}`li96`. The parallel
 LU factorization in SuperLU_DIST achieved up to 100 fold speedup on a
 512-processor Cray T3E, and 10.2 Gigaflops factorization rate,
-see [@lidemmel98].
+see {cite}`lidemmel98`.
 
 (sec:SoftwareStatus)=
 # 1.6 Software Status and Availability
@@ -706,3 +685,4 @@ National Laboratory, Livermore Computing at Lawrence Livermore National
 Laboratory, NCSA at University of Illinois at Urbana-Champaign, Silicon
 Graphics, and Xerox Palo Alto Research Center. We thank UC Berkeley and
 NSF Infrastructure grant CDA-9401156 for providing Berkeley NOW.
+

@@ -8,7 +8,7 @@
 In this part, we describe the library designed for distributed-memory
 pearallel computers using SPMD parallel programming model, together with
 multithreading for manycore node architectures. The library is
-implemented in ANSI C, using MPI [@mpi-forum] for communication, OpenMP
+implemented in ANSI C, using MPI  {cite}`mpi-forum` for communication, OpenMP
 for multithreading and CUDA for GPU. We have tested the code on a number
 of platforms, including IBM, Cray XE6, Cray XT7, and numerous Linux
 clusters. The library includes routines to handle both real and complex
@@ -107,8 +107,20 @@ information to interpret the location and row subscript of each nonzero.
 This is stored in an integer array `index[]`, which includes the
 information for the whole block column and for each individual block in
 it. Note that many off-diagonal blocks are zero and hence not stored.
-Neither do we store the zeros in a nonzero block. Both lower and upper
-triangles of the diagonal block are stored in the $L$ data structure. A
+Neither do we store the zeros in a nonzero block. 
+
+```{figure} lu_2d.jpg
+---
+height: 2.7in
+width: 3.8in
+align: center
+name: fig-lu-2d
+---
+Figure 4.1: The 2 block-cyclic layout and the data structure to store a local block column of $L$.
+```
+
+
+Both lower and upper triangles of the diagonal block are stored in the $L$ data structure. A
 process owns $\lceil{N/{\tt npcol}}\rceil$ block columns of $L$, so it
 needs $\lceil{N/{\tt nprow}}\rceil$ pairs of `index/nzval` arrays.
 
@@ -117,7 +129,7 @@ process, although for the numerical values within each block we still
 use column major order. Similar to $L$, we also use a pair of
 `index/nzval` arrays to store a block row of $U$. Due to asymmetry, each
 nonzero block in $U$ has the skyline structure as shown in 
-(see [@superlu99] for details on the skyline structure). Therefore, the
+(see  {cite}`superlu99` for details on the skyline structure). Therefore, the
 organization of the `index[]` array is different from that for $L$,
 which we omit showing in the figure.
 
@@ -247,7 +259,7 @@ single-precision diagonal adjustment to avoid small pivots, and
 iterative refinement.
 Figure [4.2](#fig:GESP_alg) sketches our GESP algorithm (Gaussian
 elimination with Static Pivoting). Numerical experiments show that for a
-wide range of problems, GESP is as stable as GEPP [@lidemmel03].
+wide range of problems, GESP is as stable as GEPP  {cite}`lidemmel03`.
 
 (fig:GESP_alg)=
 $$
@@ -278,17 +290,18 @@ $$
 <div style="text-align:center;">
 Figure 4.2: The outline of the GESP algorithm.
 </div>
+<br>
 
 Step (1) is accomplished by a weighted bipartite matching algorithm due
-to Duff and Koster [@duffkoster99]. Currently, process 0 computes $P_r$
+to Duff and Koster  {cite}`duffkoster99`. Currently, process 0 computes $P_r$
 and then broadcasts it to all the other processes. If the distributed
 input interface is used
 (Section [2.2](#sec:DistInput)), we first gather the distributed matrix $A$
 onto processor 0. Work is underway to remove this sequential bottleneck.
 
 In Step (2), we provide several ordering options, such as multiple
-minimum degree ordering [@liu85] on the graphs of $A+A^T$, or the
- [@kaku:98a] ordering on the graphs of $A+A^T$. The user can use any
+minimum degree ordering {cite}`liu85` on the graphs of $A+A^T$, or the
+{cite}`kaku:98a` ordering on the graphs of $A+A^T$. The user can use any
 other ordering in place of the ones provided in the library. (*Note,
 since we will pivot on the diagonal in step (4), an ordering based on
 the structure of $A+A^T$ almost always yields sparser factors than that
@@ -302,13 +315,13 @@ the ***options*** argument is set (see
 Section [8.1](#sec:drivers) for details.) The parallel symbolic
 factorization was a newly added feature since the ***v2.1***
 release. It is designed tightly around the separator tree returned from
-a graph partitioning type of ordering (presently we use  [@kaku:03]),
+a graph partitioning type of ordering (presently we use {cite}`kaku:03`),
 and works only on power-of-two processors. We first re-distribute the
 graph of $A$ onto the largest $2^q$ number of processors which is
 smaller than the total $N_p$ processors, then perform parallel symbolic
 factorization, and finally re-populate the $\{L \backslash U\}$
 structure to all $N_p$ processors. The algorithm and performance was
-studied in [@grigoridemmelli07]. To invoke parallel symbolic
+studied in  {cite}`grigoridemmelli07`. To invoke parallel symbolic
 factorization, the user needs to set the two fields of the
 ***options*** argument as follows:
 
@@ -317,10 +330,10 @@ factorization, the user needs to set the two fields of the
 
 Note that, even if the user sets ***options.ColPerm*** to use
 an ordering algorithm other than , the driver routine overrides it with
-when it sees 'options.ParSymbFact = ***YES***.
+when it sees ***options.ParSymbFact = YES***.
 
 Steps (4) to (7) are the most time-consuming steps and were parallelized
-a while ago, see the papers [@lidemmel03; @li05].
+a while ago, see the papers  {cite}`lidemmel03`; {cite}`li05`.
 
 ## 4.5.1 Multicore and GPU enhancements
 
@@ -340,7 +353,7 @@ block of GEMM to GPU. The key to success is to overlap the CPU work
 (GEMM with multiple CUDA streams). This way, we are able to hide the
 latency time due to PCI bus transfer between CPU and GPU. The detailed
 algorithm description and performance data were given in the paper by
-Sao et al. [@sao2014].
+Sao et al.  {cite}`sao2014`.
 
 To use Nvidia GPU, you must set the following Linux shell environment
 variable before compilation:
@@ -437,11 +450,11 @@ applications; it contains the following fields:
 
     -   `LargeDiag_MC64`: use a serial, weighted bipartite matching
         algorithm implemented in MC64 to permute the rows to make the
-        diagonal large relative to the off-diagonal [@duffkoster01].
+        diagonal large relative to the off-diagonal {cite}`duffkoster01`.
 
     -   `LargeDiag_AWPM`: use a parallel, approximate weighted bipartite
         matching algorithm implemented in CombBLAS to permute the rows
-        to make the diagonal large relative to the off-diagonal [@awpm].
+        to make the diagonal large relative to the off-diagonal {cite}`hwpm`.
 
     -   `MY_PERMR`: use the ordering given in `perm_r` input by the
         user.
@@ -682,7 +695,7 @@ Five basic steps are required to call a SuperLU routine:
     matrices can be generated on each process without the need to have a
     centralized place to hold them. But for this example, we let process
     0 read the input matrix stored on disk in Harwell-Boeing
-    format [@duffgrimes92] (a.k.a. compressed column storage), and
+    format {cite}`duffgrimes92` (a.k.a. compressed column storage), and
     distribute it to all the other processes, so that each process only
     owns a block of rows of matrix. The right-hand side matrix is
     generated so that the exact solution matrix consists of all ones.
@@ -939,13 +952,12 @@ function is
 
 ispec = 
 
-      = 2: the relaxation parameter to control supernode amalgamation \((relax)\)
+      = 2: the relaxation parameter to control supernode amalgamation (relax)
 
-      = 3: the maximum allowable size for a supernode \((maxsup)\)
+      = 3: the maximum allowable size for a supernode (maxsup)
     
-      = 6: size of the array to store the values of the L supernodes \((nzval)\)
+      = 6: size of the array to store the values of the L supernodes (nzval)
 
-<!-- <br> -->
 
 The values to be returned may be set differently on different machines.
 The setting of maximum block size (parameter 3) should take into account
@@ -967,7 +979,7 @@ The following parameters are related to GPU usage:
       setenv MAX_BUFFER_SIZE <##>  /* maximum buffer size on GPU (default 5M words) */
 
 These parameters are described in detail in various algorithm papers,
-see [@li05; @sao2014].
+see {cite}`li05`; {cite}`sao2014`.
 
 # 4.10 Example programs
 
@@ -988,8 +1000,9 @@ the second shows how to use the distributed input interface.
 We developed a complete Fortran 90 interface for . All the interface
 files and an example driver program are located in the
 `SuperLU_DIST/FORTRAN/` directory.
-Table [1](#tab:f90_files) lists all the files.
+Table [4.1](tab:f90_files) lists all the files.
 
+(tab:f90_files)=
 
 `f_pddrive.f90`  
 : An example Fortran driver routine.
@@ -1009,10 +1022,10 @@ Table [1](#tab:f90_files) lists all the files.
 `dcreate_dist_matrix.c`  
 : C function for distributing the matrix in a distributed compressed row format.
 
-<!-- <div style="text-align:center;">
+<div style="text-align:center;">
 Table 4.1: The Fortran 90 interface files and an example driver routine.
 </div>
-<br> -->
+<br>
 
 Note that in this interface, all objects (such as ***grid***,
 ***options***, etc.) in are *opaque*, meaning their size and
