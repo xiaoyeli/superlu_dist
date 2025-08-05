@@ -63,6 +63,8 @@ at the top-level directory.
 #define gpuEventCreate cudaEventCreate
 #define gpuEventRecord cudaEventRecord
 #define gpuMemGetInfo cudaMemGetInfo
+#define gpuDeviceGetAttribute cudaDeviceGetAttribute
+#define gpuDeviceAttributeClockRate cudaDevAttrClockRate
 #define gpuOccupancyMaxPotentialBlockSize cudaOccupancyMaxPotentialBlockSize
 #define gpuEventElapsedTime cudaEventElapsedTime
 #define gpuDeviceReset cudaDeviceReset
@@ -151,6 +153,8 @@ at the top-level directory.
 #define gpuEventCreate hipEventCreate
 #define gpuEventRecord hipEventRecord
 #define gpuMemGetInfo hipMemGetInfo
+#define gpuDeviceGetAttribute hipDeviceGetAttribute
+#define gpuDeviceAttributeClockRate hipDeviceAttributeClockRate
 #define gpuOccupancyMaxPotentialBlockSize hipOccupancyMaxPotentialBlockSize
 #define gpuEventElapsedTime hipEventElapsedTime
 #define gpuDeviceReset hipDeviceReset
