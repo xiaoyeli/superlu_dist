@@ -712,13 +712,15 @@ static void printDevProp(gpuDeviceProp devProp)
 {
 	size_t mfree, mtotal;
 	gpuMemGetInfo	(&mfree, &mtotal);
+	int clock;
+	gpuDeviceGetAttribute(&clock, gpuDeviceAttributeClockRate, 0);
 
 	printf("pciBusID:                      %d\n",  devProp.pciBusID);
 	printf("pciDeviceID:                   %d\n",  devProp.pciDeviceID);
 	printf("GPU Name:                      %s\n",  devProp.name);
 	printf("Total global memory:           %zu\n",  devProp.totalGlobalMem);
 	printf("Total free memory:             %zu\n",  mfree);
-	printf("Clock rate:                    %d\n",  devProp.clockRate);
+	printf("Clock rate:                    %d\n",  clock);
 
 	return;
 }
