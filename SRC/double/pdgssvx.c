@@ -1447,6 +1447,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		pdconvertU(options, grid, LUstruct, stat, n);
 #endif
 
+if (get_acc_solve()){
 #ifdef GPU_ACC
 		checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
 							(LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
@@ -1455,7 +1456,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
 							(LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 #endif
-
+}
 
 	}
 
