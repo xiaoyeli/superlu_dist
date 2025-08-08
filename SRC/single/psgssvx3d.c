@@ -568,13 +568,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
     strf3Dpartition_t *trf3Dpartition=LUstruct->trf3Dpart;
-    int gpu3dVersion = 1; // default is to use C++ code in CplusplusFactor/ directory
-#ifdef GPU_ACC
-    if (getenv("GPU3DVERSION")) {
-       gpu3dVersion = atoi(getenv("GPU3DVERSION"));
-    }
-
-#endif
+    int gpu3dVersion = sp_ienv_dist(12, options);
 
     LUstruct->dt = 's';
 

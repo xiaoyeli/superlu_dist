@@ -158,6 +158,16 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
                 return atoi (ttemp);
             else
                 return 0;  // default
+         case 12:
+	    ttemp = getenv ("GPU3DVERSION");
+            if (ttemp)
+                return atoi (ttemp);
+            else
+#ifdef GPU_ACC            
+                return 1;  // default
+#else 
+                return 0;  // default
+#endif
     }
 
     /* Invalid value for ISPEC */

@@ -494,8 +494,10 @@ struct xLUstruct_t
 
         delete[] lPanelVec;
         delete[] uPanelVec;
-        delete [] uPanelVec_GPU;
-        delete [] lPanelVec_GPU;
+        if (superlu_acc_offload){
+            delete [] uPanelVec_GPU;
+            delete [] lPanelVec_GPU;
+        }
 
 
         /* free diagonal L and U blocks */
