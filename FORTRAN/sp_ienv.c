@@ -57,12 +57,14 @@ at the top-level directory.
 		 If this is too small, the Schur complement update will be
 		 done in multiple partitions, may be slower.
 	    = 9: number of GPU streams
-	    = 10: whether to offload work to GPU or not
+	    = 10: whether to offload computations to GPU or not
+	    = 11: whether to offload triangular solve to GPU or not
+	    = 12: whether to use the C++ code for factorizzation or not
 
    options (input) superlu_dist_options_t*
            The structure defines the input parameters to control
            how the LU decomposition the solves are performed.
-
+   
    (SP_IENV_DIST) (output) int
             >= 0: the value of the parameter specified by ISPEC   
             < 0:  if SP_IENV_DIST = -k, the k-th argument had an illegal value.
@@ -73,8 +75,9 @@ at the top-level directory.
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "superlu_defs.h"
 
-int
+int_t
 sp_ienv_dist(int ispec, superlu_dist_options_t *options)
 {
     int i;
@@ -82,20 +85,22 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
     char* ttemp;
 
     switch (ispec) {
-	case 2: 
+	case 2:
             ttemp = getenv("SUPERLU_RELAX");
+	    int k;
             if(ttemp)
             {
-                return(atoi(ttemp));
-            }else if(getenv("NREL"))
+		k = atoi(ttemp);
+            }else if( (ttemp = getenv("NREL")) )
             {
-                return(atoi(getenv("NREL")));
+		k = atoi(ttemp);
             }
             else {
-		options->superlu_relax = 1;
-		return (options->superlu_relax);
+		k = options->superlu_relax;
 	    }
-            
+	    k = SUPERLU_MIN( k, sp_ienv_dist(3,options) ); // not to exceed MAXSUP
+	    return (k);
+	    
 	case 3: 
 	    ttemp = getenv("SUPERLU_MAXSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
             if(ttemp)
@@ -127,12 +132,17 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
 		return (options->superlu_n_gemm);
         case 8:
   	    ttemp = getenv ("SUPERLU_MAX_BUFFER_SIZE");
-	    if (ttemp) 
+	    if ( ttemp==NULL )ttemp = getenv("MAX_BUFFER_SIZE"); 
+	    if (ttemp) {
+#if defined (_LONGINT)
+		char *eptr;
+		return strtoll (ttemp, &eptr, 10);
+#else		
 		return atoi (ttemp);
-	    else if(getenv("MAX_BUFFER_SIZE")) 
-		return(atoi(getenv("MAX_BUFFER_SIZE")));
-	    else 
+#endif
+	    } else {
 		return (options->superlu_max_buffer_size);
+	    }
          case 9:
   	    ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
 	    if (ttemp) 
@@ -143,6 +153,22 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
 	    if (ttemp) 
 		return atoi (ttemp);
 	    else return (options->superlu_acc_offload);
+         case 11:
+	    ttemp = getenv ("SUPERLU_ACC_SOLVE");
+            if (ttemp)
+                return atoi (ttemp);
+            else
+                return 0;  // default
+         case 12:
+	    ttemp = getenv ("GPU3DVERSION");
+            if (ttemp)
+                return atoi (ttemp);
+            else
+#ifdef GPU_ACC            
+                return 1;  // default
+#else 
+                return 0;  // default
+#endif
     }
 
     /* Invalid value for ISPEC */
