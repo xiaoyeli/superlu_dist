@@ -59,7 +59,7 @@ at the top-level directory.
 	    = 9: number of GPU streams
 	    = 10: whether to offload computations to GPU or not
 	    = 11: whether to offload triangular solve to GPU or not
-	    = 12: whether to use the C++ code for factorizzation or not
+	    = 12: whether to use the C++ code for factorization or not
 
    options (input) superlu_dist_options_t*
            The structure defines the input parameters to control
@@ -99,7 +99,8 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
 		k = options->superlu_relax;
 	    }
 	    k = SUPERLU_MIN( k, sp_ienv_dist(3,options) ); // not to exceed MAXSUP
-	    return (k);
+	    //return (k);
+	    return (1);
 	    
 	case 3: 
 	    ttemp = getenv("SUPERLU_MAXSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
@@ -165,9 +166,9 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
                 return atoi (ttemp);
             else
 #ifdef GPU_ACC            
-                return 1;  // default
+                return 1;  // default for GPU: use C++ code
 #else 
-                return 0;  // default
+                return 0;  // default for CPU: use earlier C code
 #endif
     }
 
