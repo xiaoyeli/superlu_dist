@@ -1,0 +1,61 @@
+image: liuyangzhuan/superlu_gpu_amd64:v1.2
+
+stages: [build, test]
+
+default:
+  tags: [hpsf-gpu, x86_64-nvidiagpu, nvidia-h100]
+
+
+build:
+  stage: build
+  script:
+    - cd ~/superlu_dist/superlu_dist
+    - git pull
+    - cd build
+    - make install -j
+    - cd ..
+    - cp -r build $CI_PROJECT_DIR/build_artifact
+
+  artifacts:
+    paths:
+      - build_artifact
+    expire_in: 1 week
+
+test 1/4:
+  stage: test
+  needs: [build]
+  script:
+    - cd ~/superlu_dist
+    - cp -r $CI_PROJECT_DIR/build_artifact/* superlu_dist/build/. 
+    - export TEST_NUMBER=1
+    - sh runit.sh
+
+test 2/4:
+  stage: test
+  needs: [build]
+  script:
+    - cd ~/superlu_dist
+    - cp -r $CI_PROJECT_DIR/build_artifact/* superlu_dist/build/.   
+    - export TEST_NUMBER=2
+    - sh runit.sh
+
+test 3/4:
+  stage: test
+  needs: [build]
+  script:
+    - cd ~/superlu_dist
+    - cp -r $CI_PROJECT_DIR/build_artifact/* superlu_dist/build/.   
+    - export TEST_NUMBER=3
+    - sh runit.sh
+
+## currently we cannot test the C++ GPU code, as the base docker image doesn't install cuda-aware MPI
+# test 4/4:
+#   stage: test
+#   needs: [build]
+#   script:
+#     - cd ~/superlu_dist
+#     - cp -r $CI_PROJECT_DIR/build_artifact/* superlu_dist/build/.   
+#     - export TEST_NUMBER=4
+#     - export MPICH_GPU_SUPPORT_ENABLED=1
+#     - sh runit.sh
+
