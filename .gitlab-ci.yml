@@ -25,37 +25,36 @@ test 1/4:
   stage: test
   needs: [build]
   script:
-    - cd ~/superlu_dist
-    - cp -r $CI_PROJECT_DIR/build_artifact/* superlu_dist/build/. 
+    - cd ~/superlu_dist/superlu_dist/
+    - cp -r $CI_PROJECT_DIR/build_artifact/* build/. 
     - export TEST_NUMBER=1
-    - sh runit.sh
+    - ./.ci_tests_gpu.sh
 
 test 2/4:
   stage: test
   needs: [build]
   script:
-    - cd ~/superlu_dist
-    - cp -r $CI_PROJECT_DIR/build_artifact/* superlu_dist/build/.   
+    - cd ~/superlu_dist/superlu_dist/
+    - cp -r $CI_PROJECT_DIR/build_artifact/* build/.   
     - export TEST_NUMBER=2
-    - sh runit.sh
+    - ./.ci_tests_gpu.sh
 
 test 3/4:
   stage: test
   needs: [build]
   script:
-    - cd ~/superlu_dist
-    - cp -r $CI_PROJECT_DIR/build_artifact/* superlu_dist/build/.   
+    - cd ~/superlu_dist/superlu_dist/
+    - cp -r $CI_PROJECT_DIR/build_artifact/* build/. 
     - export TEST_NUMBER=3
-    - sh runit.sh
+    - ./.ci_tests_gpu.sh
 
 ## currently we cannot test the C++ GPU code, as the base docker image doesn't install cuda-aware MPI
 # test 4/4:
 #   stage: test
 #   needs: [build]
 #   script:
-#     - cd ~/superlu_dist
-#     - cp -r $CI_PROJECT_DIR/build_artifact/* superlu_dist/build/.   
+#     - cd ~/superlu_dist/superlu_dist/
+#     - cp -r $CI_PROJECT_DIR/build_artifact/* build/. 
 #     - export TEST_NUMBER=4
-#     - export MPICH_GPU_SUPPORT_ENABLED=1
-#     - sh runit.sh
+#     - ./.ci_tests_gpu.sh
 
