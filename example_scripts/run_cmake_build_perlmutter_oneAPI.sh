@@ -36,7 +36,7 @@ module load cmake
 module load cray-libsci
 # module use /global/common/software/nersc/pe/modulefiles/latest
 # module load nvshmem/2.11.0
-# export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_nopiv
+# export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_master
 # avoid bug in cudatoolkit
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.4\/compat:/}
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}

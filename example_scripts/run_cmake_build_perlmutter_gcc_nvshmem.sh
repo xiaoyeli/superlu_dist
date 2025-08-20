@@ -36,7 +36,7 @@ module load cudatoolkit
 module load cray-libsci
 # module use /global/common/software/nersc/pe/modulefiles/latest
 # module load nvshmem/2.11.0
-export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_nopiv
+export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_master
 # avoid bug in cudatoolkit
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.4\/compat:/}
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
@@ -44,7 +44,7 @@ export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_nopiv
 NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 #NVSHMEM_HOME=${CRAY_NVIDIA_PREFIX}/comm_libs/nvshmem/
 cmake .. \
-  -DCMAKE_C_FLAGS="-O2 -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
+  -DCMAKE_C_FLAGS="-O2 -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
   -DCMAKE_CXX_FLAGS="-O2 -std=c++11" \
   -DCMAKE_Fortran_FLAGS="-O2" \
   -DCMAKE_CXX_COMPILER=CC \
@@ -60,7 +60,7 @@ cmake .. \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DTPL_ENABLE_MAGMALIB=ON \
+  -DTPL_ENABLE_MAGMALIB=OFF \
   -DTPL_MAGMA_INCLUDE_DIRS="${MAGMA_ROOT}/include" \
   -DTPL_MAGMA_LIBRARIES="${MAGMA_ROOT}/lib/libmagma.so" \
   -DTPL_BLAS_LIBRARIES=$CRAY_LIBSCI_PREFIX/lib/libsci_gnu_mp.so \
@@ -78,6 +78,7 @@ cmake .. \
 make pddrive -j16
 make pddrive3d -j16
 make pzdrive3d -j16
+make pzdrive
 make f_pddrive
 make pzdrive3d_qcd 
 
