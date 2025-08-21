@@ -13,8 +13,8 @@ build:
     - git pull
     - cd build
     - make install -j
-    - cd ..
-    - cp -r build $CI_PROJECT_DIR/build_artifact
+    - cd ../../
+    - cp -r superlu_dist $CI_PROJECT_DIR/build_artifact
 
   artifacts:
     paths:
@@ -26,7 +26,7 @@ test 1/4:
   needs: [build]
   script:
     - cd ~/superlu_dist/superlu_dist/
-    - cp -r $CI_PROJECT_DIR/build_artifact/* build/. 
+    - cp -r $CI_PROJECT_DIR/build_artifact/* . 
     - export TEST_NUMBER=1
     - ./.ci_tests_gpu.sh
 
@@ -35,7 +35,7 @@ test 2/4:
   needs: [build]
   script:
     - cd ~/superlu_dist/superlu_dist/
-    - cp -r $CI_PROJECT_DIR/build_artifact/* build/.   
+    - cp -r $CI_PROJECT_DIR/build_artifact/* .   
     - export TEST_NUMBER=2
     - ./.ci_tests_gpu.sh
 
@@ -44,7 +44,7 @@ test 3/4:
   needs: [build]
   script:
     - cd ~/superlu_dist/superlu_dist/
-    - cp -r $CI_PROJECT_DIR/build_artifact/* build/. 
+    - cp -r $CI_PROJECT_DIR/build_artifact/* . 
     - export TEST_NUMBER=3
     - ./.ci_tests_gpu.sh
 
@@ -54,7 +54,7 @@ test 3/4:
 #   needs: [build]
 #   script:
 #     - cd ~/superlu_dist/superlu_dist/
-#     - cp -r $CI_PROJECT_DIR/build_artifact/* build/. 
+#     - cp -r $CI_PROJECT_DIR/build_artifact/* . 
 #     - export TEST_NUMBER=4
 #     - ./.ci_tests_gpu.sh
 
