@@ -3,7 +3,7 @@ image: liuyangzhuan/superlu_gpu_amd64:v1.2
 stages: [build, test]
 
 default:
-  tags: [hpsf-gpu, x86_64-nvidiagpu, nvidia-h100]
+  tags: [hpsf-gpu, x86_64-nvidiagpu, nvidia-a100]
 
 
 build:
