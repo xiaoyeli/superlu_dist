@@ -244,24 +244,19 @@ int main(int argc, char *argv[])
 
     if(grid.iam==0){
 	MPI_Query_thread(&omp_mpi_level);
-        switch (omp_mpi_level) {
-          case MPI_THREAD_SINGLE:
-		printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
-		fflush(stdout);
-	        break;
-          case MPI_THREAD_FUNNELED:
-		printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
-		fflush(stdout);
-	        break;
-          case MPI_THREAD_SERIALIZED:
-		printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
-		fflush(stdout);
-	        break;
-          case MPI_THREAD_MULTIPLE:
-		printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
-		fflush(stdout);
-	        break;
-        }
+	if (omp_mpi_level == MPI_THREAD_SINGLE) {
+	    printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
+	    fflush(stdout);
+	} else if (omp_mpi_level == MPI_THREAD_FUNNELED) {
+	    printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
+	    fflush(stdout);
+	} else if (omp_mpi_level == MPI_THREAD_SERIALIZED) {
+	    printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
+	    fflush(stdout);
+	} else if (omp_mpi_level == MPI_THREAD_MULTIPLE) {
+	    printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
+	    fflush(stdout);
+	}
     }
 
     /* Bail out if I do not belong in the grid. */
