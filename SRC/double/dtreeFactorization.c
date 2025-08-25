@@ -456,7 +456,7 @@ int_t dsparseTreeFactor_ASYNC(
         // if (topoLvl) SCT->tAsyncPipeTail += SuperLU_timer_() - t_apt;
         SCT->tAsyncPipeTail += SuperLU_timer_() - t_apt;
 
-        for (int_t k0 = k_st; k0 < k_end; ++k0)
+        for (int_t k0 = k_st; k0 < k_end; ++k0) // Schur complement updates
         {
             int_t k = perm_c_supno[k0];   // direct computation no perm_c_supno
             int_t offset = k0 % numLA;

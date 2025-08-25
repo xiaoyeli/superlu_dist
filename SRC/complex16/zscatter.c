@@ -52,8 +52,7 @@ zscatter_l_1 (int ib,
     int_t ijb = index[lptrj];
     while (ijb != ib)
     {
-        /* Search for dest block --
-           blocks are not ordered! */
+        /* Search for dest block -- blocks are not ordered! */
         luptrj += index[lptrj + 1];
         lptrj += LB_DESCRIPTOR + index[lptrj + 1];
 
@@ -126,16 +125,22 @@ zscatter_l (
            gridinfo_t * grid)
 {
 
-    int_t rel, i, segsize, jj;
+    int rel, i, segsize, jj;
     doublecomplex *nzval;
     int_t *index = Lrowind_bc_ptr[ljb];
     int_t ldv = index[1];       /* LDA of the destination lusup. */
     int_t lptrj = BC_HEADER;
     int_t luptrj = 0;
     int_t ijb = index[lptrj];
+    int   num_blocks = index[0];
 
+    i = 0; // Count how many times in the loop
     while (ijb != ib)  /* Search for destination block L(i,j) */
     {
+	//printf("  .. zscatter_l(): num_blocks %d, i %d, ijb %d\n", num_blocks, i, ijb);
+	++i;
+	if ( i == num_blocks ) return; // search exhausted; in ILU, not allow fill-in
+	
         luptrj += index[lptrj + 1];
         lptrj += LB_DESCRIPTOR + index[lptrj + 1];
         ijb = index[lptrj];
@@ -145,8 +150,8 @@ zscatter_l (
      * Build indirect table. This is needed because the indices are not sorted
      * in the L blocks.
      */
-    int_t fnz = FstBlockC (ib);
-    int_t dest_nbrow;
+    int fnz = FstBlockC (ib);
+    int dest_nbrow;
     lptrj += LB_DESCRIPTOR;
     dest_nbrow=index[lptrj - 1];
 
@@ -190,33 +195,39 @@ zscatter_l (
 
 
 void
-zscatter_u (int ib,
-           int jb,
-           int nsupc,
-           int_t iukp,
-           int_t * xsup,
-           int klst,
- 	   int nbrow,      /* LDA of the block in tempv[] */
-           int_t lptr,     /* point to index location of block L(i,k) */
-	   int temp_nbrow, /* number of rows of source block L(i,k) */
-           int_t* lsub,
-           int_t* usub,
-           doublecomplex* tempv,
-           int_t ** Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr,
-           gridinfo_t * grid)
+zscatter_u (
+	    int ib,     /* row block number of source block L(i,k) */
+	    int jb,     /* column block number of dest. block L(i,j) */
+            int nsupc,
+            int_t iukp,
+            int_t * xsup,
+            int klst,
+ 	    int nbrow,      /* LDA of the block in tempv[] */
+            int_t lptr,     /* point to index location of block L(i,k) */
+	    int temp_nbrow, /* number of rows of source block L(i,k) */
+            int_t* lsub,
+            int_t* usub,
+            doublecomplex* tempv,
+            int_t ** Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr,
+            gridinfo_t * grid)
 {
-#ifdef PI_DEBUG
+#if ( DEBUGlevel>=2 )
     printf ("A(%d,%d) goes to U block \n", ib, jb);
 #endif
     // TAU_STATIC_TIMER_START("SCATTER_U");
     // TAU_STATIC_TIMER_START("SCATTER_UB");
 
-    int_t jj, i, fnz, rel;
+    int jj, i, fnz, rel;
     int segsize;
     doublecomplex *ucol;
     int_t ilst = FstBlockC (ib + 1);
     int_t lib = LBi (ib, grid);
     int_t *index = Ufstnz_br_ptr[lib];
+    int   num_blocks;
+
+    if ( index != NULL )
+	num_blocks = index[0];
+    else return; // empty block row of U
 
     /* Reinitilize the pointers to the beginning of the k-th column/row of
      * L/U factors.
@@ -226,10 +237,14 @@ zscatter_u (int ib,
     iuip_lib = BR_HEADER;
     ruip_lib = 0;
 
-    int_t ijb = index[iuip_lib];
+    int ijb = index[iuip_lib];
+    i = 0; // Count how many times in the loop
     while (ijb < jb) {   /* Search for destination block. */
+	//printf("  .. zscatter_u(): num_blocks %d, i %d, ijb %d\n", num_blocks, i, ijb);
+	++i;
+	if ( i == num_blocks ) return; // search exhausted; in ILU, not allow fill-in
+
         ruip_lib += index[iuip_lib + 1];
-        // printf("supersize[%ld] \t:%ld \n",ijb,SuperSize( ijb ) );
         iuip_lib += UB_DESCRIPTOR + SuperSize (ijb);
         ijb = index[iuip_lib];
     }

@@ -317,30 +317,25 @@ void dbcastPermutedSparseA(SuperMatrix *A,
  * Note the the broadcast is still needed as the A->Store has been scaled by dscaleMatrixDiagonally only on grid 0
 */
 
-
-
-    int_t chunk= 100000000; // this makes sure chunk*sizeof(doublecomplex)<2e9
+    int_t chunk= 100000000; // this makes sure chunk*sizeof(double)<2e9
     int count;
     int_t Nchunk;
     int_t remainder;
     Nchunk = CEILING(Astore->nnz_loc,chunk);
     remainder =  Astore->nnz_loc%chunk;
 
-
-
-
 #if 1
-        for (int i = 0; i < Nchunk; ++i) {
-        int_t idx=i*chunk;
-        if(i==Nchunk-1){
-                count=remainder;
-        }else{
-                count=chunk;
-        }  
-            MPI_Bcast( &(Astore->nzval[idx]),  count*sizeof(double), MPI_BYTE, 0, grid3d->zscp.comm);
-            MPI_Bcast( &(Astore->colind[idx]), count*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);    
-        }
-        MPI_Bcast(Astore->rowptr, (Astore->m_loc+1)*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
+    for (int i = 0; i < Nchunk; ++i) {
+    int_t idx=i*chunk;
+    if(i==Nchunk-1){
+            count=remainder;
+    }else{
+            count=chunk;
+    }  
+        MPI_Bcast( &(Astore->nzval[idx]),  count*sizeof(double), MPI_BYTE, 0, grid3d->zscp.comm);
+        MPI_Bcast( &(Astore->colind[idx]), count*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);    
+    }
+    MPI_Bcast(Astore->rowptr, (Astore->m_loc+1)*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
 
 #else
     allocBcastArray( (void **) &(Astore->nzval), Astore->nnz_loc*sizeof(double),

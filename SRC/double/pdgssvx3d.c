@@ -855,21 +855,21 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid */
     /* Sherry Q: original input A, not permuted yet */
 
-    if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
+    if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later. All the grid must execute this
     {
 	if (parSymbFact == NO) {
-		if (Glu_freeable == NULL)
-		{
-		    if (!(Glu_freeable = (Glu_freeable_t *)
-				SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
-			ABORT("Malloc fails for Glu_freeable.");
-		}
-		dbcastPermutedSparseA(A, ScalePermstruct, Glu_freeable,
-				     LUstruct, grid3d);
-		} else {
+	    if (Glu_freeable == NULL)
+	    {
+	        if (!(Glu_freeable = (Glu_freeable_t *)
+			SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
+		    ABORT("Malloc fails for Glu_freeable.");
+	    }
+	    dbcastPermutedSparseA(A, ScalePermstruct, Glu_freeable,
+			     LUstruct, grid3d);
+	} else {
 		    ; //TODO: need a parmetis version of dbcastPermutedSparseA broadcasting Pslu_freeable
-		}
 	}
+    }
 
 	perm_r = ScalePermstruct->perm_r;
 	perm_c = ScalePermstruct->perm_c;
@@ -883,119 +883,112 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	colind = Astore->colind;
 	Glu_persist = LUstruct->Glu_persist;
 
-	// perform the  3D distribution
+	// prepare the 3D distribution
 	if (!factored)
 	{
-		/* Apply column permutation to the original distributed A */
-		for (j = 0; j < nnz_loc; ++j)
-			colind[j] = perm_c[colind[j]];
-		// free quauntities used in Parmetis
-		if (sizes)
-			SUPERLU_FREE(sizes);
-		if (fstVtxSep)
-			SUPERLU_FREE(fstVtxSep);
-		if (symb_comm != MPI_COMM_NULL)
-			MPI_Comm_free(&symb_comm);
-		if ( Fact != SamePattern_SameRowPerm){
-			LUstruct->trf3Dpart = (dtrf3Dpartition_t *)SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
-			// computes the new partition for 3D factorization here
-			trf3Dpartition=LUstruct->trf3Dpart;
-			dnewTrfPartitionInit(nsupers, LUstruct, grid3d);
-		}
+	    /* Apply column permutation to the original distributed A */
+	    for (j = 0; j < nnz_loc; ++j)
+		colind[j] = perm_c[colind[j]];
+	    // free quauntities used in Parmetis
+	    if (sizes)
+		SUPERLU_FREE(sizes);
+	    if (fstVtxSep)
+		SUPERLU_FREE(fstVtxSep);
+	    if (symb_comm != MPI_COMM_NULL)
+		MPI_Comm_free(&symb_comm);
+	    if ( Fact != SamePattern_SameRowPerm){
+		LUstruct->trf3Dpart = (dtrf3Dpartition_t *)SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
+		// computes the new partition for 3D factorization here
+		trf3Dpartition=LUstruct->trf3Dpart;
+	        dnewTrfPartitionInit(nsupers, LUstruct, grid3d);
+	    }
 	}
 
-	// perform the  3D distribution
+	// perform the 3D distribution
 	if (!factored)
 	{ /* Skip this if already factored. */
 
-		if (parSymbFact == NO || Fact == SamePattern_SameRowPerm)
+	    if (parSymbFact == NO || Fact == SamePattern_SameRowPerm) {
+		/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
+    		   NOTE: the row permutation Pc*Pr is applied internally in the
+		         distribution routine. */
+		t = SuperLU_timer_();
+
+		dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
+					    Glu_freeable, LUstruct, grid3d);
+		stat->utime[DIST] = SuperLU_timer_() - t;
+
+		/* Deallocate storage used in symbolic factorization. */
+		if (Fact != SamePattern_SameRowPerm)
 		{
-
-
-			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
-				NOTE: the row permutation Pc*Pr is applied internally in the
-				distribution routine. */
-			t = SuperLU_timer_();
-
-			dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
-											Glu_freeable, LUstruct, grid3d);
-			stat->utime[DIST] = SuperLU_timer_() - t;
-
-			/* Deallocate storage used in symbolic factorization. */
-			if (Fact != SamePattern_SameRowPerm)
-			{
-				iinfo = symbfact_SubFree(Glu_freeable);
-				SUPERLU_FREE(Glu_freeable);
-			}
+		    iinfo = symbfact_SubFree(Glu_freeable);
+		    SUPERLU_FREE(Glu_freeable);
 		}
-		else
-		{
-			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
-				NOTE: the row permutation Pc*Pr is applied internally in the
-				distribution routine. */
+	    } else {
+		/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
+		   NOTE: the row permutation Pc*Pr is applied internally in the
+			distribution routine. */
 
-			// TODO: need a 3D version of ddist_psymbtonum
-			t = SuperLU_timer_();
-			dist_mem_use = ddist_psymbtonum(options, n, A, ScalePermstruct,
-											&Pslu_freeable, LUstruct, grid);
-			if (dist_mem_use > 0)
-				ABORT("Not enough memory available for dist_psymbtonum\n");
+		// TODO: need a 3D version of ddist_psymbtonum
+		t = SuperLU_timer_();
+		dist_mem_use = ddist_psymbtonum(options, n, A, ScalePermstruct,
+						&Pslu_freeable, LUstruct, grid);
+		if (dist_mem_use > 0)
+		    ABORT("Not enough memory available for dist_psymbtonum\n");
 
-			stat->utime[DIST] = SuperLU_timer_() - t;
+		stat->utime[DIST] = SuperLU_timer_() - t;
 
-			ABORT("ddist_psymbtonum does not yet work with 3D factorization\n");
+		ABORT("ddist_psymbtonum does not yet work with 3D factorization\n");
 
-		}
+	    }
 
-		if(Fact != SamePattern_SameRowPerm){
-			// checkDist3DLUStruct(LUstruct, grid3d);
-			// zeros out the Supernodes that are not owned by the grid
-			dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
-									trf3Dpartition->sForests, LUstruct, grid3d);
+	    if (Fact != SamePattern_SameRowPerm) {
+		// checkDist3DLUStruct(LUstruct, grid3d);
+		// zeros out the Supernodes that are not owned by the grid
+		dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
+					trf3Dpartition->sForests, LUstruct, grid3d);
 
-			dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
-			dLluBufInit(LUvsb, LUstruct);
-			trf3Dpartition->LUvsb = LUvsb;
-			trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct->Glu_persist, LUstruct->etree, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr, grid3d);
-		}
+		dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
+		dLluBufInit(LUvsb, LUstruct);
+		trf3Dpartition->LUvsb = LUvsb;
+		trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct->Glu_persist, LUstruct->etree, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr, grid3d);
+	    }
 
+	    /*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
 
-		/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
+	    MPI_Bcast(&anorm, 1, MPI_DOUBLE, 0, grid3d->zscp.comm);
 
-		MPI_Bcast(&anorm, 1, MPI_DOUBLE, 0, grid3d->zscp.comm);
+	    /* Perform numerical factorization in parallel on all process layers.*/
 
-		/* Perform numerical factorization in parallel on all process layers.*/
-
-		/* nvshmem related */ // TODO: Does this work in iterative refinement with rhs>1? Should we associate these data with SOLVEstruct?
-		#ifdef HAVE_NVSHMEM
-			int nc = CEILING( nsupers, grid->npcol);
-			int nr = CEILING( nsupers, grid->nprow);
-			int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
-			int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
-			int my_flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
-			int my_flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
-			int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
-			int ready_x_size = maxrecvsz*nc;
-			int ready_lsum_size = 2*maxrecvsz*nr;
-			if (get_acc_solve()){
-			nv_init_wrapper(grid->comm);
-		    dprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
-			}
-		#endif
-
-
-		SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
-		slu_SCT_init(SCT);
-
-#if (PRNTlevel >= 1)
-		if (grid3d->iam == 0)
-		{
-			printf("after 3D initialization.\n");
-			fflush(stdout);
-		}
+	    /* nvshmem related */ // TODO: Does this work in iterative refinement with rhs>1? Should we associate these data with SOLVEstruct?
+#ifdef HAVE_NVSHMEM
+    	    int nc = CEILING( nsupers, grid->npcol);
+	    int nr = CEILING( nsupers, grid->nprow);
+	    int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+	    int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
+	    int my_flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+	    int my_flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
+	    int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
+	    int ready_x_size = maxrecvsz*nc;
+	    int ready_lsum_size = 2*maxrecvsz*nr;
+            if (get_acc_solve()){
+		nv_init_wrapper(grid->comm);
+	        dprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+	    }
 #endif
 
-        if ( options->SolveOnly != YES ) { // Now we need factorization
+
+	    SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
+	    slu_SCT_init(SCT);
+
+#if (PRNTlevel >= 1)
+	    if (grid3d->iam == 0) {
+		printf("after 3D initialization.\n");
+		fflush(stdout);
+	    }
+#endif
+
+            if ( options->SolveOnly != YES ) { // Now we need factorization
 
 		t = SuperLU_timer_();
 
@@ -1006,28 +999,29 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (gpu3dVersion == 1)
 		{ /* this is the new C++ code in CplusplusFactor/ directory */
 #if (PRNTlevel>=1)
-			if (!grid3d->iam)
-				printf("Using pdgstrf3d+gpu version 1\n");
+		    if (!grid3d->iam)
+			printf("Using pdgstrf3d+gpu version 1\n");
 #endif
 
-			int ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
-			double s_eps = smach_dist("Epsilon");
-			double thresh = s_eps * anorm;
+		    int ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
+		    double s_eps = smach_dist("Epsilon");
+		    double thresh = s_eps * anorm;
 
-			if(options->batchCount == 0)
-			{
+		    if(options->batchCount == 0)
+		    {
 #ifdef HAVE_CUDA
-			    dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-						  SCT, options, stat, thresh, info);
+                        dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+					  SCT, options, stat, thresh, info);
 
 			/* call pdgstrf3d() in C++ code */
-			    pdgstrf3d_LUv1(dLUgpu);
+			pdgstrf3d_LUv1(dLUgpu);
+
 
 			dCopyLUGPU2Host(dLUgpu, LUstruct);
 			dDestroyLUgpuHandle(dLUgpu);
 #endif
 
-       	      	   } else { /* batched version */
+       	      	     } else { /* batched version */
 
 #ifdef HAVE_MAGMA
 			double tic = SuperLU_timer_();
@@ -1063,39 +1057,37 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			// TODO: How should we handle this?
 			ABORT("Fatal error: Batched mode requires magma support!\n");
 #endif
-	      	   } /* end if batchCount == 0 */
+	      	    } /* end else batchCount ... */
 
 		    // print other stuff
 		    // if (!grid3d->zscp.Iam)
 		    // 	SCT_printSummary(grid, SCT);
 		    reduceStat(FACT, stat, grid3d);
-		}
-		else /* gpu3dVersion==0, this is the old C code, with less GPU offload */
+		} else /* gpu3dVersion==0, this is the old C code, with less GPU offload */
 #endif /* matching ifdef GPU_ACC */
 		{
+  		    pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+				  grid3d, stat, info);
 
-			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
-					  grid3d, stat, info);
-
-			// dDumpLblocks3D(nsupers, grid3d, LUstruct->Glu_persist, LUstruct->Llu);
+		    // dDumpLblocks3D(nsupers, grid3d, LUstruct->Glu_persist, LUstruct->Llu);
 		}
-	} // matching if not SolveOnly ... end Factorization
+	    } // matching if not SolveOnly ... end Factorization
 
-	/* Now proceed with the Solve setup */
-		if (get_new3dsolve()){
-			dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
-		}
+	    /* Now proceed with the Solve setup */
+	    if (get_new3dsolve()){
+		dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
+	    }
 
-		stat->utime[FACT] = SuperLU_timer_() - t;
+	    stat->utime[FACT] = SuperLU_timer_() - t;
 
-		/*factorize in grid 1*/
-		// if(grid3d->zscp.Iam)
-		double tgather = SuperLU_timer_();
-		if(Solve3D==false){
+	    /*factorize in grid 1*/
+	    // if(grid3d->zscp.Iam)
+	    double tgather = SuperLU_timer_();
+	    if(Solve3D==false){
 		dgatherAllFactoredLU(trf3Dpartition, LUstruct, grid3d, SCT);
-		}
-		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
-		/*print stats for bottom grid*/
+	    }
+	    SCT->gatherLUtimer += SuperLU_timer_() - tgather;
+	    /*print stats for bottom grid*/
 
 		// Write LU to file
 		int writeLU = 0;
@@ -1142,715 +1134,714 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		slu_SCT_free(SCT);
 
-	} /* end if not Factored ... factor on all process layers */
+        } /* end if not Factored ... factor on all process layers */
 
 	if (grid3d->zscp.Iam == 0 ) { // only process layer 0 ... print Factor stats
-		if (!factored)
+            if (!factored)
+	    {
+		if (options->PrintStat)
 		{
-			if (options->PrintStat)
-			{
-				int_t TinyPivots;
-				float for_lu, total, avg, loc_max;
-				float mem_stage[3];
-				struct { float val; int rank; } local_struct, global_struct;
+		    int_t TinyPivots;
+		    float for_lu, total, avg, loc_max;
+		    float mem_stage[3];
+		    struct { float val; int rank; } local_struct, global_struct;
 
-				MPI_Reduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
-						   MPI_SUM, 0, grid->comm );
-				stat->TinyPivots = TinyPivots;
+		    MPI_Reduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
+		                MPI_SUM, 0, grid->comm );
+		    stat->TinyPivots = TinyPivots;
 
-				/*-- Compute high watermark of all stages --*/
-				if (parSymbFact == TRUE)
-				{
-					/* The memory used in the redistribution routine
-				   includes the memory used for storing the symbolic
-				   structure and the memory allocated for numerical
-				   factorization */
-					mem_stage[0] = (-flinfo); /* symbfact step */
-					mem_stage[1] = (-dist_mem_use);      /* distribution step */
-					loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1]);
-					if (options->RowPerm != NO )
-						loc_max = SUPERLU_MAX(loc_max, GA_mem_use);
-				}
-				else
-				{
-					mem_stage[0] = symb_mem_usage.total + GA_mem_use; /* symbfact step */
-					mem_stage[1] = symb_mem_usage.for_lu + dist_mem_use + num_mem_usage.for_lu;            /* distribution step */
-					loc_max = SUPERLU_MAX(mem_stage[0], mem_stage[1] );
-				}
+		    /*-- Compute high watermark of all stages --*/
+		    if (parSymbFact == TRUE)
+		    {
+			/* The memory used in the redistribution routine
+			   includes the memory used for storing the symbolic
+			   structure and the memory allocated for numerical
+			   factorization */
+			mem_stage[0] = (-flinfo); /* symbfact step */
+			mem_stage[1] = (-dist_mem_use);      /* distribution step */
+			loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1]);
+			if (options->RowPerm != NO )
+			    loc_max = SUPERLU_MAX(loc_max, GA_mem_use);
+		    } else {
+			mem_stage[0] = symb_mem_usage.total + GA_mem_use; /* symbfact step */
+			mem_stage[1] = symb_mem_usage.for_lu + dist_mem_use + num_mem_usage.for_lu; /* distribution step */
+			loc_max = SUPERLU_MAX(mem_stage[0], mem_stage[1] );
+	            }
 
-				dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
-				mem_stage[2] = num_mem_usage.total;  /* numerical factorization step */
+		    dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+		    mem_stage[2] = num_mem_usage.total;  /* numerical factorization step */
 
-				loc_max = SUPERLU_MAX(loc_max, mem_stage[2] ); /* local max of 3 stages */
+		    loc_max = SUPERLU_MAX(loc_max, mem_stage[2] ); /* local max of 3 stages */
 
-				local_struct.val = loc_max;
-				local_struct.rank = grid->iam;
-				MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
-				int all_highmark_rank = global_struct.rank;
-				float all_highmark_mem = global_struct.val * 1e-6;
+		    local_struct.val = loc_max;
+		    local_struct.rank = grid->iam;
+		    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+		    int all_highmark_rank = global_struct.rank;
+		    float all_highmark_mem = global_struct.val * 1e-6;
 
-				MPI_Reduce( &loc_max, &avg,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
-				MPI_Reduce( &num_mem_usage.for_lu, &for_lu,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
-				MPI_Reduce( &num_mem_usage.total, &total,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+		    MPI_Reduce( &loc_max, &avg,
+				   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+		    MPI_Reduce( &num_mem_usage.for_lu, &for_lu,
+				   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+		    MPI_Reduce( &num_mem_usage.total, &total,
+				   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
 
-				/*-- Compute memory usage of numerical factorization --*/
-				local_struct.val = num_mem_usage.for_lu;
-				MPI_Reduce(&local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm);
-				int lu_max_rank = global_struct.rank;
-				float lu_max_mem = global_struct.val * 1e-6;
+		    /*-- Compute memory usage of numerical factorization --*/
+		    local_struct.val = num_mem_usage.for_lu;
+		    MPI_Reduce(&local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm);
+		    int lu_max_rank = global_struct.rank;
+		    float lu_max_mem = global_struct.val * 1e-6;
 
-				local_struct.val = stat->peak_buffer;
-				MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
-	        	int buffer_peak_rank = global_struct.rank;
-	        	float buffer_peak = global_struct.val*1e-6;
-				if (iam == 0)
-				{
-					printf("\n** Memory Usage **********************************\n");
-					printf("** Total highmark (MB):\n"
-						   "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
-						   avg * 1e-6,
-						   avg / grid->nprow / grid->npcol * 1e-6,
-						   all_highmark_mem);
-					printf("    Max at rank %d, different stages (MB):\n"
-						   "\t. symbfact        %8.2f\n"
-						   "\t. distribution    %8.2f\n"
-						   "\t. numfact         %8.2f\n",
-						   all_highmark_rank, mem_stage[0] * 1e-6, mem_stage[1] * 1e-6, mem_stage[2] * 1e-6);
-					printf("** NUMfact space (MB): (sum-of-all-processes)\n"
-						   "    L\\U :        %8.2f |  Total : %8.2f\n",
-						   for_lu * 1e-6, total * 1e-6);
-					printf("\t. max at rank %d, max L+U memory (MB): %8.2f\n"
-						   "\t. max at rank %d, peak buffer (MB):    %8.2f\n",
-						   lu_max_rank, lu_max_mem,
-						   buffer_peak_rank, buffer_peak);
-					printf("**************************************************\n\n");
-					printf("** number of Tiny Pivots: %8d\n\n", stat->TinyPivots);
-					fflush(stdout);
-				}
-			} /* end printing stats */
+		    local_struct.val = stat->peak_buffer;
+		    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	            int buffer_peak_rank = global_struct.rank;
+	            float buffer_peak = global_struct.val*1e-6;
+		    if (iam == 0)
+		    {
+			printf("\n** Memory Usage **********************************\n");
+			printf("** Total highmark (MB):\n"
+			   "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
+				   avg * 1e-6,
+				   avg / grid->nprow / grid->npcol * 1e-6,
+				   all_highmark_mem);
+			printf("    Max at rank %d, different stages (MB):\n"
+				   "\t. symbfact        %8.2f\n"
+				   "\t. distribution    %8.2f\n"
+				   "\t. numfact         %8.2f\n",
+				   all_highmark_rank, mem_stage[0] * 1e-6, mem_stage[1] * 1e-6, mem_stage[2] * 1e-6);
+			printf("** NUMfact space (MB): (sum-of-all-processes)\n"
+				   "    L\\U :        %8.2f |  Total : %8.2f\n",
+				for_lu * 1e-6, total * 1e-6);
+			printf("\t. max at rank %d, max L+U memory (MB): %8.2f\n"
+				   "\t. max at rank %d, peak buffer (MB):    %8.2f\n",
+				   lu_max_rank, lu_max_mem,
+				   buffer_peak_rank, buffer_peak);
+			printf("**************************************************\n\n");
+			printf("** number of Tiny Pivots: %8d\n\n", stat->TinyPivots);
+			fflush(stdout);
+		    }
+		} /* end printing stats */
 
-		} /* end if !factored */
+	    } /* end if !factored */
         } /* end if grid-0 ... print Factor stats */
 
-		if(Solve3D){
+	if(Solve3D){
 
-			if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
-			/* Need to reset the solve's communication pattern,
-			because perm_r[] and/or perm_c[] is changed.    */
-			if ( options->SolveInitialized == YES ) { /* Initialized before */
-				dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
-				pdgstrs_delete_device_lsum_x(SOLVEstruct);
-				options->SolveInitialized = NO;   /* Reset the solve state */
-			}
-			}
+            if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
+		/* Need to reset the solve's communication pattern,
+	  	   because perm_r[] and/or perm_c[] is changed.    */
+		if ( options->SolveInitialized == YES ) { /* Initialized before */
+			dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
+			pdgstrs_delete_device_lsum_x(SOLVEstruct);
+			options->SolveInitialized = NO;   /* Reset the solve state */
+		}
+	    }
 
-			if (get_new3dsolve()){
+	    if (get_new3dsolve()){
 
+		if (options->DiagInv == YES && (Fact != FACTORED))
+		{
+ 		    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
 
-			if (options->DiagInv == YES && (Fact != FACTORED))
-			{
-				pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-
-				// The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d.
-				int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+		    // The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d.
+		    int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 #if defined(GPU_ACC)
 
-				pdconvertU(options, grid, LUstruct, stat, n);
+		    pdconvertU(options, grid, LUstruct, stat, n);
 
-				// checkGPU(gpuFree(LUstruct->Llu->d_xsup));
-				// checkGPU(gpuFree(LUstruct->Llu->d_bcols_masked));
-				// checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
-				// checkGPU(gpuFree(LUstruct->Llu->d_LBtree_ptr));
-				// checkGPU(gpuFree(LUstruct->Llu->d_URtree_ptr));
-				// checkGPU(gpuFree(LUstruct->Llu->d_UBtree_ptr));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_dat));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_dat));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_ilsum));
-				// checkGPU(gpuFree(LUstruct->Llu->d_grid));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_dat));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_dat));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_xsup));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_bcols_masked));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_LBtree_ptr));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_URtree_ptr));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_UBtree_ptr));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_ilsum));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_grid));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_dat));
 
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_xsup, (n + 1) * sizeof(int_t)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_xsup, LUstruct->Glu_persist->xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_bcols_masked, LUstruct->Llu->nbcol_masked * sizeof(int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_bcols_masked, LUstruct->Llu->bcols_masked, LUstruct->Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_LRtree_ptr, LUstruct->Llu->LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_LBtree_ptr, LUstruct->Llu->LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_URtree_ptr, LUstruct->Llu->URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_UBtree_ptr, LUstruct->Llu->UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_dat, LUstruct->Llu->Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_dat, LUstruct->Llu->Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_offset, LUstruct->Llu->Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_offset, LUstruct->Llu->Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_offset, LUstruct->Llu->Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_offset, LUstruct->Llu->Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_offset, LUstruct->Llu->Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_ilsum, LUstruct->Llu->ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double)));
-				// checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_grid, sizeof(gridinfo_t)));
-    			// checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_xsup, (n + 1) * sizeof(int_t)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_xsup, LUstruct->Glu_persist->xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_bcols_masked, LUstruct->Llu->nbcol_masked * sizeof(int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_bcols_masked, LUstruct->Llu->bcols_masked, LUstruct->Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_LRtree_ptr, LUstruct->Llu->LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_LBtree_ptr, LUstruct->Llu->LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_URtree_ptr, LUstruct->Llu->URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_UBtree_ptr, LUstruct->Llu->UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_dat, LUstruct->Llu->Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_dat, LUstruct->Llu->Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_offset, LUstruct->Llu->Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_offset, LUstruct->Llu->Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_offset, LUstruct->Llu->Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_offset, LUstruct->Llu->Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_offset, LUstruct->Llu->Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_ilsum, LUstruct->Llu->ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double)));
+		    // checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_grid, sizeof(gridinfo_t)));
+    		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t),                    gpuMemcpyHostToDevice));
 #endif
-if (get_acc_solve()){
+
+                   if (get_acc_solve()){
 #ifdef GPU_ACC
-				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
-								   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-				checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
-								   (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
-								   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+			checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
+			   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+			checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
+			   (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+			checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
+			   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 #endif
-}
-			}
-			}
-		} else { /* else if(Solve3D) */
+                   }
+		}
+	    } /* end if (get_new3dsolve()) */
+	} else { /* else if(Solve3D) */
 
-			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
+	    if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
 
-			if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
-			/* Need to reset the solve's communication pattern,
-			because perm_r[] and/or perm_c[] is changed.    */
-			if ( options->SolveInitialized == YES ) { /* Initialized before */
-				dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
-				pdgstrs_delete_device_lsum_x(SOLVEstruct);
-				options->SolveInitialized = NO;   /* Reset the solve state */
-			}
-			}
+		if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
+	  	    /* Need to reset the solve's communication pattern,
+		       because perm_r[] and/or perm_c[] is changed.    */
+		    if ( options->SolveInitialized == YES ) { /* Initialized before */
+			dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
+			pdgstrs_delete_device_lsum_x(SOLVEstruct);
+			options->SolveInitialized = NO;   /* Reset the solve state */
+		    }
+		}
 
 #if (defined(GPU_ACC))
-			if (options->DiagInv == NO && get_acc_solve())
-			{
-				if (iam == 0)
-				{
-					printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
-					printf("           otherwise, use CPU trisolve\n");
-					fflush(stdout);
-				}
-				// exit(0);  // Sherry: need to return an error flag
-			}
-#endif
-
-			if (options->DiagInv == YES && (Fact != FACTORED))
-			{
-				pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-
-				// The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d.
-				int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-#ifdef GPU_ACC
-
-				pdconvertU(options, grid, LUstruct, stat, n);
-
-				// checkGPU(gpuFree(LUstruct->Llu->d_xsup));
-				// checkGPU(gpuFree(LUstruct->Llu->d_bcols_masked));
-				// checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
-				// checkGPU(gpuFree(LUstruct->Llu->d_LBtree_ptr));
-				// checkGPU(gpuFree(LUstruct->Llu->d_URtree_ptr));
-				// checkGPU(gpuFree(LUstruct->Llu->d_UBtree_ptr));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_dat));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_dat));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_offset));
-				// checkGPU(gpuFree(LUstruct->Llu->d_ilsum));
-				// checkGPU(gpuFree(LUstruct->Llu->d_grid));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_dat));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_dat));
-				// checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_dat));
-
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_xsup, (n + 1) * sizeof(int_t)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_xsup, LUstruct->Glu_persist->xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_bcols_masked, LUstruct->Llu->nbcol_masked * sizeof(int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_bcols_masked, LUstruct->Llu->bcols_masked, LUstruct->Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_LRtree_ptr, LUstruct->Llu->LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_LBtree_ptr, LUstruct->Llu->LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_URtree_ptr, LUstruct->Llu->URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_UBtree_ptr, LUstruct->Llu->UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_dat, LUstruct->Llu->Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_dat, LUstruct->Llu->Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_offset, LUstruct->Llu->Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_offset, LUstruct->Llu->Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_offset, LUstruct->Llu->Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_offset, LUstruct->Llu->Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_offset, LUstruct->Llu->Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t)));
-				// checkGPU(gpuMemcpy(LUstruct->Llu->d_ilsum, LUstruct->Llu->ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double)));
-				// checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double)));
-				// checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_grid, sizeof(gridinfo_t)));
-    			// checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
-#endif
-
-if (get_acc_solve()){
-#ifdef GPU_ACC
-
-				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
-								   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-				checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
-								   (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
-								   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-#endif
-}
-			}
-			}
-		}
-
-
-		/* ------------------------------------------------------------
-		   Compute the solution matrix X.
-		   ------------------------------------------------------------ */
-		if ((nrhs > 0) && (*info == 0))
+		if (options->DiagInv == NO && get_acc_solve())
 		{
-		if (options->SolveInitialized == NO){
-			if (get_acc_solve()){
-			if (get_new3dsolve() && Solve3D==true){
-				pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,trf3Dpartition->supernodeMask);
-			}else{
-				int* supernodeMask = int32Malloc_dist(nsupers);
-				for(int ii=0; ii<nsupers; ii++)
-					supernodeMask[ii]=1;
-				pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,supernodeMask);
-				SUPERLU_FREE(supernodeMask);
-			}
-			}
-		}
-
-		stat->utime[SOLVE] = 0.0;
-		if(Solve3D){
-
-			// if (!(b_work = doubleMalloc_dist(n)))
-			// 	ABORT("Malloc fails for b_work[]");
-			/* ------------------------------------------------------
-			   Scale the right-hand side if equilibration was performed
-			   ------------------------------------------------------*/
-			if (notran)
-			{
-				if (rowequ)
-				{
-					b_col = B;
-					for (j = 0; j < nrhs; ++j)
-					{
-						irow = fst_row;
-						for (i = 0; i < m_loc; ++i)
-						{
-							b_col[i] *= R[irow];
-							++irow;
-						}
-						b_col += ldb;
-					}
-				}
-			}
-			else if (colequ)
-			{
-				b_col = B;
-				for (j = 0; j < nrhs; ++j)
-				{
-					irow = fst_row;
-					for (i = 0; i < m_loc; ++i)
-					{
-						b_col[i] *= C[irow];
-						++irow;
-					}
-					b_col += ldb;
-				}
-			}
-
-			/* Save a copy of the right-hand side. */
-			ldx = ldb;
-			if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
-				ABORT("Malloc fails for X[]");
-			x_col = X;
-			b_col = B;
-			for (j = 0; j < nrhs; ++j)
-			{
-				for (i = 0; i < m_loc; ++i)
-					x_col[i] = b_col[i];
-				x_col += ldx;
-				b_col += ldb;
-			}
-
-			/* ------------------------------------------------------
-			   Solve the linear system.
-			   ------------------------------------------------------*/
-
-			if (options->SolveInitialized == NO)
-			/* First time */
-			/* Inside this routine, SolveInitialized is set to YES.
-			For repeated call to pdgssvx3d(), no need to re-initialilze
-			the Solve data & communication structures, unless a new
-			factorization with Fact == DOFACT or SamePattern is asked for. */
-			{
-				dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
-							grid, SOLVEstruct);
-			}
-			if (get_new3dsolve()){
-				pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
-				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
-			}else{
-				pdgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
-				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
-			}
-			if (options->IterRefine)
-				{
-				/* Improve the solution by iterative refinement. */
-				int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
-				dSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
-
-				t = SuperLU_timer_ ();
-				if (options->RefineInitialized == NO || Fact == DOFACT) {
-					/* All these cases need to re-initialize gsmv structure */
-					if (options->RefineInitialized)
-					pdgsmv_finalize (SOLVEstruct->gsmv_comm);
-					pdgsmv_init (A, SOLVEstruct->row_to_proc, grid,
-						SOLVEstruct->gsmv_comm);
-
-					/* Save a copy of the transformed local col indices
-					in colind_gsmv[]. */
-					if (colind_gsmv) SUPERLU_FREE (colind_gsmv);
-					if (!(it = intMalloc_dist (nnz_loc)))
-					ABORT ("Malloc fails for colind_gsmv[]");
-					colind_gsmv = SOLVEstruct->A_colind_gsmv = it;
-					for (i = 0; i < nnz_loc; ++i) colind_gsmv[i] = colind[i];
-					options->RefineInitialized = YES;
-				}
-				else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
-					double at;
-					int_t k, jcol, p;
-					/* Swap to beginning the part of A corresponding to the
-					local part of X, as was done in pdgsmv_init() */
-					for (i = 0; i < m_loc; ++i) { /* Loop through each row */
-					k = rowptr[i];
-					for (j = rowptr[i]; j < rowptr[i + 1]; ++j)
-						{
-						jcol = colind[j];
-						p = SOLVEstruct->row_to_proc[jcol];
-						if (p == iam)
-							{	/* Local */
-							at = a[k];
-							a[k] = a[j];
-							a[j] = at;
-							++k;
-							}
-						}
-					}
-
-					/* Re-use the local col indices of A obtained from the
-					previous call to pdgsmv_init() */
-					for (i = 0; i < nnz_loc; ++i)
-					colind[i] = colind_gsmv[i];
-				}
-
-				if (nrhs == 1)
-					{	/* Use the existing solve structure */
-					SOLVEstruct1 = SOLVEstruct;
-					}
-				else {
-				/* For nrhs > 1, since refinement is performed for RHS
-			one at a time, the communication structure for pdgstrs
-			is different than the solve with nrhs RHS.
-			So we use SOLVEstruct1 for the refinement step.
-			*/
-					if (!(SOLVEstruct1 = (dSOLVEstruct_t *)
-						SUPERLU_MALLOC(sizeof(dSOLVEstruct_t))))
-						ABORT ("Malloc fails for SOLVEstruct1");
-					/* Copy the same stuff */
-					SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
-					SOLVEstruct1->inv_perm_c = SOLVEstruct->inv_perm_c;
-					SOLVEstruct1->num_diag_procs = SOLVEstruct->num_diag_procs;
-					SOLVEstruct1->diag_procs = SOLVEstruct->diag_procs;
-					SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
-					SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
-					SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
-
-					/* Initialize the *gstrs_comm for 1 RHS. */
-					if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
-						SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
-						ABORT ("Malloc fails for gstrs_comm[]");
-					pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
-							LUstruct->Glu_persist, SOLVEstruct1);
-					if (get_acc_solve()){
-					int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-					pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,trf3Dpartition->supernodeMask);
-					}
-					}
-
-				pdgsrfs3d (options, n, A, anorm, LUstruct, ScalePermstruct, grid3d, trf3Dpartition,
-					B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
-
-				/* Deallocate the storage associated with SOLVEstruct1 */
-				if (nrhs > 1)
-					{
-					pdgstrs_delete_device_lsum_x(SOLVEstruct1);
-					pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
-					SUPERLU_FREE (SOLVEstruct1);
-					}
-
-				stat->utime[REFINE] = SuperLU_timer_ () - t;
-				} /* end IterRefine */
-		}else{
-
-			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
-
-			/* ------------------------------------------------------
-			   Scale the right-hand side if equilibration was performed
-			   ------------------------------------------------------*/
-			if (notran)
-			{
-				if (rowequ)
-				{
-					b_col = B;
-					for (j = 0; j < nrhs; ++j)
-					{
-						irow = fst_row;
-						for (i = 0; i < m_loc; ++i)
-						{
-							b_col[i] *= R[irow];
-							++irow;
-						}
-						b_col += ldb;
-					}
-				}
-			}
-			else if (colequ)
-			{
-				b_col = B;
-				for (j = 0; j < nrhs; ++j)
-				{
-					irow = fst_row;
-					for (i = 0; i < m_loc; ++i)
-					{
-						b_col[i] *= C[irow];
-						++irow;
-					}
-					b_col += ldb;
-				}
-			}
-
-			/* Save a copy of the right-hand side. */
-			ldx = ldb;
-			if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
-				ABORT("Malloc fails for X[]");
-			x_col = X;
-			b_col = B;
-			for (j = 0; j < nrhs; ++j)
-			{
-				for (i = 0; i < m_loc; ++i)
-					x_col[i] = b_col[i];
-				x_col += ldx;
-				b_col += ldb;
-			}
-
-			/* ------------------------------------------------------
-			   Solve the linear system.
-			   ------------------------------------------------------*/
-			if (options->SolveInitialized == NO)
-			/* First time */
-			/* Inside this routine, SolveInitialized is set to YES.
-			For repeated call to pdgssvx3d(), no need to re-initialilze
-			the Solve data & communication structures, unless a new
-			factorization with Fact == DOFACT or SamePattern is asked for. */
-			{
-				dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
-							grid, SOLVEstruct);
-			}
-			pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
-				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
-
-			/* ------------------------------------------------------------
-			Use iterative refinement to improve the computed solution and
-			compute error bounds and backward error estimates for it.
-			------------------------------------------------------------ */
-			if (options->IterRefine)
-				{
-				/* Improve the solution by iterative refinement. */
-				int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
-				dSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
-
-				t = SuperLU_timer_ ();
-				if (options->RefineInitialized == NO || Fact == DOFACT) {
-					/* All these cases need to re-initialize gsmv structure */
-					if (options->RefineInitialized)
-					pdgsmv_finalize (SOLVEstruct->gsmv_comm);
-					pdgsmv_init (A, SOLVEstruct->row_to_proc, grid,
-						SOLVEstruct->gsmv_comm);
-
-					/* Save a copy of the transformed local col indices
-					in colind_gsmv[]. */
-					if (colind_gsmv) SUPERLU_FREE (colind_gsmv);
-					if (!(it = intMalloc_dist (nnz_loc)))
-					ABORT ("Malloc fails for colind_gsmv[]");
-					colind_gsmv = SOLVEstruct->A_colind_gsmv = it;
-					for (i = 0; i < nnz_loc; ++i) colind_gsmv[i] = colind[i];
-					options->RefineInitialized = YES;
-				}
-				else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
-					double at;
-					int_t k, jcol, p;
-					/* Swap to beginning the part of A corresponding to the
-					local part of X, as was done in pdgsmv_init() */
-					for (i = 0; i < m_loc; ++i) { /* Loop through each row */
-					k = rowptr[i];
-					for (j = rowptr[i]; j < rowptr[i + 1]; ++j)
-						{
-						jcol = colind[j];
-						p = SOLVEstruct->row_to_proc[jcol];
-						if (p == iam)
-							{	/* Local */
-							at = a[k];
-							a[k] = a[j];
-							a[j] = at;
-							++k;
-							}
-						}
-					}
-
-					/* Re-use the local col indices of A obtained from the
-					previous call to pdgsmv_init() */
-					for (i = 0; i < nnz_loc; ++i)
-					colind[i] = colind_gsmv[i];
-				}
-
-				if (nrhs == 1)
-					{	/* Use the existing solve structure */
-					SOLVEstruct1 = SOLVEstruct;
-					}
-				else {
-				/* For nrhs > 1, since refinement is performed for RHS
-			one at a time, the communication structure for pdgstrs
-			is different than the solve with nrhs RHS.
-			So we use SOLVEstruct1 for the refinement step.
-			*/
-					if (!(SOLVEstruct1 = (dSOLVEstruct_t *)
-						SUPERLU_MALLOC(sizeof(dSOLVEstruct_t))))
-						ABORT ("Malloc fails for SOLVEstruct1");
-					/* Copy the same stuff */
-					SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
-					SOLVEstruct1->inv_perm_c = SOLVEstruct->inv_perm_c;
-					SOLVEstruct1->num_diag_procs = SOLVEstruct->num_diag_procs;
-					SOLVEstruct1->diag_procs = SOLVEstruct->diag_procs;
-					SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
-					SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
-					SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
-
-					/* Initialize the *gstrs_comm for 1 RHS. */
-					if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
-						SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
-						ABORT ("Malloc fails for gstrs_comm[]");
-					pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
-							LUstruct->Glu_persist, SOLVEstruct1);
-					if (get_acc_solve()){
-					int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-					int* supernodeMask = int32Malloc_dist(nsupers);
-					for(int ii=0; ii<nsupers; ii++)
-						supernodeMask[ii]=1;
-					pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,supernodeMask);
-					SUPERLU_FREE(supernodeMask);
-					}
-					}
-
-				pdgsrfs (options, n, A, anorm, LUstruct, ScalePermstruct, grid,
-					B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
-
-				/* Deallocate the storage associated with SOLVEstruct1 */
-				if (nrhs > 1)
-					{
-					pdgstrs_delete_device_lsum_x(SOLVEstruct1);
-					pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
-					SUPERLU_FREE (SOLVEstruct1);
-					}
-
-				stat->utime[REFINE] = SuperLU_timer_ () - t;
-				} /* end IterRefine */
-			}
-		}
-
-if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
-	{
-		/* Permute the solution matrix B <= Pc'*X. */
-		pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
-					SOLVEstruct->inv_perm_c,
-					X, ldx, B, ldb, nrhs, grid);
-#if ( DEBUGlevel>=2 )
-		printf ("\n (%d) .. After pdPermute_Dense_Matrix(): b =\n", iam);
-		for (i = 0; i < m_loc; ++i)
-		    printf ("\t(%d)\t%4d\t%.10f\n", iam, i + fst_row, B[i]);
-#endif
-			/* Transform the solution matrix X to a solution of the original
-			   system before the equilibration. */
-			if (notran)
-			{
-				if (colequ)
-				{
-					b_col = B;
-					for (j = 0; j < nrhs; ++j)
-					{
-						irow = fst_row;
-						for (i = 0; i < m_loc; ++i)
-						{
-							b_col[i] *= C[irow];
-							++irow;
-						}
-						b_col += ldb;
-				    }
-			    }
+		    if (iam == 0)
+		    {
+			printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+			printf("           otherwise, use CPU trisolve\n");
+			fflush(stdout);
 		    }
-			else if (rowequ)
+		    // exit(0);  // Sherry: need to return an error flag
+		}
+#endif
+
+		if (options->DiagInv == YES && (Fact != FACTORED))
+		{
+		    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+
+		    // The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d.
+		    int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+#ifdef GPU_ACC
+
+		    pdconvertU(options, grid, LUstruct, stat, n);
+
+		    // checkGPU(gpuFree(LUstruct->Llu->d_xsup));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_bcols_masked));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_LBtree_ptr));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_URtree_ptr));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_UBtree_ptr));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_offset));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_ilsum));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_grid));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_dat));
+		    // checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_dat));
+
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_xsup, (n + 1) * sizeof(int_t)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_xsup, LUstruct->Glu_persist->xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_bcols_masked, LUstruct->Llu->nbcol_masked * sizeof(int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_bcols_masked, LUstruct->Llu->bcols_masked, LUstruct->Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_LRtree_ptr, LUstruct->Llu->LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_LBtree_ptr, LUstruct->Llu->LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_URtree_ptr, LUstruct->Llu->URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_UBtree_ptr, LUstruct->Llu->UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_dat, LUstruct->Llu->Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_dat, LUstruct->Llu->Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_offset, LUstruct->Llu->Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_offset, LUstruct->Llu->Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_offset, LUstruct->Llu->Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_offset, LUstruct->Llu->Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_offset, LUstruct->Llu->Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t)));
+		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_ilsum, LUstruct->Llu->ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double)));
+		    // checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double)));
+		    // checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_grid, sizeof(gridinfo_t)));
+    		    // checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t),                    gpuMemcpyHostToDevice));
+#endif
+
+                    if (get_acc_solve()){
+#ifdef GPU_ACC
+		        checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
+				   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+			checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
+				   (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+			checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
+				   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+#endif
+                    }
+		}
+	    } /* end 2D grid-0 */
+	} /* end else not (Solve3D) */
+
+	/* ------------------------------------------------------------
+	   Compute the solution matrix X.
+	   ------------------------------------------------------------ */
+	if ((nrhs > 0) && (*info == 0))
+	{
+	    if (options->SolveInitialized == NO){
+	        if (get_acc_solve()){
+	            if (get_new3dsolve() && Solve3D==true){
+		        pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,trf3Dpartition->supernodeMask);
+	            }else{
+		        int* supernodeMask = int32Malloc_dist(nsupers);
+		        for(int ii=0; ii<nsupers; ii++)
+			supernodeMask[ii]=1;
+		        pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,supernodeMask);
+		        SUPERLU_FREE(supernodeMask);
+	            }
+	        }
+            }
+
+	    stat->utime[SOLVE] = 0.0;
+	    if(Solve3D){
+
+		// if (!(b_work = doubleMalloc_dist(n)))
+		// 	ABORT("Malloc fails for b_work[]");
+		/* ------------------------------------------------------
+		   Scale the right-hand side if equilibration was performed
+		   ------------------------------------------------------*/
+		if (notran)
+		{
+		    if (rowequ)
+		    {
+		        b_col = B;
+			for (j = 0; j < nrhs; ++j)
+			{
+			    irow = fst_row;
+			    for (i = 0; i < m_loc; ++i)
+			    {
+				b_col[i] *= R[irow];
+				++irow;
+			    }
+			    b_col += ldb;
+			}
+		    }
+		}
+		else if (colequ)
+		{
+		    b_col = B;
+		    for (j = 0; j < nrhs; ++j)
+		    {
+			irow = fst_row;
+			for (i = 0; i < m_loc; ++i)
+			{
+			    b_col[i] *= C[irow];
+			    ++irow;
+			}
+			b_col += ldb;
+		    }
+		}
+
+		/* Save a copy of the right-hand side. */
+		ldx = ldb;
+		if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
+			ABORT("Malloc fails for X[]");
+		x_col = X;
+		b_col = B;
+		for (j = 0; j < nrhs; ++j)
+		{
+		    for (i = 0; i < m_loc; ++i)
+			x_col[i] = b_col[i];
+		    x_col += ldx;
+		    b_col += ldb;
+		}
+
+		/* ------------------------------------------------------
+		   Solve the linear system.
+		   ------------------------------------------------------*/
+
+		if (options->SolveInitialized == NO)
+		    /* First time */
+		    /* Inside this routine, SolveInitialized is set to YES.
+		       For repeated call to pdgssvx3d(), no need to re-initialilze
+		       the Solve data & communication structures, unless a new
+		       factorization with Fact == DOFACT or SamePattern is asked for. */
+		{
+		    dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
+					grid, SOLVEstruct);
+		}
+		if (get_new3dsolve()){
+		    pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
+				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+		}else{
+		    pdgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
+				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+		}
+		
+		if (options->IterRefine)
+		{
+		    /* Improve the solution by iterative refinement. */
+		    int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
+		    dSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
+
+		    t = SuperLU_timer_ ();
+		    if (options->RefineInitialized == NO || Fact == DOFACT) {
+			/* All these cases need to re-initialize gsmv structure */
+			if (options->RefineInitialized)
+			    pdgsmv_finalize (SOLVEstruct->gsmv_comm);
+			pdgsmv_init (A, SOLVEstruct->row_to_proc, grid,
+					SOLVEstruct->gsmv_comm);
+
+			/* Save a copy of the transformed local col indices
+			   in colind_gsmv[]. */
+			if (colind_gsmv) SUPERLU_FREE (colind_gsmv);
+			if (!(it = intMalloc_dist (nnz_loc)))
+				ABORT ("Malloc fails for colind_gsmv[]");
+			colind_gsmv = SOLVEstruct->A_colind_gsmv = it;
+			for (i = 0; i < nnz_loc; ++i) colind_gsmv[i] = colind[i];
+			options->RefineInitialized = YES;
+		    }
+		    else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
+		        double at;
+			int_t k, jcol, p;
+			/* Swap to beginning the part of A corresponding to the
+		   	   local part of X, as was done in pdgsmv_init() */
+			for (i = 0; i < m_loc; ++i) { /* Loop through each row */
+			    k = rowptr[i];
+			    for (j = rowptr[i]; j < rowptr[i + 1]; ++j)
+			    {
+				jcol = colind[j];
+				p = SOLVEstruct->row_to_proc[jcol];
+				if (p == iam)
+				{	/* Local */
+				    at = a[k];
+				    a[k] = a[j];
+				    a[j] = at;
+				    ++k;
+				}
+			    }
+			}
+
+			/* Re-use the local col indices of A obtained from the
+			   previous call to pdgsmv_init() */
+			    for (i = 0; i < nnz_loc; ++i)
+				colind[i] = colind_gsmv[i];
+		    } /* end else if */
+
+		    if (nrhs == 1)
+		    {	/* Use the existing solve structure */
+			SOLVEstruct1 = SOLVEstruct;
+		    }
+		    else {
+			/* For nrhs > 1, since refinement is performed for RHS
+			   one at a time, the communication structure for pdgstrs
+			   is different than the solve with nrhs RHS.
+			   So we use SOLVEstruct1 for the refinement step.
+			*/
+			if (!(SOLVEstruct1 = (dSOLVEstruct_t *)
+			   		   SUPERLU_MALLOC(sizeof(dSOLVEstruct_t))))
+			    ABORT ("Malloc fails for SOLVEstruct1");
+  			/* Copy the same stuff */
+			SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
+			SOLVEstruct1->inv_perm_c = SOLVEstruct->inv_perm_c;
+			SOLVEstruct1->num_diag_procs = SOLVEstruct->num_diag_procs;
+			SOLVEstruct1->diag_procs = SOLVEstruct->diag_procs;
+			SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
+			SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
+			SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
+
+			/* Initialize the *gstrs_comm for 1 RHS. */
+			if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
+			           SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
+			    ABORT ("Malloc fails for gstrs_comm[]");
+			pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
+					LUstruct->Glu_persist, SOLVEstruct1);
+			if (get_acc_solve()){
+			    int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+			    pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,trf3Dpartition->supernodeMask);
+			}
+		    }
+
+		    pdgsrfs3d (options, n, A, anorm, LUstruct, ScalePermstruct, grid3d, trf3Dpartition,
+				B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
+
+		    /* Deallocate the storage associated with SOLVEstruct1 */
+		    if (nrhs > 1)
+		    {
+			pdgstrs_delete_device_lsum_x(SOLVEstruct1);
+			pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
+			SUPERLU_FREE (SOLVEstruct1);
+		    }
+
+		    stat->utime[REFINE] = SuperLU_timer_ () - t;
+		} /* end IterRefine */
+	    }else{ /* not Solve3D */
+
+		if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
+
+		/* ------------------------------------------------------
+		   Scale the right-hand side if equilibration was performed
+		   ------------------------------------------------------*/
+		if (notran)
+		{
+		    if (rowequ)
 		    {
 			b_col = B;
 			for (j = 0; j < nrhs; ++j)
+			{
+			    irow = fst_row;
+			    for (i = 0; i < m_loc; ++i)
 			    {
-				irow = fst_row;
-				for (i = 0; i < m_loc; ++i)
-				    {
-					b_col[i] *= R[irow];
-					++irow;
-				    }
-				b_col += ldb;
+				b_col[i] *= R[irow];
+				++irow;
 			    }
+			    b_col += ldb;
+			}
+		    }
+		}
+		else if (colequ)
+		{
+		    b_col = B;
+		    for (j = 0; j < nrhs; ++j)
+		    {
+			irow = fst_row;
+			for (i = 0; i < m_loc; ++i)
+			{
+		   	    b_col[i] *= C[irow];
+			    ++irow;
+			}
+			b_col += ldb;
+		    }
+		}
+
+		/* Save a copy of the right-hand side. */
+		ldx = ldb;
+		if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
+			ABORT("Malloc fails for X[]");
+		x_col = X;
+		b_col = B;
+		for (j = 0; j < nrhs; ++j)
+		{
+		    for (i = 0; i < m_loc; ++i)
+			x_col[i] = b_col[i];
+		    x_col += ldx;
+		    b_col += ldb;
+		}
+
+		/* ------------------------------------------------------
+		   Solve the linear system.
+		   ------------------------------------------------------*/
+		if (options->SolveInitialized == NO)
+		    /* First time */
+		    /* Inside this routine, SolveInitialized is set to YES.
+			For repeated call to pdgssvx3d(), no need to re-initialilze
+			the Solve data & communication structures, unless a new
+			factorization with Fact == DOFACT or SamePattern is asked for. */
+		{
+		    dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
+					grid, SOLVEstruct);
+		}
+		pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
+			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+
+		/* ------------------------------------------------------------
+		   Use iterative refinement to improve the computed solution and
+		   compute error bounds and backward error estimates for it.
+		------------------------------------------------------------ */
+		if (options->IterRefine)
+		{
+		    /* Improve the solution by iterative refinement. */
+		    int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
+		    dSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
+
+		    t = SuperLU_timer_ ();
+		    if (options->RefineInitialized == NO || Fact == DOFACT) {
+			/* All these cases need to re-initialize gsmv structure */
+			if (options->RefineInitialized)
+			    pdgsmv_finalize (SOLVEstruct->gsmv_comm);
+			pdgsmv_init (A, SOLVEstruct->row_to_proc, grid,
+					SOLVEstruct->gsmv_comm);
+
+			/* Save a copy of the transformed local col indices
+			   in colind_gsmv[]. */
+			if (colind_gsmv) SUPERLU_FREE (colind_gsmv);
+			if (!(it = intMalloc_dist (nnz_loc)))
+			    ABORT ("Malloc fails for colind_gsmv[]");
+			colind_gsmv = SOLVEstruct->A_colind_gsmv = it;
+			for (i = 0; i < nnz_loc; ++i) colind_gsmv[i] = colind[i];
+			options->RefineInitialized = YES;
+		    }
+		    else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
+			double at;
+			int_t k, jcol, p;
+			
+			/* Swap to beginning the part of A corresponding to the
+			   local part of X, as was done in pdgsmv_init() */
+			for (i = 0; i < m_loc; ++i) { /* Loop through each row */
+			    k = rowptr[i];
+			    for (j = rowptr[i]; j < rowptr[i + 1]; ++j)
+			    {
+				jcol = colind[j];
+				p = SOLVEstruct->row_to_proc[jcol];
+				if (p == iam)
+				{	/* Local */
+			    	    at = a[k];
+				    a[k] = a[j];
+				    a[j] = at;
+				    ++k;
+				}
+			    }
+			}
+
+			/* Re-use the local col indices of A obtained from the
+			   previous call to pdgsmv_init() */
+			for (i = 0; i < nnz_loc; ++i)
+				colind[i] = colind_gsmv[i];
+		    } /* end else */
+
+		    if (nrhs == 1)
+		    {	/* Use the existing solve structure */
+			SOLVEstruct1 = SOLVEstruct;
+		    }
+		    else {
+			/* For nrhs > 1, since refinement is performed for RHS
+			   one at a time, the communication structure for pdgstrs
+			   is different than the solve with nrhs RHS.
+			   So we use SOLVEstruct1 for the refinement step.
+			*/
+			if (!(SOLVEstruct1 = (dSOLVEstruct_t *)
+					   SUPERLU_MALLOC(sizeof(dSOLVEstruct_t))))
+				ABORT ("Malloc fails for SOLVEstruct1");
+			/* Copy the same stuff */
+			SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
+			SOLVEstruct1->inv_perm_c = SOLVEstruct->inv_perm_c;
+			SOLVEstruct1->num_diag_procs = SOLVEstruct->num_diag_procs;
+			SOLVEstruct1->diag_procs = SOLVEstruct->diag_procs;
+			SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
+			SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
+			SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
+
+			/* Initialize the *gstrs_comm for 1 RHS. */
+			if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
+					SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
+				ABORT ("Malloc fails for gstrs_comm[]");
+			pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
+					LUstruct->Glu_persist, SOLVEstruct1);
+			if (get_acc_solve()){
+			    int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+			    int* supernodeMask = int32Malloc_dist(nsupers);
+			    for(int ii=0; ii<nsupers; ii++)
+				supernodeMask[ii]=1;
+			    pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,supernodeMask);
+			    SUPERLU_FREE(supernodeMask);
+			}
+		    } /* end else */
+
+		    pdgsrfs (options, n, A, anorm, LUstruct, ScalePermstruct, grid,
+				B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
+
+		    /* Deallocate the storage associated with SOLVEstruct1 */
+		    if (nrhs > 1)
+		    {
+			pdgstrs_delete_device_lsum_x(SOLVEstruct1);
+			pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
+			SUPERLU_FREE (SOLVEstruct1);
 		    }
 
-		// SUPERLU_FREE (b_work);
+		    stat->utime[REFINE] = SuperLU_timer_ () - t;
+		} /* end IterRefine */
+	    } /* end on 2D grid-0 */
+	} /* end 2D solve */
+
+	if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
+	{
+	    /* Permute the solution matrix B <= Pc'*X. */
+	    pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
+				SOLVEstruct->inv_perm_c,
+				X, ldx, B, ldb, nrhs, grid);
+#if ( DEBUGlevel>=2 )
+	    printf ("\n (%d) .. After pdPermute_Dense_Matrix(): b =\n", iam);
+	    for (i = 0; i < m_loc; ++i)
+	        printf ("\t(%d)\t%4d\t%.10f\n", iam, i + fst_row, B[i]);
+#endif
+	    /* Transform the solution matrix X to a solution of the original
+	       system before the equilibration. */
+	    if (notran)
+	    {
+	 	if (colequ)
+		{
+		    b_col = B;
+		    for (j = 0; j < nrhs; ++j)
+		    {
+			irow = fst_row;
+			for (i = 0; i < m_loc; ++i)
+			{
+			    b_col[i] *= C[irow];
+			    +irow;
+			}
+			b_col += ldb;
+		    }
+		}
+	    }
+	    else if (rowequ)
+	    {
+		b_col = B;
+		for (j = 0; j < nrhs; ++j)
+	        {
+		    irow = fst_row;
+		    for (i = 0; i < m_loc; ++i)
+		    {
+			b_col[i] *= R[irow];
+			++irow;
+		    }
+		    b_col += ldb;
+		}
+	    }
+
+	    // SUPERLU_FREE (b_work);
 	}
+	
 	if (grid3d->zscp.Iam == 0 || Solve3D)
 		SUPERLU_FREE (X);
 
-	} /* end if nrhs > 0 and factor successful */
+    } /* end if nrhs > 0 and factor successful */
 
 #if ( PRNTlevel>=1 )
 	if (!grid3d->iam) {
@@ -1860,8 +1851,8 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 
 
 	if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
-	/* Deallocate R and/or C if it was not used. */
-	if (Equil && Fact != SamePattern_SameRowPerm)
+	    /* Deallocate R and/or C if it was not used. */
+	    if (Equil && Fact != SamePattern_SameRowPerm)
 	    {
 		switch (ScalePermstruct->DiagScale) {
 		    case NOEQUIL:
@@ -1876,11 +1867,11 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 			break;
 	            default: break;
 		}
-	}
+	    }
 
 #if 0
-	if (!factored && Fact != SamePattern_SameRowPerm && !parSymbFact)
-	    Destroy_CompCol_Permuted_dist (&GAC);
+	    if (!factored && Fact != SamePattern_SameRowPerm && !parSymbFact)
+	        Destroy_CompCol_Permuted_dist (&GAC);
 #endif
 
 	} /* process layer 0 done solve */

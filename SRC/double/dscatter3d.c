@@ -568,31 +568,39 @@ scatter_u (int_t ib,
            int *indirect,
            int_t **Ufstnz_br_ptr, double **Unzval_br_ptr, gridinfo_t *grid)
 {
-#ifdef PI_DEBUG
+#if ( DEBUGlevel>=2 )
     printf ("A(%d,%d) goes to U block \n", ib, jb);
 #endif
-    int_t jj, i, fnz;
+    int   jj, i, fnz;
     int_t segsize;
     double *ucol;
     int_t ilst = FstBlockC (ib + 1);
     int_t lib = LBi (ib, grid);
     int_t *index = Ufstnz_br_ptr[lib];
+    int   num_blocks;
+
+    if ( index != NULL )
+	num_blocks = index[0];
+    else return; // empty block row of U
 
     /* reinitialize the pointer to each row of U */
     int_t iuip_lib, ruip_lib;
     iuip_lib = BR_HEADER;
     ruip_lib = 0;
 
-    int_t ijb = index[iuip_lib];
-    while (ijb < jb)            /* Search for dest block. */
+    int ijb = index[iuip_lib];
+    i = 0; // Count how many times in the loop
+    while (ijb < jb)            /* Search for destination block U(i,j) */
     {
-        ruip_lib += index[iuip_lib + 1];
+	//printf("  .. scatter_u(): num_blocks %d, i %d, ijb %d\n", num_blocks, i, ijb);
+	++i;
+	if ( i == num_blocks ) return; // search exhausted; in ILU, not allow fill-in
 
+        ruip_lib += index[iuip_lib + 1]; // move to next block
         iuip_lib += UB_DESCRIPTOR + SuperSize (ijb);
         ijb = index[iuip_lib];
     }
-    /* Skip descriptor.  Now point_t to fstnz index of
-       block U(i,j). */
+    /* Skip descriptor.  Now point to fstnz index of block U(i,j). */
 
     for (i = 0; i < temp_nbrow; ++i)
     {
