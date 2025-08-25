@@ -223,13 +223,13 @@ int main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
-    options.ILU_level = -1;
-    options.ReplaceTinyPivot = YES;
-    // options.ParSymbFact       = YES;
-    // options.ColPerm           = PARMETIS;
-#if 0
     options.IterRefine = NOREFINE;
+#if 0
+    options.ILU_level = 0;
+    options.ParSymbFact       = YES;
+    options.ColPerm           = PARMETIS;
     options.DiagInv           = YES; // only if SLU_HAVE_LAPACK
+    options.ReplaceTinyPivot = YES;
     options.RowPerm = NOROWPERM;
     options.ColPerm = NATURAL;
     options.ReplaceTinyPivot = YES;
@@ -257,13 +257,13 @@ int main (int argc, char *argv[])
        ------------------------------------------------------------ */
     superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
     iam = grid.iam;
-    
+
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
 	fflush(stdout);
     }
-
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Enter main()");
 #endif
