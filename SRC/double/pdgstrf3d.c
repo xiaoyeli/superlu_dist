@@ -298,8 +298,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         acc_async_cost = get_acc_async_cost();
 #endif
     sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
-	//OLD: int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
-	int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
+	//OLD: int_t* perm_c_supno = getPerm_c_supno(nsupers,n, options, LUstruct, grid);
+	int_t* perm_c_supno = getPerm_c_supno(nsupers,n, options,
 					      LUstruct->etree,
 					      LUstruct->Glu_persist,
 					      LUstruct->Llu->Lrowind_bc_ptr,

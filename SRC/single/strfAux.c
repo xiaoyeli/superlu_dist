@@ -568,7 +568,7 @@ strf3Dpartition_t* sinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     int_t* iperm_c_supno;
     int_t *xsup;
     if (!grid3d->zscp.Iam){
-        int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
+        int_t* perm_c_supno = getPerm_c_supno(nsupers, n, options,
                                          LUstruct->etree,
     	   		                 LUstruct->Glu_persist,
 		                         LUstruct->Llu->Lrowind_bc_ptr,
@@ -955,7 +955,7 @@ strf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Enter sinitTrf3Dpartition()");
 #endif
-    int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
+    int_t* perm_c_supno = getPerm_c_supno(nsupers, n, options,
                                          LUstruct->etree,
     	   		                 LUstruct->Glu_persist,
 		                         LUstruct->Llu->Lrowind_bc_ptr,

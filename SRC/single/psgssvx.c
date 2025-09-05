@@ -1069,8 +1069,11 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    	/* Every process does this.
 		   returned value (-iinfo) is the size of lsub[], incuding pruned graph.*/
 		int_t linfo;
-	    	linfo = symbfact(options, iam, &GAC, perm_c, etree,
-			     	 Glu_persist, Glu_freeable);
+		if ( options->ILU_level != SLU_EMPTY ) { /* for any level-based ILU */
+				linfo = ilu_level_symbfact(options, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
+		} else { /* for complete LU */
+				linfo = symbfact(options, iam, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
+		}
 		nnzLU = Glu_freeable->nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if ( linfo <= 0 ) { /* Successful return */

@@ -136,9 +136,11 @@ sstatic_schedule(superlu_dist_options_t * options, int m, int n,
 
             for (j = 0, lb = 0; lb < nsupers; lb++) {
                 for (k = 0; k < SuperSize (lb); k++) {
+                    if(etree[j + k]!=n){
                     jb = Glu_persist->supno[etree[j + k]];
                     if (jb != lb)
                         etree_supno[lb] = SUPERLU_MIN (etree_supno[lb], jb);
+                    }
                 }
                 j += SuperSize (lb);
             }

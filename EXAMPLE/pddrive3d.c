@@ -223,7 +223,16 @@ int main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
-    options.IterRefine = NOREFINE;
+
+
+// //The following options test ILU
+//     options.IterRefine = SLU_DOUBLE;
+//     options.lookahead_etree   = YES;
+//     options.ILU_level = 0;
+//     options.ReplaceTinyPivot  = YES;
+
+
+
 #if 0
     options.ILU_level = 0;
     options.ParSymbFact       = YES;

@@ -15,10 +15,11 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 
 # Problem setting:
-dims=(8 8 8 16) 
-bs=48
+# dims=(8 8 8 16) 
+# bs=48
 
-
+dims=(4 4 4 8) 
+bs=1
 
 #SUPERLU settings:
 export SUPERLU_LBS=GD  
@@ -166,9 +167,9 @@ do
 # srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
 
 
-SUPERLU_ACC_OFFLOAD=1
-export GPU3DVERSION=1
-export SUPERLU_ACC_SOLVE=1
+SUPERLU_ACC_OFFLOAD=0
+export GPU3DVERSION=0
+export SUPERLU_ACC_SOLVE=0
 dim0=${dims[0]}
 dim1=${dims[1]}
 dim2=${dims[2]}

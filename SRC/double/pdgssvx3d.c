@@ -951,7 +951,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
 		dLluBufInit(LUvsb, LUstruct);
 		trf3Dpartition->LUvsb = LUvsb;
-		trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct->Glu_persist, LUstruct->etree, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr, grid3d);
+		trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, n, options, LUstruct->Glu_persist, LUstruct->etree, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr, grid3d);
 	    }
 
 	    /*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
@@ -988,9 +988,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    }
 #endif
 
-            if ( options->SolveOnly != YES ) { // Now we need factorization
-
 		t = SuperLU_timer_();
+		if ( options->SolveOnly != YES ) { // Now we need factorization
+
 
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
@@ -1814,7 +1814,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			for (i = 0; i < m_loc; ++i)
 			{
 			    b_col[i] *= C[irow];
-			    +irow;
+			    ++irow;
 			}
 			b_col += ldb;
 		    }

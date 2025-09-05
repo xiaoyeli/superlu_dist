@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     npdep = 1;  /* Default process columns.   */
-    nrhs = 2;   /* Number of right-hand side. */
+    nrhs = 1;   /* Number of right-hand side. */
     double t0=0;
     int nsolves=1;
     
@@ -371,10 +371,24 @@ int main(int argc, char *argv[])
     /* Set the default input options: */
     superlu_dist_options_t options;
     set_default_options_dist(&options);
-    /* Turn off permutations */
-    options.SolveOnly          = YES;
-    options.ILU_level          = 0;
-    options.IterRefine        = NOREFINE;
+
+
+    // /* Turn off permutations */
+    // options.SolveOnly          = YES;
+    // options.ILU_level          = 0;
+    // options.IterRefine        = NOREFINE; // SLU_DOUBLE
+    // /* Allow to set up supernode partition */
+    // options.UserDefineSupernode = YES;
+
+
+//The following options test ILU(0)
+    options.SolveOnly          = NO;
+    options.IterRefine = NOREFINE; // SLU_DOUBLE
+    options.lookahead_etree   = YES;
+    options.ILU_level = 0;
+    options.ReplaceTinyPivot  = YES;
+    options.UserDefineSupernode = NO;
+
 
 
 #ifdef GPU_ACC
@@ -454,8 +468,6 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < n; i++) LUstruct.etree[i] = i+1;
      
-    /* Allow to set up supernode partition */
-    options.UserDefineSupernode = YES;
 
 
 
