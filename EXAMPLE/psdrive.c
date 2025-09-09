@@ -18,12 +18,14 @@ at the top-level directory.
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * December 6, 2018
- * AUgust 27, 2022  Add batch option
+ * August 27, 2022  Add batch option
+ * September 7, 2025  Add double-precision IR branch
  * </pre>
  */
 
 #include <math.h>
 #include "superlu_sdefs.h"
+#include "superlu_ddefs.h"
 
 /*! \brief
  *
@@ -57,15 +59,34 @@ int main(int argc, char *argv[])
     sLUstruct_t LUstruct;
     sSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
-    float   *berr;
+    float   *err_bounds, *berr;
     float   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
+    int      nprow, npcol, lookahead, equil, colperm, rowperm, ir, symbfact, batch;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp;
     int cpp_defs();
-    int ii, omp_mpi_level;
+    double *dxtrue, *db, *dberr;
+    int i, ii, omp_mpi_level;
+
+    extern int screate_A_x_b(SuperMatrix *A, int nrhs, float **rhs,
+			     int *ldb, float **x, int *ldx,
+			     FILE *fp, char * postfix, gridinfo_t *grid);
+
+    extern void psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
+			sScalePermstruct_t *ScalePermstruct,
+			float B[], int ldb, int nrhs, gridinfo_t *grid,
+			sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct,
+			float *err_bounds, SuperLUStat_t *stat, int *info,
+			double *dxtrue);
+
+    extern void psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
+				 sScalePermstruct_t *ScalePermstruct,
+				 float B[], int ldb, int nrhs, gridinfo_t *grid,
+				 sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct, float *berr,
+				 SuperLUStat_t *stat, int *info, double *xtrue);
+    
     int ldumap, myrank, p; /* The following variables are used for batch solves */
     int*    usermap;
     float result_min[2];
@@ -80,6 +101,7 @@ int main(int argc, char *argv[])
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
     lookahead = -1;
+    equil = -1;
     colperm = -1;
     rowperm = -1;
     ir = -1;
@@ -135,6 +157,7 @@ int main(int argc, char *argv[])
 		  printf("Options:\n");
 		  printf("\t-r <int>: process rows       (default %4d)\n", nprow);
 		  printf("\t-c <int>: process columns    (default %4d)\n", npcol);
+		  printf("\t-e <int>: equilibration?     (default %4d)\n", options.Equil);
 		  printf("\t-p <int>: row permutation    (default %4d)\n", options.RowPerm);
 		  printf("\t-q <int>: col permutation    (default %4d)\n", options.ColPerm);
 		  printf("\t-s <int>: parallel symbolic? (default %4d)\n", options.ParSymbFact);
@@ -149,6 +172,8 @@ int main(int argc, char *argv[])
 		        break;
               case 'l': lookahead = atoi(*cpp);
                         break;
+	      case 'e': equil = atoi(*cpp);
+		        break;
               case 'p': rowperm = atoi(*cpp);
                         break;
               case 'q': colperm = atoi(*cpp);
@@ -169,6 +194,7 @@ int main(int argc, char *argv[])
     }
 
     /* Command line input to modify default options */
+    if (equil != -1) options.Equil = equil;
     if (rowperm != -1) options.RowPerm = rowperm;
     if (colperm != -1) options.ColPerm = colperm;
     if (lookahead != -1) options.num_lookaheads = lookahead;
@@ -286,13 +312,10 @@ int main(int argc, char *argv[])
 
     /* print solver options */
     if (!iam) {
+	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
 	fflush(stdout);
     }
-
-#if ( VAMPIR>=1 )
-    VT_traceoff();
-#endif
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
@@ -308,19 +331,114 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
-    screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    //screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
-    if ( !(berr = floatMalloc_dist(nrhs)) )
-	ABORT("Malloc fails for berr[].");
-
-    /* ------------------------------------------------------------
-       NOW WE SOLVE THE LINEAR SYSTEM.
-       ------------------------------------------------------------*/
-
-
+    /* Generate a good RHS in double precision, then rounded to single.
+       See LAWN 165: bullet 7, page 20. */
+    /* The returned A, b and xtrue are in single precision
+       b <- A * xtrue in double internally, then rounded to single */
+    screate_A_x_b(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    fclose(fp);
+    
     m = A.nrow;
     n = A.ncol;
+    
+    /* Compute the ground truth dXtrue in double precision */
+    if ( options.IterRefine >= SLU_DOUBLE ) {
+        superlu_dist_options_t options_d;
+	SuperMatrix dA;
+	dScalePermstruct_t dScalePermstruct;
+	dLUstruct_t dLUstruct;
+	dSOLVEstruct_t dSOLVEstruct;
 
+	/* Copy single-prec A into double-prec dA storage */
+	NRformat_loc *Astore = A.Store;  // Single-prec A
+	int m_loc = Astore->m_loc;
+	int nnz_loc = Astore->nnz_loc;
+	float *nzval = (float*) Astore->nzval;
+	int_t *rowptr = Astore->rowptr;
+	int_t *colind = Astore->colind;
+
+	double *nzval_loc_dble = (double *) doubleMalloc_dist(nnz_loc);
+	int_t *colind_dble = (int_t *) intMalloc_dist(nnz_loc);
+	int_t *rowptr_dble = (int_t *) intMalloc_dist(m_loc + 1);
+
+	for (i = 0; i < nnz_loc; ++i) {
+	  nzval_loc_dble[i] = nzval[i];
+	  colind_dble[i] = colind[i];
+	}
+	for (i = 0; i < m_loc + 1; ++i) rowptr_dble[i] = rowptr[i];
+
+	dCreate_CompRowLoc_Matrix_dist(&dA, m, n, nnz_loc, m_loc, Astore->fst_row,
+				       nzval_loc_dble, colind_dble, rowptr_dble,
+				       SLU_NR_loc, SLU_D, SLU_GE);
+	
+	/* Now, compute dxtrue via double-precision solver */
+	/* Why? dA is the double precision version of A, etc.
+	   If db = dA*dXtrue to double, then rounding db to b and dA to A introduce
+	   a perturbation of eps_single in A and b, so a perturbation of 
+	   cond(A)*eps_single in x vs dXtrue. 
+	   So need to use a computed Xtrue from a double code: dXtrue <- dA \ db,
+	   this computed Xtrue would be comparable to x, i.e., having the same cond(A)
+	   factor in the perturbation error.   See bullet 7, page 20, LAWN 165.*/
+	if ( !(dberr = doubleMalloc_dist(nrhs)) )
+	  ABORT("Malloc fails for dberr[].");
+	if ( !(dxtrue = doubleMalloc_dist(m * nrhs)) )
+	  ABORT("Malloc fails for dberr[].");
+
+	set_default_options_dist(&options_d);
+	dScalePermstructInit(m, n, &dScalePermstruct);
+	dLUstructInit(n, &dLUstruct);
+	PStatInit(&stat);
+
+	/* Need to use correct single-prec {A,b} to solve  */
+	db = doubleMalloc_dist(m_loc * nrhs);
+	for (i = 0; i < m_loc * nrhs; ++i) {
+	  db[i] = b[i];
+	  dxtrue[i] = (double) xtrue[i]; // generated truth in single
+	}
+
+	pdgssvx(&options_d, &dA, &dScalePermstruct, db, ldb, nrhs, &grid,
+		&dLUstruct, &dSOLVEstruct, dberr, &stat, &info);
+
+	pdinf_norm_error(iam, m_loc, nrhs, db, ldb, dxtrue, ldx, grid.comm);
+
+	for (i = 0; i < m_loc * nrhs; ++i) dxtrue[i] = db[i]; // computed truth in double
+	
+	/* Rounded to single */
+	for (i = 0; i < m_loc; ++i) xtrue[i] = (float) db[i];
+
+#if ( PRNTlevel>=2 )
+	if ( iam==0 ) { //(nprow*npcol-1) ) {
+	  printf("\ndouble computed xtrue (stored in db):\n");
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", db[i]);
+	  printf("\n"); fflush(stdout);
+	}
+#endif
+	
+	PStatPrint(&options_d, &stat, &grid); /* Print the statistics. */
+
+	PStatFree(&stat);
+	Destroy_CompRowLoc_Matrix_dist(&dA);
+	dScalePermstructFree(&dScalePermstruct);
+	dDestroy_LU(n, &grid, &dLUstruct);
+	dLUstructFree(&dLUstruct);
+	if ( options_d.SolveInitialized ) {
+	    dSolveFinalize(&options, &dSOLVEstruct);
+	}
+	SUPERLU_FREE(db);
+	SUPERLU_FREE(dberr);
+    } /* end if IterRefine >= SLU_DOUBLE */
+    
+    /* ------------------------------------------------------------
+       NOW WE SOLVE THE LINEAR SYSTEM in single precision
+       ------------------------------------------------------------*/
+
+    if ( !(err_bounds = floatCalloc_dist(nrhs*3)) )
+	ABORT("Malloc fails for err_bounds[].");
+    if ( !(berr = floatMalloc_dist(nrhs)) )
+	ABORT("Malloc fails for berr[].");
+    
     /* Initialize ScalePermstruct and LUstruct. */
     sScalePermstructInit(m, n, &ScalePermstruct);
     sLUstructInit(n, &LUstruct);
@@ -328,10 +446,21 @@ int main(int argc, char *argv[])
     /* Initialize the statistics variables. */
     PStatInit(&stat);
 
-    /* Call the linear equation solver. */
-    psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
-
+    if ( options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA ) { 
+        /* Call the linear equation solver with extra-precise iterative refinement */
+        psgssvx_d2(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		   &LUstruct, &SOLVEstruct, err_bounds, &stat, &info, dxtrue);
+    } else {
+        /* Call the linear equation solver */
+#if ( PRNTlevel>=2 )
+        psgssvx_tracking(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+			 &LUstruct, &SOLVEstruct, berr, &stat, &info, dxtrue);
+#else
+        psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		&LUstruct, &SOLVEstruct, berr, &stat, &info);
+#endif	
+    }
+    
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
 	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
@@ -341,6 +470,13 @@ int main(int argc, char *argv[])
         /* Check the accuracy of the solution. */
         psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		         nrhs, b, ldb, xtrue, ldx, grid.comm);
+	if ( iam==0 && (options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA) ) {
+	  printf("** Forward error bounds:\n");
+	  printf("\tNormwise:       %e\n", err_bounds[0]);
+	  printf("\tComponentwise:  %e\n", err_bounds[1*nrhs]);
+	  printf("** Componentwise backword error: %e\n", err_bounds[2*nrhs]);
+	  fflush(stdout);
+	}
     }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
@@ -356,8 +492,9 @@ int main(int argc, char *argv[])
     sSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
+    SUPERLU_FREE(err_bounds);
     SUPERLU_FREE(berr);
-    fclose(fp);
+    if ( options.IterRefine >= SLU_DOUBLE ) SUPERLU_FREE(dxtrue);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
