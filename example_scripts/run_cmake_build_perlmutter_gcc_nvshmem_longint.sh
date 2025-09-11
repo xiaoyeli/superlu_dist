@@ -67,8 +67,8 @@ cmake .. \
   -DTPL_MAGMA_LIBRARIES="${MAGMA_ROOT}/lib/libmagma.so" \
   -DTPL_BLAS_LIBRARIES=$CRAY_LIBSCI_PREFIX/lib/libsci_gnu_mp.so \
   -DTPL_LAPACK_LIBRARIES=$CRAY_LIBSCI_PREFIX/lib/libsci_gnu_mp.so \
-  -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-gnu-longint/include;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-gnu-longint/metis/include" \
-  -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-gnu-longint/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-gnu-longint/build/Linux-x86_64/libmetis/libmetis.so" \
+  -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-longint/include;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-longint/metis/include" \
+  -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-longint/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3-longint/build/Linux-x86_64/libmetis/libmetis.so" \
   -DTPL_ENABLE_COMBBLASLIB=OFF \
   -DTPL_ENABLE_NVSHMEM=ON \
   -DTPL_NVSHMEM_LIBRARIES="-L${CUDA_HOME}/lib64/stubs/ -lnvidia-ml -L/usr/lib64 -lgdrapi -lstdc++ -L/opt/cray/libfabric/1.20.1/lib64 -lfabric -L${NVSHMEM_HOME}/lib -lnvshmem" \
@@ -84,6 +84,7 @@ cmake .. \
 make pddrive -j16
 make pddrive3d -j16
 make f_pddrive
+make pzdrive
 make pzdrive3d_qcd 
 
 ## -DTPL_BLAS_LIBRARIES=/global/cfs/cdirs/m3894/ptlin/tpl/amd_blis/install/amd_blis-20211021-n9-gcc9.3.0/lib/libblis.a \

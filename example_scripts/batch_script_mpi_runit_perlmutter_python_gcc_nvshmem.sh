@@ -23,8 +23,8 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
-NROW=4   # number of MPI row processes 
-NCOL=4   # number of MPI column processes 
+NROW=16   # number of MPI row processes 
+NCOL=16   # number of MPI column processes 
 NPZ=1    # number of 2D process grids  
 NTH=16 # number of OMP threads
 ################################################# 
@@ -99,9 +99,11 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 
 ############### sequentially call the python driver pddrive_master.py, but parallelly launching the workers pddrive_worker.py 
-srun -N 4 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 1 -q 5 -m 1 -p 0 -i 0 -b 0 | tee a.out_seperatelaunch_worker  &
-python -u ../PYTHON/pddrive_master.py | tee a.out_seperatelaunch_master 
+# srun -N 4 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 1 -q 5 -m 1 -p 0 -i 0 -b 0 | tee a.out_seperatelaunch_worker  &
+# python -u ../PYTHON/pddrive_master.py | tee a.out_seperatelaunch_master 
 
+
+srun -N 64 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 1 -q 5 -m 1 -p 0 -i 0 -b 0 | tee a.out_seperatelaunch_worker  
 
 
 
