@@ -1179,6 +1179,7 @@ extern int_t get_gpublas_nb (void);
 extern int_t get_num_gpu_streams (void);
 extern int getnGPUStreams(void);
 extern int get_mpi_process_per_gpu (void);
+extern int sizeof_int_t(void);
 /*to print out various statistics from GPU activities*/
 extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
 #endif

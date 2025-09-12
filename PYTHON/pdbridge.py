@@ -7,8 +7,15 @@ import pickle
 
 def setup_pdbridge(sp, INT64):
     # Define the function signatures as shown in your original code
+    sp.sizeof_int_t.argtypes = None
+    sp.sizeof_int_t.restype = ctypes.c_int
+    int_t = sp.sizeof_int_t()
+    
     sp.pdbridge_init.restype = None
     if INT64 == 0:
+        if int_t != 4:
+            raise Exception("libsuperlu_dist_python has been compiled with 64-bit integers. Please recompile it with 32-bit integers or use INT64=1 in the python APIs.")
+
         sp.pdbridge_init.argtypes = [
             ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
             ctypes.POINTER(ctypes.c_int),
@@ -19,6 +26,9 @@ def setup_pdbridge(sp, INT64):
             ctypes.POINTER(ctypes.c_char_p)
         ]
     else:
+        if int_t != 8:
+            raise Exception("libsuperlu_dist_python has been compiled with 32-bit integers. Please recompile it with 64-bit integers or use INT64=0 in the python APIs.")
+
         sp.pdbridge_init.argtypes = [
             ctypes.c_int, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64,
             ctypes.POINTER(ctypes.c_int64),

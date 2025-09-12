@@ -23,7 +23,7 @@ for i in range(N_GP_iter):
         m = (a.T @ a) + scipy.sparse.identity(n)
         print("   sparsity: ", float(m.nnz)/n**2, "nnz(A): ", m.nnz)
 
-        print("-- LU factor covariance matrix: ",n)
+        print("-- LU factor covariance matrix with ",n," samples")
         superlu_factor(m, INT64, algo3d, verbosity)
 
         print("-- use logdet and solve to compute likelihood: ")

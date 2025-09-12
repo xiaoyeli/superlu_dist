@@ -1522,3 +1522,5 @@ int get_mpi_process_per_gpu ()
       }
 }
 
+int sizeof_int_t() { return sizeof(int_t); }
+
