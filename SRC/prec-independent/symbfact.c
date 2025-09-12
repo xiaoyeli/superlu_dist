@@ -191,7 +191,7 @@ int_t symbfact
     Glu_freeable->nnzLU = nnzL + nnzU - min_mn;	
     /* Apply perm_r to L; Compress LSUB array. */
     nnzLSUB = fixupL_dist(min_mn, perm_r, Glu_persist, Glu_freeable);
-
+#if ( PRNTlevel>=1 )
     if ( !pnum && (options->PrintStat == YES)) {
 	nnzLU = nnzL + nnzU - min_mn;				   
 	printf("\tmatrix dimension  " IFMT "\n", min_mn);
@@ -202,6 +202,7 @@ int_t symbfact
 	printf("\tfill ratio        " "%8.1f" "\n", (float)nnzLU/nnz);
 	printf("\tnonzeros in LSUB  " IFMT "\n", nnzLSUB);
     }
+#endif	
     SUPERLU_FREE(iwork);
     SUPERLU_FREE(i32work);
 

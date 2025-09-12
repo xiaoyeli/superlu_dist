@@ -18,6 +18,7 @@ module load cudatoolkit
 module load cray-libsci
 module load python/3.11
 ulimit -s unlimited
+
 #MPI settings:
 ################################################# 
 export MPICH_GPU_SUPPORT_ENABLED=1
@@ -33,7 +34,8 @@ NTH=4 # number of OMP threads
 
 #SUPERLU settings:
 ################################################# 
-export SUPERLU_PYTHON_LIB_PATH=../build/PYTHON/
+export SUPERLU_PYTHON_LIB_PATH=/global/cfs/cdirs/m4872/superlu_dist_python_09_11_25/install/lib/PYTHON/
+export PYTHONPATH=$SUPERLU_PYTHON_LIB_PATH:$PYTHONPATH
 export SUPERLU_LBS=GD  
 export SUPERLU_ACC_OFFLOAD=1 # whether to do CPU or GPU numerical factorization
 export GPU3DVERSION=0 # whether to do use the latest C++ numerical factorization 
@@ -103,20 +105,12 @@ export RESULT_FILE="result.bin" ## this file is used to pass solution vector and
 #################################################
 
 
-# ############### use mpirun to call the python driver 
-# srun -N 4 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive.py -c $NCOL -r $NROW -d $NPZ -s 1 -q 5 -m 1 -p 0 -i 0 -b 0 | tee a.out_singlelaunch 
-
-
 ############## sequentially call the python driver pddrive_master.py, but parallelly launching the workers pddrive_worker.py 
 rm -rf $CONTROL_FILE
 rm -rf $DATA_FILE
 rm -rf $RESULT_FILE
-srun -N $NODE_VAL -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 4 -m 1 -p 0 -i 0 -b 0 | tee a.out_seperatelaunch_worker  &
-python -u ../PYTHON/pddrive_master.py | tee a.out_seperatelaunch_master 
-
-
-# srun -N 64 -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ../PYTHON/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 1 -q 5 -m 1 -p 0 -i 0 -b 0 | tee a.out_seperatelaunch_worker  
-
+srun -N $NODE_VAL -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores python -u ${SUPERLU_PYTHON_LIB_PATH}/pddrive_worker.py -c $NCOL -r $NROW -d $NPZ -s 0 -q 4 -m 1 -p 0 -i 0 -b 0 -t 0 | tee a.out_seperatelaunch_worker  &
+python -u ../PYTHON/GP_demo.py | tee a.out_seperatelaunch_master 
 
 
 

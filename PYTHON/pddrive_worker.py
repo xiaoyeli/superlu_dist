@@ -22,9 +22,9 @@ if(rank==0):
 
 
 ######################## define the files used to communicate between masters and workers
-CONTROL_FILE = "control.txt"
-DATA_FILE    = "data.bin"
-RESULT_FILE  = "result.bin"
+CONTROL_FILE=os.getenv("CONTROL_FILE", "control.txt")
+DATA_FILE=os.getenv("DATA_FILE", "data.bin")
+RESULT_FILE=os.getenv("RESULT_FILE", "result.bin")  
 poll_interval = 0.1
 
 

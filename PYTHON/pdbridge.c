@@ -89,7 +89,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     double   *berr;
     double   *b, *xtrue;
     int    m1, n1;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, sympattern;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, sympattern, printstat;
     int      iam, info, ldb, ldx;
     char     **cpp, c, *postfix;;
     FILE *fp;
@@ -114,6 +114,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     ir = -1;
     symbfact = -1;
     sympattern=0;
+    printstat=0;
     batch = 0;
 
     /* ------------------------------------------------------------
@@ -154,6 +155,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     options.ReplaceTinyPivot = YES;
 #endif
     (slu_obj->options).ReplaceTinyPivot = YES;
+    (slu_obj->options).PrintStat = NO;
 
     /* Parse command line argv[], may modify default options */
     for (cpp = argv+1; *cpp; ++cpp) {
@@ -164,6 +166,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
             case 'h':
                 printf("Options:\n");
                 printf("\t-m <int>: symmetric pattern  (default %4d)\n", sympattern);
+                printf("\t-t <int>: print statistics   (default %4d)\n", printstat);
                 printf("\t-r <int>: process rows       (default %4d)\n", nprow);
                 printf("\t-c <int>: process columns    (default %4d)\n", npcol);
                 printf("\t-p <int>: row permutation    (default %4d)\n", (slu_obj->options).RowPerm);
@@ -191,6 +194,8 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
             case 'b': batch = atoi(*cpp);
                     break;
             case 'm': sympattern = atoi(*cpp);
+                    break;                
+            case 't': printstat = atoi(*cpp);
                     break;                    
 	    }
 	} else { /* Last arg is considered a filename */
@@ -208,6 +213,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     if (ir != -1) (slu_obj->options).IterRefine = ir;
     if (symbfact != -1) (slu_obj->options).ParSymbFact = symbfact;
     if (sympattern==1) (slu_obj->options).SymPattern = YES;
+    if (printstat==1) (slu_obj->options).PrintStat = YES;
 
     int_t superlu_acc_offload = sp_ienv_dist(10, &(slu_obj->options)); //get_acc_offload();
     
@@ -226,10 +232,10 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
             double t1 = SuperLU_timer_();
             gpuFree(0);
             double t2 = SuperLU_timer_();
-            if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+            if(!myrank && printstat==1)printf("first gpufree time: %7.4f\n",t2-t1);
             gpublasHandle_t hb;
             gpublasCreate(&hb);
-            if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+            if(!myrank && printstat==1)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
 	}
 #endif
@@ -239,19 +245,19 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
 	MPI_Query_thread(&omp_mpi_level);
         switch (omp_mpi_level) {
           case MPI_THREAD_SINGLE:
-		printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
+		if(printstat==1)printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
 		fflush(stdout);
 	        break;
           case MPI_THREAD_FUNNELED:
-		printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
+		if(printstat==1)printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
 		fflush(stdout);
 	        break;
           case MPI_THREAD_SERIALIZED:
-		printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
+		if(printstat==1)printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
 		fflush(stdout);
 	        break;
           case MPI_THREAD_MULTIPLE:
-		printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
+		if(printstat==1)printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
 		fflush(stdout);
 	        break;
         }
@@ -263,21 +269,21 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
-	printf("__INTEL_COMPILER is defined\n");
+	if(printstat==1)printf("__INTEL_COMPILER is defined\n");
 #endif
-	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+	if(printstat==1)printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
 
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
-	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+	if(printstat==1)printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
 	// printf("Input matrix file:\t%s\n", *cpp);
-        printf("Process grid:\t\t%d X %d\n", (int)(slu_obj->grid).nprow, (int)(slu_obj->grid).npcol);
+        if(printstat==1)printf("Process grid:\t\t%d X %d\n", (int)(slu_obj->grid).nprow, (int)(slu_obj->grid).npcol);
 	fflush(stdout);
     }
 
     /* print solver options */
     if (!iam) {
-	print_options_dist(&(slu_obj->options));
+	if(printstat==1)print_options_dist(&(slu_obj->options));
 	fflush(stdout);
     }
 
@@ -330,7 +336,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     double *b, *xtrue;
     int_t m1, n1;
     int nprow, npcol, npdep;
-    int equil, colperm, rowperm, ir, lookahead, sympattern, symbfact;
+    int equil, colperm, rowperm, ir, lookahead, sympattern, symbfact, printstat;
     int iam, info, ldb, ldx;
     char **cpp, c, *suffix;
     FILE *fp;
@@ -356,6 +362,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     lookahead = -1;
     symbfact = -1;
     sympattern=0;    
+    printstat=0;    
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -414,6 +421,8 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
             case 's': symbfact = atoi(*cpp);
                     break;                      
             case 'm': sympattern = atoi(*cpp);
+                    break;               
+            case 't': printstat = atoi(*cpp);
                     break;   
             }
         }
@@ -447,6 +456,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     set_default_options_dist (&(slu_obj->options));
     (slu_obj->options).Algo3d = YES;
     (slu_obj->options).IterRefine = NOREFINE;
+    (slu_obj->options).PrintStat = NO;
     // options.ParSymbFact       = YES;
     // options.ColPerm           = PARMETIS;
 #if 0
@@ -469,6 +479,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     if (lookahead != -1) (slu_obj->options).num_lookaheads = lookahead;
     if (symbfact != -1) (slu_obj->options).ParSymbFact = symbfact;
     if (sympattern==1) (slu_obj->options).SymPattern = YES;
+    if (printstat==1) (slu_obj->options).PrintStat = YES;
 
     //////* this test SolveOnly*/
     // options.SolveOnly = YES;
@@ -506,10 +517,10 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
         double t1 = SuperLU_timer_();
         gpuFree(0);
         double t2 = SuperLU_timer_();
-        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        if(!myrank && printstat==1)printf("first gpufree time: %7.4f\n",t2-t1);
         gpublasHandle_t hb;
         gpublasCreate(&hb);
-        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        if(!myrank && printstat==1)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
         gpublasDestroy(hb);
 	}
 #endif
@@ -518,19 +529,19 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
 	MPI_Query_thread(&omp_mpi_level);
 	switch (omp_mpi_level) {
 	case MPI_THREAD_SINGLE:
-	    printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
+	    if(printstat==1)printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
 	    fflush(stdout);
 	    break;
 	case MPI_THREAD_FUNNELED:
-	    printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
+	    if(printstat==1)printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
 	    fflush(stdout);
 	    break;
 	case MPI_THREAD_SERIALIZED:
-	    printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
+	    if(printstat==1)printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
 	    fflush(stdout);
 	    break;
 	case MPI_THREAD_MULTIPLE:
-	    printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
+	    if(printstat==1)printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
 	    fflush(stdout);
 	    break;
 	}
@@ -542,15 +553,15 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     if (!iam) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
-	printf("__INTEL_COMPILER is defined\n");
+	if(printstat==1)printf("__INTEL_COMPILER is defined\n");
 #endif
-	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+	if(printstat==1)printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
 
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
-	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+	if(printstat==1)printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
 	// printf("Input matrix file:\t%s\n", *cpp);
-	printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
+	if(printstat==1)printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
 	//printf("2D Process grid: %d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }

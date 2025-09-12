@@ -46,14 +46,13 @@ add_custom_target(python
 
 add_dependencies(python superlu_dist_python)
 
-install(TARGETS superlu_dist_python
-# DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
-)
+install(TARGETS superlu_dist_python DESTINATION "${INSTALL_LIB_DIR}")
+install(TARGETS superlu_dist_python DESTINATION "${INSTALL_LIB_DIR}/PYTHON")
 install(FILES pddrive.py DESTINATION "${INSTALL_LIB_DIR}/PYTHON")
 install(FILES pdbridge.py DESTINATION "${INSTALL_LIB_DIR}/PYTHON")
+install(FILES pddrive_worker.py DESTINATION "${INSTALL_LIB_DIR}/PYTHON")
+install(FILES pddrive_master.py DESTINATION "${INSTALL_LIB_DIR}/PYTHON")
+install(FILES GP_demo.py DESTINATION "${INSTALL_LIB_DIR}/PYTHON")
 
 
 

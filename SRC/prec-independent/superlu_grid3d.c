@@ -56,8 +56,10 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
     
     int get_cur_dev;
     gpuGetDevice(&get_cur_dev);
+#if ( PRNTlevel>=1 )     
     printf("** MPI rank %d, gpu=%d **\n",rank,get_cur_dev);
     fflush(stdout);
+#endif
     }
 
 #endif

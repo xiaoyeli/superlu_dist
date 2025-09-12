@@ -16,12 +16,13 @@ at the top-level directory.
 #include "gpu_api_utils.h"
  void DisplayHeader()
 {
+#if ( PRNTlevel>=1 )    
     const int kb = 1024;
     const int mb = kb * kb;
     int version;
     // cout << "NBody.GPU" << endl << "=========" << endl << endl;
     
-    gpuRuntimeGetVersion( &version ); 
+    gpuRuntimeGetVersion( &version );     
     printf("GPU Driver version:   v %d\n",version);
     //cout << "Thrust version: v" << THRUST_MAJOR_VERSION << "." << THRUST_MINOR_VERSION << endl << endl; 
 
@@ -57,6 +58,7 @@ at the top-level directory.
         // cout << "  Max grid dimensions:  [ " << props.maxGridSize[0] << ", " << props.maxGridSize[1]  << ", " << props.maxGridSize[2] << " ]" << endl;
         // cout << endl;
     }
+#endif
 }
 
 

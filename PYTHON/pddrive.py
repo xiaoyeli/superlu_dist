@@ -25,7 +25,7 @@ if(rank==0):
 INT64 = 1 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
 algo3d = 0 # whether to use 2D or 3D factorizations
 rng = np.random.default_rng()
-n = 4000000
+n = 4000
 nrhs = 1
 use_cov = 1
 
