@@ -178,7 +178,10 @@ while True:
     if(rank==0):    
         ####################### signal the master that the work (init, factor, solve, logdet, free) has been completed
         with open(CONTROL_FILE, "w") as f:
-            f.write("done")
+            if(flag=="free"):
+                f.write("clean")                
+            else:
+                f.write("done")
 
 if(rank==0):    
     ####################### signal the master that the work (terminate) has been completed and the MPI communicator will be released

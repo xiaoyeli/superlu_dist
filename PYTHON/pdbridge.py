@@ -94,10 +94,19 @@ def wait_for_flag(expected_flag, control_file, poll_interval=0.01):
                 return True
         time.sleep(poll_interval)
         
+
 ####################### initialization and factorization
 def superlu_factor(KV, INT64=1, algo3d=0, verbosity=False):
     start = time.time()
     CONTROL_FILE=os.getenv("CONTROL_FILE", "control.txt")
+
+    # The following if test makes sure superlu cleans up the factorization is there is one 
+    if os.path.exists(CONTROL_FILE):
+        with open(CONTROL_FILE, "r") as f:
+            flag = f.read().strip()
+        if flag != "clean":
+            superlu_freeLU(verbosity)
+
     DATA_FILE=os.getenv("DATA_FILE", "data.bin")
     with open(DATA_FILE, "wb") as f:
         pickle.dump((KV,INT64,algo3d), f)
@@ -157,7 +166,7 @@ def superlu_freeLU(verbosity=False):
     CONTROL_FILE=os.getenv("CONTROL_FILE", "control.txt")
     with open(CONTROL_FILE, "w") as f:
         f.write("free")
-    wait_for_flag("done", CONTROL_FILE)
+    wait_for_flag("clean", CONTROL_FILE)
     end = time.time()
     if verbosity==True:
         print(f"Time spent in pdbridge_free: {end - start} seconds")

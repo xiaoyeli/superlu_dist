@@ -31,9 +31,9 @@ for i in range(N_GP_iter):
         xb = np.random.rand(n,1).astype(np.float64) 
         superlu_solve(xb, verbosity)
 
-        if(k != N_MCMC_iter-1):
-            print("-- free LU factors: ") #### Don't free LU factors at the last MCMC iteration, as the LU factors are needed for performing inference once hyperparemters are optimized 
-            superlu_freeLU(verbosity)
+        # if(k != N_MCMC_iter-1):
+        #     print("-- free LU factors: ") #### Don't free LU factors at the last MCMC iteration, as the LU factors are needed for performing inference once hyperparemters are optimized 
+        #     superlu_freeLU(verbosity)
 
     print("++ Perform inference or aquization function optimization here ... ")
     for ii in range(N_EI_search_iter):
@@ -41,9 +41,9 @@ for i in range(N_GP_iter):
         superlu_solve(xb, verbosity)
 
     print("++ Add one more sample here ... ")
-    superlu_freeLU(verbosity)
     n = n + 1
     ####################################################################################################
 
 print("++ Terminate SuperLU (after this no more superLU APIs can be called) ")
+superlu_freeLU(verbosity) # this call is optional as superlu_terminate will clean up everything
 superlu_terminate(verbosity)
