@@ -89,7 +89,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     double   *berr;
     double   *b, *xtrue;
     int    m1, n1;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, sympattern, printstat;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, sympattern, printstat, tinyp;
     int      iam, info, ldb, ldx;
     char     **cpp, c, *postfix;;
     FILE *fp;
@@ -116,6 +116,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     sympattern=0;
     printstat=0;
     batch = 0;
+    tinyp = 0;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -154,7 +155,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     options.Equil = NO;
     options.ReplaceTinyPivot = YES;
 #endif
-    (slu_obj->options).ReplaceTinyPivot = YES;
+    // (slu_obj->options).ReplaceTinyPivot = YES;
     (slu_obj->options).PrintStat = NO;
 
     /* Parse command line argv[], may modify default options */
@@ -196,6 +197,8 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
             case 'm': sympattern = atoi(*cpp);
                     break;                
             case 't': printstat = atoi(*cpp);
+                    break;               
+            case 'n': tinyp = atoi(*cpp);
                     break;                    
 	    }
 	} else { /* Last arg is considered a filename */
@@ -213,7 +216,9 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     if (ir != -1) (slu_obj->options).IterRefine = ir;
     if (symbfact != -1) (slu_obj->options).ParSymbFact = symbfact;
     if (sympattern==1) (slu_obj->options).SymPattern = YES;
+    if (tinyp==1) (slu_obj->options).ReplaceTinyPivot = YES;
     if (printstat==1) (slu_obj->options).PrintStat = YES;
+    (slu_obj->options).Algo3d = NO;
 
     int_t superlu_acc_offload = sp_ienv_dist(10, &(slu_obj->options)); //get_acc_offload();
     
@@ -336,7 +341,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     double *b, *xtrue;
     int_t m1, n1;
     int nprow, npcol, npdep;
-    int equil, colperm, rowperm, ir, lookahead, sympattern, symbfact, printstat;
+    int equil, colperm, rowperm, ir, lookahead, sympattern, symbfact, printstat, tinyp;
     int iam, info, ldb, ldx;
     char **cpp, c, *suffix;
     FILE *fp;
@@ -363,6 +368,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     symbfact = -1;
     sympattern=0;    
     printstat=0;    
+    tinyp=0;    
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -423,6 +429,8 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
             case 'm': sympattern = atoi(*cpp);
                     break;               
             case 't': printstat = atoi(*cpp);
+                    break;               
+            case 'n': tinyp = atoi(*cpp);
                     break;   
             }
         }
@@ -467,7 +475,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     options.ReplaceTinyPivot = YES;
 #endif
     
-    (slu_obj->options).ReplaceTinyPivot = YES;
+    // (slu_obj->options).ReplaceTinyPivot = YES;
     
     if ( batchCount > 0 )
         (slu_obj->options).batchCount = batchCount;
@@ -480,6 +488,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     if (symbfact != -1) (slu_obj->options).ParSymbFact = symbfact;
     if (sympattern==1) (slu_obj->options).SymPattern = YES;
     if (printstat==1) (slu_obj->options).PrintStat = YES;
+    if (tinyp==1) (slu_obj->options).ReplaceTinyPivot = YES;
 
     //////* this test SolveOnly*/
     // options.SolveOnly = YES;
@@ -491,8 +500,8 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
 
     iam = slu_obj->grid3d.iam;
     if (!iam) {
-	print_sp_ienv_dist(&(slu_obj->options));
-	print_options_dist(&(slu_obj->options));
+	if (printstat==1)print_sp_ienv_dist(&(slu_obj->options));
+	if (printstat==1)print_options_dist(&(slu_obj->options));
 	fflush(stdout);
     }
     
@@ -838,7 +847,6 @@ void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global)
         MPI_Bcast( b_global, m*nrhs, MPI_DOUBLE, 0, (slu_obj->grid).comm );
     }
 
-
     /* Compute the number of rows to be distributed to local process */
     m_loc = m / ((slu_obj->grid).nprow * (slu_obj->grid).npcol); 
     m_loc_fst = m_loc;
@@ -875,7 +883,6 @@ void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global)
 	    b_global[j*m+row] = b[j*m_loc+i] ;
 	}
     }
-
     PStatPrint(&(slu_obj->options), &(slu_obj->stat), &(slu_obj->grid));        /* Print the statistics. */
     // slu_obj->options.Fact = FACTORED;
 

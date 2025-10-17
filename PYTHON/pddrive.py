@@ -80,6 +80,7 @@ if(len(argv)==1): # options are not passed via command line, set them manually h
     argv.extend(['-s', '0'])  # parallel symbolic factorization, needs -q to be 5
     argv.extend(['-i', '0'])  # whether to use iterative refinement 0, 1, 2
     argv.extend(['-m', '0'])  # whether to use symmetric pattern 0 or 1
+    argv.extend(['-n', '1'])  # whether to use tiny pivot replacement
 argc = len(argv)
 if(rank==0):    
     print('SuperLU options: ',argv[1:])

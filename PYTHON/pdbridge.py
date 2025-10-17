@@ -4,6 +4,7 @@ import sys
 from sys import platform
 import time
 import pickle
+import numpy as np
 
 def setup_pdbridge(sp, INT64):
     # Define the function signatures as shown in your original code
@@ -128,6 +129,9 @@ def superlu_factor(KV, INT64=1, algo3d=0, verbosity=False):
 
 ####################### solve 
 def superlu_solve(vec, verbosity=False):
+    vec = np.asarray(vec)  
+    if vec.ndim == 1:
+        vec = vec.reshape(-1, 1)  
     nrhs=vec.shape[-1]
     start = time.time()
     CONTROL_FILE=os.getenv("CONTROL_FILE", "control.txt")
@@ -139,7 +143,8 @@ def superlu_solve(vec, verbosity=False):
         f.write("solve")
     wait_for_flag("done", CONTROL_FILE)
     with open(RESULT_FILE, "rb") as f:
-        vec = pickle.load(f)
+        vec_out = pickle.load(f)
+        np.copyto(vec, vec_out)
     end = time.time()
     if verbosity==True:
         print(f"Time spent in pdbridge_solve: {end - start} seconds")

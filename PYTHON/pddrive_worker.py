@@ -89,6 +89,7 @@ while True:
             argv.extend(['-s', '0'])  # parallel symbolic factorization, needs -q to be 5
             argv.extend(['-i', '0'])  # whether to use iterative refinement 0, 1, 2
             argv.extend(['-m', '0'])  # whether to use symmetric pattern 0 or 1
+            argv.extend(['-n', '1'])  # whether to use tiny pivot replacement
         argc = len(argv)
         if(rank==0):    
             print('SuperLU options: ',argv[1:])
@@ -137,6 +138,7 @@ while True:
             with open(DATA_FILE, "rb") as f:
                 xb,nrhs = pickle.load(f)
             nrhs = comm.bcast(nrhs, root=0)
+            xb = np.ascontiguousarray(xb, dtype=np.float64)            
         else:
             nrhs=-1  
             nrhs = comm.bcast(nrhs, root=0)

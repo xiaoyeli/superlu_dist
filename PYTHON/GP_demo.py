@@ -3,12 +3,12 @@ import scipy
 from pdbridge import *
 
 ######## Simulating the MCMC/LBFGS iterations 
-n=4000 # starting number of samples, increment 1 each GP iteration
-N_GP_iter=2
+n=1000 # starting number of samples, increment 1 each GP iteration
+N_GP_iter=1
 N_MCMC_iter=10
 N_EI_search_iter=10
 
-INT64 = 1 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
+INT64 = 0 # whether to use 64bit integer (requring superlu_dist to be compiled with 64-bit indexing)
 algo3d = 0 # whether to use 2D or 3D factorizations
 rng = np.random.default_rng()
 verbosity=True
