@@ -123,6 +123,7 @@ int main(int argc, char *argv[])
     // options.lookahead_etree   = YES;
     // options.ILU_level = 0;
     // options.ReplaceTinyPivot  = YES;
+    // options.ColPerm = NATURAL;
 
     
 #if 0
