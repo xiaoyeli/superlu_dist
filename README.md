@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 9.1.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 9.2.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -35,7 +35,7 @@ should serve as the Users' Guide.
 Table of Contents
 =================
 
-* [SuperLU_DIST (version 9.1.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-910--)
+* [SuperLU_DIST (version 9.2.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-920--)
 * [Directory structure of the source code](#directory-structure-of-the-source-code)
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
@@ -60,7 +60,7 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
-# SuperLU_DIST (version 9.1.0)  <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 9.2.0)  <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -568,4 +568,5 @@ Novembe 9, 2023     Version 8.2.0
 Novembe 17, 2023    Version 8.2.1
 May 8, 2024         Version 9.0.0
 November 10, 2024   Version 9.1.0
+October 21, 2025    Version 9.2.0
 ```
