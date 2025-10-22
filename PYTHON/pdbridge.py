@@ -85,7 +85,7 @@ def load_library(INT64):
 ###################################################################################################
 ###########  define the APIs
 
-def wait_for_flag(expected_flag, control_file, poll_interval=0.01):
+def wait_for_flag(expected_flag, control_file, poll_interval=0.001):
     """Poll the control file until its content equals the expected flag."""
     while True:
         if os.path.exists(control_file):

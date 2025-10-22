@@ -25,7 +25,7 @@ if(rank==0):
 CONTROL_FILE=os.getenv("CONTROL_FILE", "control.txt")
 DATA_FILE=os.getenv("DATA_FILE", "data.bin")
 RESULT_FILE=os.getenv("RESULT_FILE", "result.bin")  
-poll_interval = 0.1
+poll_interval = 0.001
 
 
 # Ensure the file exists; if not, wait a moment and try again.
