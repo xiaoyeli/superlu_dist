@@ -134,15 +134,12 @@ while True:
     elif(flag=="solve"):              
         ####################### solve 
         #####  read in the RHS by rank 0
+        nrhs=-1  
+        xb = np.random.rand(1).astype(np.float64) 
         if rank == 0:
             with open(DATA_FILE, "rb") as f:
                 xb,nrhs = pickle.load(f)
-            nrhs = comm.bcast(nrhs, root=0)
             xb = np.ascontiguousarray(xb, dtype=np.float64)            
-        else:
-            nrhs=-1  
-            nrhs = comm.bcast(nrhs, root=0)
-            xb = np.random.rand(n*nrhs).astype(np.float64) # pdbridge_solve will broadcast xb on rank 0 to all ranks      
 
         sp.pdbridge_solve(
             ctypes.byref(pyobj),            # void **pyobj

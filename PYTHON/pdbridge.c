@@ -811,11 +811,11 @@ out:
 void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global)
 {
     slu_handle* slu_obj = (slu_handle*)(*pyobj);
-    int_t    m_loc, fst_row, nnz_loc,row;
+    int_t    m_loc, m_loc1, fst_row, fst_row1, nnz_loc,row;
     int_t    m_loc_fst; /* Record m_loc of the first p-1 processors,
 			   when mod(m, p) is not zero. */ 
     double   *berr;
-    double   *b;
+    double   *b, *btmp, *b_global_tmp;
     int    m1, n1;
     int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
     int      iam, info, ldb, ldx;
@@ -833,6 +833,7 @@ void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global)
     result_max[1]=0.0;
     MPI_Comm SubComm;
 
+    MPI_Bcast( &nrhs, 1, MPI_INT, 0, (slu_obj->grid).comm );
 
     /* Bail out if I do not belong in the grid. */
     iam = (slu_obj->grid).iam;
@@ -840,12 +841,6 @@ void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global)
     npcol = (slu_obj->grid).npcol;
     if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
     m = (slu_obj->A).nrow;
-
-    if (iam == 0) {
-        MPI_Bcast( b_global, m*nrhs, MPI_DOUBLE, 0, (slu_obj->grid).comm );
-    } else {
-        MPI_Bcast( b_global, m*nrhs, MPI_DOUBLE, 0, (slu_obj->grid).comm );
-    }
 
     /* Compute the number of rows to be distributed to local process */
     m_loc = m / ((slu_obj->grid).nprow * (slu_obj->grid).npcol); 
@@ -862,12 +857,53 @@ void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global)
     /* Get the local B */
     if ( !(b = doubleMalloc_dist(m_loc*nrhs)) )
         ABORT("Malloc fails for rhs[]");
-    for (int j =0; j < nrhs; ++j) {
-	for (int i = 0; i < m_loc; ++i) {
-	    row = fst_row + i;
-	    b[j*m_loc+i] = b_global[j*m+row];
-	}
+
+
+    if(nprow * npcol>1){
+        if ( !(btmp = doubleMalloc_dist(m_loc * nrhs)) )
+            ABORT("Malloc fails for rhs[]");
+        int *counts = NULL, *displs = NULL;
+        if (iam == 0) {
+            counts = (int *) intMalloc_dist(nprow * npcol);
+            displs = (int *) intMalloc_dist(nprow * npcol);
+            if ( !(b_global_tmp = doubleMalloc_dist(m * nrhs)) )
+                ABORT("Malloc fails for b_global_tmp[]");
+            for (int j = 0; j < nrhs; ++j) {
+                for (int i = 0; i < m; ++i) {
+                    b_global_tmp[j + i * nrhs] = b_global[j * m + i];
+                }
+            }
+        }
+        m_loc1 = m_loc*nrhs;
+        fst_row1 = fst_row*nrhs;
+        MPI_Gather(&m_loc1, 1, MPI_INT, counts, 1, MPI_INT, 0, (slu_obj->grid).comm);
+        MPI_Gather(&fst_row1, 1, MPI_INT, displs, 1, MPI_INT, 0, (slu_obj->grid).comm);
+        MPI_Scatterv(b_global_tmp, counts, displs, MPI_DOUBLE,  btmp, m_loc * nrhs, MPI_DOUBLE, 0, (slu_obj->grid).comm);
+        
+        for (int j = 0; j < nrhs; ++j)
+        {
+            for (int i = 0; i < m_loc; ++i)
+            {
+                b[j * m_loc + i] = btmp[j + i * nrhs];
+            }
+        }
+        if (iam == 0) {
+            SUPERLU_FREE(counts);
+            SUPERLU_FREE(displs);
+            SUPERLU_FREE(b_global_tmp);
+        }
+        SUPERLU_FREE(btmp);
+
+    } else {
+        for (int j =0; j < nrhs; ++j) {
+        for (int i = 0; i < m_loc; ++i) {
+            row = fst_row + i;
+            b[j*m_loc+i] = b_global[j*m+row];
+        }
+        }
     }
+
+
     ldb = m_loc;
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
@@ -877,12 +913,51 @@ void pdbridge_solve2d(void ** pyobj, int nrhs, double   *b_global)
     pdgssvx(&(slu_obj->options), &(slu_obj->A), &(slu_obj->ScalePermstruct), b, ldb, nrhs, &(slu_obj->grid),
 	    &(slu_obj->LUstruct), &(slu_obj->SOLVEstruct), berr, &(slu_obj->stat), &info);
 
-    for (int j =0; j < nrhs; ++j) {
-	for (int i = 0; i < m_loc; ++i) {
-	    row = fst_row + i;
-	    b_global[j*m+row] = b[j*m_loc+i] ;
-	}
+
+    if(nprow * npcol>1){
+        if ( !(btmp = doubleMalloc_dist(m_loc * nrhs)) )
+            ABORT("Malloc fails for rhs[]");
+        for (int j = 0; j < nrhs; ++j)
+        {
+            for (int i = 0; i < m_loc; ++i)
+            {
+                btmp[j + i * nrhs] = b[j * m_loc + i];
+            }
+        }
+        int *counts = NULL, *displs = NULL;
+        if (iam == 0) {
+            counts = (int *) intMalloc_dist(nprow * npcol);
+            displs = (int *) intMalloc_dist(nprow * npcol);
+            if ( !(b_global_tmp = doubleMalloc_dist(m * nrhs)) )
+                ABORT("Malloc fails for b_global_tmp[]");
+        }
+        m_loc1 = m_loc*nrhs;
+        fst_row1 = fst_row*nrhs;
+        MPI_Gather(&m_loc1, 1, MPI_INT, counts, 1, MPI_INT, 0, (slu_obj->grid).comm);
+        MPI_Gather(&fst_row1, 1, MPI_INT, displs, 1, MPI_INT, 0, (slu_obj->grid).comm);
+        MPI_Gatherv(btmp, m_loc * nrhs, MPI_DOUBLE, b_global_tmp, counts, displs, MPI_DOUBLE, 0, (slu_obj->grid).comm);
+        if (iam == 0) {
+            for (int j = 0; j < nrhs; ++j) {
+                for (int i = 0; i < m; ++i) {
+                    b_global[j * m + i] = b_global_tmp[j + i * nrhs];
+                }
+            }
+            SUPERLU_FREE(counts);
+            SUPERLU_FREE(displs);
+            SUPERLU_FREE(b_global_tmp);
+        }
+        SUPERLU_FREE(btmp);
+
+    } else {
+        for (int j =0; j < nrhs; ++j) {
+        for (int i = 0; i < m_loc; ++i) {
+            row = fst_row + i;
+            b_global[j*m+row] = b[j*m_loc+i] ;
+        }
+        }
     }
+
+
     PStatPrint(&(slu_obj->options), &(slu_obj->stat), &(slu_obj->grid));        /* Print the statistics. */
     // slu_obj->options.Fact = FACTORED;
 
@@ -919,7 +994,7 @@ void pdbridge_solve3d (void ** pyobj, int nrhs, double   *b_global)
     int_t    m_loc_fst; /* Record m_loc of the first p-1 processors,
 			   when mod(m, p) is not zero. */ 
     double *berr;
-    double *b, *xtrue;
+    double *b,*btmp,*b_global_tmp,*xtrue;
     int_t m1, n1;   
     int nprow, npcol, npdep;
     int equil, colperm, rowperm, ir, lookahead, sympattern;
@@ -938,16 +1013,21 @@ void pdbridge_solve3d (void ** pyobj, int nrhs, double   *b_global)
     MPI_Comm SubComm;
     int myrank, p;
 
+    MPI_Bcast( &nrhs, 1, MPI_INT, 0, (slu_obj->grid3d).comm );
+
 
     /* Bail out if I do not belong in the grid. */
     iam = (slu_obj->grid3d).iam;
+    nprow = (slu_obj->grid3d).nprow;
+    npcol = (slu_obj->grid3d).npcol;
+    npdep = (slu_obj->grid3d).npdep;
     if (iam == -1)     goto out;
     m = (slu_obj->A).nrow;
-    if (iam == 0) {
-        MPI_Bcast( b_global, m*nrhs, MPI_DOUBLE, 0, (slu_obj->grid3d).comm );
-    } else {
-        MPI_Bcast( b_global, m*nrhs, MPI_DOUBLE, 0, (slu_obj->grid3d).comm );
-    }
+    // if (iam == 0) {
+    //     MPI_Bcast( b_global, m*nrhs, MPI_DOUBLE, 0, (slu_obj->grid3d).comm );
+    // } else {
+    //     MPI_Bcast( b_global, m*nrhs, MPI_DOUBLE, 0, (slu_obj->grid3d).comm );
+    // }
 
 
     /* Compute the number of rows to be distributed to local process */
@@ -965,14 +1045,50 @@ void pdbridge_solve3d (void ** pyobj, int nrhs, double   *b_global)
     /* Get the local B */
     if ( !(b = doubleMalloc_dist(m_loc * nrhs)) )
         ABORT("Malloc fails for rhs[]");
-    for (j = 0; j < nrhs; ++j)
-    {
-        for (i = 0; i < m_loc; ++i)
+    if(nprow * npcol * npdep>1){
+        if ( !(btmp = doubleMalloc_dist(m_loc * nrhs)) )
+            ABORT("Malloc fails for rhs[]");
+        int *counts = NULL, *displs = NULL;
+        if (iam == 0) {
+            counts = (int *) intMalloc_dist(nprow * npcol* npdep);
+            displs = (int *) intMalloc_dist(nprow * npcol* npdep);
+            if ( !(b_global_tmp = doubleMalloc_dist(m * nrhs)) )
+                ABORT("Malloc fails for b_global_tmp[]");
+            for (int j = 0; j < nrhs; ++j) {
+                for (int i = 0; i < m; ++i) {
+                    b_global_tmp[j + i * nrhs] = b_global[j * m + i];
+                }
+            }
+        }
+        int m_loc1 = m_loc*nrhs;
+        int fst_row1 = fst_row*nrhs;
+        MPI_Gather(&m_loc1, 1, MPI_INT, counts, 1, MPI_INT, 0, (slu_obj->grid3d).comm);
+        MPI_Gather(&fst_row1, 1, MPI_INT, displs, 1, MPI_INT, 0, (slu_obj->grid3d).comm);
+        MPI_Scatterv(b_global_tmp, counts, displs, MPI_DOUBLE,  btmp, m_loc * nrhs, MPI_DOUBLE, 0, (slu_obj->grid3d).comm);
+        
+        for (int j = 0; j < nrhs; ++j)
         {
+            for (int i = 0; i < m_loc; ++i)
+            {
+                b[j * m_loc + i] = btmp[j + i * nrhs];
+            }
+        }
+        if (iam == 0) {
+            SUPERLU_FREE(counts);
+            SUPERLU_FREE(displs);
+            SUPERLU_FREE(b_global_tmp);
+        }
+        SUPERLU_FREE(btmp);
+
+    } else {
+        for (int j =0; j < nrhs; ++j) {
+        for (int i = 0; i < m_loc; ++i) {
             row = fst_row + i;
-            b[j * m_loc + i] = b_global[j*m+row];
+            b[j*m_loc+i] = b_global[j*m+row];
+        }
         }
     }
+
     ldb = m_loc;
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
@@ -983,11 +1099,47 @@ void pdbridge_solve3d (void ** pyobj, int nrhs, double   *b_global)
                &(slu_obj->LUstruct), &(slu_obj->SOLVEstruct), berr, &(slu_obj->stat), &info);
 
 
-    for (int j =0; j < nrhs; ++j) {
-	for (int i = 0; i < m_loc; ++i) {
-	    row = fst_row + i;
-	    b_global[j*m+row] = b[j*m_loc+i] ;
-	}
+    if(nprow * npcol * npdep>1){
+        if ( !(btmp = doubleMalloc_dist(m_loc * nrhs)) )
+            ABORT("Malloc fails for rhs[]");
+        for (int j = 0; j < nrhs; ++j)
+        {
+            for (int i = 0; i < m_loc; ++i)
+            {
+                btmp[j + i * nrhs] = b[j * m_loc + i];
+            }
+        }
+        int *counts = NULL, *displs = NULL;
+        if (iam == 0) {
+            counts = (int *) intMalloc_dist(nprow * npcol * npdep);
+            displs = (int *) intMalloc_dist(nprow * npcol * npdep);
+            if ( !(b_global_tmp = doubleMalloc_dist(m * nrhs)) )
+                ABORT("Malloc fails for b_global_tmp[]");
+        }
+        int m_loc1 = m_loc*nrhs;
+        int fst_row1 = fst_row*nrhs;
+        MPI_Gather(&m_loc1, 1, MPI_INT, counts, 1, MPI_INT, 0, (slu_obj->grid3d).comm);
+        MPI_Gather(&fst_row1, 1, MPI_INT, displs, 1, MPI_INT, 0, (slu_obj->grid3d).comm);
+        MPI_Gatherv(btmp, m_loc * nrhs, MPI_DOUBLE, b_global_tmp, counts, displs, MPI_DOUBLE, 0, (slu_obj->grid3d).comm);
+        if (iam == 0) {
+            for (int j = 0; j < nrhs; ++j) {
+                for (int i = 0; i < m; ++i) {
+                    b_global[j * m + i] = b_global_tmp[j + i * nrhs];
+                }
+            }
+            SUPERLU_FREE(counts);
+            SUPERLU_FREE(displs);
+            SUPERLU_FREE(b_global_tmp);
+        }
+        SUPERLU_FREE(btmp);
+
+    } else {
+        for (int j =0; j < nrhs; ++j) {
+        for (int i = 0; i < m_loc; ++i) {
+            row = fst_row + i;
+            b_global[j*m+row] = b[j*m_loc+i] ;
+        }
+        }
     }
 
 
