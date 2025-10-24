@@ -55,11 +55,9 @@ if (BUILD_STATIC_LIBS)
   )
 endif()
 
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  FILES_MATCHING PATTERN *.mod
-  )
-install(FILES superlu_dist_config.fh
+install(FILES superlu_dist_config.fh 
+  ${CMAKE_CURRENT_BINARY_DIR}/superlu_mod.mod 
+  ${CMAKE_CURRENT_BINARY_DIR}/superlupara_mod.mod
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
