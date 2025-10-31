@@ -1233,7 +1233,6 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if ( options->SolveInitialized == YES ) { /* Initialized before */
 			zSolveFinalize(options, SOLVEstruct); /* Clean up structure */
 			pzgstrs_delete_device_lsum_x(SOLVEstruct);
-			options->SolveInitialized = NO;   /* Reset the solve state */
 		}
 	    }
 
@@ -1325,7 +1324,6 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    if ( options->SolveInitialized == YES ) { /* Initialized before */
 			zSolveFinalize(options, SOLVEstruct); /* Clean up structure */
 			pzgstrs_delete_device_lsum_x(SOLVEstruct);
-			options->SolveInitialized = NO;   /* Reset the solve state */
 		    }
 		}
 

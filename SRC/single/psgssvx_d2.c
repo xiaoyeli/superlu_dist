@@ -1397,7 +1397,6 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	   because perm_r[] and/or perm_c[] is changed.    */
 	if ( options->SolveInitialized == YES ) { /* Initialized before */
 	    sSolveFinalize(options, SOLVEstruct); /* Clean up structure */
-	    options->SolveInitialized = NO;   /* Reset the solve state */
 	}
      }
 #if 0

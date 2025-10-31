@@ -1465,7 +1465,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if ( options->SolveInitialized == YES ) { /* Initialized before */
 				dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
 				pdgstrs_delete_device_lsum_x(SOLVEstruct);
-				options->SolveInitialized = NO;   /* Reset the solve state */
 			}
 			}
 
@@ -1557,7 +1556,6 @@ if (get_acc_solve()){
 			if ( options->SolveInitialized == YES ) { /* Initialized before */
 				dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
 				pdgstrs_delete_device_lsum_x(SOLVEstruct);
-				options->SolveInitialized = NO;   /* Reset the solve state */
 			}
 			}
 

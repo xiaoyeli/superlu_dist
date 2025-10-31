@@ -1416,7 +1416,6 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( options->SolveInitialized == YES ) { /* Initialized before */
 	    sSolveFinalize(options, SOLVEstruct); /* Clean up structure */
 		psgstrs_delete_device_lsum_x(SOLVEstruct);
-	    options->SolveInitialized = NO;   /* Reset the solve state */
 	}
      }
 #if 0
