@@ -1232,7 +1232,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	  	   because perm_r[] and/or perm_c[] is changed.    */
 		if ( options->SolveInitialized == YES ) { /* Initialized before */
 			sSolveFinalize(options, SOLVEstruct); /* Clean up structure */
-			psgstrs_delete_device_lsum_x(SOLVEstruct);
+			if (get_acc_solve()) psgstrs_delete_device_lsum_x(SOLVEstruct);
 		}
 	    }
 
@@ -1323,7 +1323,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		       because perm_r[] and/or perm_c[] is changed.    */
 		    if ( options->SolveInitialized == YES ) { /* Initialized before */
 			sSolveFinalize(options, SOLVEstruct); /* Clean up structure */
-			psgstrs_delete_device_lsum_x(SOLVEstruct);
+			if (get_acc_solve()) psgstrs_delete_device_lsum_x(SOLVEstruct);
 		    }
 		}
 
@@ -1603,7 +1603,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    /* Deallocate the storage associated with SOLVEstruct1 */
 		    if (nrhs > 1)
 		    {
-			psgstrs_delete_device_lsum_x(SOLVEstruct1);
+			if (get_acc_solve()) psgstrs_delete_device_lsum_x(SOLVEstruct1);
 			pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
 			SUPERLU_FREE (SOLVEstruct1);
 		    }
@@ -1778,7 +1778,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    /* Deallocate the storage associated with SOLVEstruct1 */
 		    if (nrhs > 1)
 		    {
-			psgstrs_delete_device_lsum_x(SOLVEstruct1);
+			if (get_acc_solve()) psgstrs_delete_device_lsum_x(SOLVEstruct1);
 			pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
 			SUPERLU_FREE (SOLVEstruct1);
 		    }
