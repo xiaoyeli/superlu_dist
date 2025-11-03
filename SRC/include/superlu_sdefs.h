@@ -1006,6 +1006,7 @@ extern void  sPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 			   sLocalLU_t *);
 extern void  sPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  sPrint_CompCol_triplet(SuperMatrix *);
+extern void  file_sPrint_NCPformat_triplet(FILE *, SuperMatrix *);
 extern void  sPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   sPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern int   file_sPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
@@ -1614,7 +1615,7 @@ extern void sDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
 			   Glu_persist_t *Glu_persist, sLocalLU_t *Llu);
 extern void sDumpUblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
 			   Glu_persist_t *Glu_persist, sLocalLU_t *Llu);
-    
+
 /*== end 3D prototypes ===================*/
 
 extern float *sready_x;

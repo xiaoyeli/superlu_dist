@@ -2560,6 +2560,7 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
     int_t iinfo;
     int iam = grid3d->iam;
 
+    /* Permutes the columns of the original matrix, and compute etree */
     sp_colorder(options, GA, perm_c, etree, &GAC);
 
     /* Form Pc*A*Pc' to preserve the diagonal of the matrix GAC. */
@@ -2580,6 +2581,14 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
     if (!iam)
         printf(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
                sp_ienv_dist(2, options), sp_ienv_dist(3, options), sp_ienv_dist(6, options));
+#endif
+#if (DEBUGlevel >= 1)
+    extern void file_dPrint_NCPformat_triplet(FILE *fp, SuperMatrix *A);
+    if (!iam) {
+	FILE *fp = fopen("GAC.dat", "w");
+	file_dPrint_NCPformat_triplet(fp, &GAC);
+	fclose(fp);
+    }
 #endif
 
     t = SuperLU_timer_();

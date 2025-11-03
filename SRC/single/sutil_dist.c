@@ -201,13 +201,13 @@ void sPrint_CompCol_triplet(SuperMatrix *A)
 
     int n = A->nrow;
     int_t nnz = Astore->nnz;
-    
+
     printf("\nTriplet matrix:\n");
-    printf("nrow %d, ncol %lld, nnz %lld\n", n, (long long) A->ncol, nnz);
+    printf("nrow %d, ncol %lld, nnz %lld\n", n, (long long) A->ncol, (long long) nnz);
     dp = (float *) Astore->nzval;
     colptr = Astore->colptr;
     rowind = Astore->rowind;
-    
+
     for (i = 0; i < A->ncol; ++i) {
 	for (j = colptr[i]; j < colptr[i+1]; ++j) {
 	    printf("%8d %8d\t%f\n", rowind[j], i, dp[j]);
@@ -215,6 +215,31 @@ void sPrint_CompCol_triplet(SuperMatrix *A)
     }
     printf("\nend triplet matrix\n ");
 }
+
+void file_sPrint_NCPformat_triplet(FILE *fp, SuperMatrix *A)
+{
+    NCPformat   *Astore = (NCPformat *) A->Store;
+    register int i, j;
+    float       *dp;
+    int_t *colbeg, *colend, *rowind;
+
+    int n = A->nrow;
+    int_t nnz = Astore->nnz;
+    
+    //    printf("\nTriplet matrix:\n");
+    //    printf("nrow %d, ncol %lld, nnz %lld\n", n, (long long) A->ncol, nnz);
+    dp = (float *) Astore->nzval;
+    colbeg = Astore->colbeg;
+    colend = Astore->colend;
+    rowind = Astore->rowind;
+    
+    for (j = 0; j < A->ncol; ++j) {
+	for (i = colbeg[j]; i < colend[j]; ++i) {
+	    fprintf(fp, "%8d %8d\t%f\n", rowind[i], j, dp[i]);
+	}
+    }
+    //    printf("\nend triplet matrix\n ");
+} /* end file_sPrint_NCPformat_triplet */
 
 void sPrint_Dense_Matrix_dist(SuperMatrix *A)
 {

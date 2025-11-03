@@ -226,16 +226,13 @@ int main (int argc, char *argv[])
 
 
 // //The following options test ILU
+//     options.ILU_level = 0;
 //     options.IterRefine = SLU_DOUBLE;
 //     options.lookahead_etree   = YES;
-//     options.ILU_level = 0;
 //     options.ReplaceTinyPivot  = YES;
 //     options.ColPerm = NATURAL;
 
-
-
 #if 0
-    options.ILU_level = 0;
     options.ParSymbFact       = YES;
     options.ColPerm           = PARMETIS;
     options.DiagInv           = YES; // only if SLU_HAVE_LAPACK

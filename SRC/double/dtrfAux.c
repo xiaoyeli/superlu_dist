@@ -544,8 +544,7 @@ double* dgetBigU(superlu_dist_options_t *options,
     return bigU;
 } /* dgetBigU */
 
-
-#if 0
+#if 0 //---------- not used anymore
 /* YL: Initialize 3Dpartition using only LUstruct on grid 0. Note that this is a function modifed based on dinitTrf3Dpartition */
 dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_options_t *options,
 				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
@@ -569,7 +568,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     int_t* iperm_c_supno;
     int_t *xsup;
     if (!grid3d->zscp.Iam){
-        int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
+        int_t* perm_c_supno = getPerm_c_supno(nsupers, n, options,
                                          LUstruct->etree,
     	   		                 LUstruct->Glu_persist,
 		                         LUstruct->Llu->Lrowind_bc_ptr,
@@ -940,9 +939,10 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
 #endif
     return trf3Dpartition;
 } /* dinitTrf3Dpartition_allgrid */
-#endif 
 
-#if 0
+#endif //---------- not used anymore
+
+#if 0 //---------- not used anymore
 /* This routine is called by all 3D processes, in driver pdgssvx3d(). */
 dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
@@ -956,7 +956,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Enter dinitTrf3Dpartition()");
 #endif
-    int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
+    int_t* perm_c_supno = getPerm_c_supno(nsupers, n, options,
                                          LUstruct->etree,
     	   		                 LUstruct->Glu_persist,
 		                         LUstruct->Llu->Lrowind_bc_ptr,
@@ -1126,7 +1126,8 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 #endif
     return trf3Dpartition;
 } /* end dinitTrf3Dpartition */
-#endif
+
+#endif //---------- not used anymore
 
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
 void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)

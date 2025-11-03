@@ -78,9 +78,8 @@ int_t ilu_level_symbfact
 
     Glu_freeable->xlsub = (int_t *) intCalloc_dist(n+1);
     Glu_freeable->xusub = (int_t *) intCalloc_dist(n+1);
-    int_t nnzL = 0, nnzU = 0;
     
-    /* Set up supernode partition */
+    /* ---- Set up supernode partition ---- */
     if ( options->UserDefineSupernode == NO ) {
 	Glu_persist->supno = (int_t *) SUPERLU_MALLOC(n * sizeof(int_t));
 	Glu_persist->xsup = (int_t *) SUPERLU_MALLOC((n+1) * sizeof(int_t));
@@ -100,86 +99,145 @@ int_t ilu_level_symbfact
     int_t *xlsub = Glu_freeable->xlsub;
     int_t *xsup = Glu_persist->xsup;
     int_t *supno = Glu_persist->supno;
-    int_t k, nextl = 0;
-    nsuper = (Glu_persist->supno)[n-1];
+    int_t k;
+    int_t nextl = 0, nextu = 0; // counts of size of skeleton graphs of L & U
+    int_t nnzL = 0, nnzU = 0;   // counts of actual nonzeros in L & U
     
-    /* Count nonzeros per column for L & U;
-       Diagonal block of a supernode is stored in L
-    */
+    nsuper = (Glu_persist->supno)[n-1];
+
+
+    /* ------ First pass through A: Count nonzero indices in L & U ------ */
+    /* Diagonal block of a supernode is stored in L.
+       U count is an upper bound of the skeleton graph.
+       L count is the exact supernodal skeleton graph.
+     */
     for (i = 0; i <= nsuper; ++i) { /* loop through each supernode */
 	fsupc = xsup[i];
 	xlsub[fsupc] = nextl;
-	for (j = fsupc; j < xsup[i+1]; ++j) { // loop through columns in supernode i 
-	    for (k = colbeg[j]; k < colend[j]; ++k) {
+	for (j = fsupc; j < xsup[i+1]; ++j) { // loop through columns in supernode i
+	    for (k = colbeg[j]; k < colend[j]; ++k) { // loop through column j
 		irow = rowind[k];
-		if ( irow < fsupc ) { // in U
-		    nnzU++;
-		    xusub[j+1] += 1;
-		}
+		if ( irow < fsupc ) ++nextu; // in U
 	    }
 	}
 	
-	/* only check first column of supernode in L;
+	/* For L: only check first column of a supernode;
 	   similar to fixupL_dist()
 	*/
 	for (k = colbeg[fsupc]; k < colend[fsupc]; ++k) {
 	    irow = rowind[k];
 	    if ( irow >= fsupc ) ++nextl; // in L, including diagonal block
 	}
-	for (j = fsupc+1; j < xsup[i+1]; ++j) // loop through columns in supernode i 
+	for (j = fsupc+1; j < xsup[i+1]; ++j) // remaining columns in supernode i 
 	    xlsub[j] = nextl;
-	nnzL += (nextl - xlsub[fsupc]) * (xsup[i+1]-fsupc);
+	nnzL += (nextl-xlsub[fsupc]) * (xsup[i+1]-fsupc); // exact 
     }
+
+    Glu_freeable->lsub = (int_t *) intMalloc_dist(nextl); //intMalloc_dist(nnzL);
+    Glu_freeable->usub = (int_t *) intMalloc_dist(nextu); //intMalloc_dist(nnzU);
+    int_t *lsub = Glu_freeable->lsub;
+    int_t *usub = Glu_freeable->usub;
+
+    /* ------ Second pass through A: populate indices ------ */
+    /* data structures for skeleton graph of U */
+    int krep, nseg, *segrep, *repfnz;
+    segrep = (int *) int32Malloc_dist(2*m);
+    repfnz = segrep + m;
+    ifill_dist(repfnz, m, SLU_EMPTY);
+    xusub[0] = 0;
+    nextl = nextu = 0;
+
+    for (i = 0; i <= nsuper; ++i) { /* loop through each supernode */
+	fsupc = xsup[i];
+	xlsub[fsupc] = nextl;
+
+	/* Sherry fix (11/1/2025)
+	   U segments must be stored in topological order, and only store
+	   the index of the first nonzero in the segment; 
+	   similar to set_usub() in symbact()
+	*/
+	for (j = fsupc; j < xsup[i+1]; ++j) { // loop through columns in supernode i
+	    nseg = 0;
+	    
+	    for (k = colbeg[j]; k < colend[j]; ++k) { // loop through column j
+		irow = rowind[k];
+		if ( irow < fsupc ) { // in U
+		    krep = xsup[supno[irow]+1] - 1; // last row index of supernode containing irow
+		    if ( repfnz[krep] != SLU_EMPTY ) { /* krep was visited before */
+			if ( irow < repfnz[krep] ) repfnz[krep] = irow;
+		    } else {
+			repfnz[krep] = irow;
+			segrep[nseg] = krep;
+			++nseg;
+		    }
+		}
+	    }
+
+	    /* Set up the first nonzero index of each segment.
+	       Reset repfnz[*] to prepare for the next column.
+	    */
+	    for (k = 0; k < nseg; k++) {
+		krep = segrep[k];
+		usub[nextu + k] = repfnz[krep]; // first nonzero
+		nnzU += (krep - repfnz[krep] + 1);
+		repfnz[krep] = SLU_EMPTY;
+	    }
+	    
+	    nextu += nseg;
+	    xusub[j+1] = nextu;
+	    
+	    /* The U-segments needs to be in topological order. Sorting is the simplest */
+	    isort1( xusub[j+1] - xusub[j], &usub[xusub[j]] );
+	    
+	} /* end for j ... columns in supernode i */
+	
+	/* YL: Assign usub & lsub */
+	/* Only check first column of supernode in L;
+	   similar to fixupL_dist()
+	*/
+	for (k = colbeg[fsupc]; k < colend[fsupc]; ++k) {
+	    irow = rowind[k];
+	    if ( irow >= fsupc ) { // in L, including diagonal block
+		lsub[nextl] = irow;
+		++nextl;
+	    }
+	}
+
+	/* The indices of the Diagonal block needs to be at the beginning
+	   and sorted. Sorting the whole list is simpler, although not necessary.
+	*/
+	isort1( xlsub[fsupc+1] - xlsub[fsupc], &lsub[xlsub[fsupc]] );
+	
+    } /* end for i ... supernodes */
+    
     xlsub[n] = nextl;
 
-#if ( PRNTlevel>=1 )    
-    printf(".... nnzL %lld, nnzU %lld, nextl %lld, nsuper %d\n",
-	   (long long) nnzL, (long long) nnzU, (long long) nextl, nsuper);
+    /* -------------------------------- */
+    
+#if ( PRNTlevel>=1 )
+    printf(".... nnzL %lld, nnzU %lld, nextl %lld, nextu %lld, nsuper %d\n",
+	   (long long) nnzL, (long long) nnzU, (long long) nextl, (long long) nextu, nsuper);
     fflush(stdout);
 #endif    
-    
-    /* Do prefix sum to set up column pointers */
-    for(i = 1; i <= n; i++) {
-	//Glu_freeable->xlsub[i] += Glu_freeable->xlsub[i-1];	
-	Glu_freeable->xusub[i] += Glu_freeable->xusub[i-1];
-    }
-    
+
+    assert (nnzU >= nextu && nnzL >= nextl );
+
     Glu_freeable->nnzLU = nnzU + nnzL;
     Glu_freeable->nzlmax = nnzL;
     Glu_freeable->nzumax = nnzU;
     Glu_freeable->nnzLU = nnzL + nnzU - min_mn;	
-    Glu_freeable->lsub = (int_t *) intMalloc_dist(nnzL);
-    Glu_freeable->usub = (int_t *) intMalloc_dist(nnzU); 
 
-    /* YL: Assign usub & lsub */
-    nnzU = 0;
-    for (j = 0; j < n; ++j) { // loop through each column 
-	fsupc = xsup[supno[j]];
-	for (i = colbeg[j]; i < colend[j]; ++i) {
-	    irow = rowind[i];
-	    //if(j==0){
-	    //printf("irow %5d \n",irow);
-	    //}
-	    if ( irow < fsupc ) { // in U
-		Glu_freeable->usub[nnzU++] = irow;
-	    }
-	}
-    }
+#if ( DEBUGlevel>=1 )
+    PrintInt32("lsub", Glu_freeable->xlsub[n], Glu_freeable->lsub);
+    PrintInt32("xlsub", n+1, Glu_freeable->xlsub);
+    PrintInt32("usub", Glu_freeable->xusub[n], Glu_freeable->usub);
+    PrintInt32("xusub", n+1, Glu_freeable->xusub);
+    PrintInt32("supno", n, Glu_persist->supno);
+    PrintInt32("xsup", n+1, Glu_persist->xsup);
+#endif
+
+    SUPERLU_FREE(segrep);
     
-    /* only check first column of supernode in L;
-       similar to fixupL_dist()
-    */
-    nnzL = 0;
-    for (i = 0; i <= nsuper; ++i) { // loop through each supernode
-	fsupc = xsup[i];
-	for (k = colbeg[fsupc]; k < colend[fsupc]; ++k) {
-	    irow = rowind[k];
-	    if ( irow >= fsupc ) { // in L, including diagonal block
-		Glu_freeable->lsub[nnzL++] = irow;
-	    }
-	}
-    }
-
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(iam, "Exit ilu_level_symbfact()");
 #endif

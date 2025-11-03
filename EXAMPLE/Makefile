@@ -68,6 +68,8 @@ DEXMG2	= pddrive2_ABglobal.o
 DEXMG3	= pddrive3_ABglobal.o
 DEXMG4	= pddrive4_ABglobal.o
 
+ZEXM3DQCD= pzdrive3d_qcd.o
+
 ZEXM	= pzdrive.o zcreate_matrix.o
 	#pzgstrf2.o pzgstrf_v3.3.o pzgstrf.o
 ZEXM1	= pzdrive1.o zcreate_matrix.o
@@ -199,6 +201,9 @@ pzdrive4: $(ZEXM4) $(DSUPERLULIB)
 pzdrive3d: $(ZEXM3D) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(ZEXM3D) $(LIBS) -lm -o $@
 
+pzdrive3d_qcd: $(ZEXM3DQCD) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(ZEXM3DQCD) $(LIBS) -lm -o $@
+
 pzdrive3d1: $(ZEXM3D1) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(ZEXM3D1) $(LIBS) -lm -o $@
 
@@ -229,7 +234,7 @@ pzdrive4_ABglobal: $(ZEXMG4) $(DSUPERLULIB)
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CXX) $(CXXFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

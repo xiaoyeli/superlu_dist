@@ -544,7 +544,7 @@ float* sgetBigU(superlu_dist_options_t *options,
     return bigU;
 } /* sgetBigU */
 
-#if 0
+#if 0 //---------- not used anymore
 /* YL: Initialize 3Dpartition using only LUstruct on grid 0. Note that this is a function modifed based on dinitTrf3Dpartition */
 strf3Dpartition_t* sinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_options_t *options,
 				      sLUstruct_t *LUstruct, gridinfo3d_t * grid3d
@@ -939,9 +939,10 @@ strf3Dpartition_t* sinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
 #endif
     return trf3Dpartition;
 } /* sinitTrf3Dpartition_allgrid */
-#endif 
 
-#if 0
+#endif //---------- not used anymore
+
+#if 0 //---------- not used anymore
 /* This routine is called by all 3D processes, in driver pdgssvx3d(). */
 strf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
@@ -1125,7 +1126,8 @@ strf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
 #endif
     return trf3Dpartition;
 } /* end sinitTrf3Dpartition */
-#endif
+
+#endif //---------- not used anymore
 
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
 void sDestroy_trf3Dpartition(strf3Dpartition_t *trf3Dpartition)

@@ -991,7 +991,6 @@ extern void dperform_row_permutation(superlu_dist_options_t *, fact_t Fact,
 	       int job, int Equil, int *rowequ, int *colequ, int *iinfo);
 extern double dcomputeA_Norm(int notran, SuperMatrix *, gridinfo_t *);
 
-
 /* Distribute the data for numerical factorization */
 extern float ddist_psymbtonum(superlu_dist_options_t *, int_t, SuperMatrix *,
                                 dScalePermstruct_t *, Pslu_freeable_t *,
@@ -1007,6 +1006,7 @@ extern void  dPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 			   dLocalLU_t *);
 extern void  dPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  dPrint_CompCol_triplet(SuperMatrix *);
+extern void  file_dPrint_NCPformat_triplet(FILE *, SuperMatrix *);
 extern void  dPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   dPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
@@ -1615,7 +1615,7 @@ extern void dDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
 			   Glu_persist_t *Glu_persist, dLocalLU_t *Llu);
 extern void dDumpUblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
 			   Glu_persist_t *Glu_persist, dLocalLU_t *Llu);
-    
+
 /*== end 3D prototypes ===================*/
 
 extern double *dready_x;

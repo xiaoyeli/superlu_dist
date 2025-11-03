@@ -9,7 +9,7 @@ examples to suit your applications.
 
 The examples illustrate the following functionalities:
   0. pddrive3d.c:
-  (invoke new communication-avoiding 3D algorithms, with GPU offload, and batch interface))
+     (invoke new communication-avoiding 3D algorithms, with GPU offload, and batch interface)
          Use PxGSSVX3D to solve a linear system,
 	 OR, use PxGSSVX_CSC_BATCH to solve a batch of linear systems.
      pddrive3d1.c:
