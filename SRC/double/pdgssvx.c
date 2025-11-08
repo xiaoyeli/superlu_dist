@@ -1415,8 +1415,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	   because perm_r[] and/or perm_c[] is changed.    */
 	if ( options->SolveInitialized == YES ) { /* Initialized before */
 	    dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
-		pdgstrs_delete_device_lsum_x(SOLVEstruct);
-	    options->SolveInitialized = NO;   /* Reset the solve state */
+		if (get_acc_solve()) pdgstrs_delete_device_lsum_x(SOLVEstruct);
 	}
      }
 #if 0
@@ -1635,7 +1634,7 @@ if (get_acc_solve()){
 
             /* Deallocate the storage associated with SOLVEstruct1 */
 	    if ( nrhs > 1 ) {
-	        pdgstrs_delete_device_lsum_x(SOLVEstruct1);
+	        if (get_acc_solve()) pdgstrs_delete_device_lsum_x(SOLVEstruct1);
 			pxgstrs_finalize(SOLVEstruct1->gstrs_comm);
 	        SUPERLU_FREE(SOLVEstruct1);
 	    }
