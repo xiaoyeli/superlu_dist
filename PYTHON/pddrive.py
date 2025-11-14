@@ -27,7 +27,7 @@ algo3d = 0 # whether to use 2D or 3D factorizations
 rng = np.random.default_rng()
 n = 4000
 nrhs = 1
-use_cov = 1
+use_cov = 0
 
 if(rank==0):
     if(use_cov==0):
