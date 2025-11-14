@@ -19,7 +19,7 @@ algo3d = 0 # whether to use 2D or 3D factorizations
 rng = np.random.default_rng()
 n = 4000000
 nrhs = 1
-use_cov = 1
+use_cov = 0
 verbosity=True
 
 if(use_cov==0):
