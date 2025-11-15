@@ -14,9 +14,9 @@
 !! \brief The driver program to solve a linear system with default options.
 !!
 !! <pre>
-!! -- Distributed SuperLU routine (version 7.0) --
+!! -- Distributed SuperLU routine (version 9.0) --
 !! Lawrence Berkeley National Lab, Univ. of California Berkeley.
-!! May 12, 2021
+!! September 10, 2021
 !! </pre>
 !
       program f_pddrive3d
@@ -93,6 +93,11 @@
       endif
       if ( iam == 0 ) then 
          write(*,*) ' Process grid: ', nprow, ' X', npcol, ' X', npdep
+#if (XSDK_INDEX_SIZE==64)
+         write(*,*) ' use 64-bit integer for A matrix'
+#else         
+         write(*,*) ' use 32-bit integer for A matrix'
+#endif 
       endif
 
 ! Read and distribute the matrix to the process gird

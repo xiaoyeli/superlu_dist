@@ -224,6 +224,11 @@ or,
 or,
 `ctest -D Nightly`
 
+In build/EXAMPLE/ directory, you can also type:
+'ctest'
+to run the examples.
+
+
 **NOTE:**
 The parallel execution in ctest is invoked by "mpiexec" command which is
 from MPICH environment. If your MPI is not MPICH/mpiexec based, the test

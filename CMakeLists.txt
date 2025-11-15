@@ -675,4 +675,8 @@ configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU
 # Following is to configure a file for FORTRAN code
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/FORTRAN/superlu_dist_config.h)
 
+# Copy example matrix files to the build directory
+file(COPY ${SuperLU_DIST_SOURCE_DIR}/EXAMPLE/g20.rua DESTINATION ${CMAKE_BINARY_DIR}/EXAMPLE)
+file(COPY ${SuperLU_DIST_SOURCE_DIR}/EXAMPLE/cg20.cua DESTINATION ${CMAKE_BINARY_DIR}/EXAMPLE)
+
 #message("MPI_Fortran_LINK_FLAGS '${MPI_Fortran_LINK_FLAGS}'")

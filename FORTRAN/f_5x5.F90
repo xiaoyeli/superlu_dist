@@ -87,6 +87,8 @@
          write(*,*) ' default integer size ', kind(0) 
 #if (XSDK_INDEX_SIZE==64)
          write(*,*) ' use 64-bit integer for A matrix'
+#else         
+         write(*,*) ' use 32-bit integer for A matrix'
 #endif 
       endif
 !

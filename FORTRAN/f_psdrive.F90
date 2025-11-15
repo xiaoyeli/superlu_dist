@@ -4,7 +4,7 @@
 !! \brief The driver program to solve a linear system with default options.
 !!
 !! <pre>
-!! -- Distributed SuperLU routine (version 3.2) --
+!! -- Distributed SuperLU routine (version 9.0) --
 !! Lawrence Berkeley National Lab, Univ. of California Berkeley.
 !! October, 2012
 !! </pre>
@@ -29,7 +29,7 @@
 !   7. Release all structures
 !
 !
-      #include "superlu_dist_config.fh"
+#include "superlu_dist_config.fh"
       use superlu_mod
       include 'mpif.h'
       integer maxn, maxnz, maxnrhs
@@ -78,6 +78,11 @@
       endif
       if ( iam == 0 ) then 
          write(*,*) ' Process grid ', nprow, ' X ', npcol
+#if (XSDK_INDEX_SIZE==64)
+         write(*,*) ' use 64-bit integer for A matrix'
+#else         
+         write(*,*) ' use 32-bit integer for A matrix'
+#endif 
       endif
 
 ! Read and distribute the matrix to the process gird

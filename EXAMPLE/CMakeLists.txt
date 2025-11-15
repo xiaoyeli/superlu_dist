@@ -38,6 +38,7 @@ if(enable_double)
   set(DEXM pddrive.c dcreate_matrix.c)
   add_executable(pddrive ${DEXM})
   target_link_libraries(pddrive ${all_link_libs})
+  add_superlu_dist_example(pddrive big.rua 2 2)
   install(TARGETS pddrive RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
   
   set(DEXM1 pddrive1.c dcreate_matrix.c)
