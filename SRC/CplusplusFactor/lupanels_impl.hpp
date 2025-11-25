@@ -95,7 +95,7 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
 {
     maxLvl = log2i(grid3d->zscp.Np) + 1;
     isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, trf3Dpartition->myNodeCount, trf3Dpartition->treePerm);
-    superlu_acc_offload = sp_ienv_dist(10, options); // get_acc_offload();
+    superlu_acc_offload = get_acc_offload(options);
 
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d_in->iam, "Enter xLUstruct_t constructor");

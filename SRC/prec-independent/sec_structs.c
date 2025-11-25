@@ -592,9 +592,8 @@ get_acc_offload (superlu_dist_options_t *options)
 int
 get_acc_solve ()
 {
-    superlu_dist_options_t *options = NULL; // not accessed 
 #ifdef GPU_ACC
-    return sp_ienv_dist(11, options);
+    return sp_ienv_dist(11, NULL);
 #else
     return 0;  
 #endif        

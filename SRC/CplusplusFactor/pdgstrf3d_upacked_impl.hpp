@@ -102,7 +102,7 @@ int_t pdgstrf3d_upacked(superlu_dist_options_t *options, int m, int n, AnormType
          * ******************************************/
         // Create the new LU structure
         int *isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
-        int superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();
+        int superlu_acc_offload = get_acc_offload(options);
         double tConst = SuperLU_timer_();
         xLUstruct_t<Ftype> LU_packed(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
                                 SCT, options, stat, thresh, info);

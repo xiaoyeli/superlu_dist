@@ -63,7 +63,7 @@ void zInit_HyP(superlu_dist_options_t *options, HyP_t* HyP, zLocalLU_t *Llu, int
     }
 
     HyP->last_offload = -1;
-    HyP->superlu_acc_offload = sp_ienv_dist(10, options); // get_acc_offload();
+    HyP->superlu_acc_offload = get_acc_offload(options);
 
     HyP->nGPUStreams =0;
 } /* zInit_HyP */

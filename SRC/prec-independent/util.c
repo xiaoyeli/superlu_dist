@@ -302,10 +302,7 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     }
 #endif
 
-    int gpu_enabled = 0;
-#ifdef GPU_ACC
-    gpu_enabled = sp_ienv_dist(10, options);
-#endif
+    int gpu_enabled = get_acc_offload(options);
     
     printf("**************************************************\n");
     printf(".. blocking parameters from sp_ienv():\n");
@@ -1412,7 +1409,7 @@ gemm_division_cpu_gpu(
 {
     int Ngem = sp_ienv_dist(7, options);  /*get_mnk_dgemm ();*/
     int min_gpu_col = get_gpublas_nb (); /* default 64 */
-    int superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();
+    int superlu_acc_offload = get_acc_offload(options);
     int ncols = full_u_cols[num_blks - 1];
     // int ncolsExcludingFirst =full_u_cols[num_blks - 1]
 
