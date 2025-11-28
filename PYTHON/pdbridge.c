@@ -220,7 +220,7 @@ void pdbridge_init2d(int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr ,
     if (printstat==1) (slu_obj->options).PrintStat = YES;
     (slu_obj->options).Algo3d = NO;
 
-    int_t superlu_acc_offload = sp_ienv_dist(10, &(slu_obj->options)); //get_acc_offload();
+    int_t superlu_acc_offload = get_acc_offload(&(slu_obj->options));
     
     /* In the batch mode: create multiple SuperLU grids,
         each grid solving one linear system. */
@@ -520,7 +520,7 @@ void pdbridge_init3d (int_t m, int_t n, int_t nnz, int_t *rowind, int_t *colptr 
     /* ------------------------------------------------------------
        INITIALIZE GPU ENVIRONMENT
        ------------------------------------------------------------ */
-    int_t superlu_acc_offload = sp_ienv_dist(10, &(slu_obj->options)); //get_acc_offload();
+    int_t superlu_acc_offload = get_acc_offload(&(slu_obj->options));
     if (superlu_acc_offload) {
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
         double t1 = SuperLU_timer_();

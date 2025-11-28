@@ -273,7 +273,7 @@ int main (int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE GPU ENVIRONMENT
        ------------------------------------------------------------ */
-    int superlu_acc_offload = sp_ienv_dist(10, &options); //get_acc_offload();
+    int superlu_acc_offload = get_acc_offload(&options);
     if (superlu_acc_offload) {
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
         double t1 = SuperLU_timer_();
