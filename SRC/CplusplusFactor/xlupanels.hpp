@@ -445,7 +445,7 @@ struct xLUstruct_t
 
     ~xLUstruct_t()
     {
-        superlu_acc_offload = sp_ienv_dist(10, options); //get_acc_offload();
+        superlu_acc_offload = get_acc_offload(options);
 
         /* Yang: Deallocate the lPanelVec[i] and uPanelVec[i] here instead of using destructors ~lpanel_t or ~upanel_t,
         as xlpanel_t/upanel_t is used for holding temporary communication buffers as well. Note that lPanelVec[i].val is not deallocated here as it's pointing to the L data in the C code*/
