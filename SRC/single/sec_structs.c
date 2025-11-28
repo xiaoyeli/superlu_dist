@@ -580,18 +580,6 @@ void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT)
 
 }
 
-int
-get_acc_offload ()
-{
-    char *ttemp;
-    ttemp = getenv ("SUPERLU_ACC_OFFLOAD");
-
-    if (ttemp)
-        return atoi (ttemp);
-    else
-        return 1;  // default
-}
-
 
 void Free_HyP(HyP_t* HyP)
 {
