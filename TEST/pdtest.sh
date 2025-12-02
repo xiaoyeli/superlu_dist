@@ -38,7 +38,7 @@ for mat in $MATRICES; do
 		echo '' >> $ofile
    	        echo "**-- nrhs = $s, process grid = $r X $c, fill $b, relax $x, max-super $m"
    	        echo "**-- nrhs = $s, process grid = $r X $c, fill $b, relax $x, max-super $m" >> $ofile
-		mpiexec --oversubscribe -n $np pdtest -r $r -c $c -x $x -m $m -b $b -s 1 -f $mat >> $ofile
+		mpiexec -n $np pdtest -r $r -c $c -x $x -m $m -b $b -s 1 -f $mat >> $ofile
 	      done
 	    done
 	  done
