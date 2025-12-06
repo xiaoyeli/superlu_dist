@@ -341,7 +341,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define THR_N ( BLK_N / DIM_Y )
 
 #define fetch(A, m, n, bound) offs_d##A[min(n*LD##A+m, bound)]
-#define fma(A, B, C) C += (A*B)
+#define FMA(A, B, C) C += (A*B)
 #endif
 /*---- end MAGMA ----*/
 

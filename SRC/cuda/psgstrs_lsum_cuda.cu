@@ -319,7 +319,7 @@ void gemm_device_slsum_fmod(
             for (n = 0; n < THR_N; n++) {
 #pragma unroll
                 for (m = 0; m < THR_M; m++) {
-                    fma(rA[m], rB[n], rC[n][m]);
+                    FMA(rA[m], rB[n], rC[n][m]);
                 }
             }
         }
@@ -364,7 +364,7 @@ void gemm_device_slsum_fmod(
         for (n = 0; n < THR_N; n++) {
 #pragma unroll
             for (m = 0; m < THR_M; m++) {
-                fma(rA[m], rB[n], rC[n][m]);
+                FMA(rA[m], rB[n], rC[n][m]);
 
             }
         }
@@ -522,7 +522,7 @@ void gemm_device_slsum_bmod_stridedB(
             for (n = 0; n < THR_N; n++) {
 #pragma unroll
                 for (m = 0; m < THR_M; m++) {
-                    fma(rA[m], rB[n], rC[n][m]);
+                    FMA(rA[m], rB[n], rC[n][m]);
                 }
             }
         }
@@ -567,7 +567,7 @@ void gemm_device_slsum_bmod_stridedB(
         for (n = 0; n < THR_N; n++) {
 #pragma unroll
             for (m = 0; m < THR_M; m++) {
-                fma(rA[m], rB[n], rC[n][m]);
+                FMA(rA[m], rB[n], rC[n][m]);
             }
         }
     }

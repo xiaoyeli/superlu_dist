@@ -14,9 +14,7 @@
 
 // #include "lupanels.hpp"
 
-#include <cmath>
 #include <complex>
-#include <cassert>
 
 template<typename T>
 int checkArr(const T *A, const T *B, int n)
