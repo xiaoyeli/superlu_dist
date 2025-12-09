@@ -36,6 +36,7 @@ at the top-level directory.
  *     May 8, 2024         version 9.0.0
  *     November 17, 2024   version 9.1.0
  *     October 21, 2025    version 9.2.0
+ *     December 9, 2025    version 9.2.1
  * </pre>
  */
 
@@ -90,8 +91,8 @@ at the top-level directory.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     9
 #define SUPERLU_DIST_MINOR_VERSION     2
-#define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "October 21, 2025"
+#define SUPERLU_DIST_PATCH_VERSION     1
+#define SUPERLU_DIST_RELEASE_DATE      "December 9, 2025"
 
 #include "superlu_dist_config.h"
 
