@@ -40,7 +40,7 @@ else:
 ####################################################################################################
 ####################### call the APIs
 
-xb = np.random.rand(n,nrhs).astype(np.float64) 
+xb = np.random.rand(n,nrhs).astype(np.float64,order="F") 
 superlu_factor(m, INT64, algo3d, verbosity)
 sign,logd = superlu_logdet(verbosity)
 superlu_solve(xb, verbosity)

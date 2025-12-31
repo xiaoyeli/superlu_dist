@@ -143,7 +143,7 @@ if(rank==0):
 
 ####################### solve 
 start = time.time()
-xb = np.random.rand(n*nrhs).astype(np.float64) # pdbridge_solve will broadcast xb on rank 0 to all ranks
+xb = np.random.rand(n*nrhs).astype(np.float64,order="F") # pdbridge_solve will broadcast xb on rank 0 to all ranks
 sp.pdbridge_solve(
     ctypes.byref(pyobj),            # void **pyobj
     nrhs,                           # int nrhs
