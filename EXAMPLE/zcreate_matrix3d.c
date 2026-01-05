@@ -102,7 +102,7 @@ int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
             /* Read the matrix stored on disk in Harwell-Boeing format. */
             zreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
         }
-        else if (!strcmp(postfix, "mtx"))
+        else if ( (!strcmp(postfix, "mtx")) || (!strcmp(postfix,"mm")) )
         {
             /* Read the matrix stored on disk in Matrix Market format. */
             zreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
@@ -326,7 +326,7 @@ int zcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
             /* Read the matrix stored on disk in Harwell-Boeing format. */
             zreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
         }
-        else if (!strcmp(postfix, "mtx"))
+        else if ( (!strcmp(postfix, "mtx")) || (!strcmp(postfix,"mm")) )
         {
             /* Read the matrix stored on disk in Matrix Market format. */
             zreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);

@@ -1,15 +1,15 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief Read the matrix from data file
  *
  * <pre>
@@ -26,7 +26,7 @@ at the top-level directory.
  * <pre>
  * Purpose
  * =======
- * 
+ *
  * ZCREATE_MATRIX_POSTFIX read the matrix from data file in different formats
  * depending on the surfix of the file name. The supported formats include:
  *     .rua / cua : Harwell-Boeing format
@@ -40,11 +40,11 @@ at the top-level directory.
  * and the right-hand side RHS.
  *
  *
- * Arguments   
- * =========      
+ * Arguments
+ * =========
  *
  * A     (output) SuperMatrix*
- *       Local matrix A in NR_loc format. 
+ *       Local matrix A in NR_loc format.
  *
  * NRHS  (input) int_t
  *       Number of right-hand sides.
@@ -85,7 +85,7 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     int_t    m, n, nnz;
     int_t    m_loc, fst_row, nnz_loc;
     int_t    m_loc_fst; /* Record m_loc of the first p-1 processors,
-			   when mod(m, p) is not zero. */ 
+			   when mod(m, p) is not zero. */
     int_t    row, col, i, j, relpos;
     int      iam;
     char     trans[1];
@@ -102,81 +102,78 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 #endif
 
     if ( !iam ) {
-    double t = SuperLU_timer_(); 
+    double t = SuperLU_timer_();
 
     if(!strcmp(postfix,"cua")){
 		/* Read the matrix stored on disk in Harwell-Boeing format. */
 		zreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
-	}else if(!strcmp(postfix,"mtx")){
+	}else if( (!strcmp(postfix,"mtx")) || (!strcmp(postfix,"mm")) ) {
 		/* Read the matrix stored on disk in Matrix Market format. */
 		zreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 	}else if(!strcmp(postfix,"rb")){
 		/* Read the matrix stored on disk in Rutherford-Boeing format. */
-		zreadrb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
+		zreadrb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 	}else if(!strcmp(postfix,"dat")){
 		/* Read the matrix stored on disk in triplet format. */
 		zreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 	}else if(!strcmp(postfix,"datnh")){
 		/* Read the matrix stored on disk in triplet format (without header). */
-		zreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
+		zreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 	}else if(!strcmp(postfix,"bin")){
 		/* Read the matrix stored on disk in binary format. */
-		zread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
+		zread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 	}else {
 		ABORT("File format not known");
 	}
 
-	printf("Time to read and distribute matrix %.2f\n", 
+	printf("Time to read and distribute matrix %.2f\n",
 	        SuperLU_timer_() - t);  fflush(stdout);
-			
+
 	/* Broadcast matrix A to the other PEs. */
 	MPI_Bcast( &m,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &nnz,   1,   mpi_int_t,  0, grid->comm );
 
-    
-    Nchunk = CEILING(nnz,chunk);
-    remainder =  nnz%chunk;
-	MPI_Bcast( &Nchunk,   1,   mpi_int_t,  0, grid->comm );
-	MPI_Bcast( &remainder,   1,   mpi_int_t,  0, grid->comm );
+        Nchunk = CEILING(nnz,chunk);
+	remainder =  nnz%chunk;
+	MPI_Bcast( &Nchunk,    1, mpi_int_t, 0, grid->comm );
+	MPI_Bcast( &remainder, 1, mpi_int_t, 0, grid->comm );
 
-    for (i = 0; i < Nchunk; ++i) {
-       int_t idx=i*chunk;
-       if(i==Nchunk-1){
-            count=remainder;
-       }else{
-            count=chunk;
-       }  
-        MPI_Bcast( &nzval[idx],  count, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid->comm );
-        MPI_Bcast( &rowind[idx], count, mpi_int_t,  0, grid->comm );       
-    }
-
-
-
+        for (i = 0; i < Nchunk; ++i) {
+           int_t idx=i*chunk;
+       	   if (i==Nchunk-1) {
+              count=remainder;
+           } else {
+              count=chunk;
+           }  
+           MPI_Bcast( &nzval[idx],  count, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid->comm );
+           MPI_Bcast( &rowind[idx], count, mpi_int_t,  0, grid->comm );       
+        }
 
 	MPI_Bcast( colptr, n+1, mpi_int_t,  0, grid->comm );
+
     } else {
 	/* Receive matrix A from PE 0. */
 	MPI_Bcast( &m,   1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,   1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &nnz, 1,   mpi_int_t,  0, grid->comm );
-	MPI_Bcast( &Nchunk,   1,   mpi_int_t,  0, grid->comm );
-	MPI_Bcast( &remainder,   1,   mpi_int_t,  0, grid->comm );
-
+	MPI_Bcast( &Nchunk,    1, mpi_int_t, 0, grid->comm );
+	MPI_Bcast( &remainder, 1, mpi_int_t, 0, grid->comm );
 
 	/* Allocate storage for compressed column representation. */
 	zallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
 
-    for (i = 0; i < Nchunk; ++i) {
-       int_t idx=i*chunk;
-       if(i==Nchunk-1){
-            count=remainder;
-       }else{
-            count=chunk;
-       }  
-        MPI_Bcast( &nzval[idx],  count, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid->comm );
-        MPI_Bcast( &rowind[idx], count, mpi_int_t,  0, grid->comm );       
-    }
+        for (i = 0; i < Nchunk; ++i) {
+            int_t idx=i*chunk;
+            if(i==Nchunk-1){
+                count=remainder;
+            }else{
+                count=chunk;
+            } 
+            MPI_Bcast( &nzval[idx],  count, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid->comm );
+            MPI_Bcast( &rowind[idx], count, mpi_int_t,  0, grid->comm );       
+        }
+    
 	MPI_Bcast( colptr,  n+1, mpi_int_t,  0, grid->comm );
     }
 
@@ -185,7 +182,7 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 #endif
 
     /* Compute the number of rows to be distributed to local process */
-    m_loc = m / (grid->nprow * grid->npcol); 
+    m_loc = m / (grid->nprow * grid->npcol);
     m_loc_fst = m_loc;
     /* When m / procs is not an integer */
     if ((m_loc * grid->nprow * grid->npcol) != m) {
@@ -209,14 +206,14 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     if (iam == 0) {
         zGenXtrue_dist(n, nrhs, xtrue_global, n);
         zFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
-	
+
         MPI_Bcast( xtrue_global, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid->comm );
         MPI_Bcast( b_global, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid->comm );
     } else {
         MPI_Bcast( xtrue_global, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid->comm );
         MPI_Bcast( b_global, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid->comm );
     }
-				     
+
     /*************************************************
      * Change GA to a local A with NR_loc format     *
      *************************************************/
@@ -257,7 +254,7 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 
 #if ( DEBUGlevel>=2 )
     if ( !iam ) zPrint_CompCol_Matrix_dist(&GA);
-#endif   
+#endif
 
     /* Destroy GA */
     Destroy_CompCol_Matrix_dist(&GA);
@@ -270,7 +267,7 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     zCreate_CompRowLoc_Matrix_dist(A, m, n, nnz_loc, m_loc, fst_row,
 				   nzval_loc, colind, rowptr,
 				   SLU_NR_loc, SLU_Z, SLU_GE);
-    
+
     /* Get the local B */
     if ( !((*rhs) = doublecomplexMalloc_dist(m_loc*nrhs)) )
         ABORT("Malloc fails for rhs[]");
@@ -282,7 +279,7 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     }
     *ldb = m_loc;
 
-    /* Set the true X */    
+    /* Set the true X */
     *ldx = m_loc;
     if ( !((*x) = doublecomplexMalloc_dist(*ldx * nrhs)) )
         ABORT("Malloc fails for x_loc[]");
@@ -309,18 +306,18 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
  * <pre>
  * Purpose
  * =======
- * 
+ *
  * ZCREATE_MATRIX read the matrix from data file in Harwell-Boeing format,
  * and distribute it to processors in a distributed compressed row format.
  * It also generate the distributed true solution X and the right-hand
  * side RHS.
  *
  *
- * Arguments   
- * =========      
+ * Arguments
+ * =========
  *
  * A     (output) SuperMatrix*
- *       Local matrix A in NR_loc format. 
+ *       Local matrix A in NR_loc format.
  *
  * NRHS  (input) int_t
  *       Number of right-hand sides.
@@ -357,7 +354,7 @@ int zcreate_matrix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     int_t    m, n, nnz;
     int_t    m_loc, fst_row, nnz_loc;
     int_t    m_loc_fst; /* Record m_loc of the first p-1 processors,
-			   when mod(m, p) is not zero. */ 
+			   when mod(m, p) is not zero. */
     int_t    row, col, i, j, relpos;
     int      iam;
     char     trans[1];
@@ -375,7 +372,7 @@ int zcreate_matrix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
         /* Read the matrix stored on disk in Harwell-Boeing format. */
         zreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 
-	printf("Time to read and distribute matrix %.2f\n", 
+	printf("Time to read and distribute matrix %.2f\n",
 	        SuperLU_timer_() - t);  fflush(stdout);
 
 	/* Broadcast matrix A to the other PEs. */
@@ -404,7 +401,7 @@ int zcreate_matrix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 #endif
 
     /* Compute the number of rows to be distributed to local process */
-    m_loc = m / (grid->nprow * grid->npcol); 
+    m_loc = m / (grid->nprow * grid->npcol);
     m_loc_fst = m_loc;
     /* When m / procs is not an integer */
     if ((m_loc * grid->nprow * grid->npcol) != m) {
@@ -468,7 +465,7 @@ int zcreate_matrix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 
 #if ( DEBUGlevel>=2 )
     if ( !iam ) zPrint_CompCol_Matrix_dist(&GA);
-#endif   
+#endif
 
     /* Destroy GA */
     Destroy_CompCol_Matrix_dist(&GA);
@@ -481,7 +478,7 @@ int zcreate_matrix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     zCreate_CompRowLoc_Matrix_dist(A, m, n, nnz_loc, m_loc, fst_row,
 				   nzval_loc, colind, rowptr,
 				   SLU_NR_loc, SLU_Z, SLU_GE);
-    
+
     /* Get the local B */
     if ( !((*rhs) = doublecomplexMalloc_dist(m_loc*nrhs)) )
         ABORT("Malloc fails for rhs[]");
@@ -493,7 +490,7 @@ int zcreate_matrix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     }
     *ldb = m_loc;
 
-    /* Set the true X */    
+    /* Set the true X */
     *ldx = m_loc;
     if ( !((*x) = doublecomplexMalloc_dist(*ldx * nrhs)) )
         ABORT("Malloc fails for x_loc[]");
