@@ -67,7 +67,12 @@ if(enable_double)
   set(DEXM3D pddrive3d.c dcreate_matrix.c dcreate_matrix3d.c)
   add_executable(pddrive3d ${DEXM3D})
   target_link_libraries(pddrive3d ${all_link_libs})
-  install(TARGETS pddrive3d RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
+  install(TARGETS pddrive3d RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
+  set(DEXM3D pddrive3d_vbatch.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d_vbatch ${DEXM3D})
+  target_link_libraries(pddrive3d_vbatch ${all_link_libs})
+  install(TARGETS pddrive3d_vbatch RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
 
   set(DEXM3D pddrive3d_block_diag.c dcreate_matrix.c dcreate_matrix3d.c)
   add_executable(pddrive3d_block_diag ${DEXM3D})

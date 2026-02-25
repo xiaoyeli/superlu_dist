@@ -1060,6 +1060,8 @@ extern int    sp_coletree_dist (int_t *, int_t *, int_t *, int_t, int_t, int_t *
 extern void   get_perm_c_dist(int, int, SuperMatrix *, int *);
 extern void   get_perm_c_batch(superlu_dist_options_t *options,	int batchCount,
 			       handle_t  *SparseMatrix_handles, int **CpivPtr);
+extern void   get_perm_c_vbatch(superlu_dist_options_t *options, int batchCount,
+                   handle_t  *SparseMatrix_handles, int **CpivPtr);
 extern void   at_plus_a_dist(const int_t, const int_t, int_t *, int_t *,
 			     int_t *, int_t **, int_t **);
 extern void   getata_dist(const int_t m, const int_t n, const int_t nz, int_t *colptr, int_t *rowind,
