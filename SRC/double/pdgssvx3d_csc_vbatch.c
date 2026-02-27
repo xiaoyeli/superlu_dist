@@ -22,28 +22,6 @@ at the top-level directory.
 #include "superlu_upacked.h"
 #include <stdbool.h>
 
-int file_dPrint_CompRowLoc_to_Triples(SuperMatrix *A)
-{
-    NRformat_loc *Astore = A->Store;
-    int nnz, m, n, i, j;
-    double  *dp;
-    FILE *fp = fopen("CSR.txt", "w");
-
-    m = A->nrow;
-    n = A->ncol;
-    nnz = Astore->nnz_loc;
-    dp = Astore->nzval;
-
-    printf("print to triples: m %d, n %d, nnz %d\n", m, n, nnz);
-    for (i = 0; i < m; ++i) {
-	for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
-	    fprintf(fp, "%8d %8d %16.8e\n", i, (int) Astore->colind[j], dp[j]);
-	}
-    }
-    fclose(fp);
-    return 0;
-}
-
 /*! \brief Solve a batch of linear systems Ai * Xi = Bi with direct method,
  *    computing the LU factorization of each matrix Ai; <br>
  * This is the fixed-size interface: all the input matrices have the same sparsity structure
