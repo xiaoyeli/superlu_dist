@@ -221,7 +221,7 @@ psReDistribute_B_to_X(float *B, int_t m_loc, int nrhs, int_t ldb,
 	{
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
-#if defined __GNUC__  && !defined __NVCOMPILER
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
 #pragma	omp	taskloop private (i,l,irow,k,j,knsupc) untied
 #endif
 #endif
@@ -478,7 +478,7 @@ psReDistribute_X_to_B(int_t n, float *B, int_t m_loc, int_t ldb, int_t fst_row,
 	{
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
-#if defined __GNUC__  && !defined __NVCOMPILER
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
 #pragma	omp	taskloop private (k,knsupc,lk,irow,l,i,j) untied
 #endif
 #endif
@@ -1598,7 +1598,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	    {
 
 #ifdef _OPENMP
-#if defined __GNUC__  && !defined __NVCOMPILER
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
 #pragma	omp taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
 #endif
 #endif
@@ -2198,7 +2198,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 #endif
 	    {
 #ifdef _OPENMP
-#if defined __GNUC__  && !defined __NVCOMPILER
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
 #pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp,thread_id) nogroup
 #endif
 #endif
@@ -2292,7 +2292,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 #endif
 	    {
 #ifdef _OPENMP
-#if defined __GNUC__  && !defined __NVCOMPILER
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
 #pragma	omp	taskloop private (ii,jj,k,lk,thread_id) nogroup
 #endif
 #endif
