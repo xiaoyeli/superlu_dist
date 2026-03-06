@@ -3232,7 +3232,7 @@ thread_id=0;
 		    {
 
 #ifdef _OPENMP
-#if defined __GNUC__  && !defined __NVCOMPILER
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
 #pragma	omp taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
 #endif
 #endif
@@ -5177,7 +5177,7 @@ tx = SuperLU_timer_();
 #endif
 		{
 #ifdef _OPENMP
-#if defined __GNUC__  && !defined __NVCOMPILER
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
 #pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp,thread_id) nogroup
 #endif
 #endif
@@ -5278,7 +5278,7 @@ tx = SuperLU_timer_();
 #endif
 		{
 #ifdef _OPENMP
-#if defined __GNUC__  && !defined __NVCOMPILER
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
 #pragma	omp	taskloop private (ii,jj,k,lk,thread_id) nogroup
 #endif
 #endif
