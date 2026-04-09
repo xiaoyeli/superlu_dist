@@ -310,18 +310,55 @@ endif()
 
 #--------------------- HIP libraries ---------------------
 if (TPL_ENABLE_HIPLIB)   ## want to use hip
-  if (CMAKE_VERSION VERSION_LESS "3.21")
-    message(FATAL_ERROR
-      "TPL_ENABLE_HIPLIB requires CMake >= 3.21 for first-class HIP language support.")
+
+  # Two HIP build paths are supported:
+  #   * Modern (default): first-class HIP language support. Requires
+  #     CMake >= 3.21 and a ROCm install that ships hip-config.cmake
+  #     (ROCm ~4.5+). Arch is selected via -DCMAKE_HIP_ARCHITECTURES.
+  #   * Legacy: in-tree cmake/FindHIP.cmake module + hip_add_library().
+  #     Kept only for backwards compatibility with older CMake/ROCm
+  #     stacks. This path is DEPRECATED and will be removed in a
+  #     future SuperLU_DIST release.
+  option(TPL_HIP_USE_LEGACY_FINDHIP
+    "Use the legacy FindHIP MODULE path for HIP (DEPRECATED)" OFF)
+
+  if (CMAKE_VERSION VERSION_LESS "3.21" AND NOT TPL_HIP_USE_LEGACY_FINDHIP)
+    message(WARNING
+      "CMake < 3.21 detected; falling back to the legacy FindHIP MODULE path. "
+      "This path is DEPRECATED and will be removed in a future SuperLU_DIST "
+      "release. Please upgrade to CMake >= 3.21 for first-class HIP language "
+      "support.")
+    set(TPL_HIP_USE_LEGACY_FINDHIP ON)
   endif()
-  find_package(hip CONFIG REQUIRED)
-  if(hip_FOUND)
+
+  if (TPL_HIP_USE_LEGACY_FINDHIP)
+    message(WARNING
+      "Using the legacy FindHIP MODULE path for HIP. This path is DEPRECATED "
+      "and will be removed in a future SuperLU_DIST release. Prefer CMake "
+      ">= 3.21 with first-class HIP language support (the default).")
+    find_package(HIP MODULE)
+    set(_superlu_hip_found ${HIP_FOUND})
+  else()
+    find_package(hip CONFIG REQUIRED)
+    set(_superlu_hip_found ${hip_FOUND})
+  endif()
+
+  if(_superlu_hip_found)
     message("-- Enabled support for HIP.")
-    enable_language(HIP)
+    if (NOT TPL_HIP_USE_LEGACY_FINDHIP)
+      enable_language(HIP)
+    endif()
     find_package(hipblas REQUIRED)
     find_package(rocsolver REQUIRED)
     find_package(rocblas REQUIRED)
-    set(HIP_LIB hip::device roc::hipblas roc::rocblas roc::rocsolver)
+    if (TPL_HIP_USE_LEGACY_FINDHIP)
+      set(HIP_LIB roc::hipblas roc::rocblas roc::rocsolver)
+      if (BUILD_SHARED_LIBS)
+        set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")
+      endif()
+    else()
+      set(HIP_LIB hip::device roc::hipblas roc::rocblas roc::rocsolver)
+    endif()
     message("HIP_LIB ${HIP_LIB}")
 
     # make.inc exporting not yet tested

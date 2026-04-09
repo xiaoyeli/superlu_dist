@@ -364,11 +364,23 @@ if (TPL_ENABLE_HIPLIB)
     list(APPEND hipsources hip/pzgstrs_lsum_cuda.hip.cpp hip/zsuperlu_gpu.hip.cpp)
   endif()
 
-  set_source_files_properties(${hipsources} PROPERTIES LANGUAGE HIP)
-
-  add_library(superlu_dist ${hipsources})
-  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
-    add_library(superlu_dist-static STATIC ${hipsources})
+  if (TPL_HIP_USE_LEGACY_FINDHIP)
+    # DEPRECATED legacy path: FindHIP MODULE + hip_add_library.
+    # Will be removed in a future SuperLU_DIST release.
+    file(GLOB MyFiles hip/*.hip.cpp)
+    set_source_files_properties(
+      ${MyFiles}
+      PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
+    hip_add_library(superlu_dist ${hipsources})
+    if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+      hip_add_library(superlu_dist-static STATIC ${hipsources})
+    endif()
+  else()
+    set_source_files_properties(${hipsources} PROPERTIES LANGUAGE HIP)
+    add_library(superlu_dist ${hipsources})
+    if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+      add_library(superlu_dist-static STATIC ${hipsources})
+    endif()
   endif()
 
 else()
