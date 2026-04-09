@@ -352,25 +352,23 @@ endif()
 endif() ######### enable compex16
 
 if (TPL_ENABLE_HIPLIB)
-  file(GLOB MyFiles hip/*.hip.cpp)
-  set_source_files_properties(
-    ${MyFiles}
-    PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
-
   set(hipsources
     hip/pdgstrs_lsum_cuda.hip.cpp
     hip/dsuperlu_gpu.hip.cpp
     hip/superlu_gpu_utils.hip.cpp
   )
   if(enable_single)
-  list(APPEND hipsources hip/psgstrs_lsum_cuda.hip.cpp hip/ssuperlu_gpu.hip.cpp)
+    list(APPEND hipsources hip/psgstrs_lsum_cuda.hip.cpp hip/ssuperlu_gpu.hip.cpp)
   endif()
   if(enable_complex16)
-  list(APPEND hipsources hip/pzgstrs_lsum_cuda.hip.cpp hip/zsuperlu_gpu.hip.cpp)
+    list(APPEND hipsources hip/pzgstrs_lsum_cuda.hip.cpp hip/zsuperlu_gpu.hip.cpp)
   endif()
-  hip_add_library(superlu_dist ${hipsources})
+
+  set_source_files_properties(${hipsources} PROPERTIES LANGUAGE HIP)
+
+  add_library(superlu_dist ${hipsources})
   if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
-    hip_add_library(superlu_dist-static STATIC  ${hipsources})
+    add_library(superlu_dist-static STATIC ${hipsources})
   endif()
 
 else()
