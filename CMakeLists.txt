@@ -310,17 +310,59 @@ endif()
 
 #--------------------- HIP libraries ---------------------
 if (TPL_ENABLE_HIPLIB)   ## want to use hip
-  find_package(HIP MODULE)
-  if(HIP_FOUND)
+
+  # Two HIP build paths are supported:
+  #   * Modern (default): first-class HIP language support. Requires
+  #     CMake >= 3.21 and a ROCm install that ships hip-config.cmake
+  #     (ROCm ~4.5+). Arch is selected via -DCMAKE_HIP_ARCHITECTURES.
+  #   * Legacy: in-tree cmake/FindHIP.cmake module + hip_add_library().
+  #     Kept only for backwards compatibility with older CMake/ROCm
+  #     stacks. This path is DEPRECATED and will be removed in a
+  #     future SuperLU_DIST release.
+  option(TPL_HIP_USE_LEGACY_FINDHIP
+    "Use the legacy FindHIP MODULE path for HIP (DEPRECATED)" OFF)
+
+  if (CMAKE_VERSION VERSION_LESS "3.21" AND NOT TPL_HIP_USE_LEGACY_FINDHIP)
+    message(WARNING
+      "CMake < 3.21 detected; falling back to the legacy FindHIP MODULE path. "
+      "This path is DEPRECATED and will be removed in a future SuperLU_DIST "
+      "release. Please upgrade to CMake >= 3.21 for first-class HIP language "
+      "support.")
+    set(TPL_HIP_USE_LEGACY_FINDHIP ON)
+  endif()
+
+  if (TPL_HIP_USE_LEGACY_FINDHIP)
+    message(WARNING
+      "Using the legacy FindHIP MODULE path for HIP. This path is DEPRECATED "
+      "and will be removed in a future SuperLU_DIST release. Prefer CMake "
+      ">= 3.21 with first-class HIP language support (the default).")
+    find_package(HIP MODULE)
+    set(_superlu_hip_found ${HIP_FOUND})
+  else()
+    find_package(hip CONFIG REQUIRED)
+    set(_superlu_hip_found ${hip_FOUND})
+  endif()
+
+  if(_superlu_hip_found)
     message("-- Enabled support for HIP.")
+    if (NOT TPL_HIP_USE_LEGACY_FINDHIP)
+      enable_language(HIP)
+    endif()
     find_package(hipblas REQUIRED)
     find_package(rocsolver REQUIRED)
     find_package(rocblas REQUIRED)
-    set(HIP_LIB roc::hipblas roc::rocblas roc::rocsolver)
+    if (TPL_HIP_USE_LEGACY_FINDHIP)
+      set(HIP_LIB roc::hipblas roc::rocblas roc::rocsolver)
+      if (BUILD_SHARED_LIBS)
+        set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")
+      endif()
+    else()
+      set(HIP_LIB hip::device roc::hipblas roc::rocblas roc::rocsolver)
+    endif()
     message("HIP_LIB ${HIP_LIB}")
 
     # make.inc exporting not yet tested
-    set(HIP_LIB_EXPORT "") 
+    set(HIP_LIB_EXPORT "")
     foreach(HIP_LIB_TARGET ${HIP_LIB})
       get_property(HIP_LIB_IMPORTED_CONFIGS TARGET ${HIP_LIB_TARGET} PROPERTY IMPORTED_CONFIGURATIONS)
       foreach(RELTYPE RELEASE RELWITHDEBINFO DEBUG)
@@ -332,27 +374,12 @@ if (TPL_ENABLE_HIPLIB)   ## want to use hip
       endforeach()
       get_property(HIP_LIB_STR TARGET ${HIP_LIB_TARGET} PROPERTY IMPORTED_LOCATION_${HIP_LIB_IMPORTED_CONFIG})
       message("HIP_LIB_STR ${HIP_LIB_STR}")
-      set(HIP_LIB_EXPORT ${HIP_LIB_EXPORT} ${HIP_LIB_STR}) 
+      set(HIP_LIB_EXPORT ${HIP_LIB_EXPORT} ${HIP_LIB_STR})
       message("HIP_LIB_EXPORT ${HIP_LIB_EXPORT}")
     endforeach()
     string (REPLACE ";" " " HIP_LIB_EXPORT "${HIP_LIB_EXPORT}")
     message("HIP_LIB_EXPORT ${HIP_LIB_EXPORT}")
     set(HAVE_HIP TRUE)
-    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP")
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP")    
-    # set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DHAVE_HIP")    
-    if (BUILD_SHARED_LIBS)
-    set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")
-    endif()
-
-    # if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
-    #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
-    #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
-    # elseif ("$ENV{HIP_PLATFORM}" STREQUAL "nvcc")
-    #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
-    #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
-    # endif()
-
   else()
     message("-- HIP libraries not found.")
   endif()
