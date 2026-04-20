@@ -99,8 +99,7 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
 		k = options->superlu_relax;
 	    }
 	    k = SUPERLU_MIN( k, sp_ienv_dist(3,options) ); // not to exceed MAXSUP
-	    //return (k);
-	    return (1);
+	    return (k);
 	    
 	case 3: 
 	    ttemp = getenv("SUPERLU_MAXSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
