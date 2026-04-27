@@ -8,6 +8,7 @@ module load cudatoolkit
 # avoid bug in cray-libsci/21.08.1.2
 # module load cray-libsci/22.11.1.2
 module load cray-libsci
+
 # module use /global/common/software/nersc/pe/modulefiles/latest
 ulimit -s unlimited
 #MPI settings:
@@ -29,15 +30,15 @@ export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one M
 export SUPERLU_MAXSUP=256 # max supernode size
 export SUPERLU_RELAX=64  # upper bound for relaxed supernode size
 export SUPERLU_MAX_BUFFER_SIZE=10000000 ## 500000000 # buffer size in words on GPU
-export SUPERLU_NUM_LOOKAHEADS=2   ##4, must be at least 2, see 'lookahead winSize'
+export SUPERLU_NUM_LOOKAHEADS=10   ##4, must be at least 2, see 'lookahead winSize'
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 nmpipergpu=1
 export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # 2: this can better saturate GPU
 
 # ##NVSHMEM settings:
-# module load nvshmem/2.11.0
-NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+# NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/common/software/nersc9/nvshmem/3.2.5-1-25.03/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
@@ -70,8 +71,8 @@ else
   exit $EXIT_HOST
 fi
 
-nprows=(1)
-npcols=(1)
+nprows=(2)
+npcols=(2)
 npz=(1)
 nrhs=(1)
 NTH=1
@@ -102,7 +103,7 @@ fi
 
 # NODE_VAL=2
 # NCORE_VAL_TOT=`expr $NODE_VAL_TOT \* $CORES_PER_NODE / $NTH`
-batch=1 # whether to do batched test
+batch=0 # whether to do batched test
 NCORE_VAL_TOT=`expr $NROW \* $NCOL \* $NPZ `
 NCORE_VAL_TOT2D=`expr $NROW \* $NCOL `
 
@@ -147,7 +148,10 @@ mkdir -p $MAT
 for ii in `seq 1 $NREP`
 do	
 
-SUPERLU_ACC_OFFLOAD=0
+
+
+export SUPERLU_ACC_OFFLOAD=0
+export SUPERLU_ACC_SOLVE=1
 srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
 
 # SUPERLU_ACC_OFFLOAD=1
@@ -161,8 +165,8 @@ srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $
 # srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores compute-sanitizer --tool=memcheck  --leak-check full ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
 
 # SUPERLU_ACC_OFFLOAD=1
-# export GPU3DVERSION=1
-# export SUPERLU_ACC_SOLVE=1
+# export GPU3DVERSION=0
+# export SUPERLU_ACC_SOLVE=0
 # echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
 # srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_batch${batch}
 

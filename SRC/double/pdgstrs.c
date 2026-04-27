@@ -1172,6 +1172,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
 
 #if ( PRNTlevel>=1 )
     if (get_acc_solve()){
+	iam = grid->iam;
 	if ( !iam) printf(".. GPU trisolve\n");
 	fflush(stdout);
     }
