@@ -46,7 +46,7 @@ export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_master
 # NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 NVSHMEM_HOME=${NVSHMEM_ROOT}
 cmake .. \
-  -DCMAKE_C_FLAGS="-O2 -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0 -DAdd_" \
+  -DCMAKE_C_FLAGS="-O2 -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
   -DCMAKE_CXX_FLAGS="-O2 -std=c++14" \
   -DCMAKE_Fortran_FLAGS="-O2" \
   -DCMAKE_CXX_COMPILER=CC \
@@ -62,7 +62,7 @@ cmake .. \
   -DCMAKE_CUDA_STANDARD=14 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_BUILD_TYPE=Release \
   -DTPL_ENABLE_MAGMALIB=ON \
   -DTPL_MAGMA_INCLUDE_DIRS="${MAGMA_ROOT}/include" \
   -DTPL_MAGMA_LIBRARIES="${MAGMA_ROOT}/lib/libmagma.so" \
@@ -79,7 +79,7 @@ cmake .. \
   -DMPIEXEC_MAX_NUMPROCS=16
 
 make pddrive -j16
-# make pddrive3d -j16
+make pddrive3d -j16
 # make pddrive3d_vbatch -j16
 # make pddrive3d_vbatch
 # make pzdrive3d -j16

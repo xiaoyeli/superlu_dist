@@ -108,6 +108,84 @@ _fcd ftcs3;
 #endif
 
 
+static flops_t
+d_acc_lsolve_flops(int_t nsupers, int nrhs, gridinfo_t *grid,
+                   Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
+{
+    int_t *xsup = Glu_persist->xsup;
+    int_t nsupers_j = CEILING(nsupers, grid->npcol);
+    int_t iam = grid->iam;
+    int_t myrow = MYROW(iam, grid);
+    int_t mycol = MYCOL(iam, grid);
+    flops_t ops = 0.0;
+
+    for (int_t lk = 0; lk < nsupers_j; ++lk) {
+        int_t k = mycol + lk * grid->npcol;
+        if (k >= nsupers) continue;
+
+        int_t *lsub = Llu->Lrowind_bc_ptr[lk];
+        if (!lsub) continue;
+
+        int_t knsupc = SuperSize(k);
+        int_t krow = PROW(k, grid);
+        if (myrow == krow) {
+            ops += (flops_t) knsupc * (knsupc - 1) * nrhs;
+        }
+
+        int_t nbrow = lsub[1];
+        if (myrow == krow) nbrow -= knsupc;
+        if (nbrow > 0) {
+            ops += 2.0 * (flops_t) nbrow * (flops_t) knsupc * (flops_t) nrhs;
+        }
+    }
+
+    return ops;
+}
+
+static flops_t
+d_acc_usolve_flops(int_t nsupers, int nrhs, gridinfo_t *grid,
+                   Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
+{
+    int_t *xsup = Glu_persist->xsup;
+    int_t nsupers_j = CEILING(nsupers, grid->npcol);
+    int_t iam = grid->iam;
+    int_t myrow = MYROW(iam, grid);
+    int_t mycol = MYCOL(iam, grid);
+    flops_t ops = 0.0;
+
+    for (int_t lk = 0; lk < nsupers_j; ++lk) {
+        int_t k = mycol + lk * grid->npcol;
+        if (k >= nsupers) continue;
+
+        int_t knsupc = SuperSize(k);
+        if (myrow == PROW(k, grid)) {
+            ops += (flops_t) knsupc * (knsupc + 1) * nrhs;
+        }
+
+        int_t nub = Llu->Urbs ? Llu->Urbs[lk] : 0;
+        for (int_t ub = 0; ub < nub; ++ub) {
+            int_t ik = Llu->Ucb_indptr[lk][ub].lbnum;
+            int_t *usub = Llu->Ufstnz_br_ptr[ik];
+            if (!usub) continue;
+
+            int_t usub_pos = Llu->Ucb_indptr[lk][ub].indpos + UB_DESCRIPTOR;
+            int_t gik = ik * grid->nprow + myrow;
+            if (gik >= nsupers) continue;
+
+            int_t iklrow = FstBlockC(gik + 1);
+            for (int_t jj = 0; jj < knsupc; ++jj) {
+                int_t fnz = usub[usub_pos + jj];
+                if (fnz < iklrow) {
+                    ops += 2.0 * (flops_t) (iklrow - fnz) * (flops_t) nrhs;
+                }
+            }
+        }
+    }
+
+    return ops;
+}
+
+
 
 
 void
@@ -1403,9 +1481,15 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
+	d_x=SOLVEstruct->d_x;
     /* intermediate solution x[] vector has same structure as lsum[], see leading comment */
-    if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
-	ABORT("Calloc fails for x[].");
+    if ( options->GPURES == NO ) {
+		if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
+		ABORT("Calloc fails for x[].");
+	}else{
+		checkGPU(gpuMemset( d_x, 0, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+	}
+
 
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
@@ -1439,9 +1523,15 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     /*---------------------------------------------------
      * Forward solve Ly = b.
      *---------------------------------------------------*/
+if ( options->GPURES == YES ) {
+	pdReDistribute_B_to_X_gpu_wrap(B, m_loc, n, nrhs, ldb, fst_row, d_x,
+				ScalePermstruct, SOLVEstruct, Glu_persist, grid, Llu->d_grid, Llu->d_ilsum, Llu->d_xsup, Llu->d_supno);
+}else{
     /* Redistribute B into X on the diagonal processes. */
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+}
+
 
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
@@ -1878,7 +1968,7 @@ t1 = SuperLU_timer_();
 	}
 	SUPERLU_FREE(Btmp);
 #endif
-#else
+#else /* use cuSparse*/
 
 // #if HAVE_CUDA
 // cudaProfilerStart();
@@ -1890,15 +1980,17 @@ t1 = SuperLU_timer_();
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
     d_fmod=SOLVEstruct->d_fmod;
     d_lsum=SOLVEstruct->d_lsum;
-	d_x=SOLVEstruct->d_x;
 	d_grid=Llu->d_grid;
-
+    if ( options->GPURES == NO ) {
+		checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));
+	}
 	checkGPU(gpuMemcpy(d_fmod, SOLVEstruct->d_fmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
     checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));
-	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));
+
+
 #ifdef HAVE_NVSHMEM
-	checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_statusmod, mystatusmod, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+		checkGPU(gpuMemcpy(d_status, d_status_save, k * sizeof(int), gpuMemcpyDeviceToDevice));
+		checkGPU(gpuMemcpy(d_statusmod, d_statusmod_save, 2* nlb * sizeof(int), gpuMemcpyDeviceToDevice));
 	//for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
 	checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(uint64_t)));
     checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(uint64_t)));
@@ -1947,7 +2039,7 @@ t1 = SuperLU_timer_();
 	/* the following transfer is not needed at the U solve works on the d_x directly */
 	// checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate
+	stat_loc[0]->ops[SOLVE] += d_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
 
 #endif
 #endif
@@ -2642,7 +2734,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 
     d_bmod=SOLVEstruct->d_bmod;
     d_lsum=SOLVEstruct->d_lsum;
-	d_x=SOLVEstruct->d_x;
+	// d_x=SOLVEstruct->d_x;
 	d_grid=Llu->d_grid;
 
 	checkGPU(gpuMemcpy(d_bmod, SOLVEstruct->d_bmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
@@ -2654,8 +2746,8 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	knsupc = sp_ienv_dist(3, options);
 
  #ifdef HAVE_NVSHMEM
-    checkGPU(gpuMemcpy(d_status, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
-    checkGPU(gpuMemcpy(d_statusmod, mystatusmod_u, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+	    checkGPU(gpuMemcpy(d_status, d_status_u_save, k * sizeof(int), gpuMemcpyDeviceToDevice));
+	    checkGPU(gpuMemcpy(d_statusmod, d_statusmod_u_save, 2* nlb * sizeof(int), gpuMemcpyDeviceToDevice));
     //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
     checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(uint64_t)));
     checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(uint64_t)));
@@ -2707,10 +2799,11 @@ if (get_acc_solve()){  /* GPU trisolve*/
 		t = SuperLU_timer_();
 #endif
 
+    if ( options->GPURES == NO ) {
+		checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
+	}
 
-	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
-
-	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
+	stat_loc[0]->ops[SOLVE] += d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
 
 #endif
 }else{  /* CPU trisolve*/
@@ -3098,8 +3191,14 @@ for (lk=0;lk<nsupers_j;++lk){
 	}
 #endif
 
+
+if ( options->GPURES == YES ) {
+	pdReDistribute_X_to_B_gpu_wrap(B, m_loc, n, nrhs, ldb, fst_row,
+				nsupers, d_x, ScalePermstruct, SOLVEstruct, Glu_persist, grid, Llu->d_grid, Llu->d_ilsum, Llu->d_xsup, Llu->d_supno);
+}else{
 	pdReDistribute_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+}
 
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
@@ -3110,12 +3209,10 @@ for (lk=0;lk<nsupers_j;++lk){
 	double tmp1=0;
 	double tmp2=0;
 	double tmp3=0;
-	double tmp4=0;
 	for(i=0;i<num_thread;i++){
 		tmp1 = SUPERLU_MAX(tmp1,stat_loc[i]->utime[SOL_TRSM]);
 		tmp2 = SUPERLU_MAX(tmp2,stat_loc[i]->utime[SOL_GEMM]);
 		tmp3 = SUPERLU_MAX(tmp3,stat_loc[i]->utime[SOL_COMM]);
-		tmp4 += stat_loc[i]->ops[SOLVE];
 #if ( PRNTlevel>=2 )
 		if(iam==0)printf("thread %5d gemm %9.5f\n",i,stat_loc[i]->utime[SOL_GEMM]);
 #endif
@@ -3124,7 +3221,8 @@ for (lk=0;lk<nsupers_j;++lk){
 	stat->utime[SOL_TRSM] += tmp1;
 	stat->utime[SOL_GEMM] += tmp2;
 	stat->utime[SOL_COMM] += tmp3;
-	stat->ops[SOLVE]+= tmp4;
+	stat->ops[SOLVE] += d_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu)
+	    + d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
 
 	/* Deallocate storage. */
 	for(i=0;i<num_thread;i++){
@@ -3134,7 +3232,9 @@ for (lk=0;lk<nsupers_j;++lk){
 	SUPERLU_FREE(stat_loc);
 	SUPERLU_FREE(rtemp);
 	SUPERLU_FREE(lsum);
-	SUPERLU_FREE(x);
+	if ( options->GPURES == NO ) {
+		SUPERLU_FREE(x);
+	}
 
 	SUPERLU_FREE(bmod);
 	SUPERLU_FREE(brecv);
@@ -3197,4 +3297,3 @@ for (lk=0;lk<nsupers_j;++lk){
 
     return;
 } /* PDGSTRS */
-

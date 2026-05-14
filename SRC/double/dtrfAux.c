@@ -729,6 +729,9 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 
     dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
+#ifdef GPU_ACC
+    trf3Dpartition->d_superGridMap = NULL;
+#endif
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
     trf3Dpartition->iperm_c_supno = iperm_c_supno;
     trf3Dpartition->myNodeCount = myNodeCount;
@@ -739,6 +742,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     trf3Dpartition->maxLvl = maxLvl;
     // trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
+    trf3Dpartition->superGridMap = NULL;
     trf3Dpartition->supernodeMask = supernodeMask;
     trf3Dpartition->mxLeafNode = mxLeafNode;  // Sherry added these 3
     trf3Dpartition->diagDims = ldts;
@@ -913,6 +917,9 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
 
     dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
+#ifdef GPU_ACC
+    trf3Dpartition->d_superGridMap = NULL;
+#endif
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
     trf3Dpartition->iperm_c_supno = iperm_c_supno;
     trf3Dpartition->myNodeCount = myNodeCount;
@@ -923,6 +930,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
     trf3Dpartition->maxLvl = maxLvl;
     // trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
+    trf3Dpartition->superGridMap = NULL;
     trf3Dpartition->supernodeMask = supernodeMask;
     trf3Dpartition->mxLeafNode = mxLeafNode;  // Sherry added these 3
     trf3Dpartition->diagDims = ldts;
@@ -1099,6 +1107,9 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     //PrintInt10("inittrf3Dpartition: ldts", mxLeafNode, ldts);
     dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
+#ifdef GPU_ACC
+    trf3Dpartition->d_superGridMap = NULL;
+#endif
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
     trf3Dpartition->iperm_c_supno = iperm_c_supno;
     trf3Dpartition->myNodeCount = myNodeCount;
@@ -1109,6 +1120,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     trf3Dpartition->maxLvl = maxLvl;
     trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
+    trf3Dpartition->superGridMap = NULL;
     trf3Dpartition->supernodeMask = supernodeMask;
     trf3Dpartition->mxLeafNode = mxLeafNode;  // Sherry added these 3
     trf3Dpartition->diagDims = ldts;
@@ -1155,6 +1167,10 @@ void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)
 	}
     }
     SUPERLU_FREE(trf3Dpartition->sForests); // double pointer
+#ifdef GPU_ACC
+    if (trf3Dpartition->d_superGridMap)
+	checkGPU(gpuFree(trf3Dpartition->d_superGridMap));
+#endif
     SUPERLU_FREE(trf3Dpartition->supernode2treeMap);
     SUPERLU_FREE(trf3Dpartition->supernodeMask);
     SUPERLU_FREE(trf3Dpartition->superGridMap);
@@ -1249,5 +1265,3 @@ int_t estimate_bigu_size( int_t nsupers, int_t ldt, int_t**Ufstnz_br_ptr,
     return ldt * max_ncols;
 } /* old estimate_bigu_size. New one is in util.c */
 #endif /**** end old ones ****/
-
-

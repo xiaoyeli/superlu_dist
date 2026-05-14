@@ -225,6 +225,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->lookahead_etree = NO;
     options->num_lookaheads = 10;
     options->SolveOnly = NO;
+    options->GPURES = NO;
     options->ILU_level = SLU_EMPTY;
     options->UserDefineSupernode = NO; /* detect supernodes internally */
     options->superlu_maxsup = 256;
@@ -269,6 +270,7 @@ void print_options_dist(superlu_dist_options_t *options)
     printf("**    SymPattern                : %4d\n", options->SymPattern);
     printf("**    lookahead_etree           : %4d\n", options->lookahead_etree);
     printf("**    SolveOnly                 : %4d\n", options->SolveOnly);
+    printf("**    GPURES                    : %4d\n", options->GPURES);
     printf("**    ILU_level                 : %4d\n", options->ILU_level);
     printf("**    UserDefineSupernode       : %4d\n", options->UserDefineSupernode);
     printf("**    Use_TensorCore            : %4d\n", options->Use_TensorCore);

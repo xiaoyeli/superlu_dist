@@ -694,6 +694,7 @@ typedef struct {
     yes_no_t      ConditionNumber;
     rowperm_t     RowPerm;
     yes_no_t      SolveOnly;      /* Treat the input matrix A as the L & U factors */
+    yes_no_t      GPURES;      /* whether the rhs/x argument of the solver API is already on GPU or not*/
     int           ILU_level;      /* level-based ILU */
     int 	  ILU_DropRule;
     double	  ILU_DropTol;    /* threshold for dropping */

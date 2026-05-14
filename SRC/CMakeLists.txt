@@ -174,7 +174,7 @@ if(enable_double)
   
 if (TPL_ENABLE_CUDALIB)
   list(APPEND sources
-       cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
+       cuda/pdgstrs_lsum_cuda.cu cuda/pdgstrs_perm_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
 ##       CplusplusFactor/schurCompUpdate.cu 
 #       CplusplusFactor/pdgstrf3d_upacked.cpp
 #       CplusplusFactor/dsparseTreeFactor_upacked.cpp

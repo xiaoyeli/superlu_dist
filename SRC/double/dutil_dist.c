@@ -491,6 +491,16 @@ void dScalePermstructInit(const int_t m, const int_t n,
         ABORT("Malloc fails for perm_r[].");
     if ( !(ScalePermstruct->perm_c = int32Malloc_dist(n)) )
         ABORT("Malloc fails for perm_c[].");
+
+#ifdef GPU_ACC
+    ScalePermstruct->d_R = NULL;
+    ScalePermstruct->d_C = NULL;
+    if (get_acc_solve()){
+        checkGPU(gpuMalloc((void**)&ScalePermstruct->d_perm_r, sizeof(int) * (size_t)m));
+        checkGPU(gpuMalloc((void**)&ScalePermstruct->d_perm_c, sizeof(int) * (size_t)n));
+    }
+#endif
+
 }
 
 /*! \brief Deallocate ScalePermstruct */
@@ -498,16 +508,38 @@ void dScalePermstructFree(dScalePermstruct_t *ScalePermstruct)
 {
     SUPERLU_FREE(ScalePermstruct->perm_r);
     SUPERLU_FREE(ScalePermstruct->perm_c);
+#ifdef GPU_ACC
+    if (get_acc_solve()){
+        checkGPU (gpuFree (ScalePermstruct->d_perm_c));
+        checkGPU (gpuFree (ScalePermstruct->d_perm_r));
+    }
+#endif
     switch ( ScalePermstruct->DiagScale ) {
       case ROW:
         SUPERLU_FREE(ScalePermstruct->R);
+#ifdef GPU_ACC
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_R));
+        }
+#endif
         break;
       case COL:
         SUPERLU_FREE(ScalePermstruct->C);
+#ifdef GPU_ACC
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_C));
+        }
+#endif
         break;
       case BOTH:
         SUPERLU_FREE(ScalePermstruct->R);
         SUPERLU_FREE(ScalePermstruct->C);
+#ifdef GPU_ACC
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_R));
+            checkGPU (gpuFree (ScalePermstruct->d_C));
+        }
+#endif
         break;
       default: break;
     }
@@ -1837,5 +1869,3 @@ void dDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
  	fclose(fp);
 
 } /* end dDumpLblocks3D */
-
-

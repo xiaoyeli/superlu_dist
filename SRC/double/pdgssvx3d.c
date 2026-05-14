@@ -607,7 +607,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
        B2d is allocated;
        B is then aliased to B2d for the following 2D solve;
     */
-    dGatherNRformat_loc3d_allgrid(Fact, (NRformat_loc *)A->Store,
+    dGatherNRformat_loc3d_allgrid(options, Fact, (NRformat_loc *)A->Store,
 				     B, ldb, nrhs, grid3d, &A3d);
 
     B = (double *)A3d->B2d; /* B is now pointing to B2d,
@@ -962,7 +962,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    /* nvshmem related */ // TODO: Does this work in iterative refinement with rhs>1? Should we associate these data with SOLVEstruct?
 #ifdef HAVE_NVSHMEM
-    	    int nc = CEILING( nsupers, grid->npcol);
+	    int nc = CEILING( nsupers, grid->npcol);
 	    int nr = CEILING( nsupers, grid->nprow);
 	    int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
 	    int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
@@ -972,7 +972,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    int ready_x_size = maxrecvsz*nc;
 	    int ready_lsum_size = 2*maxrecvsz*nr;
             if (get_acc_solve()){
-		nv_init_wrapper(grid->comm);
+			nv_init_wrapper(grid->comm);
 	        dprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 	    }
 #endif
@@ -1423,6 +1423,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	   ------------------------------------------------------------ */
 	if ((nrhs > 0) && (*info == 0))
 	{
+	    if (options->GPURES == YES &&
+		(!Solve3D || !get_new3dsolve() || !get_new3dsolvetreecomm() ||
+		 options->IterRefine)) {
+		ABORT("GPURES pdgssvx3d path currently assumes Solve3D, NEW3DSOLVE=1, NEW3DSOLVETREECOMM=1, and NOREFINE.");
+	    }
 	    if (options->SolveInitialized == NO){
 	        if (get_acc_solve()){
 	            if (get_new3dsolve() && Solve3D==true){
@@ -1442,53 +1447,66 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		// if (!(b_work = doubleMalloc_dist(n)))
 		// 	ABORT("Malloc fails for b_work[]");
-		/* ------------------------------------------------------
-		   Scale the right-hand side if equilibration was performed
-		   ------------------------------------------------------*/
-		if (notran)
-		{
-		    if (rowequ)
+		if (options->GPURES == YES) {
+#ifdef GPU_ACC
+		    ldx = ldb;
+		    checkGPU(gpuMalloc((void**)&X,
+				       sizeof(double) * (size_t)ldx * (size_t)nrhs));
+		    dscale_and_copy_rhs_wrap(B, ldb, X, ldx, m_loc, nrhs,
+					     fst_row, notran, rowequ, colequ,
+					     ScalePermstruct);
+#else
+		    ABORT("GPURES requires GPU_ACC in pdgssvx3d().");
+#endif
+		} else {
+		    /* ------------------------------------------------------
+		       Scale the right-hand side if equilibration was performed
+		       ------------------------------------------------------*/
+		    if (notran)
 		    {
-		        b_col = B;
+			if (rowequ)
+			{
+			    b_col = B;
+			    for (j = 0; j < nrhs; ++j)
+			    {
+				irow = fst_row;
+				for (i = 0; i < m_loc; ++i)
+				{
+				    b_col[i] *= R[irow];
+				    ++irow;
+				}
+				b_col += ldb;
+			    }
+			}
+		    }
+		    else if (colequ)
+		    {
+			b_col = B;
 			for (j = 0; j < nrhs; ++j)
 			{
 			    irow = fst_row;
 			    for (i = 0; i < m_loc; ++i)
 			    {
-				b_col[i] *= R[irow];
+				b_col[i] *= C[irow];
 				++irow;
 			    }
 			    b_col += ldb;
 			}
 		    }
-		}
-		else if (colequ)
-		{
+
+		    /* Save a copy of the right-hand side. */
+		    ldx = ldb;
+		    if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
+			    ABORT("Malloc fails for X[]");
+		    x_col = X;
 		    b_col = B;
 		    for (j = 0; j < nrhs; ++j)
 		    {
-			irow = fst_row;
 			for (i = 0; i < m_loc; ++i)
-			{
-			    b_col[i] *= C[irow];
-			    ++irow;
-			}
+			    x_col[i] = b_col[i];
+			x_col += ldx;
 			b_col += ldb;
 		    }
-		}
-
-		/* Save a copy of the right-hand side. */
-		ldx = ldb;
-		if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
-			ABORT("Malloc fails for X[]");
-		x_col = X;
-		b_col = B;
-		for (j = 0; j < nrhs; ++j)
-		{
-		    for (i = 0; i < m_loc; ++i)
-			x_col[i] = b_col[i];
-		    x_col += ldx;
-		    b_col += ldb;
 		}
 
 		/* ------------------------------------------------------
@@ -1502,8 +1520,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		       the Solve data & communication structures, unless a new
 		       factorization with Fact == DOFACT or SamePattern is asked for. */
 		{
-		    dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
-					grid, SOLVEstruct);
+		    dSolveInit(options, A, perm_r, perm_c, nrhs, n, LUstruct,
+					grid, SOLVEstruct, ScalePermstruct);
 		}
 		if (get_new3dsolve()){
 		    pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
@@ -1673,8 +1691,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			the Solve data & communication structures, unless a new
 			factorization with Fact == DOFACT or SamePattern is asked for. */
 		{
-		    dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
-					grid, SOLVEstruct);
+		    dSolveInit(options, A, perm_r, perm_c, nrhs, n, LUstruct,
+					grid, SOLVEstruct,ScalePermstruct);
 		}
 		pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
@@ -1791,19 +1809,46 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 	{
 	    /* Permute the solution matrix B <= Pc'*X. */
-	    pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
-				SOLVEstruct->inv_perm_c,
-				X, ldx, B, ldb, nrhs, grid);
-#if ( DEBUGlevel>=2 )
-	    printf ("\n (%d) .. After pdPermute_Dense_Matrix(): b =\n", iam);
-	    for (i = 0; i < m_loc; ++i)
-	        printf ("\t(%d)\t%4d\t%.10f\n", iam, i + fst_row, B[i]);
+	    if (options->GPURES == YES) {
+#ifdef GPU_ACC
+		pdPermute_Dense_Matrix_gpu_wrap(fst_row, m_loc, n,
+						 X, ldx, B, ldb, nrhs,
+						 grid, SOLVEstruct);
+		dundo_equilibration_rhs_wrap(B, ldb, m_loc, nrhs, fst_row,
+					     notran, rowequ, colequ,
+					     ScalePermstruct);
+#else
+		ABORT("GPURES requires GPU_ACC in pdgssvx3d().");
 #endif
-	    /* Transform the solution matrix X to a solution of the original
-	       system before the equilibration. */
-	    if (notran)
-	    {
-	 	if (colequ)
+	    } else {
+		pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
+				    SOLVEstruct->inv_perm_c,
+				    X, ldx, B, ldb, nrhs, grid);
+#if ( DEBUGlevel>=2 )
+		printf ("\n (%d) .. After pdPermute_Dense_Matrix(): b =\n", iam);
+		for (i = 0; i < m_loc; ++i)
+		    printf ("\t(%d)\t%4d\t%.10f\n", iam, i + fst_row, B[i]);
+#endif
+		/* Transform the solution matrix X to a solution of the original
+		   system before the equilibration. */
+		if (notran)
+		{
+		    if (colequ)
+		    {
+			b_col = B;
+			for (j = 0; j < nrhs; ++j)
+			{
+			    irow = fst_row;
+			    for (i = 0; i < m_loc; ++i)
+			    {
+				b_col[i] *= C[irow];
+				++irow;
+			    }
+			    b_col += ldb;
+			}
+		    }
+		}
+		else if (rowequ)
 		{
 		    b_col = B;
 		    for (j = 0; j < nrhs; ++j)
@@ -1811,33 +1856,28 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			irow = fst_row;
 			for (i = 0; i < m_loc; ++i)
 			{
-			    b_col[i] *= C[irow];
+			    b_col[i] *= R[irow];
 			    ++irow;
 			}
 			b_col += ldb;
 		    }
 		}
 	    }
-	    else if (rowequ)
-	    {
-		b_col = B;
-		for (j = 0; j < nrhs; ++j)
-	        {
-		    irow = fst_row;
-		    for (i = 0; i < m_loc; ++i)
-		    {
-			b_col[i] *= R[irow];
-			++irow;
-		    }
-		    b_col += ldb;
-		}
-	    }
 
 	    // SUPERLU_FREE (b_work);
 	}
 	
-	if (grid3d->zscp.Iam == 0 || Solve3D)
+	if (grid3d->zscp.Iam == 0 || Solve3D) {
+	    if (options->GPURES == YES) {
+#ifdef GPU_ACC
+		checkGPU(gpuFree(X));
+#else
+		ABORT("GPURES requires GPU_ACC in pdgssvx3d().");
+#endif
+	    } else {
 		SUPERLU_FREE (X);
+	    }
+	}
 
     } /* end if nrhs > 0 and factor successful */
 
@@ -1856,12 +1896,26 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    case NOEQUIL:
 			SUPERLU_FREE (R);
 			SUPERLU_FREE (C);
+#ifdef GPU_ACC
+			if (get_acc_solve()) {
+			    checkGPU(gpuFree(ScalePermstruct->d_R));
+			    checkGPU(gpuFree(ScalePermstruct->d_C));
+			}
+#endif
 			break;
 		    case ROW:
 			SUPERLU_FREE (C);
+#ifdef GPU_ACC
+			if (get_acc_solve())
+			    checkGPU(gpuFree(ScalePermstruct->d_C));
+#endif
 			break;
 		    case COL:
 			SUPERLU_FREE (R);
+#ifdef GPU_ACC
+			if (get_acc_solve())
+			    checkGPU(gpuFree(ScalePermstruct->d_R));
+#endif
 			break;
 	            default: break;
 		}
@@ -1876,7 +1930,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Scatter the solution from 2D grid-0 to 3D grid */
 	if (nrhs > 0)
-		dScatter_B3d(A3d, grid3d);
+		dScatter_B3d(options, A3d, grid3d);
 
 	B = A3d->B3d;		 // B is now assigned back to B3d on return
 	A->Store = Astore3d; // restore Astore to 3D

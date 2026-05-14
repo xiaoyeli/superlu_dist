@@ -108,10 +108,10 @@ int main (int argc, char *argv[])
     dSOLVEstruct_t SOLVEstruct;
     gridinfo3d_t grid;
     double *berr;
-    double *b, *xtrue;
+    double *b, *xtrue, *d_b;
     int_t m, n;
     int nprow, npcol, npdep;
-    int equil, colperm, rowperm, ir, lookahead;
+    int equil, colperm, rowperm, ir, lookahead, gpures;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp;
@@ -136,6 +136,7 @@ int main (int argc, char *argv[])
     rowperm = -1;
     ir = -1;
     lookahead = -1;
+    gpures = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -168,6 +169,7 @@ int main (int argc, char *argv[])
                 printf ("\t-r <int>: process rows    (default %d)\n", nprow);
                 printf ("\t-c <int>: process columns (default %d)\n", npcol);
                 printf ("\t-d <int>: process Z-dimension (default %d)\n", npdep);
+                printf ("\t-g <int>: gpu-resident solve? (default %d)\n", NO);
                 exit (0);
                 break;
             case 'r':
@@ -192,6 +194,8 @@ int main (int argc, char *argv[])
             case 's': nrhs = atoi(*cpp);
                       break;                      
             case 'l': lookahead = atoi(*cpp);
+                      break;
+            case 'g': gpures = atoi(*cpp);
                       break;
             }
         }
@@ -223,6 +227,8 @@ int main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
+    options.IterRefine = NOREFINE;
+    options.GPURES = NO;
 
 
 // //The following options test ILU
@@ -250,6 +256,7 @@ int main (int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (ir != -1) options.IterRefine = ir;
     if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (gpures != -1) options.GPURES = gpures;
 
     //////* this test SolveOnly*/
     // options.SolveOnly = YES;
@@ -451,6 +458,14 @@ int main (int argc, char *argv[])
                              &xtrue, &ldx, fp, suffix, &(grid));
     }
 
+#ifdef GPU_ACC
+    if (options.GPURES == YES) {
+	checkGPU(gpuMalloc((void**)&d_b, sizeof(double) * (size_t)ldb * (size_t)nrhs));
+	checkGPU(gpuMemcpy(d_b, b, sizeof(double) * (size_t)ldb * (size_t)nrhs,
+			   gpuMemcpyHostToDevice));
+    }
+#endif
+
 #if 0  // following code is only for checking *Gather* routine
     NRformat_loc *Astore, *Astore0;
     double* B2d;
@@ -514,8 +529,20 @@ int main (int argc, char *argv[])
     PStatInit (&stat);
 
     /* Call the linear equation solver. */
-    pdgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-               &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    if (options.GPURES == YES) {
+#ifdef GPU_ACC
+	pdgssvx3d (&options, &A, &ScalePermstruct, d_b, ldb, nrhs, &grid,
+		   &LUstruct, &SOLVEstruct, berr, &stat, &info);
+	checkGPU(gpuMemcpy(b, d_b, sizeof(double) * (size_t)ldb * (size_t)nrhs,
+			   gpuMemcpyDeviceToHost));
+	checkGPU(gpuFree(d_b));
+#else
+	ABORT("GPURES requires GPU_ACC in pddrive3d.");
+#endif
+    } else {
+	pdgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		   &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    }
 
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
@@ -535,8 +562,9 @@ int main (int argc, char *argv[])
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
-    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
+    /* Free solve-side NVSHMEM buffers before dDestroy_LU finalizes NVSHMEM. */
     dSolveFinalize (&options, &SOLVEstruct);
+    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
 
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 

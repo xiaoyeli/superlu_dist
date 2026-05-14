@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
     dSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     double   *berr;
-    double   *b, *xtrue;
+    double   *b, *xtrue, *d_b;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, gpures;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp;
@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
     ir = -1;
     symbfact = -1;
     batch = 0;
+    gpures = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -124,7 +125,11 @@ int main(int argc, char *argv[])
     // options.ILU_level = 0;
     // options.ReplaceTinyPivot  = YES;
     // options.ColPerm = NATURAL;
-
+    options.IterRefine = NOREFINE;
+    options.GPURES = NO;
+    // options.ColPerm = NATURAL;
+    // options.RowPerm = NATURAL;
+    // options.Equil = NO;
     
 #if 0
     options.ParSymbFact = YES;
@@ -149,6 +154,7 @@ int main(int argc, char *argv[])
 		  printf("\t-s <int>: parallel symbolic? (default %4d)\n", options.ParSymbFact);
 		  printf("\t-l <int>: lookahead level    (default %4d)\n", options.num_lookaheads);
 		  printf("\t-i <int>: iter. refinement   (default %4d)\n", options.IterRefine);
+		  printf("\t-g <int>: gpu-resident solve?   (default %4d)\n", options.GPURES);
 		  printf("\t-b <int>: use batch mode?    (default %4d)\n", batch);
 		  exit(0);
 		  break;
@@ -162,12 +168,16 @@ int main(int argc, char *argv[])
                         break;
               case 'q': colperm = atoi(*cpp);
                         break;
-	      case 's': symbfact = atoi(*cpp);
-		        break;
+	          case 's': symbfact = atoi(*cpp);
+		                break;
+	          case 'a': nrhs = atoi(*cpp);
+		                break;                        
               case 'i': ir = atoi(*cpp);
                         break;
               case 'b': batch = atoi(*cpp);
                         break;
+              case 'g': gpures = atoi(*cpp);
+                        break;                        
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -183,6 +193,7 @@ int main(int argc, char *argv[])
     if (lookahead != -1) options.num_lookaheads = lookahead;
     if (ir != -1) options.IterRefine = ir;
     if (symbfact != -1) options.ParSymbFact = symbfact;
+    if (gpures != -1) options.GPURES = gpures;
 
     int superlu_acc_offload = get_acc_offload(&options);
     
@@ -318,6 +329,15 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
+#ifdef GPU_ACC
+    if ( options.GPURES == YES ){
+    // if (0 ){
+        checkGPU(gpuMalloc((void**)&d_b, sizeof(double) * (size_t)(ldb*nrhs)));
+        checkGPU(gpuMemcpy(d_b, b, sizeof(double) * (size_t)(ldb*nrhs), gpuMemcpyHostToDevice));
+    }
+#endif	
+
+
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
 
@@ -337,6 +357,22 @@ int main(int argc, char *argv[])
     PStatInit(&stat);
 
     /* Call the linear equation solver. */
+if ( options.GPURES == YES ){ 
+// if ( 0 ){ 
+    pdgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
+	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
+
+    // options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
+    // checkGPU(gpuMemcpy(d_b, b, sizeof(double) * (size_t)(ldb*nrhs), gpuMemcpyHostToDevice));
+    // pdgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
+	//     &LUstruct, &SOLVEstruct, berr, &stat, &info);
+        
+#ifdef GPU_ACC
+    checkGPU(gpuMemcpy(b, d_b, sizeof(double) * (size_t)(ldb*nrhs), gpuMemcpyDeviceToHost));
+    checkGPU (gpuFree (d_b));     
+#endif	
+
+}else
     pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
@@ -359,9 +395,10 @@ int main(int argc, char *argv[])
 
     Destroy_CompRowLoc_Matrix_dist(&A);
     dScalePermstructFree(&ScalePermstruct);
+    /* Free solve-side NVSHMEM buffers before dDestroy_LU finalizes NVSHMEM. */
+    dSolveFinalize(&options, &SOLVEstruct);
     dDestroy_LU(n, &grid, &LUstruct);
     dLUstructFree(&LUstruct);
-    dSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
