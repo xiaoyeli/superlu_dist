@@ -1481,14 +1481,21 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
-	d_x=SOLVEstruct->d_x;
     /* intermediate solution x[] vector has same structure as lsum[], see leading comment */
-    if ( options->GPURES == NO ) {
+#ifdef GPU_ACC
+	d_x=SOLVEstruct->d_x;
+    if ( options->GPURES == YES ) {
+		checkGPU(gpuMemset( d_x, 0, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+	} else {
 		if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 		ABORT("Calloc fails for x[].");
-	}else{
-		checkGPU(gpuMemset( d_x, 0, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
 	}
+#else
+    if ( options->GPURES == YES )
+	ABORT("GPURES requires GPU_ACC in pdgstrs().");
+	if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
+	ABORT("Calloc fails for x[].");
+#endif
 
 
     sizertemp=ldalsum * nrhs;
@@ -1523,14 +1530,18 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     /*---------------------------------------------------
      * Forward solve Ly = b.
      *---------------------------------------------------*/
+#ifdef GPU_ACC
 if ( options->GPURES == YES ) {
 	pdReDistribute_B_to_X_gpu_wrap(B, m_loc, n, nrhs, ldb, fst_row, d_x,
 				ScalePermstruct, SOLVEstruct, Glu_persist, grid, Llu->d_grid, Llu->d_ilsum, Llu->d_xsup, Llu->d_supno);
 }else{
+#endif
     /* Redistribute B into X on the diagonal processes. */
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+#ifdef GPU_ACC
 }
+#endif
 
 
 #if ( PROFlevel>=1 )
@@ -3192,13 +3203,17 @@ for (lk=0;lk<nsupers_j;++lk){
 #endif
 
 
+#ifdef GPU_ACC
 if ( options->GPURES == YES ) {
 	pdReDistribute_X_to_B_gpu_wrap(B, m_loc, n, nrhs, ldb, fst_row,
 				nsupers, d_x, ScalePermstruct, SOLVEstruct, Glu_persist, grid, Llu->d_grid, Llu->d_ilsum, Llu->d_xsup, Llu->d_supno);
 }else{
+#endif
 	pdReDistribute_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+#ifdef GPU_ACC
 }
+#endif
 
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
@@ -3232,9 +3247,13 @@ if ( options->GPURES == YES ) {
 	SUPERLU_FREE(stat_loc);
 	SUPERLU_FREE(rtemp);
 	SUPERLU_FREE(lsum);
+#ifdef GPU_ACC
 	if ( options->GPURES == NO ) {
 		SUPERLU_FREE(x);
 	}
+#else
+	SUPERLU_FREE(x);
+#endif
 
 	SUPERLU_FREE(bmod);
 	SUPERLU_FREE(brecv);
