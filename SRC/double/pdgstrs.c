@@ -10,6 +10,8 @@ at the top-level directory.
 */
 
 
+
+
 /*! @file
  * \brief Solves a system of distributed linear equations A*X = B with a
  * general N-by-N matrix A using the LU factors computed previously.
@@ -546,21 +548,21 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 		/* Communicate the (permuted) row indices. */
 		MPI_Alltoallv(send_ibuf, SendCnt, sdispls, mpi_int_t,
 			  recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
- 		/* Communicate the numerical values. */
+		/* Communicate the numerical values. */
 		MPI_Alltoallv(send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_DOUBLE,
 			  recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, MPI_DOUBLE,
 			  grid->comm);
 	#else
- 		/* Communicate the (permuted) row indices. */
+		/* Communicate the (permuted) row indices. */
 		MPI_Ialltoallv(send_ibuf, SendCnt, sdispls, mpi_int_t,
 				recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm, &req_i);
- 		/* Communicate the numerical values. */
+		/* Communicate the numerical values. */
 		MPI_Ialltoallv(send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_DOUBLE,
 				recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, MPI_DOUBLE,
 				grid->comm, &req_d);
 		MPI_Wait(&req_i,&status);
 		MPI_Wait(&req_d,&status);
- 	#endif
+	#endif
 #endif
 	MPI_Barrier( grid->comm );
 
@@ -775,7 +777,7 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 		}
 		num_diag_procs = SOLVEstruct->num_diag_procs;
 		diag_procs = SOLVEstruct->diag_procs;
- 		for (p = 0; p < num_diag_procs; ++p) {  /* For all diagonal processes. */
+		for (p = 0; p < num_diag_procs; ++p) {  /* For all diagonal processes. */
 		pkk = diag_procs[p];
 		if ( iam == pkk ) {
 			for (k = p; k < nsupers; k += num_diag_procs) {
@@ -820,7 +822,7 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 		MPI_Ialltoallv(send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_DOUBLE,
 				recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, MPI_DOUBLE,
 				grid->comm,&req_d);
- 		MPI_Wait(&req_i,&status);
+		MPI_Wait(&req_i,&status);
 		MPI_Wait(&req_d,&status);
 	#endif
 #endif
@@ -1013,10 +1015,10 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
 		      for (i=0 ; i<j+1; i++){
 			  Uinv[j*knsupc+i] = lusup[j*nsupr+i];
 	              }
- 		  }
+		  }
 
 		  /* Triangular inversion */
-   		  dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
+		  dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
 
 		  dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);
 
@@ -1171,10 +1173,10 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     SuperLUStat_t **stat_loc;
 
     double tmax;
-    	/*-- Counts used for L-solve --*/
+	/*-- Counts used for L-solve --*/
     int  *fmod;         /* Modification count for L-solve --
-    			 Count the number of local block products to
-    			 be summed into lsum[lk]. */
+			 Count the number of local block products to
+			 be summed into lsum[lk]. */
 	int_t *fmod_sort;
 	int_t *order;
 	//int_t *order1;
@@ -1184,8 +1186,8 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     int  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
     int  nfrecvx_buf=0;
     int  *frecv;        /* Count of lsum[lk] contributions to be received
-    			     from processes in this row.
-    			     It is only valid on the diagonal processes. */
+			     from processes in this row.
+			     It is only valid on the diagonal processes. */
     int  frecv_tmp;
     int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int  nfrecv = 0; /* Count of total messages to be recv'd. */
@@ -1200,7 +1202,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     int  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
     int  nbrecvx_buf=0;
     int  *brecv;        /* Count of modifications to be recv'd from
-    			     processes in this row. */
+			     processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
@@ -1326,9 +1328,9 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
     {
-    	if (omp_get_thread_num () == 0) {
-    		num_thread = omp_get_num_threads ();
-    	}
+	if (omp_get_thread_num () == 0) {
+		num_thread = omp_get_num_threads ();
+	}
     }
 #else
 	num_thread=1;
@@ -1473,11 +1475,11 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     {
 	int thread_id = omp_get_thread_num(); //mjc
 	for (ii=0; ii<sizelsum; ii++)
-    	    lsum[thread_id*sizelsum+ii]=zero;
+	    lsum[thread_id*sizelsum+ii]=zero;
     }
 #else
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
-  	    ABORT("Malloc fails for lsum[].");
+	    ABORT("Malloc fails for lsum[].");
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
@@ -2062,7 +2064,7 @@ t1 = SuperLU_timer_();
 	    int thread_id = omp_get_thread_num();
 #else
 	{
- 	    thread_id=0;
+	    thread_id=0;
 #endif
 		{
 
@@ -2077,7 +2079,7 @@ t1 = SuperLU_timer_();
 // #ifdef _OPENMP
 // #pragma omp task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
 // #endif
-   		    {
+		    {
 
 #if ( PROFlevel>=1 )
 			TIC(t1);
@@ -2170,13 +2172,13 @@ t1 = SuperLU_timer_();
 		    nsupr = lsub[1];
 
 #ifdef _CRAY
-   		    STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
+		    STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
 		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
- 		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
+		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
 
@@ -2495,7 +2497,7 @@ t1 = SuperLU_timer_();
 			    } /* check Tag */
 			} /* end for nfrecv ... */
                     } /* while not finished ... */
-       	    }
+	    }
         } // end of parallel
 		for (lk=0;lk<nsupers_j;++lk){
 			if(LBtree_ptr[lk].empty_==NO){
@@ -2594,16 +2596,16 @@ t1 = SuperLU_timer_();
 		for(ii=0;ii<sizelsum;ii++)
 			lsum[thread_id*sizelsum+ii]=zero;
 	}
-  	/* Set up the headers in lsum[]. */
+	/* Set up the headers in lsum[]. */
 //#pragma omp simd lastprivate(krow,lk,il)
-    	for (k = 0; k < nsupers; ++k) {
+	for (k = 0; k < nsupers; ++k) {
 	    krow = PROW( k, grid );
 	    if ( myrow == krow ) {
 	       lk = LBi( k, grid );   /* Local block number. */
 	       il = LSUM_BLK( lk );
 	       lsum[il - LSUM_H] = k; /* Block number prepended in the header. */
 	    }
-    	}
+	}
 
 #else
 	for (k = 0; k < nsupers; ++k) {

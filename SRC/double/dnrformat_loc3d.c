@@ -515,30 +515,30 @@ void dGatherNRformat_loc3d_allgrid
 	    ABORT("GPURES requires GPU_ACC in dGatherNRformat_loc3d_allgrid().");
 #endif
 	} else {
-	    /* Btmp <- compact(B), compacting B */
-	    double *Btmp;
-	    Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(double));
-	    matCopy(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
+	/* Btmp <- compact(B), compacting B */
+	double *Btmp;
+	Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(double));
+	matCopy(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
 
-	    double *B1;
-	    B1 = doubleMalloc_dist(A2d->m_loc * nrhs);
-	    A3d->B2d = doubleMalloc_dist(A2d->m_loc * nrhs);
+	double *B1;
+	B1 = doubleMalloc_dist(A2d->m_loc * nrhs);
+	A3d->B2d = doubleMalloc_dist(A2d->m_loc * nrhs);
 
-	    // B1 <- gatherv(Btmp)
-	    MPI_Allgatherv(Btmp, nrhs * A->m_loc, MPI_DOUBLE, B1,
-			b_counts_int, b_disp,
-			MPI_DOUBLE, grid3d->zscp.comm);
-	    SUPERLU_FREE(Btmp);
+	// B1 <- gatherv(Btmp)
+	MPI_Allgatherv(Btmp, nrhs * A->m_loc, MPI_DOUBLE, B1,
+		    b_counts_int, b_disp,
+		    MPI_DOUBLE, grid3d->zscp.comm);
+	SUPERLU_FREE(Btmp);
 
-	    // B2d <- colMajor(B1)
-	    for (int i = 0; i < grid3d->npdep; ++i)
-	    {
+	// B2d <- colMajor(B1)
+	for (int i = 0; i < grid3d->npdep; ++i)
+		{
 		/* code */
 		matCopy(row_counts_int[i], nrhs, ((double*)A3d->B2d) + row_disp[i],
 			A2d->m_loc, B1 + nrhs * row_disp[i], row_counts_int[i]);
-	    }
+		}
 
-	    SUPERLU_FREE(B1);
+	SUPERLU_FREE(B1);
 	}
 
     } /* end gather B2d */
@@ -583,8 +583,8 @@ int dScatter_B3d(superlu_dist_options_t *options,
 	    ABORT("GPURES requires GPU_ACC in dScatter_B3d().");
 #endif
 	} else {
-	    B1 = doubleMalloc_dist(A2d->m_loc * nrhs);
-	}
+        B1 = doubleMalloc_dist(A2d->m_loc * nrhs);
+    }
     }
 
     // B1 <- BlockByBlock(B2d)
@@ -602,10 +602,10 @@ int dScatter_B3d(superlu_dist_options_t *options,
 		ABORT("GPURES requires GPU_ACC in dScatter_B3d().");
 #endif
 	    } else {
-		matCopy(row_counts_int[i], nrhs, B1 + nrhs * row_disp[i], row_counts_int[i],
-			B2d + row_disp[i], A2d->m_loc);
-	    }
+            matCopy(row_counts_int[i], nrhs, B1 + nrhs * row_disp[i], row_counts_int[i],
+                    B2d + row_disp[i], A2d->m_loc);
         }
+    }
     }
 
     double *Btmp; // on 3D grid
@@ -617,7 +617,7 @@ int dScatter_B3d(superlu_dist_options_t *options,
 	ABORT("GPURES requires GPU_ACC in dScatter_B3d().");
 #endif
     } else {
-	Btmp = doubleMalloc_dist(A3d->m_loc * nrhs);
+    Btmp = doubleMalloc_dist(A3d->m_loc * nrhs);
     }
 
     // Btmp <- scatterv(B1), block-by-block
@@ -863,7 +863,7 @@ int dScatter_B3d(superlu_dist_options_t *options,
 	ABORT("GPURES requires GPU_ACC in dScatter_B3d().");
 #endif
     } else {
-	matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
+    matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
     }
 
     /* free storage */
@@ -874,7 +874,7 @@ int dScatter_B3d(superlu_dist_options_t *options,
 	ABORT("GPURES requires GPU_ACC in dScatter_B3d().");
 #endif
     } else {
-	SUPERLU_FREE(Btmp);
+    SUPERLU_FREE(Btmp);
     }
     if (grid3d->zscp.Iam == 0) {
 	if (gpures) {
@@ -884,8 +884,8 @@ int dScatter_B3d(superlu_dist_options_t *options,
 	    ABORT("GPURES requires GPU_ACC in dScatter_B3d().");
 #endif
 	} else {
-	    SUPERLU_FREE(B1);
-	}
+	SUPERLU_FREE(B1);
+    }
     }
     if (gpures) {
 #ifdef GPU_ACC

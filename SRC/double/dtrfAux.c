@@ -1265,3 +1265,4 @@ int_t estimate_bigu_size( int_t nsupers, int_t ldt, int_t**Ufstnz_br_ptr,
     return ldt * max_ncols;
 } /* old estimate_bigu_size. New one is in util.c */
 #endif /**** end old ones ****/
+

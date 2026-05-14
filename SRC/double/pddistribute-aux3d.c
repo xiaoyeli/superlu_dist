@@ -400,7 +400,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if (myGrid == grid_id && result)
                     {
                         printf("Check U index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-			       (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                            (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
 
@@ -413,7 +413,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if (myGrid == grid_id && result)
                     {
                         printf("Check U value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-			       (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                            (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
 
@@ -441,7 +441,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if (myGrid == grid_id && result)
                     {
                         printf("Check L index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-			       (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                            (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
 
@@ -454,7 +454,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if (myGrid == grid_id && result)
                     {
                         printf("Check L value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-			       (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                            (int)node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
                 }/* Check L panel*/
@@ -487,7 +487,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if(usub != NULL || uval != NULL)
                     {
                         printf("Check 3D LU structure failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
-			       k, myGrid, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                            k, myGrid, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
                 }

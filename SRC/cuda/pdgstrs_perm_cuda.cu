@@ -1,3 +1,5 @@
+
+
 #include <math.h>
 #include "superlu_ddefs.h"
 #ifndef CACHELINE
@@ -144,14 +146,14 @@ pdReDistribute_B_to_X_gpu_recv(double *x, int nrhs, int_t recvl,
   return;
 }
 void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, int_t ldb,
-    int_t fst_row, 
+    int_t fst_row,
     double *d_x,
     dScalePermstruct_t *ScalePermstruct,
     dSOLVEstruct_t *SOLVEstruct,
     Glu_persist_t *Glu_persist,
     gridinfo_t *grid, gridinfo_t *d_grid, int_t *d_ilsum, int_t *d_xsup, int_t *d_supno)
  {
- 
+
  double t = SuperLU_timer_();
  /* ------------------------------------------------------------
  Host metadata.
@@ -159,93 +161,93 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
  int *d_perm_r = ScalePermstruct->d_perm_r;
  int *d_perm_c = ScalePermstruct->d_perm_c;
  int *d_ptr_to_idbuf_B2X =SOLVEstruct-> d_ptr_to_idbuf_B2X;
- 
+
  pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
  int procs = grid->nprow * grid->npcol;
  int iam   = grid->iam;
- 
+
  int *SendCnt      = gstrs_comm->B_to_X_SendCnt;
  int *SendCnt_nrhs = gstrs_comm->B_to_X_SendCnt +     procs;
  int *RecvCnt      = gstrs_comm->B_to_X_SendCnt + 2 * procs;
  int *RecvCnt_nrhs = gstrs_comm->B_to_X_SendCnt + 3 * procs;
  int *sdispls      = gstrs_comm->B_to_X_SendCnt + 4 * procs;
  int *rdispls      = gstrs_comm->B_to_X_SendCnt + 6 * procs;
- 
+
  int *SendCnt_new  = (int*) SUPERLU_MALLOC((size_t)procs * sizeof(int));
  int *sdispls_new  = (int*) SUPERLU_MALLOC((size_t)procs * sizeof(int));
  int *rdispls_new  = (int*) SUPERLU_MALLOC((size_t)procs * sizeof(int));
- 
+
  if (!SendCnt_new || !sdispls_new || !rdispls_new)
  ABORT("Malloc fails for communication metadata.");
- 
+
  for (int p = 0; p < procs; ++p) {
  SendCnt_new[p]  = SendCnt_nrhs[p] + SendCnt[p];
  sdispls_new[p]  = sdispls[p] * (nrhs + 1);
  rdispls_new[p]  = rdispls[p] * (nrhs + 1);
  }
- 
+
  /* Total local send/recv record counts before expanding by (nrhs+1). */
  int_t k = (procs > 0) ? (sdispls[procs - 1] + SendCnt[procs - 1]) : 0;
  int_t l = (procs > 0) ? (rdispls[procs - 1] + RecvCnt[procs - 1]) : 0;
- 
+
  size_t send_elems = (size_t)k * ((size_t)nrhs + 1);
  size_t recv_elems = (size_t)l * ((size_t)nrhs + 1);
- 
- 
+
+
  checkGPU(gpuMemcpy(SOLVEstruct->d_ptr_to_idbuf_B2X, SOLVEstruct->d_ptr_to_idbuf_B2X_save,
      (size_t)procs * sizeof(int), gpuMemcpyDeviceToDevice));
- 
+
  /* ------------------------------------------------------------
  Device data.
  ------------------------------------------------------------ */
  double *d_B = B;
- 
+
  double *d_send_idbuf_B2X = NULL;
  double *d_recv_idbuf_B2X = NULL;
 
- 
+
  int_t nthreads = 256;
  int_t row_per_th = 16;
  int_t nblocks = (m_loc + nthreads * row_per_th - 1) / (nthreads * row_per_th);
- 
- 
- 
+
+
+
  if (procs == 1) {
     if (m_loc > 0) {
     pdReDistribute_B_to_X_gpu_proc1<<<nblocks, nthreads>>>(
     d_B, m_loc, nrhs, ldb, fst_row, d_ilsum, d_x,
     d_perm_r, d_perm_c, d_xsup, d_supno, d_grid, row_per_th);
- 
+
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
     }
-#if ( PROFlevel>=1 )    
+#if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
     if (!grid->iam)
     printf(".. B to X GPU redistribute time \t%8.6f\n", t);
     fflush(stdout);
 #endif
- 
+
  } else {
     /* ------------------------------------------------------------
-    If NVSHMEM is used for the solve, we cannot use cuda-aware MPI here and need to stick with NVSHMEM. 
+    If NVSHMEM is used for the solve, we cannot use cuda-aware MPI here and need to stick with NVSHMEM.
     ------------------------------------------------------------ */
 #ifdef HAVE_NVSHMEM
     size_t send_alloc_elems = send_elems ? send_elems : 1;
     size_t recv_alloc_elems = recv_elems ? recv_elems : 1;
- 
+
     d_send_idbuf_B2X = (double*) nvshmem_malloc(send_alloc_elems * sizeof(double));
     d_recv_idbuf_B2X = (double*) nvshmem_malloc(recv_alloc_elems * sizeof(double));
- 
+
     if (!d_send_idbuf_B2X || !d_recv_idbuf_B2X)
     ABORT("nvshmem_malloc fails for B_to_X send/recv buffers.");
- 
+
     checkGPU(gpuMemset(d_send_idbuf_B2X, 0, send_alloc_elems * sizeof(double)));
     checkGPU(gpuMemset(d_recv_idbuf_B2X, 0, recv_alloc_elems * sizeof(double)));
- 
+
     /*
     Metadata exchange for remote receive offsets.
- 
+
     After Alltoall, on source PE iam:
     remote_rdisp_for_dst_h[dst] == rdispls_new[iam] on PE dst
     which is exactly where iam must write in dst's d_recv_idbuf.
@@ -253,7 +255,7 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     int *remote_rdisp_for_dst_h = (int*) SUPERLU_MALLOC((size_t)procs * sizeof(int));
     if (!remote_rdisp_for_dst_h)
     ABORT("Malloc fails for remote_rdisp_for_dst_h[].");
- 
+
     MPI_Alltoall(rdispls_new, 1, MPI_INT,
     remote_rdisp_for_dst_h, 1, MPI_INT,
     grid->comm);
@@ -262,41 +264,41 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     Fill local send buffer on GPU.
     ------------------------------------------------------------ */
     nvshmem_barrier_all();
- 
+
     if (m_loc > 0) {
     pdReDistribute_B_to_X_gpu_send<<<nblocks, nthreads>>>(
     d_B, m_loc, nrhs, ldb, d_perm_r, d_perm_c,
     fst_row, d_ilsum, d_send_idbuf_B2X, d_xsup, d_supno,
     d_grid, d_ptr_to_idbuf_B2X, row_per_th);
- 
+
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
     }
- 
+
     /* ------------------------------------------------------------
     Communication: NVSHMEM one-sided put or CUDA-aware MPI.
     ------------------------------------------------------------ */
 
     nvshmem_barrier_all();
- 
+
     for (int pp = 0; pp < procs; ++pp) {
     int dst = iam + 1 + pp;
     if (dst >= procs) dst -= procs;
- 
+
     if (SendCnt_new[dst] > 0) {
     int remote_offset = remote_rdisp_for_dst_h[dst];
- 
+
     nvshmem_double_put_nbi(d_recv_idbuf_B2X + remote_offset,
           d_send_idbuf_B2X + sdispls_new[dst],
           SendCnt_new[dst],
           dst);
     }
     }
- 
+
     nvshmem_quiet();
     nvshmem_barrier_all();
 
- 
+
     /* ------------------------------------------------------------
     Unpack receive buffer into x on GPU.
     Avoid launching with zero blocks when l == 0.
@@ -304,15 +306,15 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     if (l > 0) {
     int_t nblocks_new = (l + nthreads * row_per_th - 1) /
     (nthreads * row_per_th);
- 
+
     pdReDistribute_B_to_X_gpu_recv<<<nblocks_new, nthreads>>>(
     d_x, nrhs, l, fst_row, d_ilsum, d_recv_idbuf_B2X,
     d_xsup, d_supno, d_grid, row_per_th);
- 
+
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
     }
- 
+
     /* ------------------------------------------------------------
     Communication cleanup.
     ------------------------------------------------------------ */
@@ -321,7 +323,7 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     nvshmem_free(d_send_idbuf_B2X);
     nvshmem_free(d_recv_idbuf_B2X);
 
-#if ( PROFlevel>=1 ) 
+#if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
     if (!grid->iam) {
     printf(".. B to X GPU NVSHMEM redistribute time\t%8.6f\n", t);
@@ -331,9 +333,9 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
 
 #endif
  }
- 
- 
- 
+
+
+
  SUPERLU_FREE(SendCnt_new);
  SUPERLU_FREE(sdispls_new);
  SUPERLU_FREE(rdispls_new);
@@ -420,9 +422,9 @@ pdReDistribute_X_to_B_gpu_send(double *x, int nrhs, int_t ldb, int_t sendk, int_
 
            q = row_to_proc[ii];
            jj = atomicAdd(&ptr_to_idbuf[q], nrhs+1);
-           
+
            send_idbuf[jj] = (double) ii;
-           // printf("On processor %d, crow = %d, p = %d, ii = %d, k = %d, irow = %d, and send_idbuf[%d] is %d.\n", 
+           // printf("On processor %d, crow = %d, p = %d, ii = %d, k = %d, irow = %d, and send_idbuf[%d] is %d.\n",
            //    grid->iam, crow, p, ii, k, irow, jj, (int) send_idbuf[jj]);
            kk = ii - irow;
            for (j = 0; j < nrhs; j++) {
@@ -476,7 +478,7 @@ pdReDistribute_X_to_B_gpu_recv(double *B, int_t m_loc, int nrhs, int_t recvl, in
 
 
 void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, int_t ldb,
-    int_t fst_row, 
+    int_t fst_row,
     int_t nsupers, double *d_x,
     dScalePermstruct_t *ScalePermstruct, dSOLVEstruct_t *SOLVEstruct,
     Glu_persist_t *Glu_persist, gridinfo_t *grid, gridinfo_t *d_grid, int_t *d_ilsum, int_t *d_xsup, int_t *d_supno)
@@ -486,20 +488,20 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
  DECLARATION.
  ------------------------------------------------------------*/
  int_t num_diag_procs = SOLVEstruct->num_diag_procs;
- 
+
  int_t *d_row_to_proc = SOLVEstruct->d_row_to_proc;
  int_t *d_diag_procs = SOLVEstruct->d_diag_procs;
- 
+
  double *d_B = B;
- 
- 
+
+
  int *d_ptr_to_idbuf_X2B = SOLVEstruct->d_ptr_to_idbuf_X2B;
- 
+
  double *d_send_idbuf_X2B = NULL;
  double *d_recv_idbuf_X2B = NULL;
- 
+
  double t;
- 
+
  /* ------------------------------------------------------------
  MPI / communication metadata.
  ------------------------------------------------------------*/
@@ -509,30 +511,30 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
  int p, pp, pps;
  int procs = grid->nprow * grid->npcol;
  int iam = grid->iam;
- 
+
  pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
- 
- 
 
 
- 
+
+
+
  /* ------------------------------------------------------------
  GPU DEVICE RUNNING.
  ------------------------------------------------------------*/
  int_t nthreads = 256;
  int_t row_per_th = 16;
  int_t nblocks = (m_loc + nthreads * row_per_th - 1) / (nthreads * row_per_th);
- 
+
  if (procs == 1) {
     t = SuperLU_timer_();
- 
+
     pdReDistribute_X_to_B_gpu_proc1<<<nblocks, nthreads>>>(
     n, d_B, m_loc, ldb, fst_row, nrhs, d_x,
     d_ilsum, d_xsup, d_supno, d_grid, row_per_th);
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
- 
-#if ( PROFlevel>=1 ) 
+
+#if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
     if (!grid->iam)
     printf(".. X to B GPU redistribute time \t%8.6f\n", t);
@@ -542,8 +544,8 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
  } else {
     #ifdef HAVE_NVSHMEM
     checkGPU(gpuMemcpy(SOLVEstruct->d_ptr_to_idbuf_X2B, SOLVEstruct->d_ptr_to_idbuf_X2B_save,
-        (size_t)procs * sizeof(int), gpuMemcpyDeviceToDevice));	
-    
+        (size_t)procs * sizeof(int), gpuMemcpyDeviceToDevice));
+
     /* ------------------------------------------------------------
     COMM INITIALIZATION.
     ------------------------------------------------------------*/
@@ -553,14 +555,14 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     RecvCnt_nrhs = gstrs_comm->X_to_B_SendCnt + 3 * procs;
     sdispls      = gstrs_comm->X_to_B_SendCnt + 4 * procs;
     rdispls      = gstrs_comm->X_to_B_SendCnt + 6 * procs;
-    
+
     if (!(SendCnt_new = (int*) SUPERLU_MALLOC(procs * sizeof(int))))
     ABORT("Malloc fails for SendCnt_new[].");
     if (!(sdispls_new = (int*) SUPERLU_MALLOC(procs * sizeof(int))))
     ABORT("Malloc fails for sdispls_new[].");
     if (!(rdispls_new = (int*) SUPERLU_MALLOC(procs * sizeof(int))))
     ABORT("Malloc fails for rdispls_new[].");
-    
+
     for (p = 0; p < procs; ++p) {
     SendCnt_new[p]  = SendCnt_nrhs[p] + SendCnt[p];
     sdispls_new[p]  = sdispls[p] * (nrhs + 1);
@@ -568,15 +570,15 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     }
 
     MPI_Barrier(grid->comm);
-    t = SuperLU_timer_();   
+    t = SuperLU_timer_();
     int_t k = sdispls[procs - 1] + SendCnt[procs - 1];
     int_t l = rdispls[procs - 1] + RecvCnt[procs - 1];
- 
+
     size_t send_elems = (size_t) k * ((size_t) nrhs + 1);
     size_t recv_elems = (size_t) l * ((size_t) nrhs + 1);
     if (send_elems == 0) send_elems = 1;
     if (recv_elems == 0) recv_elems = 1;
- 
+
 
     /*
     NVSHMEM allocations are collective and symmetric.  Use the global
@@ -587,30 +589,30 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     unsigned long long recv_elems_ull = (unsigned long long) recv_elems;
     unsigned long long max_send_elems_ull = 0;
     unsigned long long max_recv_elems_ull = 0;
- 
+
     MPI_Allreduce(&send_elems_ull, &max_send_elems_ull,
     1, MPI_UNSIGNED_LONG_LONG, MPI_MAX, grid->comm);
     MPI_Allreduce(&recv_elems_ull, &max_recv_elems_ull,
     1, MPI_UNSIGNED_LONG_LONG, MPI_MAX, grid->comm);
- 
+
     size_t alloc_send_elems = (size_t) max_send_elems_ull;
     size_t alloc_recv_elems = (size_t) max_recv_elems_ull;
- 
+
     d_send_idbuf_X2B = (double*) nvshmem_malloc(alloc_send_elems * sizeof(double));
     d_recv_idbuf_X2B = (double*) nvshmem_malloc(alloc_recv_elems * sizeof(double));
     if (!d_send_idbuf_X2B || !d_recv_idbuf_X2B)
     ABORT("nvshmem_malloc fails for X_to_B send/recv buffers.");
 
- 
+
 
     checkGPU(gpuMemset(d_send_idbuf_X2B, 0, alloc_send_elems * sizeof(double)));
     checkGPU(gpuMemset(d_recv_idbuf_X2B, 0, alloc_recv_elems * sizeof(double)));
 
- 
+
     /* ------------------------------------------------------------
     FILL IN THE SEND BUFFERS ON GPU.
     ------------------------------------------------------------*/
- 
+
     int_t nblocks_send = (n + nthreads * row_per_th - 1) / (nthreads * row_per_th);
     if (n > 0) {
     pdReDistribute_X_to_B_gpu_send<<<nblocks_send, nthreads>>>(
@@ -620,14 +622,14 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
     }
- 
+
 
     /* ------------------------------------------------------------
     NVSHMEM COMMUNICATION.
- 
+
     MPI receive layout was:
     source src lands at d_recv_idbuf + rdispls_new[src]
- 
+
     With one-sided NVSHMEM, sender must know destination's offset.
     After Alltoall, on rank iam:
     remote_rdisp_for_dst_h[dst] == rdispls_new[iam] on rank dst.
@@ -636,34 +638,34 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     (int*) SUPERLU_MALLOC(procs * sizeof(int));
     if (!remote_rdisp_for_dst_h)
     ABORT("Malloc fails for remote_rdisp_for_dst_h[].");
- 
+
     MPI_Alltoall(rdispls_new, 1, MPI_INT,
     remote_rdisp_for_dst_h, 1, MPI_INT,
     grid->comm);
- 
+
     nvshmem_barrier_all();
- 
+
     for (pp = 0; pp < procs; ++pp) {
     pps = iam + 1 + pp;
     if (pps >= procs) pps -= procs;
     if (pps < 0) pps += procs;
- 
+
     if (SendCnt_new[pps] > 0) {
     int remote_offset = remote_rdisp_for_dst_h[pps];
- 
+
     nvshmem_double_put_nbi(d_recv_idbuf_X2B + remote_offset,
           d_send_idbuf_X2B + sdispls_new[pps],
           SendCnt_new[pps],
           pps);
     }
     }
- 
+
     nvshmem_quiet();
     nvshmem_barrier_all();
- 
+
     SUPERLU_FREE(remote_rdisp_for_dst_h);
 
- 
+
     /* ------------------------------------------------------------
     FILL IN B FROM RECEIVE BUFFERS ON GPU.
     ------------------------------------------------------------*/
@@ -675,15 +677,15 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
     }
- 
-#if ( PROFlevel>=1 )     
+
+#if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
     if (!grid->iam) {
        printf(".. X to B NVSHMEM redistribute time\t%8.6f\n", t);
     }
     fflush(stdout);
  #endif
- 
+
     /* ------------------------------------------------------------
     CLEANING COMMUNICATION BUFFERS.
     ------------------------------------------------------------*/
@@ -692,9 +694,9 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     SUPERLU_FREE(SendCnt_new);
     SUPERLU_FREE(sdispls_new);
     SUPERLU_FREE(rdispls_new);
-    #endif        
+    #endif
  }
- 
+
 
  }
 
@@ -836,7 +838,7 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
             checkGPU(gpuDeviceSynchronize());
         }
 
-#if ( PROFlevel>=1 ) 
+#if ( PROFlevel>=1 )
         t = SuperLU_timer_() - t;
         if (!grid->iam) {
             printf(".. Permute Dense Matrix GPU proc1 time\t%8.6f\n", t);
@@ -973,7 +975,7 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
         checkGPU(gpuDeviceSynchronize());
     }
 
-#if ( PROFlevel>=1 )     
+#if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
     if (!grid->iam) {
         printf(".. Permute Dense Matrix GPU NVSHMEM time\t%8.6f\n", t);
@@ -992,7 +994,7 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
 #endif
     return 0;
 }
- 
+
 
 
 __global__ void dscale_and_copy_rhs_kernel(
@@ -1064,7 +1066,7 @@ __global__ void dundo_equilibration_rhs_kernel(
 
 
 
-void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t m_loc, int nrhs, 
+void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t m_loc, int nrhs,
     int_t fst_row, int notran,int rowequ, int colequ,
     dScalePermstruct_t *ScalePermstruct)
  {
@@ -1076,7 +1078,7 @@ void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t 
     if (total > 0) {
         if (rowequ==FALSE && colequ==FALSE){
             checkGPU(gpuMemcpy(X, B, sizeof(double)*total, cudaMemcpyDeviceToDevice));
-        }else{    
+        }else{
             dscale_and_copy_rhs_kernel<<<blocks, threads>>>(
                 B, X, ScalePermstruct->d_R, ScalePermstruct->d_C,
                 m_loc, fst_row,
@@ -1094,14 +1096,14 @@ void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t 
 
 
 
- void dundo_equilibration_rhs_wrap(double *B, int_t ldb, int_t m_loc, int nrhs, 
+ void dundo_equilibration_rhs_wrap(double *B, int_t ldb, int_t m_loc, int nrhs,
     int_t fst_row, int notran,int rowequ, int colequ,
     dScalePermstruct_t *ScalePermstruct)
  {
     int threads = 256;
     int_t total = m_loc * nrhs;
     int blocks = (total + threads - 1) / threads;
-   
+
     if (total > 0) {
         if (rowequ==FALSE && colequ==FALSE){
         }else{
@@ -1110,7 +1112,7 @@ void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t 
                 m_loc, fst_row,
                 ldb, nrhs,
                 notran, rowequ, colequ);
-    
+
             checkGPU(gpuGetLastError());
             checkGPU(gpuDeviceSynchronize());
         }
@@ -1329,7 +1331,7 @@ void dtrs_X_gather3d_unpack_gpu_wrap(double *x, const double *packbuf,
 
 /*! \brief Initialize the nvshmem data structure for the GPU-resident interfaces
  */
-int dSolveInit_nvshmem_gpures(superlu_dist_options_t *options, int_t fst_row, int_t m_loc, 
+int dSolveInit_nvshmem_gpures(superlu_dist_options_t *options, int_t fst_row, int_t m_loc,
     int_t nrhs, int_t n, gridinfo_t *grid,dSOLVEstruct_t *SOLVEstruct)
 {
 int_t *row_to_proc=SOLVEstruct->row_to_proc;
@@ -1391,7 +1393,7 @@ size_t alloc_recv_elems = (size_t) max_recv_elems_ull;
 SOLVEstruct->d_send_idbuf_X2B = (double*) nvshmem_malloc(alloc_send_elems * sizeof(double));
 SOLVEstruct->d_recv_idbuf_X2B = (double*) nvshmem_malloc(alloc_recv_elems * sizeof(double));
 if (!SOLVEstruct->d_send_idbuf_X2B || !SOLVEstruct->d_recv_idbuf_X2B)
-ABORT("nvshmem_malloc fails for X_to_B send/recv buffers.");    
+ABORT("nvshmem_malloc fails for X_to_B send/recv buffers.");
 }
 
 {
@@ -1461,6 +1463,6 @@ void dFree_nvshmem_gpures(superlu_dist_options_t *options,dSOLVEstruct_t *SOLVEs
     nvshmem_free(SOLVEstruct->d_send_idbuf_X2B);
     nvshmem_free(SOLVEstruct->d_recv_idbuf_X2B);
     nvshmem_free(SOLVEstruct->d_send_idbuf_B2X);
-    nvshmem_free(SOLVEstruct->d_recv_idbuf_B2X);    
+    nvshmem_free(SOLVEstruct->d_recv_idbuf_B2X);
 #endif
 }

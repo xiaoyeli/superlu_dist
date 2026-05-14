@@ -2451,12 +2451,11 @@ pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     }
     SUPERLU_FREE(xa);
 
-
     if ( options->Fact != SamePattern_SameRowPerm ) {
         // /* Flatten L metadata into one buffer. */
         pdflatten_LDATA(options, n, LUstruct, grid);
 
-        // /* Compute communication structure for trisolve. */ 
+        // /* Compute communication structure for trisolve. */
         if (get_new3dsolve()){
             dtrs_compute_communication_structure(options, n, LUstruct,
                         trf3Dpart->supernodeMask, grid);
@@ -2470,9 +2469,6 @@ pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         }
     }
 
-
-
-
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
        ilsum, fmod, fsendx_plist, bmod, bsendx_plist  */
@@ -2482,4 +2478,3 @@ pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     return (mem_use+memTRS);
 
 } /* PDDISTRIBUTE3D_Yang */
-

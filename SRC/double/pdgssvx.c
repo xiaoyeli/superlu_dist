@@ -669,7 +669,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		if (get_acc_solve()){
 			checkGPU(gpuMalloc((void**)&ScalePermstruct->d_C, sizeof(double) * (size_t)n));
 		}
-#endif		
+#endif
 		break;
 	    case COL:
 		if ( !(R = (double *) doubleMalloc_dist(m)) )
@@ -679,7 +679,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		if (get_acc_solve()){
 			checkGPU(gpuMalloc((void**)&ScalePermstruct->d_R, sizeof(double) * (size_t)m));
 		}
-#endif		
+#endif
 		break;
 	    default: break;
 	}
@@ -737,7 +737,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			checkGPU(gpuMemcpy(ScalePermstruct->d_R, ScalePermstruct->R, sizeof(double) * (size_t)m, gpuMemcpyHostToDevice));
 			checkGPU(gpuMemcpy(ScalePermstruct->d_C, ScalePermstruct->C, sizeof(double) * (size_t)n, gpuMemcpyHostToDevice));
 		}
-#endif		
+#endif
 
 	    if ( iinfo > 0 ) {
 		if ( iinfo <= m ) {
@@ -903,7 +903,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 						checkGPU(gpuMemcpy(ScalePermstruct->d_R, ScalePermstruct->R, sizeof(double) * (size_t)m, gpuMemcpyHostToDevice));
 						checkGPU(gpuMemcpy(ScalePermstruct->d_C, ScalePermstruct->C, sizeof(double) * (size_t)n, gpuMemcpyHostToDevice));
 					}
-#endif		
+#endif
 		            ScalePermstruct->DiagScale = BOTH;
 		            rowequ = colequ = 1;
 
@@ -970,7 +970,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			if (get_acc_solve()){
 				checkGPU(gpuMemcpy(ScalePermstruct->d_perm_r, ScalePermstruct->perm_r, sizeof(int) * (size_t)n, gpuMemcpyHostToDevice));
 			}
-#endif			
+#endif
         }
 
 #if ( DEBUGlevel>=2 )
@@ -1024,7 +1024,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				checkGPU(gpuMemcpy(ScalePermstruct->d_perm_c, ScalePermstruct->perm_c, sizeof(int) * (size_t)n, gpuMemcpyHostToDevice));
 			}
 #endif
-		}
+        }
 		if ( !(sizes = intMalloc_dist(2 * noDomains)) )
 		     ABORT("SUPERLU_MALLOC fails for sizes.");
 		if ( !(fstVtxSep = intMalloc_dist(2 * noDomains)) )
@@ -1092,7 +1092,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			if (get_acc_solve()){
 				checkGPU(gpuMemcpy(ScalePermstruct->d_perm_c, ScalePermstruct->perm_c, sizeof(int) * (size_t)n, gpuMemcpyHostToDevice));
 			}
-#endif			
+#endif
 
 	        /* Form Pc*A*Pc^T to preserve the diagonal of the matrix GAC. */
 	        GACstore = (NCPformat *) GAC.Store;
@@ -1122,13 +1122,13 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    	/* Every process does this.
 		   returned value (-iinfo) is the size of lsub[], incuding pruned graph.*/
-		int_t linfo;
-		if ( options->ILU_level != SLU_EMPTY ) { /* for any level-based ILU */
-			linfo = ilu_level_symbfact(options, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
-		} else { /* for complete LU */
-			linfo = symbfact(options, iam, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
-		}
-		nnzLU = Glu_freeable->nnzLU;
+			int_t linfo;
+			if ( options->ILU_level != SLU_EMPTY ) { /* for any level-based ILU */
+				linfo = ilu_level_symbfact(options, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
+			} else { /* for complete LU */
+				linfo = symbfact(options, iam, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
+			}
+			nnzLU = Glu_freeable->nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if ( linfo <= 0 ) { /* Successful return */
 		    QuerySpace_dist(n, -linfo, Glu_freeable, &symb_mem_usage);
@@ -1469,8 +1469,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	   because perm_r[] and/or perm_c[] is changed.    */
 	if ( options->SolveInitialized == YES ) { /* Initialized before */
 	    dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
-		if (get_acc_solve()) pdgstrs_delete_device_lsum_x(SOLVEstruct);
-	}
+	    if (get_acc_solve()) pdgstrs_delete_device_lsum_x(SOLVEstruct);
+	 }
      }
 #if 0
     /* Need to revisit: Why the following is not good enough for X-to-B
@@ -1513,7 +1513,10 @@ if (get_acc_solve()){
 							(LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 #endif
 }
+
+
 	}
+
 
 
     /* ------------------------------------------------------------
@@ -1525,7 +1528,7 @@ if (get_acc_solve()){
 
 if ( options->GPURES == YES ){
 // if ( 0){
-#ifdef GPU_ACC		
+#ifdef GPU_ACC
 		/* ------------------------------------------------------------
 		Scale RHS on GPU and save a GPU copy X.
 		B, R, C are already device pointers.
@@ -1534,50 +1537,49 @@ if ( options->GPURES == YES ){
 		checkGPU(gpuMalloc((void**)&X, ((size_t)ldx) * nrhs * sizeof(double)));
 		dscale_and_copy_rhs_wrap(B, ldb, X, ldx, m_loc, nrhs, fst_row, notran,rowequ, colequ,ScalePermstruct);
 
-#endif			
+#endif
 	}else{
-	
-		/* ------------------------------------------------------------
-		Scale the right-hand side if equilibration was performed.
-		------------------------------------------------------------*/
-		if ( notran ) {
-			if ( rowequ ) {
+
+	/* ------------------------------------------------------------
+	   Scale the right-hand side if equilibration was performed.
+	   ------------------------------------------------------------*/
+	if ( notran ) {
+	    if ( rowequ ) {
 			b_col = B;
 			for (j = 0; j < nrhs; ++j) {
 				irow = fst_row;
 				for (i = 0; i < m_loc; ++i) {
-					b_col[i] *= R[irow];
+		        	b_col[i] *= R[irow];
 					++irow;
 				}
 				b_col += ldb;
 			}
-			}
-		} else if ( colequ ) {
-			b_col = B;
-			for (j = 0; j < nrhs; ++j) {
-				irow = fst_row;
-			for (i = 0; i < m_loc; ++i) {
-				b_col[i] *= C[irow];
-				++irow;
-			}
-			b_col += ldb;
-			}
+	    }
+	} else if ( colequ ) {
+	    b_col = B;
+	    for (j = 0; j < nrhs; ++j) {
+	        irow = fst_row;
+		for (i = 0; i < m_loc; ++i) {
+		    b_col[i] *= C[irow];
+		    ++irow;
 		}
-
-		/* Save a copy of the right-hand side. */
-		ldx = ldb;
-		if ( !(X = doubleMalloc_dist(((size_t)ldx) * nrhs)) )
-			ABORT("Malloc fails for X[]");
-		x_col = X;  b_col = B;
-		for (j = 0; j < nrhs; ++j) {
-	#if 0 /* Sherry */
-			for (i = 0; i < m_loc; ++i) x_col[i] = b_col[i];
-	#endif
-				memcpy(x_col, b_col, m_loc * sizeof(double));
-			x_col += ldx;  b_col += ldb;
-		}
+		b_col += ldb;
+	    }
 	}
 
+	/* Save a copy of the right-hand side. */
+	ldx = ldb;
+	if ( !(X = doubleMalloc_dist(((size_t)ldx) * nrhs)) )
+	    ABORT("Malloc fails for X[]");
+	x_col = X;  b_col = B;
+	for (j = 0; j < nrhs; ++j) {
+	#if 0 /* Sherry */
+	    for (i = 0; i < m_loc; ++i) x_col[i] = b_col[i];
+	#endif
+            memcpy(x_col, b_col, m_loc * sizeof(double));
+	    x_col += ldx;  b_col += ldb;
+	}
+	}
 
 	/* ------------------------------------------------------------
 	   Solve the linear system.
@@ -1708,15 +1710,14 @@ if ( options->GPURES == YES ){
 	    stat->utime[REFINE] = SuperLU_timer_() - t;
 	} /* end if IterRefine */
 
-
 	/* Permute the solution matrix B <= Pc'*X. */
 	if ( options->GPURES == YES ){
 	// if ( 0){
-#ifdef GPU_ACC					
+#ifdef GPU_ACC
 		pdPermute_Dense_Matrix_gpu_wrap(fst_row, m_loc,n,
 				X, ldx, B, ldb, nrhs,grid,SOLVEstruct);
 		dundo_equilibration_rhs_wrap(B, ldb, m_loc, nrhs, fst_row, notran,rowequ, colequ,ScalePermstruct);
-		checkGPU(gpuFree(X));		
+		checkGPU(gpuFree(X));
 
 #endif
 	}else{
@@ -1733,15 +1734,15 @@ if ( options->GPURES == YES ){
 		system before equilibration. */
 		if ( notran ) {
 			if ( colequ ) {
-			b_col = B;
-			for (j = 0; j < nrhs; ++j) {
-				irow = fst_row;
-				for (i = 0; i < m_loc; ++i) {
-					b_col[i] *= C[irow];
-					++irow;
+				b_col = B;
+				for (j = 0; j < nrhs; ++j) {
+					irow = fst_row;
+					for (i = 0; i < m_loc; ++i) {
+						b_col[i] *= C[irow];
+						++irow;
+					}
+					b_col += ldb;
 				}
-				b_col += ldb;
-			}
 			}
 		} else if ( rowequ ) {
 			b_col = B;
@@ -1754,9 +1755,9 @@ if ( options->GPURES == YES ){
 			b_col += ldb;
 			}
 		}
+
 		SUPERLU_FREE(X);
 	}
-
 
     } /* end if nrhs != 0 && *info == 0 */
 
@@ -1768,30 +1769,30 @@ if ( options->GPURES == YES ){
     if ( Equil && Fact != SamePattern_SameRowPerm ) {
 	switch ( ScalePermstruct->DiagScale ) {
 	    case NOEQUIL:
-	    SUPERLU_FREE(R);
+		SUPERLU_FREE(R);
 		SUPERLU_FREE(C);
 #ifdef GPU_ACC
-        if (get_acc_solve()){         
-            checkGPU (gpuFree (ScalePermstruct->d_R));             
-            checkGPU (gpuFree (ScalePermstruct->d_C));             
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_R));
+            checkGPU (gpuFree (ScalePermstruct->d_C));
         }
-#endif  		
+#endif
 		break;
 	    case ROW:
 		SUPERLU_FREE(C);
 #ifdef GPU_ACC
-        if (get_acc_solve()){                      
-            checkGPU (gpuFree (ScalePermstruct->d_C));             
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_C));
         }
-#endif  		
+#endif
 		break;
 	    case COL:
 		SUPERLU_FREE(R);
 #ifdef GPU_ACC
-        if (get_acc_solve()){         
-            checkGPU (gpuFree (ScalePermstruct->d_R));                     
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_R));
         }
-#endif  		
+#endif
 		break;
 	    default: break;
 	}

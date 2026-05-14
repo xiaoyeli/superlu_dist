@@ -225,14 +225,14 @@ void file_dPrint_NCPformat_triplet(FILE *fp, SuperMatrix *A)
 
     int n = A->nrow;
     int_t nnz = Astore->nnz;
-    
+
     //    printf("\nTriplet matrix:\n");
     //    printf("nrow %d, ncol %lld, nnz %lld\n", n, (long long) A->ncol, nnz);
     dp = (double *) Astore->nzval;
     colbeg = Astore->colbeg;
     colend = Astore->colend;
     rowind = Astore->rowind;
-    
+
     for (j = 0; j < A->ncol; ++j) {
 	for (i = colbeg[j]; i < colend[j]; ++i) {
 	    fprintf(fp, "%8d %8d\t%f\n", rowind[i], j, dp[i]);
@@ -1869,3 +1869,4 @@ void dDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
  	fclose(fp);
 
 } /* end dDumpLblocks3D */
+

@@ -140,7 +140,7 @@ dscatter_l (
 	//printf("  .. dscatter_l(): num_blocks %d, i %d, ijb %d\n", num_blocks, i, ijb);
 	++i;
 	if ( i == num_blocks ) return; // search exhausted; in ILU, not allow fill-in
-	
+
         luptrj += index[lptrj + 1];
         lptrj += LB_DESCRIPTOR + index[lptrj + 1];
         ijb = index[lptrj];

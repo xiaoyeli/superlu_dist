@@ -962,7 +962,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    /* nvshmem related */ // TODO: Does this work in iterative refinement with rhs>1? Should we associate these data with SOLVEstruct?
 #ifdef HAVE_NVSHMEM
-	    int nc = CEILING( nsupers, grid->npcol);
+		int nc = CEILING( nsupers, grid->npcol);
 	    int nr = CEILING( nsupers, grid->nprow);
 	    int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
 	    int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
@@ -990,7 +990,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		t = SuperLU_timer_();
 		if ( options->SolveOnly != YES ) { // Now we need factorization
-
 
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
@@ -1459,54 +1458,54 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    ABORT("GPURES requires GPU_ACC in pdgssvx3d().");
 #endif
 		} else {
-		    /* ------------------------------------------------------
-		       Scale the right-hand side if equilibration was performed
-		       ------------------------------------------------------*/
-		    if (notran)
+		/* ------------------------------------------------------
+		   Scale the right-hand side if equilibration was performed
+		   ------------------------------------------------------*/
+		if (notran)
+		{
+		    if (rowequ)
 		    {
-			if (rowequ)
-			{
-			    b_col = B;
-			    for (j = 0; j < nrhs; ++j)
-			    {
-				irow = fst_row;
-				for (i = 0; i < m_loc; ++i)
+		        b_col = B;
+				for (j = 0; j < nrhs; ++j)
 				{
-				    b_col[i] *= R[irow];
-				    ++irow;
+					irow = fst_row;
+					for (i = 0; i < m_loc; ++i)
+					{
+					b_col[i] *= R[irow];
+					++irow;
+					}
+					b_col += ldb;
 				}
-				b_col += ldb;
-			    }
-			}
 		    }
-		    else if (colequ)
-		    {
-			b_col = B;
-			for (j = 0; j < nrhs; ++j)
-			{
-			    irow = fst_row;
-			    for (i = 0; i < m_loc; ++i)
-			    {
-				b_col[i] *= C[irow];
-				++irow;
-			    }
-			    b_col += ldb;
-			}
-		    }
-
-		    /* Save a copy of the right-hand side. */
-		    ldx = ldb;
-		    if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
-			    ABORT("Malloc fails for X[]");
-		    x_col = X;
+		}
+		else if (colequ)
+		{
 		    b_col = B;
 		    for (j = 0; j < nrhs; ++j)
 		    {
+			irow = fst_row;
 			for (i = 0; i < m_loc; ++i)
-			    x_col[i] = b_col[i];
-			x_col += ldx;
+			{
+			    b_col[i] *= C[irow];
+			    ++irow;
+			}
 			b_col += ldb;
 		    }
+		}
+
+		/* Save a copy of the right-hand side. */
+		ldx = ldb;
+		if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
+			ABORT("Malloc fails for X[]");
+		x_col = X;
+		b_col = B;
+		for (j = 0; j < nrhs; ++j)
+		{
+		    for (i = 0; i < m_loc; ++i)
+			x_col[i] = b_col[i];
+		    x_col += ldx;
+		    b_col += ldb;
+		}
 		}
 
 		/* ------------------------------------------------------
@@ -1530,7 +1529,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    pdgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
 		}
-		
+
 		if (options->IterRefine)
 		{
 		    /* Improve the solution by iterative refinement. */
@@ -1727,7 +1726,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
 			double at;
 			int_t k, jcol, p;
-			
+
 			/* Swap to beginning the part of A corresponding to the
 			   local part of X, as was done in pdgsmv_init() */
 			for (i = 0; i < m_loc; ++i) { /* Loop through each row */
@@ -1821,52 +1820,52 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		ABORT("GPURES requires GPU_ACC in pdgssvx3d().");
 #endif
 	    } else {
-		pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
-				    SOLVEstruct->inv_perm_c,
-				    X, ldx, B, ldb, nrhs, grid);
-#if ( DEBUGlevel>=2 )
-		printf ("\n (%d) .. After pdPermute_Dense_Matrix(): b =\n", iam);
-		for (i = 0; i < m_loc; ++i)
-		    printf ("\t(%d)\t%4d\t%.10f\n", iam, i + fst_row, B[i]);
-#endif
-		/* Transform the solution matrix X to a solution of the original
-		   system before the equilibration. */
-		if (notran)
-		{
-		    if (colequ)
-		    {
+			pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
+					SOLVEstruct->inv_perm_c,
+					X, ldx, B, ldb, nrhs, grid);
+	#if ( DEBUGlevel>=2 )
+			printf ("\n (%d) .. After pdPermute_Dense_Matrix(): b =\n", iam);
+			for (i = 0; i < m_loc; ++i)
+				printf ("\t(%d)\t%4d\t%.10f\n", iam, i + fst_row, B[i]);
+	#endif
+			/* Transform the solution matrix X to a solution of the original
+			system before the equilibration. */
+			if (notran)
+			{
+				if (colequ)
+				{
+					b_col = B;
+					for (j = 0; j < nrhs; ++j)
+					{
+					irow = fst_row;
+					for (i = 0; i < m_loc; ++i)
+					{
+						b_col[i] *= C[irow];
+						++irow;
+					}
+					b_col += ldb;
+					}
+				}
+			}
+			else if (rowequ)
+			{
 			b_col = B;
 			for (j = 0; j < nrhs; ++j)
-			{
-			    irow = fst_row;
-			    for (i = 0; i < m_loc; ++i)
-			    {
-				b_col[i] *= C[irow];
+				{
+				irow = fst_row;
+				for (i = 0; i < m_loc; ++i)
+				{
+				b_col[i] *= R[irow];
 				++irow;
-			    }
-			    b_col += ldb;
+				}
+				b_col += ldb;
 			}
-		    }
-		}
-		else if (rowequ)
-		{
-		    b_col = B;
-		    for (j = 0; j < nrhs; ++j)
-		    {
-			irow = fst_row;
-			for (i = 0; i < m_loc; ++i)
-			{
-			    b_col[i] *= R[irow];
-			    ++irow;
 			}
-			b_col += ldb;
-		    }
-		}
 	    }
 
 	    // SUPERLU_FREE (b_work);
 	}
-	
+
 	if (grid3d->zscp.Iam == 0 || Solve3D) {
 	    if (options->GPURES == YES) {
 #ifdef GPU_ACC

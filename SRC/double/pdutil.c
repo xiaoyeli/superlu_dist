@@ -774,7 +774,6 @@ pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
     gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
 
-
     return 0;
 } /* PDGSTRS_INIT */
 
@@ -1224,8 +1223,8 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
         checkGPU(gpuMalloc((void**)&SOLVEstruct->d_ptr_to_idbuf_B2X, sizeof(int) * (size_t)procs));
         checkGPU(gpuMalloc((void**)&SOLVEstruct->d_ptr_to_idbuf_B2X_save, sizeof(int) * (size_t)procs));
         checkGPU(gpuMemcpy(SOLVEstruct->d_ptr_to_idbuf_B2X_save, ptr_to_idbuf, sizeof(int) * (size_t)procs, gpuMemcpyHostToDevice));
-        SUPERLU_FREE(ptr_to_idbuf); 
-        
+        SUPERLU_FREE(ptr_to_idbuf);
+
         checkGPU(gpuMalloc((void**)&SOLVEstruct->d_inv_perm_c, sizeof(int) * (size_t)n));
         checkGPU(gpuMemcpy(SOLVEstruct->d_inv_perm_c, inv_perm_c, sizeof(int) * (size_t)n, gpuMemcpyHostToDevice));
 
@@ -1251,13 +1250,13 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
         checkGPU(gpuMemcpy(SOLVEstruct->d_ptr_to_idbuf_PermuteC_save, ptr_to_ibuf,
                         (size_t)procs * sizeof(int), gpuMemcpyHostToDevice));
         SUPERLU_FREE(sendcnts);
-        
+
         checkGPU(gpuMalloc((void**)&SOLVEstruct->d_row_to_proc, sizeof(int_t) * n));
         checkGPU(gpuMalloc((void**)&SOLVEstruct->d_diag_procs, sizeof(int_t) * SOLVEstruct->num_diag_procs));
 
         checkGPU(gpuMemcpy(SOLVEstruct->d_row_to_proc, SOLVEstruct->row_to_proc, sizeof(int_t) * n, gpuMemcpyHostToDevice));
         checkGPU(gpuMemcpy(SOLVEstruct->d_diag_procs, SOLVEstruct->diag_procs, sizeof(int_t) * SOLVEstruct->num_diag_procs, gpuMemcpyHostToDevice));
-            
+
         if ( options->GPURES == YES ) {
             dSolveInit_nvshmem_gpures(options, fst_row, m_loc, nrhs, n, grid,
                                       SOLVEstruct);
@@ -1293,15 +1292,15 @@ void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct
 
 #ifdef GPU_ACC
         if (get_acc_solve()){
-           checkGPU (gpuFree (SOLVEstruct->d_diag_procs));             
-           checkGPU (gpuFree (SOLVEstruct->d_row_to_proc));             
-           checkGPU (gpuFree (SOLVEstruct->d_inv_perm_c));             
-           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_B2X));             
-           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_B2X_save));             
-           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_X2B));             
-           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_X2B_save));             
-           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_PermuteC));             
-           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_PermuteC_save));   
+           checkGPU (gpuFree (SOLVEstruct->d_diag_procs));
+           checkGPU (gpuFree (SOLVEstruct->d_row_to_proc));
+           checkGPU (gpuFree (SOLVEstruct->d_inv_perm_c));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_B2X));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_B2X_save));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_X2B));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_X2B_save));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_PermuteC));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_PermuteC_save));
 
            if ( options->GPURES == YES ) {
               dFree_nvshmem_gpures(options, SOLVEstruct);

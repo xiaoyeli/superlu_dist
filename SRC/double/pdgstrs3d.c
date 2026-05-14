@@ -12,6 +12,8 @@ at the top-level directory.
 
 
 
+
+
 /*! @file
  * \brief Solves a system of distributed linear equations A*X = B with a
  * general N-by-N matrix A using the LU factors computed previously.
@@ -1323,7 +1325,7 @@ int dtrs_compute_communication_structure(superlu_dist_options_t *options, int_t 
             }
         }
     }
- 	if ( !(Llu->bcols_masked =
+	if ( !(Llu->bcols_masked =
 				(int*)SUPERLU_MALLOC(Llu->nbcol_masked * sizeof(int))) ) {
 		fprintf(stderr, "Malloc fails for nbcol_masked[].");
 	}
@@ -3190,10 +3192,10 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
     SuperLUStat_t **stat_loc;
 
     double tmax;
-    	/*-- Counts used for L-solve --*/
+	/*-- Counts used for L-solve --*/
     int  *fmod;         /* Modification count for L-solve --
-    			 Count the number of local block products to
-    			 be summed into lsum[lk]. */
+			 Count the number of local block products to
+			 be summed into lsum[lk]. */
 	int_t *fmod_sort;
 	int_t *order;
 	//int_t *order1;
@@ -3202,8 +3204,8 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
     int  **fsendx_plist = Llu->fsendx_plist;
     int  nfrecvx_buf=0;
     int *frecv;        /* Count of lsum[lk] contributions to be received
-    			 from processes in this row.
-    			 It is only valid on the diagonal processes. */
+			 from processes in this row.
+			 It is only valid on the diagonal processes. */
     int  frecv_tmp;
     int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int  nfrecv = 0; /* Count of total messages to be recv'd. */
@@ -3218,7 +3220,7 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
     int  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
     int  nbrecvx_buf=0;
     int  *brecv;        /* Count of modifications to be recv'd from
-    			 processes in this row. */
+			 processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
@@ -3295,9 +3297,9 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
     {
-    	if (omp_get_thread_num () == 0) {
-    		num_thread = omp_get_num_threads ();
-    	}
+	if (omp_get_thread_num () == 0) {
+		num_thread = omp_get_num_threads ();
+	}
     }
 #else
 	num_thread=1;
@@ -3624,7 +3626,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 	stat_loc[0]->ops[SOLVE] += d_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
     } else
-    
+
 #endif /* match #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) */
     { /* CPU trisolve */
 
@@ -3651,7 +3653,7 @@ thread_id=0;
 // #ifdef _OPENMP
 // #pragma omp task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
 // #endif
-   		    {
+		    {
 
 #if ( PROFlevel>=1 )
 					TIC(t1);
@@ -3751,13 +3753,13 @@ thread_id=0;
 		    nsupr = lsub[1];
 
 #ifdef _CRAY
-   		    STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
+		    STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
 		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
- 		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
+		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
 
@@ -5286,10 +5288,10 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
     SuperLUStat_t **stat_loc;
 
     double tmax;
-    	/*-- Counts used for L-solve --*/
+	/*-- Counts used for L-solve --*/
     int  *fmod;         /* Modification count for L-solve --
-    			 Count the number of local block products to
-    			 be summed into lsum[lk]. */
+			 Count the number of local block products to
+			 be summed into lsum[lk]. */
 	int_t *fmod_sort;
 	int_t *order;
 	//int_t *order1;
@@ -5298,8 +5300,8 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
     int  **fsendx_plist = Llu->fsendx_plist;
     int  nfrecvx_buf=0;
     int *frecv;        /* Count of lsum[lk] contributions to be received
-    			 from processes in this row.
-    			 It is only valid on the diagonal processes. */
+			 from processes in this row.
+			 It is only valid on the diagonal processes. */
     int  frecv_tmp;
     int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int  nfrecv = 0; /* Count of total messages to be recv'd. */
@@ -5314,7 +5316,7 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
     int  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
     int  nbrecvx_buf=0;
     int  *brecv;        /* Count of modifications to be recv'd from
-    			 processes in this row. */
+			 processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
@@ -5379,9 +5381,9 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
     {
-    	if (omp_get_thread_num () == 0) {
-    		num_thread = omp_get_num_threads ();
-    	}
+	if (omp_get_thread_num () == 0) {
+		num_thread = omp_get_num_threads ();
+	}
     }
 #else
 	num_thread=1;
@@ -7688,9 +7690,9 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
     {
-    	if (omp_get_thread_num () == 0) {
-    		num_thread = omp_get_num_threads ();
-    	}
+	if (omp_get_thread_num () == 0) {
+		num_thread = omp_get_num_threads ();
+	}
     }
 #else
 	num_thread=1;
@@ -7714,11 +7716,11 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     {
 	int thread_id = omp_get_thread_num(); //mjc
 	for (ii=0; ii<sizelsum; ii++)
-    	    lsum[thread_id*sizelsum+ii]=zero;
+	    lsum[thread_id*sizelsum+ii]=zero;
     }
 #else
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
-  	    ABORT("Malloc fails for lsum[].");
+	    ABORT("Malloc fails for lsum[].");
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif

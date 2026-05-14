@@ -512,8 +512,8 @@ int dSchurCompUpdate_GPU(
 	double tTmp = SuperLU_timer_();
 
 	gpuEventRecord(stat->ePCIeH2D[k0], FunCallStream);
-	//YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
-	gpuEventRecord(stat->GemmStart[k0], FunCallStream);
+        //YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
+        gpuEventRecord(stat->GemmStart[k0], FunCallStream);
 	gpuEventRecord(stat->GemmEnd[k0], FunCallStream);
 	gpuEventRecord(stat->ScatterEnd[k0], FunCallStream);
 
@@ -763,6 +763,7 @@ int dfree_LUstruct_gpu (
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].bigU_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].usub_IndirectJ3_host));
 
+
 	checkGPU(gpuFreeHost(A_gpu->acc_L_buff));
 	checkGPU(gpuFreeHost(A_gpu->acc_U_buff));
 	checkGPU(gpuFreeHost(A_gpu->scubufs[streamId].lsub_buf));
@@ -789,7 +790,6 @@ int dfree_LUstruct_gpu (
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
 	checkGPU(gpuFree(A_gpu->UnzvalPtr));
 	checkGPU(gpuFree(sluGPU->dA_gpu));
-
 
 	//checkGPU(gpuFree(A_gpu->grid)); // Sherry: this is not used
 

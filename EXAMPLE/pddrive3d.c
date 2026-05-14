@@ -10,6 +10,8 @@ at the top-level directory.
 */
 
 
+
+
 /*
  * <pre>
  * -- Distributed SuperLU routine (version 9.0) --
@@ -192,7 +194,7 @@ int main (int argc, char *argv[])
             case 'i': ir = atoi(*cpp);
                       break;
             case 's': nrhs = atoi(*cpp);
-                      break;                      
+                      break;
             case 'l': lookahead = atoi(*cpp);
                       break;
             case 'g': gpures = atoi(*cpp);
@@ -260,7 +262,7 @@ int main (int argc, char *argv[])
 
     //////* this test SolveOnly*/
     // options.SolveOnly = YES;
-	
+
     //////* this test everything in SolveOnly except ILU_level = 0*/
     // options.Equil = NO;
 	// options.RowPerm = NOROWPERM;
@@ -277,7 +279,7 @@ int main (int argc, char *argv[])
 	print_options_dist(&options);
 	fflush(stdout);
     }
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Enter main()");
 #endif
@@ -323,7 +325,7 @@ int main (int argc, char *argv[])
 	}
         fflush(stdout);
     }
-	
+
     /* Bail out if I do not belong in the grid. */
     if (iam == -1)     goto out;
     if (!iam) {
@@ -358,7 +360,7 @@ int main (int argc, char *argv[])
 	   ------------------------------------------------------------ */
 	printf("batchCount %d\n", batchCount);
 	// dcreate_block_diag_3d(&A, batchCount, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &grid);
-	
+
 	handle_t *F;
 	double **RHSptr;
 	int *ldRHS;
@@ -371,7 +373,7 @@ int main (int argc, char *argv[])
 	int *ldX;
 	double **xtrues;
 	double **Berrs;
-	
+
 	handle_t *SparseMatrix_handles = SUPERLU_MALLOC( batchCount *  sizeof(handle_t) );
 	RHSptr = (double **) SUPERLU_MALLOC( batchCount *  sizeof(double *) );
 	ldRHS = int32Malloc_dist(batchCount);
@@ -387,7 +389,7 @@ int main (int argc, char *argv[])
 	double *a = Astore->nzval;
 	m = A->nrow;
 	n = A->ncol;
-	
+
 	ReqPtr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
 	CeqPtr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
 	RpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
@@ -405,7 +407,7 @@ int main (int argc, char *argv[])
 
 	/* Initialize the statistics variables. */
 	PStatInit (&stat);
-	
+
 	/* Call batch solver */
 	pdgssvx3d_csc_batch(&options, batchCount,
 			    m, n, Astore->nnz, nrhs, SparseMatrix_handles,
@@ -417,7 +419,7 @@ int main (int argc, char *argv[])
 	    printf("\tSystem %d: Berr = %e\n", d, Berrs[d][0]);
 	    //printf("\t\tDiagScale[%d] %d\n", d, DiagScale[d]);
 	}
-	
+
 	/* Free matrices pointed to by the handles, and ReqPtr[], etc. */
 	for (int d = 0; d < batchCount; ++d) {
 	    if ( DiagScale[d] == ROW || DiagScale[d] == BOTH )
@@ -445,9 +447,9 @@ int main (int argc, char *argv[])
 	SUPERLU_FREE(Berrs);
 
 	goto out;
-	
+
     } else {
-    
+
 #define NRFRMT
 #ifndef NRFRMT
         if ( grid.zscp.Iam == 0 )  // only in process layer 0
@@ -580,7 +582,7 @@ int main (int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
 out:
-#if 0 // the following makes sense only for coarse-grain parallel model 
+#if 0 // the following makes sense only for coarse-grain parallel model
     if ( batchCount ) {
 	result_min[0] = stat.utime[FACT];
 	result_min[1] = stat.utime[SOLVE];

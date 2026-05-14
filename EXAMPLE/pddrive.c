@@ -10,6 +10,8 @@ at the top-level directory.
 */
 
 
+
+
 /*! @file
  * \brief Driver program for PDGSSVX example
  *
@@ -116,10 +118,10 @@ int main(int argc, char *argv[])
         options.PrintStat         = YES;
 	options.DiagInv           = NO;
      */
-    set_default_options_dist(&options); 
+    set_default_options_dist(&options);
 
 
-    // //The following options test ILU    
+    // //The following options test ILU
     // options.IterRefine = SLU_DOUBLE;
     // options.lookahead_etree   = YES;
     // options.ILU_level = 0;
@@ -130,7 +132,7 @@ int main(int argc, char *argv[])
     // options.ColPerm = NATURAL;
     // options.RowPerm = NATURAL;
     // options.Equil = NO;
-    
+
 #if 0
     options.ParSymbFact = YES;
     options.ColPerm = PARMETIS;
@@ -145,39 +147,39 @@ int main(int argc, char *argv[])
 	    c = *(*cpp+1);
 	    ++cpp;
 	    switch (c) {
-	      case 'h':
-		  printf("Options:\n");
-		  printf("\t-r <int>: process rows       (default %4d)\n", nprow);
-		  printf("\t-c <int>: process columns    (default %4d)\n", npcol);
-		  printf("\t-p <int>: row permutation    (default %4d)\n", options.RowPerm);
-		  printf("\t-q <int>: col permutation    (default %4d)\n", options.ColPerm);
-		  printf("\t-s <int>: parallel symbolic? (default %4d)\n", options.ParSymbFact);
-		  printf("\t-l <int>: lookahead level    (default %4d)\n", options.num_lookaheads);
-		  printf("\t-i <int>: iter. refinement   (default %4d)\n", options.IterRefine);
-		  printf("\t-g <int>: gpu-resident solve?   (default %4d)\n", options.GPURES);
-		  printf("\t-b <int>: use batch mode?    (default %4d)\n", batch);
-		  exit(0);
-		  break;
-	      case 'r': nprow = atoi(*cpp);
-		        break;
-	      case 'c': npcol = atoi(*cpp);
-		        break;
-              case 'l': lookahead = atoi(*cpp);
-                        break;
-              case 'p': rowperm = atoi(*cpp);
-                        break;
-              case 'q': colperm = atoi(*cpp);
-                        break;
-	          case 's': symbfact = atoi(*cpp);
-		                break;
-	          case 'a': nrhs = atoi(*cpp);
-		                break;                        
-              case 'i': ir = atoi(*cpp);
-                        break;
-              case 'b': batch = atoi(*cpp);
-                        break;
-              case 'g': gpures = atoi(*cpp);
-                        break;                        
+            case 'h':
+                printf("Options:\n");
+                printf("\t-r <int>: process rows       (default %4d)\n", nprow);
+                printf("\t-c <int>: process columns    (default %4d)\n", npcol);
+                printf("\t-p <int>: row permutation    (default %4d)\n", options.RowPerm);
+                printf("\t-q <int>: col permutation    (default %4d)\n", options.ColPerm);
+                printf("\t-s <int>: parallel symbolic? (default %4d)\n", options.ParSymbFact);
+                printf("\t-l <int>: lookahead level    (default %4d)\n", options.num_lookaheads);
+                printf("\t-i <int>: iter. refinement   (default %4d)\n", options.IterRefine);
+                printf("\t-g <int>: gpu-resident solve?   (default %4d)\n", options.GPURES);
+                printf("\t-b <int>: use batch mode?    (default %4d)\n", batch);
+                exit(0);
+                break;
+            case 'r': nprow = atoi(*cpp);
+                    break;
+            case 'c': npcol = atoi(*cpp);
+                    break;
+            case 'l': lookahead = atoi(*cpp);
+                    break;
+            case 'p': rowperm = atoi(*cpp);
+                    break;
+            case 'q': colperm = atoi(*cpp);
+                    break;
+            case 's': symbfact = atoi(*cpp);
+                    break;
+            case 'a': nrhs = atoi(*cpp);
+                    break;
+            case 'i': ir = atoi(*cpp);
+                    break;
+            case 'b': batch = atoi(*cpp);
+                    break;
+            case 'g': gpures = atoi(*cpp);
+                    break;
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -196,7 +198,7 @@ int main(int argc, char *argv[])
     if (gpures != -1) options.GPURES = gpures;
 
     int superlu_acc_offload = get_acc_offload(&options);
-    
+
     /* In the batch mode: create multiple SuperLU grids,
         each grid solving one linear system. */
     if ( batch ) {
@@ -335,7 +337,7 @@ int main(int argc, char *argv[])
         checkGPU(gpuMalloc((void**)&d_b, sizeof(double) * (size_t)(ldb*nrhs)));
         checkGPU(gpuMemcpy(d_b, b, sizeof(double) * (size_t)(ldb*nrhs), gpuMemcpyHostToDevice));
     }
-#endif	
+#endif
 
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
@@ -357,8 +359,8 @@ int main(int argc, char *argv[])
     PStatInit(&stat);
 
     /* Call the linear equation solver. */
-if ( options.GPURES == YES ){ 
-// if ( 0 ){ 
+if ( options.GPURES == YES ){
+// if ( 0 ){
     pdgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
@@ -366,11 +368,11 @@ if ( options.GPURES == YES ){
     // checkGPU(gpuMemcpy(d_b, b, sizeof(double) * (size_t)(ldb*nrhs), gpuMemcpyHostToDevice));
     // pdgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
 	//     &LUstruct, &SOLVEstruct, berr, &stat, &info);
-        
+
 #ifdef GPU_ACC
     checkGPU(gpuMemcpy(b, d_b, sizeof(double) * (size_t)(ldb*nrhs), gpuMemcpyDeviceToHost));
-    checkGPU (gpuFree (d_b));     
-#endif	
+    checkGPU (gpuFree (d_b));
+#endif
 
 }else
     pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
