@@ -965,6 +965,7 @@ psgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     h_nfrecvmod[0]=nfrecvmod;
     h_nfrecvmod[1]=tmp_idx;
     h_nfrecvmod[2]=h_nfrecv[2];
+    h_nfrecvmod[3]=0;
     checkGPU(gpuMalloc( (void**)&d_nfrecvmod, 4 * sizeof(int)));
     checkGPU(gpuMemcpy(d_nfrecvmod, h_nfrecvmod, 4 * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMalloc( (void**)&d_statusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
@@ -1047,7 +1048,8 @@ psgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     }
     h_nfrecvmod_u[0]=nbrecvmod;
     h_nfrecvmod_u[1]=tmp_idx;
-    h_nfrecvmod_u[2]=h_nfrecv[2];
+    h_nfrecvmod_u[2]=h_nfrecv_u[2];
+    h_nfrecvmod_u[3]=0;
     //printf("(%d) nbrecvmod=%d,%d,nbrecvx=%d\n",iam,nbrecvmod, tmp_idx,nbrecvx);
     //fflush(stdout);
     checkGPU(gpuMalloc( (void**)&d_nfrecvmod_u,  4 * sizeof(int)));

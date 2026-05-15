@@ -222,9 +222,8 @@ int_t ilu_level_symbfact
 
     assert (nnzU >= nextu && nnzL >= nextl );
 
-    Glu_freeable->nnzLU = nnzU + nnzL;
-    Glu_freeable->nzlmax = nnzL;
-    Glu_freeable->nzumax = nnzU;
+    Glu_freeable->nzlmax = nextl;
+    Glu_freeable->nzumax = nextu;
     Glu_freeable->nnzLU = nnzL + nnzU - min_mn;	
 
 #if ( DEBUGlevel>=1 )
@@ -244,4 +243,3 @@ int_t ilu_level_symbfact
 
     return ( -(Glu_freeable->xlsub[n] + Glu_freeable->xusub[n]) );
 }
-
