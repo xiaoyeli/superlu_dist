@@ -66,7 +66,6 @@ extern "C" {
 
 
 // #define USESHARE1RHS 1
-
 /***************************************************************************//**
 	 Does sum reduction of n-element array x, leaving total in x[0].
 	 Contents of x are destroyed in the process.

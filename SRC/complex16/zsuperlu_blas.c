@@ -100,7 +100,7 @@ int superlu_zgemv(const char *trans, const int m,
 #else
     zgemv_(trans, &m, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy);
 #endif
-    
+
     return 0;
 }
 
@@ -109,14 +109,14 @@ int superlu_ztrsv(char *uplo, char *trans, char *diag,
 {
 #ifdef _CRAY
     // _fcd ftcs = _cptofcd("N", strlen("N"));
-    CTRSV(_cptofcd(uplo, strlen(uplo)), _cptofcd(trans, strlen(trans)), _cptofcd(diag, strlen(diag)), 
+    CTRSV(_cptofcd(uplo, strlen(uplo)), _cptofcd(trans, strlen(trans)), _cptofcd(diag, strlen(diag)),
          &n, a, &lda, x, &incx);
 #elif defined (USE_VENDOR_BLAS)
     ztrsv_(uplo, trans, diag, &n, a, &lda, x, &incx, 1, 1, 1);
 #else
     ztrsv_(uplo, trans, diag, &n, a, &lda, x, &incx);
 #endif
-    
+
     return 0;
 }
 

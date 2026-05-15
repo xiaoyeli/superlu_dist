@@ -12,6 +12,8 @@ at the top-level directory.
 
 
 
+
+
 /*! @file
  * \brief Solves a system of distributed linear equations A*X = B with a
  * general N-by-N matrix A using the LU factors computed previously.
@@ -62,93 +64,154 @@ int_t strs_B_init3d(int_t nsupers, float* x, int nrhs, sLUstruct_t * LUstruct,
 }
 
 // Broadcast the RHS to all grids from grid 0. Once received, every grid zeros out certain subvectors to allow for the new 3D solve.
-int_t strs_B_init3d_newsolve(int_t nsupers, float* x, int nrhs, sLUstruct_t * LUstruct,
+int_t strs_B_init3d_newsolve(superlu_dist_options_t *options, int_t nsupers, float* x, int nrhs, sLUstruct_t * LUstruct,
 	gridinfo3d_t *grid3d, strf3Dpartition_t*  trf3Dpartition)
 {
-
-	gridinfo_t * grid = &(grid3d->grid2d);
-    int_t myGrid = grid3d->zscp.Iam;
-	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-	sLocalLU_t *Llu = LUstruct->Llu;
-	int_t* ilsum = Llu->ilsum;
-	int_t* xsup = Glu_persist->xsup;
-	int_t iam = grid->iam;
-	int_t myrow = MYROW( iam, grid );
-	int_t mycol = MYCOL( iam, grid );
-    int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
-    int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;
-    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+    gridinfo_t *grid = &(grid3d->grid2d);
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    sLocalLU_t *Llu = LUstruct->Llu;
+    int_t *ilsum = Llu->ilsum;
+    int_t *xsup = Glu_persist->xsup;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW(iam, grid);
+    int_t mycol = MYCOL(iam, grid);
     float zero = 0.0;
-    float* xtmp;
-    sForest_t** sForests = trf3Dpartition->sForests;
     int_t Pr = grid->nprow;
-    int_t nlb = CEILING (nsupers, Pr);    /* Number of local block rows. */
+    int_t nlb = CEILING(nsupers, Pr);    /* Number of local block rows. */
 
-    if (!(xtmp = floatCalloc_dist (Llu->ldalsum * nrhs + nlb * XK_H)))
-    ABORT ("Malloc fails for xtmp[].");
+    if (grid3d->zscp.Np == 1) return 0;
 
-	for (int_t k = 0; k < nsupers; ++k)
-	{
-		/* code */
-		int_t krow = PROW (k, grid);
-		int_t kcol = PCOL (k, grid);
+    int_t xlen = Llu->ldalsum * (int_t)nrhs + nlb * XK_H;
 
-		if (myrow == krow && mycol == kcol)
-		{
-			int_t lk = LBi(k, grid);
-			int_t ii = X_BLK (lk);
-			int_t knsupc = SuperSize(k);
-            MPI_Bcast( &x[ii - XK_H], knsupc * nrhs + XK_H, MPI_FLOAT, 0, grid3d->zscp.comm);
-            for (int_t i=0; i<XK_H; ++i){
-                xtmp[ii-XK_H+i] = x[ii - XK_H+i];
-            }
-            for (int_t i=0; i<knsupc * nrhs; ++i){
-                xtmp[ii+i] = x[ii+i];
-                x[ii+i] = zero;
-            }
-		}
+    if (options->GPURES == YES) {
+#ifdef GPU_ACC
+
+	for (int_t offset = 0; offset < xlen; ) {
+	    int_t remaining = xlen - offset;
+	    int count = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+	    MPI_Bcast(&x[offset], count, MPI_FLOAT, 0, grid3d->zscp.comm);
+	    offset += count;
 	}
 
+	SupernodeToGridMap_t *d_superGridMap = trf3Dpartition->d_superGridMap;
+	if (!d_superGridMap)
+	    ABORT("Missing device superGridMap in strs_B_init3d_newsolve().");
 
-    // fill corresponding RHSs
-    for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
-    {
-        // printf("gana grid3d->zscp.iam %5d ilvl %5d myZeroTrIdxs[ilvl] %5d myTreeIdxs[ilvl] %5d\n",grid3d->zscp.Iam, ilvl, myZeroTrIdxs[ilvl],myTreeIdxs[ilvl]);
-        if (!myZeroTrIdxs[ilvl])
-        {
-            int_t tree = myTreeIdxs[ilvl];
-            sForest_t* sforest = sForests[myTreeIdxs[ilvl]];
-            /*main loop over all the super nodes*/
-            if (sforest)
-            {
-                int_t nnodes = sforest->nNodes ;
-	            int_t *nodeList = sforest->nodeList ;
-                for (int_t k0 = 0; k0 < nnodes; ++k0)
-	            {
-		            int_t k = nodeList[k0];
-                    int_t krow = PROW (k, grid);
-                    int_t kcol = PCOL (k, grid);
-
-                    if (myrow == krow && mycol == kcol)
-                    {
-                        int_t lk = LBi(k, grid);
-                        int_t ii = X_BLK (lk);
-                        int_t knsupc = SuperSize(k);
-                        for(int_t i=0; i<knsupc * nrhs; ++i)
-                            x[ii +i]= xtmp[ii+i];
-                    }
-                }
-            }
-        }
-    }
-    SUPERLU_FREE (xtmp);
+	strs_B_init3d_zero_inactive_gpu_wrap(x, nrhs, nsupers, nlb,
+						     Llu->d_ilsum, Llu->d_xsup,
+						     d_superGridMap, grid->nprow,
+						     grid->npcol, myrow, mycol);
 	return 0;
+#else
+	ABORT("GPURES requires GPU_ACC in strs_B_init3d_newsolve().");
+#endif
+    }
+
+    for (int_t offset = 0; offset < xlen; ) {
+	int_t remaining = xlen - offset;
+	int count = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+	MPI_Bcast(&x[offset], count, MPI_FLOAT, 0, grid3d->zscp.comm);
+	offset += count;
+    }
+
+    if (!trf3Dpartition->superGridMap)
+	ABORT("Missing superGridMap in strs_B_init3d_newsolve().");
+
+    for (int_t lk = 0; lk < nlb; ++lk) {
+	int_t k = lk * grid->nprow + myrow;
+	if (k >= nsupers || mycol != PCOL(k, grid) ||
+	    trf3Dpartition->superGridMap[k] == IN_GRID_AIJ) {
+	    continue;
+	}
+
+	int_t ii = X_BLK(lk);
+	int_t nvals = SuperSize(k) * (int_t)nrhs;
+	for (int_t i = 0; i < nvals; ++i) x[ii + i] = zero;
+    }
+    return 0;
 }
 
 // #ifdef HAVE_NVSHMEM
 /*global variables for nvshmem, is it safe to be put them here? */
 float *sready_x, *sready_lsum;
 // #endif
+
+static flops_t
+s_acc_lsolve_flops(int_t nsupers, int nrhs, gridinfo_t *grid,
+                   Glu_persist_t *Glu_persist, sLocalLU_t *Llu)
+{
+    int_t *xsup = Glu_persist->xsup;
+    int_t nsupers_j = CEILING(nsupers, grid->npcol);
+    int_t iam = grid->iam;
+    int_t myrow = MYROW(iam, grid);
+    int_t mycol = MYCOL(iam, grid);
+    flops_t ops = 0.0;
+
+    for (int_t lk = 0; lk < nsupers_j; ++lk) {
+        int_t k = mycol + lk * grid->npcol;
+        if (k >= nsupers) continue;
+
+        int_t *lsub = Llu->Lrowind_bc_ptr[lk];
+        if (!lsub) continue;
+
+        int_t knsupc = SuperSize(k);
+        int_t krow = PROW(k, grid);
+        if (myrow == krow) {
+            ops += (flops_t) knsupc * (knsupc - 1) * nrhs;
+        }
+
+        int_t nbrow = lsub[1];
+        if (myrow == krow) nbrow -= knsupc;
+        if (nbrow > 0) {
+            ops += 2.0 * (flops_t) nbrow * (flops_t) knsupc * (flops_t) nrhs;
+        }
+    }
+
+    return ops;
+}
+
+static flops_t
+s_acc_usolve_flops(int_t nsupers, int nrhs, gridinfo_t *grid,
+                   Glu_persist_t *Glu_persist, sLocalLU_t *Llu)
+{
+    int_t *xsup = Glu_persist->xsup;
+    int_t nsupers_j = CEILING(nsupers, grid->npcol);
+    int_t iam = grid->iam;
+    int_t myrow = MYROW(iam, grid);
+    int_t mycol = MYCOL(iam, grid);
+    flops_t ops = 0.0;
+
+    for (int_t lk = 0; lk < nsupers_j; ++lk) {
+        int_t k = mycol + lk * grid->npcol;
+        if (k >= nsupers) continue;
+
+        int_t knsupc = SuperSize(k);
+        if (myrow == PROW(k, grid)) {
+            ops += (flops_t) knsupc * (knsupc + 1) * nrhs;
+        }
+
+        int_t nub = Llu->Urbs ? Llu->Urbs[lk] : 0;
+        for (int_t ub = 0; ub < nub; ++ub) {
+            int_t ik = Llu->Ucb_indptr[lk][ub].lbnum;
+            int_t *usub = Llu->Ufstnz_br_ptr[ik];
+            if (!usub) continue;
+
+            int_t usub_pos = Llu->Ucb_indptr[lk][ub].indpos + UB_DESCRIPTOR;
+            int_t gik = ik * grid->nprow + myrow;
+            if (gik >= nsupers) continue;
+
+            int_t iklrow = FstBlockC(gik + 1);
+            for (int_t jj = 0; jj < knsupc; ++jj) {
+                int_t fnz = usub[usub_pos + jj];
+                if (fnz < iklrow) {
+                    ops += 2.0 * (flops_t) (iklrow - fnz) * (flops_t) nrhs;
+                }
+            }
+        }
+    }
+
+    return ops;
+}
 
 int strs_compute_communication_structure(superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
                            int* supernodeMask, gridinfo_t *grid)
@@ -182,6 +245,7 @@ int strs_compute_communication_structure(superlu_dist_options_t *options, int_t 
 
     sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
+    int_t* supno = Glu_persist->supno;
     int_t  *Urbs = Llu->Urbs; /* Number of row blocks in each block column of U. */
     Ucb_indptr_t **Ucb_indptr = Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
     int_t *usub;
@@ -1283,8 +1347,11 @@ int strs_compute_communication_structure(superlu_dist_options_t *options, int_t 
     if (get_acc_solve()){
 	checkGPU(gpuMalloc( (void**)&Llu->d_bcols_masked, Llu->nbcol_masked * sizeof(int)));
 	checkGPU(gpuMemcpy(Llu->d_bcols_masked, Llu->bcols_masked, Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
+	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (nsupers+1) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (nsupers+1) * sizeof(int_t), gpuMemcpyHostToDevice));
+    checkGPU(gpuMalloc((void**)&Llu->d_supno, sizeof(int_t) * (size_t)n));
+    checkGPU(gpuMemcpy(Llu->d_supno, supno, sizeof(int_t) * (size_t)n, gpuMemcpyHostToDevice));
+
 	checkGPU(gpuMalloc( (void**)&Llu->d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_URtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
@@ -1402,94 +1469,410 @@ int strs_compute_communication_structure(superlu_dist_options_t *options, int_t 
 
 
 
-int_t strs_x_reduction_newsolve(int_t nsupers, float* x, int nrhs, sLUstruct_t * LUstruct, gridinfo3d_t *grid3d, strf3Dpartition_t*  trf3Dpartition, float* recvbuf, xtrsTimer_t *xtrsTimer)
+typedef struct {
+	float *packbuf;
+	int_t packbuf_size;
+	int_t *offsets;
+	int_t *lengths;
+	int_t *pack_offsets;
+	int_t meta_size;
+#ifdef GPU_ACC
+	float *d_packbuf;
+	int_t d_packbuf_size;
+	int_t *d_offsets;
+	int_t *d_lengths;
+	int_t *d_pack_offsets;
+	int_t d_meta_size;
+#endif
+} strs_x_zcomm_workspace_t;
+
+
+static int_t strs_x_newsolve_build_list(int_t tree, int_t ilvl,
+                                        int_t maxLvl, int nrhs,
+                                        strf3Dpartition_t *trf3Dpartition,
+                                        sLUstruct_t *LUstruct,
+                                        gridinfo3d_t *grid3d,
+                                        int_t *offsets, int_t *lengths,
+                                        int_t *pack_offsets,
+                                        int_t *total_count)
+{
+	sForest_t **sForests = trf3Dpartition->sForests;
+	gridinfo_t *grid = &(grid3d->grid2d);
+	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+	sLocalLU_t *Llu = LUstruct->Llu;
+	int_t *ilsum = Llu->ilsum;
+	int_t *xsup = Glu_persist->xsup;
+	int_t iam = grid->iam;
+	int_t myrow = MYROW(iam, grid);
+	int_t mycol = MYCOL(iam, grid);
+	int_t nblocks = 0;
+	int_t total = 0;
+	int_t tr = tree;
+
+	for (int_t alvl = ilvl; alvl < maxLvl; ++alvl) {
+		sForest_t *sforest = sForests[tr];
+		if (sforest) {
+			int_t nnodes = sforest->nNodes;
+			int_t *nodeList = sforest->nodeList;
+			for (int_t k0 = 0; k0 < nnodes; ++k0) {
+				int_t k = nodeList[k0];
+				if (myrow == PROW(k, grid) && mycol == PCOL(k, grid)) {
+					int_t lk = LBi(k, grid);
+					int_t len = SuperSize(k) * (int_t)nrhs;
+					if (offsets) {
+						offsets[nblocks] = X_BLK(lk);
+						lengths[nblocks] = len;
+						pack_offsets[nblocks] = total;
+					}
+					total += len;
+					++nblocks;
+				}
+			}
+		}
+		tr = (tr + 1) / 2 - 1;
+	}
+
+	*total_count = total;
+	return nblocks;
+}
+
+
+static void strs_x_zcomm_ensure_meta(strs_x_zcomm_workspace_t *ws,
+                                     int_t nblocks)
+{
+	if (nblocks > ws->meta_size) {
+		if (ws->offsets) SUPERLU_FREE(ws->offsets);
+		if (ws->lengths) SUPERLU_FREE(ws->lengths);
+		if (ws->pack_offsets) SUPERLU_FREE(ws->pack_offsets);
+		ws->offsets = INT_T_ALLOC(nblocks);
+		ws->lengths = INT_T_ALLOC(nblocks);
+		ws->pack_offsets = INT_T_ALLOC(nblocks);
+		if (!ws->offsets || !ws->lengths || !ws->pack_offsets)
+			ABORT("Malloc fails for strs_x_newsolve metadata.");
+		ws->meta_size = nblocks;
+	}
+}
+
+
+static void strs_x_zcomm_ensure_packbuf(strs_x_zcomm_workspace_t *ws,
+					int_t total_count)
+{
+	if (total_count > ws->packbuf_size) {
+		if (ws->packbuf) SUPERLU_FREE(ws->packbuf);
+		ws->packbuf = floatMalloc_dist(total_count);
+		if (!ws->packbuf)
+			ABORT("Malloc fails for strs_x_newsolve packbuf.");
+		ws->packbuf_size = total_count;
+	}
+}
+
+
+#ifdef GPU_ACC
+static void strs_x_zcomm_ensure_device(strs_x_zcomm_workspace_t *ws,
+                                       int_t nblocks, int_t total_count)
+{
+	if (total_count > ws->d_packbuf_size) {
+		if (ws->d_packbuf) checkGPU(gpuFree(ws->d_packbuf));
+		checkGPU(gpuMalloc((void**)&ws->d_packbuf,
+				   sizeof(float) * (size_t)total_count));
+		ws->d_packbuf_size = total_count;
+	}
+	if (nblocks > ws->d_meta_size) {
+		if (ws->d_offsets) checkGPU(gpuFree(ws->d_offsets));
+		if (ws->d_lengths) checkGPU(gpuFree(ws->d_lengths));
+		if (ws->d_pack_offsets) checkGPU(gpuFree(ws->d_pack_offsets));
+		checkGPU(gpuMalloc((void**)&ws->d_offsets,
+				   sizeof(int_t) * (size_t)nblocks));
+		checkGPU(gpuMalloc((void**)&ws->d_lengths,
+				   sizeof(int_t) * (size_t)nblocks));
+		checkGPU(gpuMalloc((void**)&ws->d_pack_offsets,
+				   sizeof(int_t) * (size_t)nblocks));
+		ws->d_meta_size = nblocks;
+	}
+	checkGPU(gpuMemcpy(ws->d_offsets, ws->offsets,
+			   sizeof(int_t) * (size_t)nblocks,
+			   gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(ws->d_lengths, ws->lengths,
+			   sizeof(int_t) * (size_t)nblocks,
+			   gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(ws->d_pack_offsets, ws->pack_offsets,
+			   sizeof(int_t) * (size_t)nblocks,
+			   gpuMemcpyHostToDevice));
+}
+#endif
+
+
+static void strs_x_zcomm_free_workspace(strs_x_zcomm_workspace_t *ws)
+{
+	if (ws->packbuf) SUPERLU_FREE(ws->packbuf);
+	if (ws->offsets) SUPERLU_FREE(ws->offsets);
+	if (ws->lengths) SUPERLU_FREE(ws->lengths);
+	if (ws->pack_offsets) SUPERLU_FREE(ws->pack_offsets);
+#ifdef GPU_ACC
+	if (ws->d_packbuf) checkGPU(gpuFree(ws->d_packbuf));
+	if (ws->d_offsets) checkGPU(gpuFree(ws->d_offsets));
+	if (ws->d_lengths) checkGPU(gpuFree(ws->d_lengths));
+	if (ws->d_pack_offsets) checkGPU(gpuFree(ws->d_pack_offsets));
+#endif
+}
+
+
+static void strs_x_zcomm_send(float *buf, int_t total_count,
+			      int receiver, int tag, MPI_Comm comm)
+{
+	for (int_t offset = 0; offset < total_count; ) {
+		int_t remaining = total_count - offset;
+		int count = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+		MPI_Send(&buf[offset], count, MPI_FLOAT, receiver, tag, comm);
+		offset += count;
+	}
+}
+
+
+static void strs_x_zcomm_recv(float *buf, int_t total_count,
+			      int sender, int tag, MPI_Comm comm)
+{
+	MPI_Status status;
+	for (int_t offset = 0; offset < total_count; ) {
+		int_t remaining = total_count - offset;
+		int count = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+		MPI_Recv(&buf[offset], count, MPI_FLOAT, sender, tag, comm, &status);
+		offset += count;
+	}
+}
+
+
+static void strs_x_zcomm_pack_host(float *packbuf, const float *x,
+				   const int_t *offsets, const int_t *lengths,
+				   const int_t *pack_offsets, int_t nblocks)
+{
+	for (int_t b = 0; b < nblocks; ++b) {
+		const float *src = &x[offsets[b]];
+		float *dst = &packbuf[pack_offsets[b]];
+		for (int_t i = 0; i < lengths[b]; ++i)
+			dst[i] = src[i];
+	}
+}
+
+
+static void strs_x_zcomm_pack_zero_host(float *packbuf, float *x,
+					const int_t *offsets, const int_t *lengths,
+					const int_t *pack_offsets, int_t nblocks)
+{
+    float zero = 0.0;
+	for (int_t b = 0; b < nblocks; ++b) {
+		float *src = &x[offsets[b]];
+		float *dst = &packbuf[pack_offsets[b]];
+		for (int_t i = 0; i < lengths[b]; ++i) {
+			dst[i] = src[i];
+			src[i] = zero;
+		}
+	}
+}
+
+
+static void strs_x_zcomm_unpack_host(float *x, const float *packbuf,
+				     const int_t *offsets, const int_t *lengths,
+				     const int_t *pack_offsets, int_t nblocks)
+{
+	for (int_t b = 0; b < nblocks; ++b) {
+		float *dst = &x[offsets[b]];
+		const float *src = &packbuf[pack_offsets[b]];
+		for (int_t i = 0; i < lengths[b]; ++i)
+			dst[i] = src[i];
+	}
+}
+
+
+static void strs_x_zcomm_unpack_add_host(float *x, const float *packbuf,
+					 const int_t *offsets, const int_t *lengths,
+					 const int_t *pack_offsets, int_t nblocks)
+{
+	for (int_t b = 0; b < nblocks; ++b) {
+		float *dst = &x[offsets[b]];
+		const float *src = &packbuf[pack_offsets[b]];
+		for (int_t i = 0; i < lengths[b]; ++i)
+            dst[i] += src[i];
+
+	}
+}
+
+
+int_t strs_x_reduction_newsolve(superlu_dist_options_t *options, int_t nsupers, float* x, int nrhs, sLUstruct_t * LUstruct, gridinfo3d_t *grid3d, strf3Dpartition_t*  trf3Dpartition, float* recvbuf, xtrsTimer_t *xtrsTimer)
 
 {
 	int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 	int_t myGrid = grid3d->zscp.Iam;
 	int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;
 	int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+	strs_x_zcomm_workspace_t ws = {0};
 
 	for (int_t ilvl = 1; ilvl < maxLvl ; ++ilvl)
 	{
-        if(!myZeroTrIdxs[ilvl-1]){ // this ensures the number of grids in communication is reduced by half every level down
-            int_t sender, receiver;
-            int_t tree = myTreeIdxs[ilvl];
-            sForest_t** sForests = trf3Dpartition->sForests;
-            sForest_t* sforest = sForests[tree];
+		if(!myZeroTrIdxs[ilvl-1]){ // this ensures the number of grids in communication is reduced by half every level down
+			int_t sender, receiver;
+			int_t tree = myTreeIdxs[ilvl];
 
-            if ((myGrid % (1 << ilvl)) == 0)
-            {
-                sender = myGrid + (1 << (ilvl-1));
-                receiver = myGrid;
-            }
-            else
-            {
-                sender = myGrid;
-                receiver = myGrid - (1 << (ilvl-1));
-            }
-            int_t tr =  tree;
-            for (int_t alvl = ilvl; alvl < maxLvl; alvl++)
-            {
-                /* code */
-                // printf("myGrid %5d tr %5d sender %5d receiver %5d\n",myGrid,tr, sender, receiver);
-                // fflush(stdout);
-                sreduceSolvedX_newsolve(tr, sender, receiver, x, nrhs,  trf3Dpartition, LUstruct, grid3d, recvbuf, xtrsTimer);
-                tr=(tr+1)/2-1;
+			if ((myGrid % (1 << ilvl)) == 0)
+			{
+				sender = myGrid + (1 << (ilvl-1));
+				receiver = myGrid;
+			}
+			else
+			{
+				sender = myGrid;
+				receiver = myGrid - (1 << (ilvl-1));
+			}
 
-            }
-        }
+			int_t total_count = 0;
+			int_t nblocks = strs_x_newsolve_build_list(
+				tree, ilvl, maxLvl, nrhs, trf3Dpartition,
+				LUstruct, grid3d, NULL, NULL, NULL, &total_count);
+			if (nblocks <= 0 || total_count <= 0) continue;
+
+			strs_x_zcomm_ensure_meta(&ws, nblocks);
+			strs_x_newsolve_build_list(
+				tree, ilvl, maxLvl, nrhs, trf3Dpartition,
+				LUstruct, grid3d, ws.offsets, ws.lengths,
+				ws.pack_offsets, &total_count);
+
+			int tag = (int)(maxLvl + ilvl);
+			if (options->GPURES == YES) {
+#ifdef GPU_ACC
+				strs_x_zcomm_ensure_device(&ws, nblocks, total_count);
+				if (myGrid == sender) {
+					strs_X_gather3d_pack_zero_gpu_wrap(
+						ws.d_packbuf, x, ws.d_offsets,
+						ws.d_lengths, ws.d_pack_offsets, nblocks);
+					strs_x_zcomm_send(ws.d_packbuf, total_count,
+							  receiver, tag, grid3d->zscp.comm);
+					xtrsTimer->trsDataSendZ += total_count;
+				} else {
+					strs_x_zcomm_recv(ws.d_packbuf, total_count,
+							  sender, tag, grid3d->zscp.comm);
+					strs_X_gather3d_unpack_add_gpu_wrap(
+						x, ws.d_packbuf, ws.d_offsets,
+						ws.d_lengths, ws.d_pack_offsets, nblocks);
+					xtrsTimer->trsDataRecvZ += total_count;
+				}
+#else
+				ABORT("GPURES requires GPU_ACC in strs_x_reduction_newsolve().");
+#endif
+			} else {
+				strs_x_zcomm_ensure_packbuf(&ws, total_count);
+				if (myGrid == sender) {
+					strs_x_zcomm_pack_zero_host(
+						ws.packbuf, x, ws.offsets,
+						ws.lengths, ws.pack_offsets, nblocks);
+					strs_x_zcomm_send(ws.packbuf, total_count,
+							  receiver, tag, grid3d->zscp.comm);
+					xtrsTimer->trsDataSendZ += total_count;
+				} else {
+					strs_x_zcomm_recv(ws.packbuf, total_count,
+							  sender, tag, grid3d->zscp.comm);
+					strs_x_zcomm_unpack_add_host(
+						x, ws.packbuf, ws.offsets,
+						ws.lengths, ws.pack_offsets, nblocks);
+					xtrsTimer->trsDataRecvZ += total_count;
+				}
+			}
+		}
 	}
 
+	strs_x_zcomm_free_workspace(&ws);
 	return 0;
 }
 
 
 
-int_t strs_x_broadcast_newsolve(int_t nsupers, float* x, int nrhs, sLUstruct_t * LUstruct, gridinfo3d_t *grid3d, strf3Dpartition_t*  trf3Dpartition, float* recvbuf, xtrsTimer_t *xtrsTimer)
+int_t strs_x_broadcast_newsolve(superlu_dist_options_t *options, int_t nsupers, float* x, int nrhs, sLUstruct_t * LUstruct, gridinfo3d_t *grid3d, strf3Dpartition_t*  trf3Dpartition, float* recvbuf, xtrsTimer_t *xtrsTimer)
 
 {
 	int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 	int_t myGrid = grid3d->zscp.Iam;
 	int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;
 	int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+	strs_x_zcomm_workspace_t ws = {0};
 
 	for (int_t ilvl = maxLvl-1; ilvl >0 ; --ilvl)
 	{
-        if(!myZeroTrIdxs[ilvl-1]){ // this ensures the number of grids in communication is doubled every level down
-            int_t sender, receiver;
-            int_t tree = myTreeIdxs[ilvl];
-            if ((myGrid % (1 << ilvl)) == 0)
-            {
-                sender = myGrid;
-                receiver = myGrid + (1 << (ilvl-1));
-            }
-            else
-            {
-                sender = myGrid - (1 << (ilvl-1));
-                receiver = myGrid ;
-            }
-            int_t tr =  tree;
-            for (int_t alvl = ilvl; alvl < maxLvl; alvl++)
-            {
-                // /* code */
-                // printf("myGrid %5d tr %5d sender %5d receiver %5d\n",myGrid,tr, sender, receiver);
-                // fflush(stdout);
+		if(!myZeroTrIdxs[ilvl-1]){ // this ensures the number of grids in communication is doubled every level down
+			int_t sender, receiver;
+			int_t tree = myTreeIdxs[ilvl];
+			if ((myGrid % (1 << ilvl)) == 0)
+			{
+				sender = myGrid;
+				receiver = myGrid + (1 << (ilvl-1));
+			}
+			else
+			{
+				sender = myGrid - (1 << (ilvl-1));
+				receiver = myGrid ;
+			}
 
-                sp2pSolvedX3d(tr, sender, receiver, x, nrhs,  trf3Dpartition, LUstruct, grid3d, xtrsTimer);
-                tr=(tr+1)/2-1;
+			int_t total_count = 0;
+			int_t nblocks = strs_x_newsolve_build_list(
+				tree, ilvl, maxLvl, nrhs, trf3Dpartition,
+				LUstruct, grid3d, NULL, NULL, NULL, &total_count);
+			if (nblocks <= 0 || total_count <= 0) continue;
 
-            }
-        }
+			strs_x_zcomm_ensure_meta(&ws, nblocks);
+			strs_x_newsolve_build_list(
+				tree, ilvl, maxLvl, nrhs, trf3Dpartition,
+				LUstruct, grid3d, ws.offsets, ws.lengths,
+				ws.pack_offsets, &total_count);
+
+			int tag = (int)(2 * maxLvl + ilvl);
+			if (options->GPURES == YES) {
+#ifdef GPU_ACC
+				strs_x_zcomm_ensure_device(&ws, nblocks, total_count);
+				if (myGrid == sender) {
+					strs_X_gather3d_pack_gpu_wrap(
+						ws.d_packbuf, x, ws.d_offsets,
+						ws.d_lengths, ws.d_pack_offsets, nblocks);
+					strs_x_zcomm_send(ws.d_packbuf, total_count,
+							  receiver, tag, grid3d->zscp.comm);
+					xtrsTimer->trsDataSendZ += total_count;
+				} else {
+					strs_x_zcomm_recv(ws.d_packbuf, total_count,
+							  sender, tag, grid3d->zscp.comm);
+					strs_X_gather3d_unpack_gpu_wrap(
+						x, ws.d_packbuf, ws.d_offsets,
+						ws.d_lengths, ws.d_pack_offsets, nblocks);
+					xtrsTimer->trsDataRecvZ += total_count;
+				}
+#else
+				ABORT("GPURES requires GPU_ACC in strs_x_broadcast_newsolve().");
+#endif
+			} else {
+				strs_x_zcomm_ensure_packbuf(&ws, total_count);
+				if (myGrid == sender) {
+					strs_x_zcomm_pack_host(
+						ws.packbuf, x, ws.offsets,
+						ws.lengths, ws.pack_offsets, nblocks);
+					strs_x_zcomm_send(ws.packbuf, total_count,
+							  receiver, tag, grid3d->zscp.comm);
+					xtrsTimer->trsDataSendZ += total_count;
+				} else {
+					strs_x_zcomm_recv(ws.packbuf, total_count,
+							  sender, tag, grid3d->zscp.comm);
+					strs_x_zcomm_unpack_host(
+						x, ws.packbuf, ws.offsets,
+						ws.lengths, ws.pack_offsets, nblocks);
+					xtrsTimer->trsDataRecvZ += total_count;
+				}
+			}
+		}
 	}
 
+	strs_x_zcomm_free_workspace(&ws);
 	return 0;
 }
 
 
 
 
-int_t sreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, float* x, int nrhs,
+int_t sreduceSolvedX_newsolve(superlu_dist_options_t *options, int_t treeId, int_t sender, int_t receiver, float* x, int nrhs,
                       strf3Dpartition_t*  trf3Dpartition, sLUstruct_t* LUstruct, gridinfo3d_t* grid3d, float* recvbuf, xtrsTimer_t *xtrsTimer)
 {
 	sForest_t** sForests = trf3Dpartition->sForests;
@@ -1524,18 +1907,35 @@ int_t sreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, float*
 			{
 				/* code */
 				MPI_Send( &x[ii], knsupc * nrhs, MPI_FLOAT, receiver, k,  grid3d->zscp.comm);
-                for(int_t i=0; i<knsupc * nrhs; i++){
-                    x[ii+i]=zero;
-                }
+				if (options->GPURES == YES) {
+#ifdef GPU_ACC
+				    checkGPU(gpuMemset(&x[ii], 0,
+						       sizeof(float) * (size_t)(knsupc * nrhs)));
+#else
+				    ABORT("GPURES requires GPU_ACC in sreduceSolvedX_newsolve().");
+#endif
+				} else {
+				    for(int_t i=0; i<knsupc * nrhs; i++){
+					x[ii+i]=zero;
+				    }
+				}
                 xtrsTimer->trsDataSendZ += knsupc * nrhs;
             }
 			else
 			{
 				MPI_Status status;
 				MPI_Recv( recvbuf, knsupc * nrhs, MPI_FLOAT, sender, k, grid3d->zscp.comm, &status );
-                for(int_t i=0; i<knsupc * nrhs; i++){
+				if (options->GPURES == YES) {
+#ifdef GPU_ACC
+				    sdevice_add_to_vec_wrap(&x[ii], recvbuf, knsupc * nrhs);
+#else
+				    ABORT("GPURES requires GPU_ACC in sreduceSolvedX_newsolve().");
+#endif
+				} else {
+				    for(int_t i=0; i<knsupc * nrhs; i++){
                     x[ii+i]+=recvbuf[i];
-                }
+				    }
+				}
                 xtrsTimer->trsDataRecvZ += knsupc * nrhs;
 			}
 		}
@@ -1547,15 +1947,83 @@ int_t sreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, float*
 
 
 
+static int_t strs_X_gather3d_build_list(int_t ilvl, int_t sender,
+                                        int_t maxLvl, int nrhs,
+                                        strf3Dpartition_t *trf3Dpartition,
+                                        sLUstruct_t *LUstruct,
+                                        gridinfo3d_t *grid3d,
+                                        int_t *offsets, int_t *lengths,
+                                        int_t *pack_offsets,
+                                        int_t *total_count)
+{
+    sForest_t **sForests = trf3Dpartition->sForests;
+    gridinfo_t *grid = &(grid3d->grid2d);
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    sLocalLU_t *Llu = LUstruct->Llu;
+    int_t *ilsum = Llu->ilsum;
+    int_t *xsup = Glu_persist->xsup;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW(iam, grid);
+    int_t mycol = MYCOL(iam, grid);
+    int_t nblocks = 0;
+    int_t total = 0;
+
+    for (int_t alvl = 0; alvl <= ilvl; alvl++) {
+        int_t diffLvl  = ilvl - alvl;
+        int_t numTrees = 1 << diffLvl;
+        int_t blvl = maxLvl - alvl - 1;
+        int_t st = (1 << blvl) - 1 + (sender >> alvl);
+
+        for (int_t tr = st; tr < st + numTrees; ++tr) {
+            sForest_t *sforest = sForests[tr];
+            if (!sforest) continue;
+
+            int_t nnodes = sforest->nNodes;
+            int_t *nodeList = sforest->nodeList;
+            for (int_t k0 = 0; k0 < nnodes; ++k0) {
+                int_t k = nodeList[k0];
+                if (myrow == PROW(k, grid) && mycol == PCOL(k, grid)) {
+                    int_t lk = LBi(k, grid);
+                    int_t len = SuperSize(k) * (int_t)nrhs;
+                    if (offsets) {
+                        offsets[nblocks] = X_BLK(lk);
+                        lengths[nblocks] = len;
+                        pack_offsets[nblocks] = total;
+                    }
+                    total += len;
+                    ++nblocks;
+                }
+            }
+        }
+    }
+
+    *total_count = total;
+    return nblocks;
+}
+
+
 // Gather the solution vector from all grids to grid 0
-int_t strs_X_gather3d(float* x, int nrhs, strf3Dpartition_t*  trf3Dpartition,
-                     sLUstruct_t* LUstruct,
+int_t strs_X_gather3d(superlu_dist_options_t *options, float* x, int nrhs,
+                     strf3Dpartition_t*  trf3Dpartition, sLUstruct_t* LUstruct,
                      gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer)
 
 {
 	int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 	int_t myGrid = grid3d->zscp.Iam;
 	int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+
+	if (grid3d->zscp.Np == 1) return 0;
+
+	float *packbuf = NULL;
+	int_t packbuf_size = 0;
+#ifdef GPU_ACC
+	float *d_packbuf = NULL;
+	int_t d_packbuf_size = 0;
+	int_t *d_offsets = NULL;
+	int_t *d_lengths = NULL;
+	int_t *d_pack_offsets = NULL;
+	int_t d_meta_size = 0;
+#endif
 
 	for (int_t ilvl = 0; ilvl < maxLvl - 1; ++ilvl)
 	{
@@ -1568,26 +2036,143 @@ int_t strs_X_gather3d(float* x, int nrhs, strf3Dpartition_t*  trf3Dpartition,
 				receiver = myGrid;
 			}
 			else
-			{
-				sender = myGrid;
-				receiver = myGrid - (1 << ilvl);
-			}
-			for (int_t alvl = 0; alvl <= ilvl; alvl++)
-			{
-				int_t diffLvl  = ilvl - alvl;
-				int_t numTrees = 1 << diffLvl;
-				int_t blvl = maxLvl - alvl - 1;
-				int_t st = (1 << blvl) - 1 + (sender >> alvl);
-
-				for (int_t tr = st; tr < st + numTrees; ++tr)
 				{
-					/* code */
-					sp2pSolvedX3d(tr, sender, receiver, x, nrhs,  trf3Dpartition, LUstruct, grid3d, xtrsTimer);
+					sender = myGrid;
+					receiver = myGrid - (1 << ilvl);
 				}
-			}
 
+				int_t total_count = 0;
+				int_t nblocks = strs_X_gather3d_build_list(
+				    ilvl, sender, maxLvl, nrhs, trf3Dpartition,
+				    LUstruct, grid3d, NULL, NULL, NULL, &total_count);
+				if (nblocks <= 0 || total_count <= 0) continue;
+
+				int_t *offsets = INT_T_ALLOC(nblocks);
+				int_t *lengths = INT_T_ALLOC(nblocks);
+				int_t *pack_offsets = INT_T_ALLOC(nblocks);
+				if (!offsets || !lengths || !pack_offsets)
+				    ABORT("Malloc fails for strs_X_gather3d metadata.");
+				strs_X_gather3d_build_list(
+				    ilvl, sender, maxLvl, nrhs, trf3Dpartition,
+				    LUstruct, grid3d, offsets, lengths,
+				    pack_offsets, &total_count);
+
+				if (options->GPURES == YES) {
+#ifdef GPU_ACC
+				    if (total_count > d_packbuf_size) {
+					if (d_packbuf) checkGPU(gpuFree(d_packbuf));
+					checkGPU(gpuMalloc((void**)&d_packbuf,
+							   sizeof(float) * (size_t)total_count));
+					d_packbuf_size = total_count;
+				    }
+				    if (nblocks > d_meta_size) {
+					if (d_offsets) checkGPU(gpuFree(d_offsets));
+					if (d_lengths) checkGPU(gpuFree(d_lengths));
+					if (d_pack_offsets) checkGPU(gpuFree(d_pack_offsets));
+					checkGPU(gpuMalloc((void**)&d_offsets,
+							   sizeof(int_t) * (size_t)nblocks));
+					checkGPU(gpuMalloc((void**)&d_lengths,
+							   sizeof(int_t) * (size_t)nblocks));
+					checkGPU(gpuMalloc((void**)&d_pack_offsets,
+							   sizeof(int_t) * (size_t)nblocks));
+					d_meta_size = nblocks;
+				    }
+				    checkGPU(gpuMemcpy(d_offsets, offsets,
+						       sizeof(int_t) * (size_t)nblocks,
+						       gpuMemcpyHostToDevice));
+				    checkGPU(gpuMemcpy(d_lengths, lengths,
+						       sizeof(int_t) * (size_t)nblocks,
+						       gpuMemcpyHostToDevice));
+				    checkGPU(gpuMemcpy(d_pack_offsets, pack_offsets,
+						       sizeof(int_t) * (size_t)nblocks,
+						       gpuMemcpyHostToDevice));
+
+				    if (myGrid == sender) {
+					strs_X_gather3d_pack_gpu_wrap(
+					    d_packbuf, x, d_offsets, d_lengths,
+					    d_pack_offsets, nblocks);
+					for (int_t offset = 0; offset < total_count; ) {
+					    int_t remaining = total_count - offset;
+					    int count = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+					    MPI_Send(&d_packbuf[offset], count, MPI_FLOAT,
+						     receiver, (int)ilvl, grid3d->zscp.comm);
+					    offset += count;
+					}
+					xtrsTimer->trsDataSendZ += total_count;
+				    } else {
+					MPI_Status status;
+					for (int_t offset = 0; offset < total_count; ) {
+					    int_t remaining = total_count - offset;
+					    int count = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+					    MPI_Recv(&d_packbuf[offset], count, MPI_FLOAT,
+						     sender, (int)ilvl, grid3d->zscp.comm, &status);
+					    offset += count;
+					}
+					strs_X_gather3d_unpack_gpu_wrap(
+					    x, d_packbuf, d_offsets, d_lengths,
+					    d_pack_offsets, nblocks);
+					xtrsTimer->trsDataRecvZ += total_count;
+				    }
+#else
+				    ABORT("GPURES requires GPU_ACC in strs_X_gather3d().");
+#endif
+				} else {
+				    if (total_count > packbuf_size) {
+					if (packbuf) SUPERLU_FREE(packbuf);
+					packbuf = floatMalloc_dist(total_count);
+					if (!packbuf)
+					    ABORT("Malloc fails for strs_X_gather3d packbuf.");
+					packbuf_size = total_count;
+				    }
+
+				    if (myGrid == sender) {
+					for (int_t b = 0; b < nblocks; ++b) {
+					    float *src = &x[offsets[b]];
+					    float *dst = &packbuf[pack_offsets[b]];
+					    for (int_t i = 0; i < lengths[b]; ++i)
+				        dst[i] = src[i];
+					}
+					for (int_t offset = 0; offset < total_count; ) {
+					    int_t remaining = total_count - offset;
+					    int count = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+					    MPI_Send(&packbuf[offset], count, MPI_FLOAT,
+						     receiver, (int)ilvl, grid3d->zscp.comm);
+					    offset += count;
+					}
+					xtrsTimer->trsDataSendZ += total_count;
+				    } else {
+					MPI_Status status;
+					for (int_t offset = 0; offset < total_count; ) {
+					    int_t remaining = total_count - offset;
+					    int count = (remaining > INT_MAX) ? INT_MAX : (int)remaining;
+					    MPI_Recv(&packbuf[offset], count, MPI_FLOAT,
+						     sender, (int)ilvl, grid3d->zscp.comm, &status);
+					    offset += count;
+					}
+					for (int_t b = 0; b < nblocks; ++b) {
+					    float *dst = &x[offsets[b]];
+					    float *src = &packbuf[pack_offsets[b]];
+					    for (int_t i = 0; i < lengths[b]; ++i)
+				        dst[i] = src[i];
+					}
+					xtrsTimer->trsDataRecvZ += total_count;
+				    }
+				}
+
+				SUPERLU_FREE(offsets);
+				SUPERLU_FREE(lengths);
+				SUPERLU_FREE(pack_offsets);
+
+			}
 		}
-	}
+
+	if (packbuf) SUPERLU_FREE(packbuf);
+#ifdef GPU_ACC
+	if (d_packbuf) checkGPU(gpuFree(d_packbuf));
+	if (d_offsets) checkGPU(gpuFree(d_offsets));
+	if (d_lengths) checkGPU(gpuFree(d_lengths));
+	if (d_pack_offsets) checkGPU(gpuFree(d_pack_offsets));
+#endif
 
 	return 0;
 }
@@ -2555,7 +3140,7 @@ int_t sleafForestForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t 
 
 
 
-void sForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,  sLUstruct_t * LUstruct,
+void sForwardSolve3d_newsolve_reusepsgstrs(superlu_dist_options_t *options, int_t n,  sLUstruct_t * LUstruct,
                                sScalePermstruct_t * ScalePermstruct,
                                int*  supernodeMask, gridinfo3d_t *grid3d,
                                float * x, float * lsum,
@@ -2678,8 +3263,8 @@ void sForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
     int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
-    aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+    aln_d = 1;//ceil(CACHELINE/(float)dword);
+    aln_i = 1;//ceil(CACHELINE/(float)iword);
     int num_thread = 1;
 	int_t cnt1,cnt2;
     double tx;
@@ -2715,9 +3300,9 @@ void sForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
     {
-    	if (omp_get_thread_num () == 0) {
-    		num_thread = omp_get_num_threads ();
-    	}
+	if (omp_get_thread_num () == 0) {
+		num_thread = omp_get_num_threads ();
+	}
     }
 #else
 	num_thread=1;
@@ -2751,7 +3336,7 @@ void sForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
     stat->utime[SOL_TOT] = 0.0;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter dForwardSolve3d_newsolve_reusepdgstrs()");
+    CHECK_MALLOC(iam, "Enter sForwardSolve3d_newsolve_reusepsgstrs()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -2998,15 +3583,16 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 	checkGPU(gpuMemcpy(d_fmod, SOLVEstruct->d_fmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
     checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(float), gpuMemcpyDeviceToDevice));
-	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(float), gpuMemcpyHostToDevice));
+	if (options->GPURES == NO)
+	    checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(float), gpuMemcpyHostToDevice));
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
 
     if(procs>1){ /* only nvshmem needs the following*/
     #ifdef HAVE_NVSHMEM
-    checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_statusmod, mystatusmod, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMemcpy(d_status, d_status_save, k * sizeof(int), gpuMemcpyDeviceToDevice));
+	checkGPU(gpuMemcpy(d_statusmod, d_statusmod_save, 2* nlb * sizeof(int), gpuMemcpyDeviceToDevice));
 	//for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
 	checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
     checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
@@ -3032,7 +3618,8 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	                        flag_bc_q, flag_rd_q, sready_x, sready_lsum, my_flag_bc, my_flag_rd, d_nfrecv, h_nfrecv,
 	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
 	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,d_flag_mod,procs);
-	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(float), gpuMemcpyDeviceToHost));
+	if (options->GPURES == NO)
+	    checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(float), gpuMemcpyDeviceToHost));
 
 
 #if ( PROFlevel>=1 )
@@ -3040,9 +3627,9 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	if ( !iam) printf(".. Grid %3d: around L kernel time\t%8.4f\n", myGrid, t);
 #endif
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate
+	stat_loc[0]->ops[SOLVE] += s_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
     } else
-    
+
 #endif /* match #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) */
     { /* CPU trisolve */
 
@@ -3069,7 +3656,7 @@ thread_id=0;
 // #ifdef _OPENMP
 // #pragma omp task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
 // #endif
-   		    {
+		    {
 
 #if ( PROFlevel>=1 )
 					TIC(t1);
@@ -3659,7 +4246,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit dForwardSolve3d_newsolve_reusepdgstrs()");
+    CHECK_MALLOC(iam, "Exit sForwardSolve3d_newsolve_reusepsgstrs()");
 #endif
 
 
@@ -3689,7 +4276,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 // cudaProfilerStop();
 
     return;
-} /* sForwardSolve3d_newsolve_reusepdgstrs */
+} /* sForwardSolve3d_newsolve_reusepsgstrs */
 
 
 
@@ -4650,7 +5237,7 @@ int_t sleafForestBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, 
 
 
 
-void sBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,  sLUstruct_t * LUstruct,
+void sBackSolve3d_newsolve_reusepsgstrs(superlu_dist_options_t *options, int_t n,  sLUstruct_t * LUstruct,
                                int*  supernodeMask, gridinfo3d_t *grid3d,
                                float * x, float * lsum,
                                int nrhs,
@@ -4732,7 +5319,7 @@ void sBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
     int  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
     int  nbrecvx_buf=0;
     int  *brecv;        /* Count of modifications to be recv'd from
-    			 processes in this row. */
+			 processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
@@ -4772,8 +5359,8 @@ void sBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
     int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
-    aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+    aln_d = 1;//ceil(CACHELINE/(float)dword);
+    aln_i = 1;//ceil(CACHELINE/(float)iword);
     int num_thread = 1;
 	int_t cnt1,cnt2;
     double tx;
@@ -4797,9 +5384,9 @@ void sBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
     {
-    	if (omp_get_thread_num () == 0) {
-    		num_thread = omp_get_num_threads ();
-    	}
+	if (omp_get_thread_num () == 0) {
+		num_thread = omp_get_num_threads ();
+	}
     }
 #else
 	num_thread=1;
@@ -4833,7 +5420,7 @@ void sBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
     // stat->utime[SOL_TOT] = 0.0;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter dBackSolve3d_newsolve_reusepdgstrs()");
+    CHECK_MALLOC(iam, "Enter sBackSolve3d_newsolve_reusepsgstrs()");
 #endif
 
     // stat->ops[SOLVE] = 0.0;
@@ -5114,15 +5701,16 @@ if (get_acc_solve()){  /* GPU trisolve*/
 
 	checkGPU(gpuMemcpy(d_bmod, SOLVEstruct->d_bmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
     checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(float), gpuMemcpyDeviceToDevice));
-    checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(float), gpuMemcpyHostToDevice));
+    if (options->GPURES == NO)
+	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(float), gpuMemcpyHostToDevice));
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
 
     if(procs>1){ /* only nvshmem needs the following*/
     #ifdef HAVE_NVSHMEM
-    checkGPU(gpuMemcpy(d_status, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
-    checkGPU(gpuMemcpy(d_statusmod, mystatusmod_u, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMemcpy(d_status, d_status_u_save, k * sizeof(int), gpuMemcpyDeviceToDevice));
+    checkGPU(gpuMemcpy(d_statusmod, d_statusmod_u_save, 2* nlb * sizeof(int), gpuMemcpyDeviceToDevice));
     //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
     checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
     checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
@@ -5151,7 +5739,8 @@ if (get_acc_solve()){  /* GPU trisolve*/
                         d_recv_cnt_u, d_msgnum, d_flag_mod_u, procs);
 
 
-    checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(float), gpuMemcpyDeviceToHost));
+    if (options->GPURES == NO)
+	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(float), gpuMemcpyDeviceToHost));
 
 
 #if ( PROFlevel>=1 )
@@ -5159,7 +5748,8 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	if ( !iam) printf(".. Grid %3d: around U kernel time\t%8.4f\n", myGrid, t);
 #endif
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
+
+	stat_loc[0]->ops[SOLVE] += s_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
 #endif
 }else{  /* CPU trisolve*/
 
@@ -5645,7 +6235,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit dBackSolve3d_newsolve_reusepdgstrs()");
+    CHECK_MALLOC(iam, "Exit sBackSolve3d_newsolve_reusepsgstrs()");
 #endif
 
 
@@ -5675,7 +6265,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 // cudaProfilerStop();
 
     return;
-} /* sBackSolve3d_newsolve_reusepdgstrs */
+} /* sBackSolve3d_newsolve_reusepsgstrs */
 
 /************************************************************************/
 
@@ -6245,14 +6835,14 @@ int_t siBcastXk2Pck(int_t k, float* x, int nrhs,
  * x      (output) float*
  *        The solution vector. It is valid only on the diagonal processes.
  *
- * ScalePermstruct (input) dScalePermstruct_t*
+ * ScalePermstruct (input) sScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * SOLVEstruct (input) dSOLVEstruct_t*
+ * SOLVEstruct (input) sSOLVEstruct_t*
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -6276,7 +6866,7 @@ psReDistribute3d_B_to_X (float *B, int_t m_loc, int nrhs, int_t ldb,
     float *send_dbuf, *recv_dbuf;
     int_t *xsup, *supno;
     int_t i, ii, irow, gbi, jj, k, knsupc, l, lk;
-    int p, procs;
+    int p, procs, j;
     gridinfo_t * grid = &(grid3d->grid2d);
     if (!grid3d->zscp.Iam)
     {
@@ -6305,79 +6895,108 @@ psReDistribute3d_B_to_X (float *B, int_t m_loc, int nrhs, int_t ldb,
         ptr_to_ibuf = gstrs_comm->ptr_to_ibuf;
         ptr_to_dbuf = gstrs_comm->ptr_to_dbuf;
 
-        /* ------------------------------------------------------------
-           NOW COMMUNICATE THE ACTUAL DATA.
-           ------------------------------------------------------------ */
-        k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
-        l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
-        if (!(send_ibuf = intMalloc_dist (k + l)))
-            ABORT ("Malloc fails for send_ibuf[].");
-        recv_ibuf = send_ibuf + k;
-        if (!(send_dbuf = floatMalloc_dist ((k + l) * (size_t) nrhs)))
-            ABORT ("Malloc fails for send_dbuf[].");
-        recv_dbuf = send_dbuf + k * nrhs;
+	if (procs == 1) { /* faster memory copy when procs=1 */
+#ifdef _OPENMP
+#pragma omp parallel default (shared)
+#endif
+	    {
+#ifdef _OPENMP
+#pragma omp master
+#endif
+		{
+#ifdef _OPENMP
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
+#pragma omp taskloop private (i,l,irow,k,j,knsupc) untied
+#endif
+#endif
+		    for (i = 0; i < m_loc; ++i) {
+			irow = perm_c[perm_r[i + fst_row]]; /* Row number in Pc*Pr*B */
+			k = BlockNum (irow);
+			knsupc = SuperSize (k);
+			l = X_BLK (k);
+            x[l - XK_H] = k;      /* Block number prepended in the header. */
+			irow = irow - FstBlockC (k); /* Relative row number in X-block */
+			RHS_ITERATE(j) {
+				x[l + irow + j * knsupc] = B[i + j * ldb];
+			}
+		    }
+		}
+	    }
+	} else {
+	    /* ------------------------------------------------------------
+	       NOW COMMUNICATE THE ACTUAL DATA.
+	       ------------------------------------------------------------ */
+	    k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
+	    l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
+	    if (!(send_ibuf = intMalloc_dist (k + l)))
+		ABORT ("Malloc fails for send_ibuf[].");
+	    recv_ibuf = send_ibuf + k;
+	    if (!(send_dbuf = floatMalloc_dist ((k + l) * (size_t) nrhs)))
+		ABORT ("Malloc fails for send_dbuf[].");
+	    recv_dbuf = send_dbuf + k * nrhs;
 
-        for (p = 0; p < procs; ++p)
-        {
-            ptr_to_ibuf[p] = sdispls[p];
-            ptr_to_dbuf[p] = sdispls[p] * nrhs;
-        }
+	    for (p = 0; p < procs; ++p)
+	    {
+		ptr_to_ibuf[p] = sdispls[p];
+		ptr_to_dbuf[p] = sdispls[p] * nrhs;
+	    }
 
-        /* Copy the row indices and values to the send buffer. */
-        for (i = 0, l = fst_row; i < m_loc; ++i, ++l)
-        {
-            irow = perm_c[perm_r[l]];   /* Row number in Pc*Pr*B */
-            gbi = BlockNum (irow);
-            p = PNUM (PROW (gbi, grid), PCOL (gbi, grid), grid);    /* Diagonal process */
-            k = ptr_to_ibuf[p];
-            send_ibuf[k] = irow;
-            k = ptr_to_dbuf[p];
-            for (int_t j = 0; j < nrhs; ++j)
-            {
-                /* RHS is stored in row major in the buffer. */
-                send_dbuf[k++] = B[i + j * ldb];
-            }
-            ++ptr_to_ibuf[p];
-            ptr_to_dbuf[p] += nrhs;
-        }
+	    /* Copy the row indices and values to the send buffer. */
+	    for (i = 0, l = fst_row; i < m_loc; ++i, ++l)
+	    {
+		irow = perm_c[perm_r[l]];   /* Row number in Pc*Pr*B */
+		gbi = BlockNum (irow);
+		p = PNUM (PROW (gbi, grid), PCOL (gbi, grid), grid);    /* Diagonal process */
+		k = ptr_to_ibuf[p];
+		send_ibuf[k] = irow;
+		k = ptr_to_dbuf[p];
+		for (int_t j = 0; j < nrhs; ++j)
+		{
+		    /* RHS is stored in row major in the buffer. */
+		    send_dbuf[k++] = B[i + j * ldb];
+		}
+		++ptr_to_ibuf[p];
+		ptr_to_dbuf[p] += nrhs;
+	    }
 
-        /* Communicate the (permuted) row indices. */
-        MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
-                       recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
+	    /* Communicate the (permuted) row indices. */
+	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
+			   recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
 
-        /* Communicate the numerical values. */
-        MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_FLOAT,
-                       recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, MPI_FLOAT,
-                       grid->comm);
+	    /* Communicate the numerical values. */
+	    MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_FLOAT,
+			   recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, MPI_FLOAT,
+			   grid->comm);
 
-        /* ------------------------------------------------------------
-           Copy buffer into X on the diagonal processes.
-           ------------------------------------------------------------ */
-        ii = 0;
-        for (p = 0; p < procs; ++p)
-        {
-            jj = rdispls_nrhs[p];
-            for (int_t i = 0; i < RecvCnt[p]; ++i)
-            {
-                /* Only the diagonal processes do this; the off-diagonal processes
-                   have 0 RecvCnt. */
-                irow = recv_ibuf[ii];   /* The permuted row index. */
-                k = BlockNum (irow);
-                knsupc = SuperSize (k);
-                lk = LBi (k, grid); /* Local block number. */
-                l = X_BLK (lk);
-			    x[l - XK_H] = k;      /* Block number prepended in the header. */
-                irow = irow - FstBlockC (k);    /* Relative row number in X-block */
-                for (int_t j = 0; j < nrhs; ++j)
-                {
-                    x[l + irow + j * knsupc] = recv_dbuf[jj++];
-                }
-                ++ii;
-            }
-        }
+	    /* ------------------------------------------------------------
+	       Copy buffer into X on the diagonal processes.
+	       ------------------------------------------------------------ */
+	    ii = 0;
+	    for (p = 0; p < procs; ++p)
+	    {
+		jj = rdispls_nrhs[p];
+		for (int_t i = 0; i < RecvCnt[p]; ++i)
+		{
+		    /* Only the diagonal processes do this; the off-diagonal processes
+		       have 0 RecvCnt. */
+		    irow = recv_ibuf[ii];   /* The permuted row index. */
+		    k = BlockNum (irow);
+		    knsupc = SuperSize (k);
+		    lk = LBi (k, grid); /* Local block number. */
+		    l = X_BLK (lk);
+            x[l - XK_H] = k;      /* Block number prepended in the header. */
+		    irow = irow - FstBlockC (k);    /* Relative row number in X-block */
+		    for (int_t j = 0; j < nrhs; ++j)
+		    {
+			x[l + irow + j * knsupc] = recv_dbuf[jj++];
+		    }
+		    ++ii;
+		}
+	    }
 
-        SUPERLU_FREE (send_ibuf);
-        SUPERLU_FREE (send_dbuf);
+	    SUPERLU_FREE (send_ibuf);
+	    SUPERLU_FREE (send_dbuf);
+	}
     }
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit psReDistribute3d_B_to_X()");
@@ -6414,11 +7033,11 @@ psReDistribute3d_X_to_B (int_t n, float *B, int_t m_loc, int_t ldb,
     int *ptr_to_ibuf, *ptr_to_dbuf;
     int_t *send_ibuf, *recv_ibuf;
     float *send_dbuf, *recv_dbuf;
-    int iam, p, q, pkk, procs;
+    int iam, p, q, pkk, procs, j;
     int_t num_diag_procs, *diag_procs;
     gridinfo_t * grid = &(grid3d->grid2d);
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (grid->iam, "Enter pdReDistribute_X_to_B()");
+    CHECK_MALLOC (grid->iam, "Enter psReDistribute_X_to_B()");
 #endif
 
     /* ------------------------------------------------------------
@@ -6431,95 +7050,125 @@ psReDistribute3d_X_to_B (int_t n, float *B, int_t m_loc, int_t ldb,
     procs = grid->nprow * grid->npcol;
     if (!grid3d->zscp.Iam)
     {
-        int_t *row_to_proc = SOLVEstruct->row_to_proc;  /* row-process mapping */
-        pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
+	if (procs == 1) { /* faster memory copy when procs=1 */
+#ifdef _OPENMP
+#pragma omp parallel default (shared)
+#endif
+	    {
+#ifdef _OPENMP
+#pragma omp master
+#endif
+		{
+#ifdef _OPENMP
+#if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
+#pragma omp taskloop private (k,knsupc,lk,irow,l,i,j) untied
+#endif
+#endif
+		    for (k = 0; k < nsupers; k++) {
+			knsupc = SuperSize (k);
+			lk = LBi (k, grid); /* Local block number */
+			irow = FstBlockC (k);
+			l = X_BLK (lk);
+			for (i = 0; i < knsupc; ++i) {
+			    RHS_ITERATE(j) {
+				B[irow - fst_row + i + j * ldb] =
+				    x[l + i + j * knsupc];
+			    }
+			}
+		    }
+		}
+	    }
+	} else {
+	    int_t *row_to_proc = SOLVEstruct->row_to_proc;  /* row-process mapping */
+	    pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
 
-        SendCnt = gstrs_comm->X_to_B_SendCnt;
-        SendCnt_nrhs = gstrs_comm->X_to_B_SendCnt + procs;
-        RecvCnt = gstrs_comm->X_to_B_SendCnt + 2 * procs;
-        RecvCnt_nrhs = gstrs_comm->X_to_B_SendCnt + 3 * procs;
-        sdispls = gstrs_comm->X_to_B_SendCnt + 4 * procs;
-        sdispls_nrhs = gstrs_comm->X_to_B_SendCnt + 5 * procs;
-        rdispls = gstrs_comm->X_to_B_SendCnt + 6 * procs;
-        rdispls_nrhs = gstrs_comm->X_to_B_SendCnt + 7 * procs;
-        ptr_to_ibuf = gstrs_comm->ptr_to_ibuf;
-        ptr_to_dbuf = gstrs_comm->ptr_to_dbuf;
+	    SendCnt = gstrs_comm->X_to_B_SendCnt;
+	    SendCnt_nrhs = gstrs_comm->X_to_B_SendCnt + procs;
+	    RecvCnt = gstrs_comm->X_to_B_SendCnt + 2 * procs;
+	    RecvCnt_nrhs = gstrs_comm->X_to_B_SendCnt + 3 * procs;
+	    sdispls = gstrs_comm->X_to_B_SendCnt + 4 * procs;
+	    sdispls_nrhs = gstrs_comm->X_to_B_SendCnt + 5 * procs;
+	    rdispls = gstrs_comm->X_to_B_SendCnt + 6 * procs;
+	    rdispls_nrhs = gstrs_comm->X_to_B_SendCnt + 7 * procs;
+	    ptr_to_ibuf = gstrs_comm->ptr_to_ibuf;
+	    ptr_to_dbuf = gstrs_comm->ptr_to_dbuf;
 
-        k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
-        l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
-        if (!(send_ibuf = intMalloc_dist (k + l)))
-            ABORT ("Malloc fails for send_ibuf[].");
-        recv_ibuf = send_ibuf + k;
-        if (!(send_dbuf = floatMalloc_dist ((k + l) * nrhs)))
-            ABORT ("Malloc fails for send_dbuf[].");
-        recv_dbuf = send_dbuf + k * nrhs;
-        for (p = 0; p < procs; ++p)
-        {
-            ptr_to_ibuf[p] = sdispls[p];
-            ptr_to_dbuf[p] = sdispls_nrhs[p];
-        }
-        num_diag_procs = SOLVEstruct->num_diag_procs;
-        diag_procs = SOLVEstruct->diag_procs;
+	    k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
+	    l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
+	    if (!(send_ibuf = intMalloc_dist (k + l)))
+		ABORT ("Malloc fails for send_ibuf[].");
+	    recv_ibuf = send_ibuf + k;
+	    if (!(send_dbuf = floatMalloc_dist ((k + l) * nrhs)))
+		ABORT ("Malloc fails for send_dbuf[].");
+	    recv_dbuf = send_dbuf + k * nrhs;
+	    for (p = 0; p < procs; ++p)
+	    {
+		ptr_to_ibuf[p] = sdispls[p];
+		ptr_to_dbuf[p] = sdispls_nrhs[p];
+	    }
+	    num_diag_procs = SOLVEstruct->num_diag_procs;
+	    diag_procs = SOLVEstruct->diag_procs;
 
-        for (p = 0; p < num_diag_procs; ++p)
-        {
-            /* For all diagonal processes. */
-            pkk = diag_procs[p];
-            if (iam == pkk)
-            {
-                for (k = p; k < nsupers; k += num_diag_procs)
-                {
-                    knsupc = SuperSize (k);
-                    lk = LBi (k, grid); /* Local block number */
-                    irow = FstBlockC (k);
-                    l = X_BLK (lk);
-                    for (i = 0; i < knsupc; ++i)
-                    {
+	    for (p = 0; p < num_diag_procs; ++p)
+	    {
+		/* For all diagonal processes. */
+		pkk = diag_procs[p];
+		if (iam == pkk)
+		{
+		    for (k = p; k < nsupers; k += num_diag_procs)
+		    {
+			knsupc = SuperSize (k);
+			lk = LBi (k, grid); /* Local block number */
+			irow = FstBlockC (k);
+			l = X_BLK (lk);
+			for (i = 0; i < knsupc; ++i)
+			{
 
-                        ii = irow;
+			    ii = irow;
 
-                        q = row_to_proc[ii];
-                        jj = ptr_to_ibuf[q];
-                        send_ibuf[jj] = ii;
-                        jj = ptr_to_dbuf[q];
-                        for (int_t j = 0; j < nrhs; ++j)
-                        {
-                            /* RHS stored in row major in buffer. */
-                            send_dbuf[jj++] = x[l + i + j * knsupc];
-                        }
-                        ++ptr_to_ibuf[q];
-                        ptr_to_dbuf[q] += nrhs;
-                        ++irow;
-                    }
-                }
-            }
-        }
+			    q = row_to_proc[ii];
+			    jj = ptr_to_ibuf[q];
+			    send_ibuf[jj] = ii;
+			    jj = ptr_to_dbuf[q];
+			    for (int_t j = 0; j < nrhs; ++j)
+			    {
+				/* RHS stored in row major in buffer. */
+				send_dbuf[jj++] = x[l + i + j * knsupc];
+			    }
+			    ++ptr_to_ibuf[q];
+			    ptr_to_dbuf[q] += nrhs;
+			    ++irow;
+			}
+		    }
+		}
+	    }
 
-        /* ------------------------------------------------------------
-           COMMUNICATE THE (PERMUTED) ROW INDICES AND NUMERICAL VALUES.
-           ------------------------------------------------------------ */
-        MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
-                       recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
-        MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_FLOAT,
-                       recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, MPI_FLOAT,
-                       grid->comm);
+	    /* ------------------------------------------------------------
+	       COMMUNICATE THE (PERMUTED) ROW INDICES AND NUMERICAL VALUES.
+	       ------------------------------------------------------------ */
+	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
+			   recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
+	    MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_FLOAT,
+			   recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, MPI_FLOAT,
+			   grid->comm);
 
-        /* ------------------------------------------------------------
-           COPY THE BUFFER INTO B.
-           ------------------------------------------------------------ */
-        for (i = 0, k = 0; i < m_loc; ++i)
-        {
-            irow = recv_ibuf[i];
-            irow -= fst_row;        /* Relative row number */
-            for (int_t j = 0; j < nrhs; ++j)
-            {
-                /* RHS is stored in row major in the buffer. */
-                B[irow + j * ldb] = recv_dbuf[k++];
-            }
-        }
+	    /* ------------------------------------------------------------
+	       COPY THE BUFFER INTO B.
+	       ------------------------------------------------------------ */
+	    for (i = 0, k = 0; i < m_loc; ++i)
+	    {
+		irow = recv_ibuf[i];
+		irow -= fst_row;        /* Relative row number */
+		for (int_t j = 0; j < nrhs; ++j)
+		{
+		    /* RHS is stored in row major in the buffer. */
+		    B[irow + j * ldb] = recv_dbuf[k++];
+		}
+	    }
 
-        SUPERLU_FREE (send_ibuf);
-        SUPERLU_FREE (send_dbuf);
+	    SUPERLU_FREE (send_ibuf);
+	    SUPERLU_FREE (send_dbuf);
+	}
     }
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit psReDistribute_X_to_B()");
@@ -6555,7 +7204,7 @@ psReDistribute3d_X_to_B (int_t n, float *B, int_t m_loc, int_t ldb,
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from PSGSTRF for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'sLUstruct_t'.
+ *        See superlu_sdefs.h for the definition of 'sLUstruct_t'.
  *        A may be scaled and permuted into A1, so that
  *        A1 = Pc*Pr*diag(R)*A*diag(C)*Pc^T = L*U
  *
@@ -6651,6 +7300,9 @@ psgstrs3d (superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
 	pxerr_dist("PSGSTRS", grid, -*info);
 	return;
     }
+    if (options->GPURES == YES && !(get_new3dsolvetreecomm() && get_acc_solve())) {
+	ABORT("GPURES psgstrs3d_newsolve requires NEW3DSOLVETREECOMM=1 and GPU solve.");
+    }
 #ifdef _CRAY
     ftcs1 = _cptofcd ("L", strlen ("L"));
     ftcs2 = _cptofcd ("N", strlen ("N"));
@@ -6674,7 +7326,7 @@ psgstrs3d (superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
     int_t nub = CEILING (nsupers, Pc);
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter pdgstrs3d()");
+    CHECK_MALLOC (iam, "Enter psgstrs3d()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -6889,7 +7541,7 @@ psgstrs3d (superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
     xtrsTimer.t_backwardSolve = SuperLU_timer_() - tx;
     MPI_Barrier (grid3d->comm);
     stat->utime[SOLVE] = SuperLU_timer_ () - tx_st;
-    strs_X_gather3d(x, nrhs, trf3Dpartition, LUstruct, grid3d, &xtrsTimer);
+    strs_X_gather3d(options, x, nrhs, trf3Dpartition, LUstruct, grid3d, &xtrsTimer);
     tx = SuperLU_timer_();
     psReDistribute3d_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
                             ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
@@ -7002,9 +7654,12 @@ psgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, sLUstruct_t * LUst
     Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     nlb = CEILING (nsupers, Pr);    /* Number of local block rows. */
     int_t nub = CEILING (nsupers, Pc);
+    stat->utime[SOLVE] = 0.0;
+    double tx_st= SuperLU_timer_();
+
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter pdgstrs3d_newsolve()");
+    CHECK_MALLOC (iam, "Enter psgstrs3d_newsolve()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -7030,8 +7685,8 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 
     int_t sizelsum,sizertemp,aln_d,aln_i;
-    aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+    aln_d = 1;//ceil(CACHELINE/(float)dword);
+    aln_i = 1;//ceil(CACHELINE/(float)iword);
     sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
     sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
 
@@ -7039,9 +7694,9 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
     {
-    	if (omp_get_thread_num () == 0) {
-    		num_thread = omp_get_num_threads ();
-    	}
+	if (omp_get_thread_num () == 0) {
+		num_thread = omp_get_num_threads ();
+	}
     }
 #else
 	num_thread=1;
@@ -7065,42 +7720,73 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     {
 	int thread_id = omp_get_thread_num(); //mjc
 	for (ii=0; ii<sizelsum; ii++)
-    	    lsum[thread_id*sizelsum+ii]=zero;
+	    lsum[thread_id*sizelsum+ii]=zero;
     }
 #else
     if ( !(lsum = (float*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(float))))
-  	    ABORT("Malloc fails for lsum[].");
+	    ABORT("Malloc fails for lsum[].");
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
 }
 
     /* intermediate solution x[] vector has same structure as lsum[], see leading comment */
-    if ( !(x = floatCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
-	ABORT("Calloc fails for x[].");
-    if (!(recvbuf = floatMalloc_dist (maxrecvsz)))
-        ABORT ("Malloc fails for recvbuf[].");
+    if (options->GPURES == YES) {
+#ifdef GPU_ACC
+	x = SOLVEstruct->d_x;
+	checkGPU(gpuMemset(x, 0,
+			   sizeof(float) * (size_t)(ldalsum * nrhs + nlb * XK_H)));
+	checkGPU(gpuMalloc((void**)&recvbuf,
+			   sizeof(float) * (size_t)maxrecvsz));
+#else
+	ABORT("GPURES requires GPU_ACC in psgstrs3d_newsolve().");
+#endif
+    } else {
+	if ( !(x = floatCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
+	    ABORT("Calloc fails for x[].");
+	if (!(recvbuf = floatMalloc_dist (maxrecvsz)))
+	    ABORT ("Malloc fails for recvbuf[].");
+    }
 
     xtrsTimer_t xtrsTimer;
 
     initTRStimer(&xtrsTimer, grid);
     double tx = SuperLU_timer_();
     /* Redistribute B into X on the diagonal processes. */
-    psReDistribute3d_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
-                            ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
-
+    if (options->GPURES == YES) {
+#ifdef GPU_ACC
+	if (grid3d->zscp.Iam == 0) {
+	    psReDistribute_B_to_X_gpu_wrap(B, m_loc, n, nrhs, ldb, fst_row, x,
+					   ScalePermstruct, SOLVEstruct, Glu_persist,
+					   grid, Llu->d_grid, Llu->d_ilsum,
+					   Llu->d_xsup, Llu->d_supno);
+	}
+#else
+	ABORT("GPURES requires GPU_ACC in psgstrs3d_newsolve().");
+#endif
+    } else {
+	psReDistribute3d_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
+				ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
+    }
+#if ( PROFlevel>=1 )
     xtrsTimer.t_pxReDistribute_B_to_X = SuperLU_timer_() - tx;
-
+#endif
     /*---------------------------------------------------
      * Forward solve Ly = b.
      *---------------------------------------------------*/
-
-    strs_B_init3d_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition);
-
+#if ( PROFlevel>=1 )
     MPI_Barrier (grid3d->comm);
+#endif
     tx = SuperLU_timer_();
-    stat->utime[SOLVE] = 0.0;
-    double tx_st= SuperLU_timer_();
+    strs_B_init3d_newsolve(options, nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition);
+#if ( PROFlevel>=1 )
+    xtrsTimer.t_init_b = SuperLU_timer_() - tx;
+#endif
+
+#if ( PROFlevel>=1 )
+    MPI_Barrier (grid3d->comm);
+#endif
+    tx = SuperLU_timer_();
 
 
     // {
@@ -7140,7 +7826,9 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
     psgsTrForwardSolve3d_newsolve(options, n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum,
                           recvbuf, send_req,  nrhs, SOLVEstruct,  stat, &xtrsTimer);
+#if ( PROFlevel>=1 )
     xtrsTimer.t_forwardSolve = SuperLU_timer_() - tx;
+#endif
 
     // printf("Llu->SolveMsgSent %10d size %10d\n",Llu->SolveMsgSent,SUPERLU_MAX (Llu->nfsendx, Llu->nbsendx) + nlb);
     // {
@@ -7177,9 +7865,11 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     // }
 
     tx = SuperLU_timer_();
-    strs_x_reduction_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition, recvbuf, &xtrsTimer);
-    strs_x_broadcast_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition, recvbuf, &xtrsTimer);
+    strs_x_reduction_newsolve(options, nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition, recvbuf, &xtrsTimer);
+    strs_x_broadcast_newsolve(options, nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition, recvbuf, &xtrsTimer);
+#if ( PROFlevel>=1 )
     xtrsTimer.trs_comm_z += SuperLU_timer_() - tx;
+#endif
 
     // {
     // int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
@@ -7261,16 +7951,35 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     // }
     // }
 
-
+#if ( PROFlevel>=1 )
     xtrsTimer.t_backwardSolve = SuperLU_timer_() - tx;
     MPI_Barrier (grid3d->comm);
-    stat->utime[SOLVE] = SuperLU_timer_ () - tx_st;
-    strs_X_gather3d(x, nrhs, trf3Dpartition, LUstruct, grid3d, &xtrsTimer);
+#endif
     tx = SuperLU_timer_();
-    psReDistribute3d_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
-                            ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
-
+    strs_X_gather3d(options, x, nrhs, trf3Dpartition, LUstruct, grid3d, &xtrsTimer);
+#if ( PROFlevel>=1 )
+    xtrsTimer.t_gather_x = SuperLU_timer_() - tx;
+#endif
+    tx = SuperLU_timer_();
+    if (options->GPURES == YES) {
+#ifdef GPU_ACC
+	if (grid3d->zscp.Iam == 0) {
+	    psReDistribute_X_to_B_gpu_wrap(B, m_loc, n, nrhs, ldb, fst_row,
+					   nsupers, x, ScalePermstruct,
+					   SOLVEstruct, Glu_persist, grid,
+					   Llu->d_grid, Llu->d_ilsum,
+					   Llu->d_xsup, Llu->d_supno);
+	}
+#else
+	ABORT("GPURES requires GPU_ACC in psgstrs3d_newsolve().");
+#endif
+    } else {
+	psReDistribute3d_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
+				ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
+    }
+#if ( PROFlevel>=1 )
     xtrsTimer.t_pxReDistribute_X_to_B = SuperLU_timer_() - tx;
+#endif
 
     /**
      * Reduce the Solve flops from all the grids to grid zero
@@ -7282,8 +7991,16 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     SUPERLU_FREE (lsum);
 }
-    SUPERLU_FREE (x);
-    SUPERLU_FREE (recvbuf);
+    if (options->GPURES == YES) {
+#ifdef GPU_ACC
+	checkGPU(gpuFree(recvbuf));
+#else
+	ABORT("GPURES requires GPU_ACC in psgstrs3d_newsolve().");
+#endif
+    } else {
+	SUPERLU_FREE (x);
+	SUPERLU_FREE (recvbuf);
+    }
 
 
 /* skip send_req on CPU if using GPU solve*/
@@ -7295,12 +8012,16 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 }
     // MPI_Barrier (grid->comm);
 
+stat->utime[SOLVE] = SuperLU_timer_ () - tx_st;
+
 #if ( PRNTlevel >= 1 )
+#if ( PROFlevel >= 1 )
     printTRStimer(&xtrsTimer, grid3d);
+#endif
 #endif
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Exit pdgstrs3d_newsolve()");
+    CHECK_MALLOC (iam, "Exit psgstrs3d_newsolve()");
 #endif
 
     return;
@@ -7530,7 +8251,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     double tx = SuperLU_timer_();
 
 if (get_new3dsolvetreecomm()){
-    sForwardSolve3d_newsolve_reusepdgstrs(options, n, LUstruct,
+    sForwardSolve3d_newsolve_reusepsgstrs(options, n, LUstruct,
                                 ScalePermstruct, trf3Dpartition->supernodeMask, grid3d,
                                 x3d, lsum3d, nrhs, SOLVEstruct, stat, xtrsTimer);
 }else{
@@ -7616,7 +8337,7 @@ int_t psgsTrBackSolve3d(superlu_dist_options_t *options, int_t n, sLUstruct_t * 
     }
 
     /**
-     * Adding dlsumBmod_buff_t* lbmod_buf
+     * Adding slsumBmod_buff_t* lbmod_buf
      */
 
     slsumBmod_buff_t lbmod_buf;
@@ -7741,7 +8462,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 }
 
     /**
-     * Adding dlsumBmod_buff_t* lbmod_buf
+     * Adding slsumBmod_buff_t* lbmod_buf
      */
 
     slsumBmod_buff_t lbmod_buf;
@@ -7752,7 +8473,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     double tx = SuperLU_timer_();
 
 if (get_new3dsolvetreecomm()){
-    sBackSolve3d_newsolve_reusepdgstrs(options, n, LUstruct,
+    sBackSolve3d_newsolve_reusepsgstrs(options, n, LUstruct,
                                 trf3Dpartition->supernodeMask, grid3d,
                                 x3d, lsum3d, nrhs, SOLVEstruct, stat, xtrsTimer);
 }else{

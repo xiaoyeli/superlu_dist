@@ -12,6 +12,8 @@ at the top-level directory.
 
 
 
+
+
 /*! @file
  * \brief Solves a system of distributed linear equations A*X = B with a
  * general N-by-N matrix A using the LU factors computed previously.
@@ -64,7 +66,6 @@ extern "C" {
 
 
 // #define USESHARE1RHS 1
-
 /***************************************************************************//**
 	 Does sum reduction of n-element array x, leaving total in x[0].
 	 Contents of x are destroyed in the process.
@@ -99,7 +100,7 @@ smagma_sum_reduce( int n, int i, float* x )
 /******************************************************************************/
 /*
 static __device__ void
-sgemv_device_dlsum_fmod(
+sgemv_device_slsum_fmod(
         int_t m, int_t n, float alpha,
         const float * __restrict__ A, int_t lda,
         const float * __restrict__ x, int_t incx, float beta,
@@ -370,6 +371,9 @@ void gemm_device_slsum_fmod(
         }
     }
 
+    // Callers may immediately reuse the same shared tiles for the next GEMM.
+    __syncthreads();
+
     // Store C regs->dev
     // if( beta == make_FloatingPoint_t(0.0,0.0) ) {
     // #pragma unroll
@@ -571,6 +575,9 @@ void gemm_device_slsum_bmod_stridedB(
             }
         }
     }
+
+    // Callers may immediately reuse the same shared tiles for the next GEMM.
+    __syncthreads();
 }
 
 
@@ -658,7 +665,7 @@ __device__ void sC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 
 
     // ////forward to my root if I have received everything
-    // //double sum = 0;
+    // //float sum = 0;
 
     // //for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
     // //    //printf("(%d), data, %d\n",mype,i);
@@ -697,7 +704,7 @@ __device__ void sC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 //    data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
 //}
 //////forward to my root if I have received everything
-////double sum = 0;
+////float sum = 0;
 ////if (tid==0){
 ////    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
 ////        //printf("(%d), data, %d\n",mype,i);
@@ -744,7 +751,7 @@ __device__ void sC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 //    }
 //
 //////forward to my root if I have received everything
-////double sum = 0;
+////float sum = 0;
 ////if (tid%32==0) {
 ////    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
 ////        //printf("(%d), data, %d\n",mype,i);
@@ -793,7 +800,7 @@ __device__ void sC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 //    }
 //
 //////forward to my root if I have received everything
-////double sum = 0;
+////float sum = 0;
 //
 ////for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
 ////    //printf("(%d), data, %d\n",mype,i);
@@ -953,7 +960,7 @@ __global__ void swait_bcrd
                    //printf("(%d,%d,%d),idx=%d,lib=%d,cnt=%d,i=%d/%d\n", mype, bid, tid,
                    //       d_colnummod[tid] * 2 + wm_val, lib, cnt,i,d_recv_cnt[d_colnummod[tid]]);
                    if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                       //double tmp_sum = 0;
+                       //float tmp_sum = 0;
                        int ii = 0;
                        if (cnt == 2) {
                            for (ii = 0; ii < cnt; ++ii) {
@@ -1006,7 +1013,7 @@ __global__ void swait_bcrd
                                //cnt=LRtree_ptr[lib].msgSize_;
                                my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
                                my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
-                               //double tmp_sum=0;
+                               //float tmp_sum=0;
                                RHS_ITERATE(j) {
                                    for (int aab = 0; aab < knsupc; aab++) {
                                        sready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
@@ -1099,7 +1106,7 @@ __global__ void swait_bcrd
                //       wm_val,cnt,d_recv_cnt[lib],d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1]);
 
                if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                   //double tmp_sum = 0;
+                   //float tmp_sum = 0;
                    int ii = 0;
                    if (cnt == 2) {
                        for (ii = 0; ii < cnt; ++ii) {
@@ -1389,11 +1396,11 @@ __global__ void swait_bcrd_u
                     //printf("(%d,%d,%d),idx=%d,lib=%d,cnt=%d\n", mype, bid, tid,
                     //       d_colnummod[tid] * 2 + wm_val, lib, cnt);
                     if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                        //double tmp_sum = 0;
+                        //float tmp_sum = 0;
                         int ii = 0;
                         if (cnt == 2) {
                             for (ii = 0; ii < cnt; ++ii) {
-                                // double tmp_sum = 0;
+                                // float tmp_sum = 0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; ++aab) {
                                         //temp=s_atomicAdd(&lsum[il+i + j*knsupc], sready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
@@ -1418,7 +1425,7 @@ __global__ void swait_bcrd_u
                         }
                         if (cnt == 1) {
                             if (flag_rd_q[lib * 2 + 1] == 1) ii = 1;
-                            // double tmp_sum = 0;
+                            // float tmp_sum = 0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; ++aab) {
                                     //temp=s_atomicAdd(&lsum[il+i + j*knsupc], sready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
@@ -1443,7 +1450,7 @@ __global__ void swait_bcrd_u
                                 //cnt=URtree_ptr[lib].msgSize_;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_;
-                                // double tmp_sum=0;
+                                // float tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
                                         sready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
@@ -1533,7 +1540,7 @@ __global__ void swait_bcrd_u
                 //       wm_val,cnt,d_recv_cnt[lib],d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1]);
 
                 if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                    // double tmp_sum = 0;
+                    // float tmp_sum = 0;
                     int ii = 0;
                     if (cnt == 2) {
                         for (ii = 0; ii < cnt; ++ii) {
@@ -1828,7 +1835,8 @@ __global__ void slsum_fmod_inv_gpu_mrhs_nvshmem
                 int* d_nfrecv,
                 volatile int* d_status,
                 volatile int* d_statusmod,
-                int* d_flag_mod
+                int* d_flag_mod,
+                int gemmflag
         )
 {
     float zero = 0.0, alpha = 1.0, beta = 0.0;
@@ -1842,8 +1850,8 @@ __global__ void slsum_fmod_inv_gpu_mrhs_nvshmem
     float temp1;
     int_t lptr;      /* Starting position in lsub[*].                      */
     int aln_i;
-    // aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+    // aln_d = 1;//ceil(CACHELINE/(float)dword);
+    aln_i = 1;//ceil(CACHELINE/(float)iword);
     int   knsupc;    /* Size of supernode k.                               */
     int_t nlb;       /* Number of L blocks.                                */
 
@@ -1933,23 +1941,26 @@ __global__ void slsum_fmod_inv_gpu_mrhs_nvshmem
 
         Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
-        if (nrhs == 1) {
-
+        if(gemmflag==0 || nrhs==1){
+            RHS_ITERATE(j){
             for (i = tid; i < knsupc; i += block_size) {
                 temp1 = zero;
                 for (l = 0; l < knsupc; l++) {
-                    temp1 += Linv[l * knsupc + i] * x[ii + l];
+                    temp1 += Linv[l * knsupc + i] * x[ii + l+ j*knsupc];
 
                 }
-                lsum[il + i] = temp1; //reuse lsum as temporary output as it's no longer accessed
+                lsum[il + i + j*knsupc] = temp1; //reuse lsum as temporary output as it's no longer accessed
+            }
             }
             __syncthreads();
 
+            RHS_ITERATE(j){
             for (i = tid; i < knsupc; i += block_size) {
-                x[i + ii] = lsum[il + i];
+                x[i + ii+ j*knsupc] = lsum[il + i+ j*knsupc];
                 //printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
             }
             __syncthreads();
+            }
         } else {
             __syncthreads();
             for (int blx = 0; blx * BLK_M < knsupc; blx++) {
@@ -1997,7 +2008,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs_nvshmem
                 __threadfence();
             } while (msg_recv != 1);
             //printf("(%d,%d,%d,%d) in compute kernel, I have msg=%d,sz=%d,ofset=%d\n",mype,bid,tid,gc,msg_recv,LBtree_ptr[lk].msgSize_*nrhs+XK_H,maxrecvsz*lk);
-            //double sum=0;
+            //float sum=0;
             //for (int myi=0;myi<LBtree_ptr[lk].msgSize_*nrhs+XK_H;myi++){
             //    sum+=sready_x[maxrecvsz*lk+myi];
             //}
@@ -2026,7 +2037,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs_nvshmem
         lib = LBi(k, grid); /* Local block number, row-wise. */
         ii = X_BLK(lib);
 
-        if (nrhs == 1) {
+        if(gemmflag==0 || nrhs==1){
             luptr_tmp1 = lloc[idx_v];
             lb = 0;
             nbrow = 0;
@@ -2113,7 +2124,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs_nvshmem
 
                             my_flag_rd[ik*RDMA_FLAG_SIZE]=lk;
                             my_flag_rd[ik*RDMA_FLAG_SIZE+1]=LRtree_ptr[lk].msgSize_;
-                            //double tmp_sum=0;
+                            //float tmp_sum=0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < iknsupc; aab++) {
                                     sready_lsum[lk * maxrecvsz * 2 + aab +j * iknsupc] = lsum[il + aab +j * iknsupc];
@@ -2218,7 +2229,8 @@ __global__ void slsum_fmod_inv_gpu_mrhs
  long int *Lindval_loc_bc_offset,
  int_t *xsup,
  int *bcols_masked,
- gridinfo_t *grid
+ gridinfo_t *grid,
+  int gemmflag
 )
 {
     float zero = 0.0, alpha = 1.0, beta = 0.0;
@@ -2237,8 +2249,8 @@ __global__ void slsum_fmod_inv_gpu_mrhs
    //  int iword = sizeof(int_t);
    //  int dword = sizeof (float);
     int aln_i;
-   //  aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+   //  aln_d = 1;//ceil(CACHELINE/(float)dword);
+    aln_i = 1;//ceil(CACHELINE/(float)iword);
     int   knsupc;    /* Size of supernode k.                               */
     int nlb;       /* Number of L blocks.                                */
 
@@ -2336,23 +2348,26 @@ __global__ void slsum_fmod_inv_gpu_mrhs
 
                     Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
-                    if(nrhs==1){
+                    if(gemmflag==0 || nrhs==1){
+                        RHS_ITERATE(j){
 
                         for (i = tid; i < knsupc; i+=block_size){
                             temp1=zero;
                             for (l=0 ; l<knsupc ; l++){
-                                temp1+=  Linv[l*knsupc+i]*x[ii+l];
+                                temp1+=  Linv[l*knsupc+i]*x[ii+l+ j*knsupc];
 
                             }
-                            lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
+                            lsum[il+i+ j*knsupc]=temp1; //reuse lsum as temporary output as it's no longer accessed
+                        }
                         }
                         __syncthreads();
-
+                        RHS_ITERATE(j){
                         for (i = tid; i < knsupc; i+=block_size){
-                            x[i + ii] = lsum[il+i];
+                            x[i + ii + j*knsupc] = lsum[il+i+ j*knsupc];
                             // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
                             }
                         __syncthreads();
+                        }
 
 
 
@@ -2363,7 +2378,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs
                         // __syncthreads();
 
 
-                        // sgemv_device_dlsum_fmod(
+                        // sgemv_device_slsum_fmod(
                             // knsupc, knsupc, alpha,
                             // Linv, knsupc,
                             // &x[ii+j*knsupc], 1, beta,
@@ -2420,7 +2435,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
                 ii = X_BLK( lib );
 
-                if(nrhs==1){
+                if(gemmflag==0 || nrhs==1){
                     luptr_tmp1 = lloc[idx_v];
                     lb = 0;
                     nbrow=0;
@@ -2531,7 +2546,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs
                             // __syncthreads();
 
 
-                            // sgemv_device_dlsum_fmod(
+                            // sgemv_device_slsum_fmod(
                                 // nbrow1, knsupc, alpha,
                                 // &lusup[luptr_tmp1], nsupr,
                                 // &x[ii], 1, beta,
@@ -2639,8 +2654,8 @@ __global__ void slsum_fmod_inv_gpu_1rhs_warp
    //  int iword = sizeof(int_t);
    //  int dword = sizeof (float);
     int aln_i;
-   //  aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+   //  aln_d = 1;//ceil(CACHELINE/(float)dword);
+    aln_i = 1;//ceil(CACHELINE/(float)iword);
     int   knsupc;    /* Size of supernode k.                               */
     int nlb;       /* Number of L blocks.                                */
 
@@ -2925,6 +2940,7 @@ void slsum_fmod_inv_gpu_wrap
     int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
 
     int mype;
+    int gemmflag = get_acc_solve()==2;
 
     if(procs==1){
         nblock_ex=0;
@@ -2934,12 +2950,13 @@ void slsum_fmod_inv_gpu_wrap
         if(1){
     #endif
             dim3 dimBlock(nthread_x, nthread_y);
-            slsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
+            slsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, gemmflag);
         }else{
             dim3 dimBlock(nthread_x, nthread_y,1);
             slsum_fmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
         }
         checkGPU(gpuGetLastError());
+        // checkGPU(gpuDeviceSynchronize());
      }else{
 
 #ifdef HAVE_NVSHMEM
@@ -3007,7 +3024,7 @@ void slsum_fmod_inv_gpu_wrap
                                                                                 sready_x, sready_lsum,
                                                                                 my_flag_bc, my_flag_rd,
                                                                                 d_nfrecv, d_status,
-                                                                                d_statusmod,d_flag_mod);
+                                                                                d_statusmod,d_flag_mod,gemmflag);
             CUDA_CHECK(cudaGetLastError());
         } // if status
     //} // if npes==1
@@ -3056,7 +3073,8 @@ long int *Uinv_bc_offset,
 int_t *Uindval_loc_bc_dat,
 long int *Uindval_loc_bc_offset,
 int_t *xsup,
-gridinfo_t *grid
+gridinfo_t *grid,
+int gemmflag
 )
 {
     float zero = 0.0, alpha = 1.0, beta = 0.0;
@@ -3067,7 +3085,7 @@ gridinfo_t *grid
 	float temp1;
      __shared__ float temp2[MAXSUPER];
 	int aln_i;
-	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	aln_i = 1;//ceil(CACHELINE/(float)iword);
 	int   knsupc;    /* Size of supernode k.                               */
 	int nub;       /* Number of L blocks.                                */
 
@@ -3158,21 +3176,24 @@ gridinfo_t *grid
 
 					Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 
-					if(nrhs==1){
+					if(gemmflag==0 || nrhs==1){
+                        RHS_ITERATE(j){
 						for (i = tid; i < knsupc; i+=block_size){
 							temp1=zero;
 							for (l=0 ; l<knsupc ; l++){
-                                temp1+=  Uinv[l*knsupc+i]*x[ii+l];
+                                temp1+=  Uinv[l*knsupc+i]*x[ii+l+ j*knsupc];
 							}
-							lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
+							lsum[il+i+ j*knsupc]=temp1; //reuse lsum as temporary output as it's no longer accessed
 						}
+                        }
 						__syncthreads();
-
+                        RHS_ITERATE(j){
 						for (i = tid; i < knsupc; i+=block_size){
-							x[i + ii] = lsum[il+i];
+							x[i + ii+j*knsupc] = lsum[il+i+j*knsupc];
 							// // if(lk==69)
 							// printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
 							}
+                        }
 						__syncthreads();
 					}else{
 						__syncthreads();
@@ -3238,10 +3259,11 @@ gridinfo_t *grid
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 				ii = X_BLK( lib );
 
-				if(nrhs==1){
+				if(gemmflag==0 || nrhs==1){
 				// if(0){
+                    RHS_ITERATE(j){
 					for (i=tid;i<knsupc;i+=block_size)
-						temp2[i]=x[ii+i];
+						temp2[i]=x[ii+i + j*knsupc];
 					__syncthreads();
                     for (i = tid; i < nrow; i+=block_size){
                         // printf("good1 bid nub i nrow %5d %5d %5d %5d\n",bid, nub, i, nrow);
@@ -3274,16 +3296,12 @@ gridinfo_t *grid
                             // printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
 
                         }
-                        s_atomicAdd(&lsum[il+offset], -temp1);
+                        s_atomicAdd(&lsum[il+offset + j*iknsupc], -temp1);
 
                     }
                     __syncthreads();
-
-                    for (ub = tid; ub < nub; ub+=block_size){
-                        ik = lloc[ub];
-                        atomicSub(&bmod[ik*aln_i],1);
-                        // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
                     }
+
                 }else{
                     for (ub = 0; ub < nub; ub++){
                         ik = lloc[ub];
@@ -3319,12 +3337,17 @@ gridinfo_t *grid
                                 }
                             }
                         }
-                        if(tid==0)atomicSub(&bmod[ik*aln_i],1);
-                    }
+	                    }
 
-				}//if(nrhs==1)
-                __syncthreads();
-			// } /*if tid<Nchunk*/
+					}//if(nrhs==1)
+	                __syncthreads();
+                    for (ub = tid; ub < nub; ub+=block_size){
+                        ik = lloc[ub];
+                        atomicSub(&bmod[ik*aln_i],1);
+                        // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
+                    }
+	                __syncthreads();
+				// } /*if tid<Nchunk*/
 		} /* if nlb>0*/
 
 		// printf("nimbgood \n");
@@ -3384,7 +3407,7 @@ gridinfo_t *grid
       // volatile __shared__ float temp2[MAXSUPER];
       volatile __shared__ int s_bmod;
       int aln_i;
-      aln_i = 1;//ceil(CACHELINE/(double)iword);
+      aln_i = 1;//ceil(CACHELINE/(float)iword);
       int nub;       /* Number of U blocks.                                */
 
       int bid;
@@ -3496,7 +3519,7 @@ gridinfo_t *grid
                     // printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
 
                 }
-                // temp=s_atomicSub(&lsum[il+i],temp1);
+                // temp=d_atomicSub(&lsum[il+i],temp1);
                 s_atomicAdd((float *)&s_lsum[i], -temp1);
             }
             #ifdef HAVE_CUDA
@@ -3648,7 +3671,7 @@ gridinfo_t *grid
     // volatile __shared__ float temp2[MAXSUPER];
     volatile __shared__ int s_bmod;
     int aln_i;
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+    aln_i = 1;//ceil(CACHELINE/(float)iword);
 
     int bid;
     int_t tmp;
@@ -3746,7 +3769,7 @@ gridinfo_t *grid
                   // printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
 
               }
-              // temp=s_atomicSub(&lsum[il+i],temp1);
+              // temp=d_atomicSub(&lsum[il+i],temp1);
                 s_atomicAdd((float *)&s_lsum[i+iknsupc-LDA], -temp1);
 
           }
@@ -3903,7 +3926,7 @@ gridinfo_t *grid
 	float temp1;
 	// __shared__ float temp2[MAXSUPER];
 	int aln_i;
-	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	aln_i = 1;//ceil(CACHELINE/(float)iword);
 	int   knsupc;    /* Size of supernode k.                               */
 	int nub;       /* Number of L blocks.                                */
 
@@ -4172,7 +4195,8 @@ gridinfo_t *grid
                  volatile int* d_statusmod,
                  int nblock_ex,
                  int maxsuper,
-         int* d_flag_mod_u
+                 int* d_flag_mod_u,
+                 int gemmflag
          )
  {
     float zero = 0.0, alpha = 1.0, beta = 0.0;
@@ -4183,7 +4207,7 @@ gridinfo_t *grid
      float temp1;
      __shared__ float temp2[MAXSUPER];
      int aln_i;
-     aln_i = 1;//ceil(CACHELINE/(double)iword);
+     aln_i = 1;//ceil(CACHELINE/(float)iword);
      int   knsupc;    /* Size of supernode k.                               */
      int nub;       /* Number of L blocks.                                */
 
@@ -4274,21 +4298,25 @@ gridinfo_t *grid
 
          Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 
-         if(nrhs==1){
+         if(gemmflag==0 || nrhs==1){
+            RHS_ITERATE(j){
              for (i = tid; i < knsupc; i+=block_size){
                  temp1=zero;
                  for (l=0 ; l<knsupc ; l++){
-                    temp1+=  Uinv[l*knsupc+i]*x[ii+l];
+                    temp1+=  Uinv[l*knsupc+i]*x[ii+l+ j*knsupc];
 
                  }
-                 lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
-             }
+                 lsum[il+i+ j*knsupc]=temp1; //reuse lsum as temporary output as it's no longer accessed
+            }
+            }
              __syncthreads();
 
+             RHS_ITERATE(j){
              for (i = tid; i < knsupc; i+=block_size){
-                 x[i + ii] = lsum[il+i];
+                 x[i + ii+j*knsupc] = lsum[il+i+j*knsupc];
                  // // if(lk==69)
                  // printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
+                }
              }
              __syncthreads();
          }else{
@@ -4336,7 +4364,7 @@ gridinfo_t *grid
                  //msg_recv=flag_bc_q[gc];
                  __threadfence();
              } while (msg_recv != 1);
-             //double sum=0;
+             //float sum=0;
              //for (int myi=0;myi<UBtree_ptr[lk].msgSize_*nrhs+XK_H;myi++){
              //    sum+=sready_x[maxrecvsz*lk+myi];
              //    printf("--- (%d,%d,%d), gc=%d,lk=%d, maxrecvsz=%d, myi=%d, idx=%d, val=%lf\n",
@@ -4371,9 +4399,10 @@ gridinfo_t *grid
          lib = LBi( k, grid ); /* Local block number, row-wise. */
          ii = X_BLK( lib );
 
-         if(nrhs==1){
+         if(gemmflag==0 || nrhs==1){
+             RHS_ITERATE(j){
              for (i=tid;i<knsupc;i+=block_size)
-                 temp2[i]=sready_x[i + maxrecvsz*keep_lk]; // Nan
+                 temp2[i]=sready_x[i + maxrecvsz*keep_lk + j*knsupc]; // Nan
              __syncthreads();
              for (i = tid; i < nrow; i+=block_size){
                  // printf("good1 bid nub i nrow %5d %5d %5d %5d\n",bid, nub, i, nrow);
@@ -4406,8 +4435,10 @@ gridinfo_t *grid
 
                  }
 
-                s_atomicAdd(&lsum[il+offset], -temp1);
+                s_atomicAdd(&lsum[il+offset + j*iknsupc], -temp1);
 
+             }
+             __syncthreads();
              }
          }else{
              for (ub = 0; ub < nub; ub++){
@@ -4427,7 +4458,7 @@ gridinfo_t *grid
                      for (int bly = 0; bly*BLK_N < nrhs; bly++){
 
                          gemm_device_slsum_bmod_stridedB(iknsupc, nrhs, ncol, blx, bly,
-                         &lusup[luptr_tmp1], iknsupc, &x[ii], knsupc, rC,
+                         &lusup[luptr_tmp1], iknsupc, &sready_x[maxrecvsz*keep_lk], knsupc, rC,
                          alpha, beta, lptr, rel, usub);
 
                          #pragma unroll
@@ -4462,7 +4493,7 @@ gridinfo_t *grid
 
                      my_flag_rd[ik*RDMA_FLAG_SIZE]=ik;
                      my_flag_rd[ik*RDMA_FLAG_SIZE+1]=URtree_ptr[ik].msgSize_;
-                     // double tmp_sum=0;
+                     // float tmp_sum=0;
                      RHS_ITERATE(j) {
                          for (int aab = 0; aab < iknsupc; aab++) {
                              sready_lsum[ik * maxrecvsz * 2 + aab +j * iknsupc] = lsum[l + aab +j * iknsupc];
@@ -4566,6 +4597,8 @@ if (MAXSUPER < maxsuper) {
 printf("increase MAXSUPER\n");
 exit(1);
 }
+int gemmflag = get_acc_solve()==2;
+
 
 if(procs==1){
 #ifdef SINGLE_RHS_OPT
@@ -4574,7 +4607,7 @@ if(procs==1){
     if(1){
 #endif
         dim3 dimBlock(nthread_x, nthread_y);
-        slsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
+        slsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag);
     }else{
         dim3 dimBlock(nthread_x, nthread_y,1);
         // slsum_bmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
@@ -4676,7 +4709,7 @@ if(procs==1){
                                                                     my_flag_bc, my_flag_rd,
                                                                     d_nfrecv_u, d_status,
                                                                     d_statusmod, nblock_ex,
-                                                                    maxsuper, d_flag_mod_u); //temp2_offset, temp2,maxsuper);
+                                                                    maxsuper, d_flag_mod_u,gemmflag); //temp2_offset, temp2,maxsuper);
         CUDA_CHECK(cudaGetLastError());
     }
 

@@ -75,6 +75,7 @@ int_t dtrs_B_init3d_newsolve(superlu_dist_options_t *options, int_t nsupers, dou
     int_t iam = grid->iam;
     int_t myrow = MYROW(iam, grid);
     int_t mycol = MYCOL(iam, grid);
+    double zero = 0.0;
     int_t Pr = grid->nprow;
     int_t nlb = CEILING(nsupers, Pr);    /* Number of local block rows. */
 
@@ -125,7 +126,7 @@ int_t dtrs_B_init3d_newsolve(superlu_dist_options_t *options, int_t nsupers, dou
 
 	int_t ii = X_BLK(lk);
 	int_t nvals = SuperSize(k) * (int_t)nrhs;
-	for (int_t i = 0; i < nvals; ++i) x[ii + i] = 0.0;
+	for (int_t i = 0; i < nvals; ++i) x[ii + i] = zero;
     }
     return 0;
 }
@@ -1325,7 +1326,7 @@ int dtrs_compute_communication_structure(superlu_dist_options_t *options, int_t 
             }
         }
     }
-	if ( !(Llu->bcols_masked =
+ 	if ( !(Llu->bcols_masked =
 				(int*)SUPERLU_MALLOC(Llu->nbcol_masked * sizeof(int))) ) {
 		fprintf(stderr, "Malloc fails for nbcol_masked[].");
 	}
@@ -1658,12 +1659,13 @@ static void dtrs_x_zcomm_pack_zero_host(double *packbuf, double *x,
 					const int_t *offsets, const int_t *lengths,
 					const int_t *pack_offsets, int_t nblocks)
 {
+    double zero = 0.0;
 	for (int_t b = 0; b < nblocks; ++b) {
 		double *src = &x[offsets[b]];
 		double *dst = &packbuf[pack_offsets[b]];
 		for (int_t i = 0; i < lengths[b]; ++i) {
 			dst[i] = src[i];
-			src[i] = 0.0;
+			src[i] = zero;
 		}
 	}
 }
@@ -1690,7 +1692,8 @@ static void dtrs_x_zcomm_unpack_add_host(double *x, const double *packbuf,
 		double *dst = &x[offsets[b]];
 		const double *src = &packbuf[pack_offsets[b]];
 		for (int_t i = 0; i < lengths[b]; ++i)
-			dst[i] += src[i];
+            dst[i] += src[i];
+
 	}
 }
 
@@ -1930,7 +1933,7 @@ int_t dreduceSolvedX_newsolve(superlu_dist_options_t *options, int_t treeId, int
 #endif
 				} else {
 				    for(int_t i=0; i<knsupc * nrhs; i++){
-					x[ii+i]+=recvbuf[i];
+                    x[ii+i]+=recvbuf[i];
 				    }
 				}
                 xtrsTimer->trsDataRecvZ += knsupc * nrhs;
@@ -2127,7 +2130,7 @@ int_t dtrs_X_gather3d(superlu_dist_options_t *options, double* x, int nrhs,
 					    double *src = &x[offsets[b]];
 					    double *dst = &packbuf[pack_offsets[b]];
 					    for (int_t i = 0; i < lengths[b]; ++i)
-						dst[i] = src[i];
+				        dst[i] = src[i];
 					}
 					for (int_t offset = 0; offset < total_count; ) {
 					    int_t remaining = total_count - offset;
@@ -2150,7 +2153,7 @@ int_t dtrs_X_gather3d(superlu_dist_options_t *options, double* x, int nrhs,
 					    double *dst = &x[offsets[b]];
 					    double *src = &packbuf[pack_offsets[b]];
 					    for (int_t i = 0; i < lengths[b]; ++i)
-						dst[i] = src[i];
+				        dst[i] = src[i];
 					}
 					xtrsTimer->trsDataRecvZ += total_count;
 				    }
@@ -3192,10 +3195,10 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
     SuperLUStat_t **stat_loc;
 
     double tmax;
-	/*-- Counts used for L-solve --*/
+    	/*-- Counts used for L-solve --*/
     int  *fmod;         /* Modification count for L-solve --
-			 Count the number of local block products to
-			 be summed into lsum[lk]. */
+    			 Count the number of local block products to
+    			 be summed into lsum[lk]. */
 	int_t *fmod_sort;
 	int_t *order;
 	//int_t *order1;
@@ -3204,8 +3207,8 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
     int  **fsendx_plist = Llu->fsendx_plist;
     int  nfrecvx_buf=0;
     int *frecv;        /* Count of lsum[lk] contributions to be received
-			 from processes in this row.
-			 It is only valid on the diagonal processes. */
+    			 from processes in this row.
+    			 It is only valid on the diagonal processes. */
     int  frecv_tmp;
     int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int  nfrecv = 0; /* Count of total messages to be recv'd. */
@@ -3220,7 +3223,7 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
     int  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
     int  nbrecvx_buf=0;
     int  *brecv;        /* Count of modifications to be recv'd from
-			 processes in this row. */
+    			 processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
@@ -3753,13 +3756,13 @@ thread_id=0;
 		    nsupr = lsub[1];
 
 #ifdef _CRAY
-		    STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
+   		    STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
 		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
-		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
+ 		    dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
 
@@ -5288,10 +5291,10 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
     SuperLUStat_t **stat_loc;
 
     double tmax;
-	/*-- Counts used for L-solve --*/
+    	/*-- Counts used for L-solve --*/
     int  *fmod;         /* Modification count for L-solve --
-			 Count the number of local block products to
-			 be summed into lsum[lk]. */
+    			 Count the number of local block products to
+    			 be summed into lsum[lk]. */
 	int_t *fmod_sort;
 	int_t *order;
 	//int_t *order1;
@@ -5300,8 +5303,8 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
     int  **fsendx_plist = Llu->fsendx_plist;
     int  nfrecvx_buf=0;
     int *frecv;        /* Count of lsum[lk] contributions to be received
-			 from processes in this row.
-			 It is only valid on the diagonal processes. */
+    			 from processes in this row.
+    			 It is only valid on the diagonal processes. */
     int  frecv_tmp;
     int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int  nfrecv = 0; /* Count of total messages to be recv'd. */
@@ -5744,6 +5747,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Grid %3d: around U kernel time\t%8.4f\n", myGrid, t);
 #endif
+
 
 	stat_loc[0]->ops[SOLVE] += d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
 #endif
@@ -6910,10 +6914,10 @@ pdReDistribute3d_B_to_X (double *B, int_t m_loc, int nrhs, int_t ldb,
 			k = BlockNum (irow);
 			knsupc = SuperSize (k);
 			l = X_BLK (k);
-			x[l - XK_H] = k; /* Block number prepended in the header. */
+            x[l - XK_H] = k;      /* Block number prepended in the header. */
 			irow = irow - FstBlockC (k); /* Relative row number in X-block */
 			RHS_ITERATE(j) {
-			    x[l + irow + j * knsupc] = B[i + j * ldb];
+				x[l + irow + j * knsupc] = B[i + j * ldb];
 			}
 		    }
 		}
@@ -6980,7 +6984,7 @@ pdReDistribute3d_B_to_X (double *B, int_t m_loc, int nrhs, int_t ldb,
 		    knsupc = SuperSize (k);
 		    lk = LBi (k, grid); /* Local block number. */
 		    l = X_BLK (lk);
-		    x[l - XK_H] = k;      /* Block number prepended in the header. */
+            x[l - XK_H] = k;      /* Block number prepended in the header. */
 		    irow = irow - FstBlockC (k);    /* Relative row number in X-block */
 		    for (int_t j = 0; j < nrhs; ++j)
 		    {

@@ -1638,17 +1638,17 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		{
 		    if (rowequ)
 		    {
-			b_col = B;
-			for (j = 0; j < nrhs; ++j)
-			{
-			    irow = fst_row;
-			    for (i = 0; i < m_loc; ++i)
-			    {
-				b_col[i] *= R[irow];
-				++irow;
-			    }
-			    b_col += ldb;
-			}
+				b_col = B;
+				for (j = 0; j < nrhs; ++j)
+				{
+					irow = fst_row;
+					for (i = 0; i < m_loc; ++i)
+					{
+					b_col[i] *= R[irow];
+					++irow;
+					}
+					b_col += ldb;
+				}
 		    }
 		}
 		else if (colequ)

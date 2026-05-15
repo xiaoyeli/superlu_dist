@@ -270,7 +270,7 @@ if(enable_single)
     single/spivot_batch.c
   )
 if (TPL_ENABLE_CUDALIB)
-    list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/ssuperlu_gpu.cu)
+    list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/psgstrs_perm_cuda.cu cuda/ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
        list(APPEND sources single/s_c2cpp_GetHWPM.cpp single/sHWPM_CombBLAS.hpp)
@@ -343,7 +343,7 @@ if(enable_complex16)
       complex16/zpivot_batch.c
      )
 if (TPL_ENABLE_CUDALIB)
-    list(APPEND sources cuda/pzgstrs_lsum_cuda.cu cuda/zsuperlu_gpu.cu)
+    list(APPEND sources cuda/pzgstrs_lsum_cuda.cu cuda/pzgstrs_perm_cuda.cu cuda/zsuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
     list(APPEND sources

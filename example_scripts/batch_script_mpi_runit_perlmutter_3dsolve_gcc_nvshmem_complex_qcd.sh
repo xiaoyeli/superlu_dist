@@ -17,9 +17,16 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
+
+
+# Problem setting:
+dims=(8 8 8 16) 
+bs=48
+
+# dims=(2 2 2 4) 
+# bs=48
+
 #SUPERLU settings:
-
-
 export SUPERLU_LBS=GD  
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
 export GPU3DVERSION=0
@@ -28,14 +35,16 @@ export NEW3DSOLVE=1
 export NEW3DSOLVETREECOMM=1
 export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
 
-export SUPERLU_MAXSUP=256 # max supernode size
-export SUPERLU_RELAX=64  # upper bound for relaxed supernode size
+# the supernode size has to be the same as -bs when options.SolveOnly is used
+export SUPERLU_MAXSUP=${bs} # max supernode size
+export SUPERLU_RELAX=${bs} # upper bound for relaxed supernode size
 export SUPERLU_MAX_BUFFER_SIZE=10000000 ## 500000000 # buffer size in words on GPU
 export SUPERLU_NUM_LOOKAHEADS=10   ##4, must be at least 2, see 'lookahead winSize'
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 nmpipergpu=1
 export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # 2: this can better saturate GPU
+export SUPERLU_RANKORDER='XY'  # Be careful: XY needs to be used when NOROWPERM or SolveOnly is used for 3D grids
 
 # ##NVSHMEM settings:
 # NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
@@ -72,13 +81,14 @@ else
   exit $EXIT_HOST
 fi
 
-nprows=(2)
+nprows=(1)
 npcols=(1)
 npz=(1)
-nrhs=(1)
+nrhs=(1 2 4 8 16)
 NTH=1
 NREP=1
 # NODE_VAL_TOT=1
+
 
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -121,11 +131,9 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 # export NSUP=256
 # export NREL=256
-# for MAT in big.rua
-# for MAT in marcus_100000.dat
-# for MAT in matrix121.dat 
+# for MAT in cg20.cua
+# for MAT in cg4.dat
 # for MAT in Geo_1438.bin
-# for MAT in cage13.mtx
 # for MAT in g20.rua
 # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua
 # for MAT in dielFilterV3real.bin
@@ -133,8 +141,6 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # for MAT in raefsky3.mtx
 # for MAT in s2D9pt2048.rua raefsky3.mtx rma10.mtx
 # for MAT in s1_mat_0_126936.bin  # for MAT in s1_mat_0_126936.bin
-# for MAT in s1_mat_0_253872.bin  # for MAT in s1_mat_0_126936.bin
-# for MAT in gas_sensor.mtx
 # for MAT in s2D9pt2048.rua
 # for MAT in nlpkkt80.bin dielFilterV3real.bin Ga19As19H42.bin
 # for MAT in dielFilterV3real.bin 
@@ -143,36 +149,54 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # for MAT in matrix_ACTIVSg70k_AC_00.mtx matrix_ACTIVSg10k_AC_00.mtx
 # for MAT in temp_13k.mtx temp_25k.mtx temp_75k.mtx
 # for MAT in temp_13k.mtx
-# for MAT in temp_13k.mtx
-# for MAT in apache2.mtx G3_circuit.mtx ldoor.bin ecology1.mtx
 # for MAT in nimrod_new/nimrodMatrix-Ti.mtx nimrod_new/nimrodMatrix-nc.mtx nimrod_new/nimrodMatrix-nd.mtx nimrod_new/nimrodMatrix-V.mtx nimrod_new/nimrodMatrix-B.mtx nimrod_new/nimrodMatrix-J.mtx 
 # for MAT in nimrodMatrix-B.mtx
-for MAT in nimrod_new/nimrodMatrix-Ti.mtx
-# for MAT in cg20.cua
+for MAT in qcd.bin
+# for MAT in young4c.mtx
 do
 mkdir -p $MAT
 for ii in `seq 1 $NREP`
 do	
 
+# SUPERLU_ACC_OFFLOAD=0
+# srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}
 
+# SUPERLU_ACC_OFFLOAD=1
+# export SUPERLU_ACC_SOLVE=1
+# srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d_gpu_${SUPERLU_ACC_OFFLOAD}_nmpipergpu${nmpipergpu}
 
-export SUPERLU_ACC_OFFLOAD=1
-export SUPERLU_ACC_SOLVE=1
-gpures=1
-srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive -c $NCOL -r $NROW -b $batch -g $gpures -a $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_nrhs_${NRHS}_2d_gpu_${SUPERLU_ACC_OFFLOAD}_gpures${gpures}
+# SUPERLU_ACC_OFFLOAD=1
+# export GPU3DVERSION=0
+# export SUPERLU_ACC_SOLVE=1
+# echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
 
 
 SUPERLU_ACC_OFFLOAD=1
 export GPU3DVERSION=0
 export SUPERLU_ACC_SOLVE=1
-gpures=1
-echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -g $gpures -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_batch${batch}_gpures${gpures}
-"
-srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -g $gpures -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_batch${batch}_gpures${gpures}
+gpures=0
+
+
+dim0=${dims[0]}
+dim1=${dims[1]}
+dim2=${dims[2]}
+dim3=${dims[3]}
+mkdir -p qcd
+echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d_qcd -bs=${bs} -dim="${dim0} ${dim1} ${dim2} ${dim3}" -grid="${NROW} ${NCOL} ${NPZ}" -gpures=${gpures} -nrhs=${NRHS} | tee ./qcd/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_bs${bs}_dims${dim0}_${dim1}_${dim2}_${dim3}_gpures${gpures}"
+srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d_qcd -bs=${bs} -dim="${dim0} ${dim1} ${dim2} ${dim3}" -grid="${NROW} ${NCOL} ${NPZ}" -gpures=${gpures} -nrhs=${NRHS} | tee ./qcd/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_bs${bs}_dims${dim0}_${dim1}_${dim2}_${dim3}_gpures${gpures}_iLU0
+
+
+
+# SUPERLU_ACC_OFFLOAD=1
+# export GPU3DVERSION=1
+# export SUPERLU_ACC_SOLVE=1
+# echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}"
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}
 
 
 # export SUPERLU_ACC_SOLVE=1
-# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores valgrind --leak-check=yes ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores valgrind --leak-check=yes ./EXAMPLE/pzdrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
 
 
 done

@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
     gridinfo3d_t grid;
     double   *berr;
     float output;
-    doublecomplex   *b, *xtrue;
+    doublecomplex   *b, *xtrue, *d_b = NULL, *solve_b = NULL;
     int    m, n;
     int      nprow, npcol, npdep;
     int      iam, info, ldb, ldx, nrhs;
@@ -303,6 +303,7 @@ int main(int argc, char *argv[])
     nrhs = 1;   /* Number of right-hand side. */
     double t0=0;
     int nsolves=1;
+    int gpures=-1;
     
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -353,6 +354,17 @@ int main(int argc, char *argv[])
             if (nprow < 1 || npcol < 1 || npdep < 1) {
                 ABORT("One of the grid dimensions is smaller than one");
             }
+        } else if (strncmp("-gpures=", argv[i], 8) == 0) {
+            if (sscanf(argv[i] + 8, "%d", &gpures) != 1) {
+                ABORT("-gpures= should follow 0 or 1, for instance -gpures=1");
+            }
+            if (gpures != NO && gpures != YES) {
+                ABORT("-gpures= should be 0 or 1");
+            }
+        } else if (strncmp("-nrhs=", argv[i], 6) == 0) {
+            if (sscanf(argv[i] + 6, "%d", &nrhs) != 1) {
+                ABORT("-nrhs= should be, for instance -nrhs=1");
+            }         
         } else {
             ABORT("Unknown commandline option");
         }
@@ -372,6 +384,10 @@ int main(int argc, char *argv[])
     superlu_dist_options_t options;
     set_default_options_dist(&options);
 
+    options.GPURES = NO;
+    if (gpures != -1) options.GPURES = (yes_no_t) gpures;
+
+
 
     // /* Turn off permutations */
     // options.SolveOnly          = YES;
@@ -388,6 +404,7 @@ int main(int argc, char *argv[])
     options.ILU_level = 0;
     options.ReplaceTinyPivot  = YES;
     options.UserDefineSupernode = YES;
+
 
 
 
@@ -437,6 +454,18 @@ int main(int argc, char *argv[])
     // Mimic symbolic factorization: set up Glu_freeable_t {} structure
     zcreate_matrix_qcd(&A, nrhs, &b, &ldb, &xtrue, &ldx, dim, block_size, &grid);
 
+#ifdef GPU_ACC
+    if (options.GPURES == YES) {
+        checkGPU(gpuMalloc((void**)&d_b, sizeof(doublecomplex) * (size_t)ldb * (size_t)nrhs));
+        checkGPU(gpuMemcpy(d_b, b, sizeof(doublecomplex) * (size_t)ldb * (size_t)nrhs,
+                           gpuMemcpyHostToDevice));
+    }
+#else
+    if (options.GPURES == YES) {
+        ABORT("GPURES requires GPU_ACC in pzdrive3d_qcd.");
+    }
+#endif
+
     if ( !(berr = doubleMalloc_dist(nrhs)) )
         ABORT("Malloc fails for berr[].");
 
@@ -467,7 +496,11 @@ int main(int argc, char *argv[])
 
 
     for (i = 0; i < n; i++) LUstruct.etree[i] = i+1;
-     
+
+    solve_b = b;
+#ifdef GPU_ACC
+    if (options.GPURES == YES) solve_b = d_b;
+#endif
 
 
 
@@ -495,10 +528,10 @@ int main(int argc, char *argv[])
     //output = pzdistribute3d(&options, n, &LU, &ScalePermstruct, &Glu_freeable, &LUstruct, &grid);
 
     //options.Fact = FACTORED;
-	
+
     /* Call the linear equation solver. */
     t0 = w_time();
-    pzgssvx3d(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid, &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    pzgssvx3d(&options, &A, &ScalePermstruct, solve_b, ldb, nrhs, &grid, &LUstruct, &SOLVEstruct, berr, &stat, &info);
     if (rank == 0) std::cout << "Time for the first call: " << (w_time() - t0) << std::endl;
     
     if ( grid.zscp.Iam == 0 ) { // process layer 0
@@ -511,9 +544,18 @@ int main(int argc, char *argv[])
 
     t0 = w_time();
     for (int i = 0; i < nsolves; ++i)
-      pzgssvx3d(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+      pzgssvx3d(&options, &A, &ScalePermstruct, solve_b, ldb, nrhs, &grid,
                 &LUstruct, &SOLVEstruct, berr, &stat, &info);
     if (rank == 0) std::cout << "Time to apply ILU(0): " << (w_time() - t0)/nsolves << std::endl;
+
+#ifdef GPU_ACC
+    if (options.GPURES == YES) {
+        checkGPU(gpuMemcpy(b, d_b, sizeof(doublecomplex) * (size_t)ldb * (size_t)nrhs,
+                           gpuMemcpyDeviceToHost));
+        checkGPU(gpuFree(d_b));
+        d_b = NULL;
+    }
+#endif
 
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
@@ -536,9 +578,9 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     zScalePermstructFree(&ScalePermstruct);
+    zSolveFinalize(&options, &SOLVEstruct);
     zDestroy_LU(n, &grid.grid2d, &LUstruct);
     zLUstructFree(&LUstruct);
-    zSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);

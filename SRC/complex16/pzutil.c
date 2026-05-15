@@ -555,12 +555,14 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 #ifdef GPU_ACC
 if (get_acc_solve()){
     checkGPU (gpuFree (Llu->d_xsup));
+    checkGPU (gpuFree (Llu->d_supno));
     checkGPU (gpuFree (Llu->d_bcols_masked));
     checkGPU (gpuFree (Llu->d_LRtree_ptr));
     checkGPU (gpuFree (Llu->d_LBtree_ptr));
     checkGPU (gpuFree (Llu->d_URtree_ptr));
     checkGPU (gpuFree (Llu->d_UBtree_ptr));
     checkGPU (gpuFree (Llu->d_ilsum));
+    checkGPU (gpuFree (Llu->d_grid));
     checkGPU (gpuFree (Llu->d_Lrowind_bc_dat));
     checkGPU (gpuFree (Llu->d_Lrowind_bc_offset));
     checkGPU (gpuFree (Llu->d_Lnzval_bc_dat));
@@ -937,7 +939,10 @@ pzgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 
 
     checkGPU(gpuMalloc( (void**)&d_status,  CEILING( nsupers, grid->npcol) * sizeof(int)));
-    checkGPU(gpuMemcpy(d_status, mystatus, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMalloc( (void**)&d_status_save,  CEILING( nsupers, grid->npcol) * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_status_u_save,  CEILING( nsupers, grid->npcol) * sizeof(int)));
+    checkGPU(gpuMemcpy(d_status_save, mystatus, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMemcpy(d_status, d_status_save, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyDeviceToDevice));
 
     checkGPU(gpuMalloc( (void**)&d_nfrecv,  3 * sizeof(int)));
     checkGPU(gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice));
@@ -963,6 +968,10 @@ pzgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     checkGPU(gpuMalloc( (void**)&d_nfrecvmod, 4 * sizeof(int)));
     checkGPU(gpuMemcpy(d_nfrecvmod, h_nfrecvmod, 4 * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMalloc( (void**)&d_statusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_statusmod_save, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_statusmod_u_save, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
+    checkGPU(gpuMemcpy(d_statusmod_save, mystatusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMemcpy(d_statusmod, d_statusmod_save, 2*CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyDeviceToDevice));
 
     checkGPU(gpuMemcpy(d_colnummod, my_colnummod,  (nfrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
     SUPERLU_FREE(my_colnummod);
@@ -1012,6 +1021,7 @@ pzgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
     //fflush(stdout);
 
+    checkGPU(gpuMemcpy(d_status_u_save, mystatus_u, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMemcpy(d_colnum_u, my_colnum_u,  (nbrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
     //printf("(%d) nbrecvx=%d,nbrecvmod=%d\n",iam,nbrecvx,nbrecvmod);
     //fflush(stdout);
@@ -1043,6 +1053,7 @@ pzgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     checkGPU(gpuMalloc( (void**)&d_nfrecvmod_u,  4 * sizeof(int)));
     checkGPU(gpuMemcpy(d_nfrecvmod_u, h_nfrecvmod_u, 4 * sizeof(int), gpuMemcpyHostToDevice));
 
+    checkGPU(gpuMemcpy(d_statusmod_u_save, mystatusmod_u, 2*CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMemcpy(d_colnummod_u, my_colnummod_u,  (nbrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMalloc( (void**)&d_mynummod_u, h_nfrecv_u[1]  * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_mymaskstartmod_u, h_nfrecv_u[1]  * sizeof(int)));
@@ -1088,10 +1099,14 @@ pzgstrs_delete_device_lsum_x(zSOLVEstruct_t *SOLVEstruct)
     checkGPU(gpuFree(d_mymaskstart));
     checkGPU(gpuFree(d_mymasklength));
     checkGPU(gpuFree(d_status));
+    checkGPU(gpuFree(d_status_save));
+    checkGPU(gpuFree(d_status_u_save));
     checkGPU(gpuFree(d_nfrecv));
 
     checkGPU(gpuFree(d_nfrecvmod));
     checkGPU(gpuFree(d_statusmod));
+    checkGPU(gpuFree(d_statusmod_save));
+    checkGPU(gpuFree(d_statusmod_u_save));
     checkGPU(gpuFree(d_mynummod));
     checkGPU(gpuFree(d_mymaskstartmod));
     checkGPU(gpuFree(d_mymasklengthmod));
@@ -1108,9 +1123,9 @@ pzgstrs_delete_device_lsum_x(zSOLVEstruct_t *SOLVEstruct)
 /*! \brief Initialize the data structure for the solution phase.
  */
 int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
-	       int perm_r[], int perm_c[], int_t nrhs,
+	       int perm_r[], int perm_c[], int_t nrhs, int_t n,
 	       zLUstruct_t *LUstruct, gridinfo_t *grid,
-	       zSOLVEstruct_t *SOLVEstruct)
+	       zSOLVEstruct_t *SOLVEstruct,zScalePermstruct_t *ScalePermstruct)
 {
     int_t *row_to_proc, *itemp;
     int *inv_perm_c;
@@ -1190,6 +1205,67 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
         ABORT("Malloc fails for gsmv_comm[]");
     SOLVEstruct->A_colind_gsmv = NULL;
 
+
+#ifdef GPU_ACC
+    if (get_acc_solve()){
+        int *ptr_to_idbuf = (int*) SUPERLU_MALLOC((size_t)procs * sizeof(int));
+        int *sdispls = SOLVEstruct->gstrs_comm->X_to_B_SendCnt + 4 * procs;
+        for (int p = 0; p < procs; ++p) {
+        ptr_to_idbuf[p] = sdispls[p] * (nrhs + 1);
+        }
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_ptr_to_idbuf_X2B, sizeof(int) * (size_t)procs));
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_ptr_to_idbuf_X2B_save, sizeof(int) * (size_t)procs));
+        checkGPU(gpuMemcpy(SOLVEstruct->d_ptr_to_idbuf_X2B_save, ptr_to_idbuf, sizeof(int) * (size_t)procs, gpuMemcpyHostToDevice));
+        sdispls = SOLVEstruct->gstrs_comm->B_to_X_SendCnt + 4 * procs;
+        for (int p = 0; p < procs; ++p) {
+        ptr_to_idbuf[p] = sdispls[p] * (nrhs + 1);
+        }
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_ptr_to_idbuf_B2X, sizeof(int) * (size_t)procs));
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_ptr_to_idbuf_B2X_save, sizeof(int) * (size_t)procs));
+        checkGPU(gpuMemcpy(SOLVEstruct->d_ptr_to_idbuf_B2X_save, ptr_to_idbuf, sizeof(int) * (size_t)procs, gpuMemcpyHostToDevice));
+        SUPERLU_FREE(ptr_to_idbuf);
+
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_inv_perm_c, sizeof(int) * (size_t)n));
+        checkGPU(gpuMemcpy(SOLVEstruct->d_inv_perm_c, inv_perm_c, sizeof(int) * (size_t)n, gpuMemcpyHostToDevice));
+
+        int *sendcnts = (int*) SUPERLU_MALLOC((size_t)3 * procs * sizeof(int));
+        if (!sendcnts) ABORT("Malloc fails for sendcnts[].");
+        sdispls       = sendcnts + procs;
+        int *ptr_to_ibuf   = sdispls + procs; /* reused as ptr_to_idbuf */
+        for (i = 0; i < procs; ++i) sendcnts[i] = 0;
+        /* CPU count pass; same as original pzPermute_Dense_Matrix. */
+        for (i = fst_row; i < fst_row + m_loc; ++i) {
+            p = (int) row_to_proc[inv_perm_c[i]];
+            ++sendcnts[p];
+        }
+        sdispls[0] = 0;
+        for (i = 1; i < procs; ++i) {
+            sdispls[i] = sdispls[i-1] + sendcnts[i-1];
+        }
+        for (i = 0; i < procs; ++i) {
+            ptr_to_ibuf[i] = sdispls[i] * (nrhs + 1);
+        }
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_ptr_to_idbuf_PermuteC, sizeof(int) * (size_t)procs));
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_ptr_to_idbuf_PermuteC_save, sizeof(int) * (size_t)procs));
+        checkGPU(gpuMemcpy(SOLVEstruct->d_ptr_to_idbuf_PermuteC_save, ptr_to_ibuf,
+                        (size_t)procs * sizeof(int), gpuMemcpyHostToDevice));
+        SUPERLU_FREE(sendcnts);
+
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_row_to_proc, sizeof(int_t) * n));
+        checkGPU(gpuMalloc((void**)&SOLVEstruct->d_diag_procs, sizeof(int_t) * SOLVEstruct->num_diag_procs));
+
+        checkGPU(gpuMemcpy(SOLVEstruct->d_row_to_proc, SOLVEstruct->row_to_proc, sizeof(int_t) * n, gpuMemcpyHostToDevice));
+        checkGPU(gpuMemcpy(SOLVEstruct->d_diag_procs, SOLVEstruct->diag_procs, sizeof(int_t) * SOLVEstruct->num_diag_procs, gpuMemcpyHostToDevice));
+
+        if ( options->GPURES == YES ) {
+            zSolveInit_nvshmem_gpures(options, fst_row, m_loc, nrhs, n, grid,
+                                      SOLVEstruct);
+        }
+
+    }
+#endif
+
+
     options->SolveInitialized = YES;
     return 0;
 } /* zSolveInit */
@@ -1212,6 +1288,25 @@ void zSolveFinalize(superlu_dist_options_t *options, zSOLVEstruct_t *SOLVEstruct
         SUPERLU_FREE(SOLVEstruct->diag_len);
         if ( SOLVEstruct->A_colind_gsmv )
 	    SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
+
+
+#ifdef GPU_ACC
+        if (get_acc_solve()){
+           checkGPU (gpuFree (SOLVEstruct->d_diag_procs));
+           checkGPU (gpuFree (SOLVEstruct->d_row_to_proc));
+           checkGPU (gpuFree (SOLVEstruct->d_inv_perm_c));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_B2X));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_B2X_save));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_X2B));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_X2B_save));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_PermuteC));
+           checkGPU (gpuFree (SOLVEstruct->d_ptr_to_idbuf_PermuteC_save));
+
+           if ( options->GPURES == YES ) {
+              zFree_nvshmem_gpures(options, SOLVEstruct);
+           }
+        }
+#endif
         options->SolveInitialized = NO;
     }
 } /* zSolveFinalize */
@@ -1307,10 +1402,6 @@ void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx
       if ( !iam ) {
 	printf(".. Sol %2d: ||X - Xtrue|| / ||X|| = %e\t max_i |x - xtrue|_i / |x|_i = %e\n", j, err, errcomp);
 	fflush(stdout);
-    // for (i = 0; i < n; i++) {
-    //         printf("xi: %e %e xtruei: %e %e\n",x_work[i].r,x_work[i].i, xtrue_work[i].r,xtrue_work[i].i);
-    //     	fflush(stdout);
-    // }
       }
     }
 }
@@ -1362,5 +1453,3 @@ zDestroy_Tree(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
     CHECK_MALLOC(iam, "Exit zDestroy_Tree()");
 #endif
 }
-
-

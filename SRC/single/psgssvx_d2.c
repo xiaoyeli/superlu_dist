@@ -1460,8 +1460,10 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	   Solve the linear system.
 	   ------------------------------------------------------------*/
 	if ( options->SolveInitialized == NO ) { /* First time */
-	    sSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
-		       SOLVEstruct);
+	    sSolveInit(options, A, perm_r, perm_c, nrhs, n, LUstruct, grid,
+		       SOLVEstruct, ScalePermstruct);
+
+
             /* Inside this routine, SolveInitialized is set to YES.
 	       For repeated call to psgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new

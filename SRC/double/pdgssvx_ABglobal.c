@@ -932,7 +932,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	stat->utime[FACT] = SuperLU_timer_() - t;
 
 
-    /* nvshmem related. */
+    /* nvshmem related */
     int nsupers = Glu_persist->supno[n-1] + 1;
 	#ifdef HAVE_NVSHMEM
 		int nc = CEILING( nsupers, grid->npcol);
@@ -1131,3 +1131,4 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
     CHECK_MALLOC(iam, "Exit pdgssvx_ABglobal()");
 #endif
 }
+

@@ -189,7 +189,6 @@ d_acc_usolve_flops(int_t nsupers, int nrhs, gridinfo_t *grid,
 
 
 
-
 void
 dreadMM_dist_intoL_CSR(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	    double **nzval, int_t **colind, int_t **rowptr)
@@ -1015,7 +1014,7 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
 		      for (i=0 ; i<j+1; i++){
 			  Uinv[j*knsupc+i] = lusup[j*nsupr+i];
 	              }
-		  }
+ 		  }
 
 		  /* Triangular inversion */
 		  dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
@@ -1173,7 +1172,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     SuperLUStat_t **stat_loc;
 
     double tmax;
-	/*-- Counts used for L-solve --*/
+    	/*-- Counts used for L-solve --*/
     int  *fmod;         /* Modification count for L-solve --
 			 Count the number of local block products to
 			 be summed into lsum[lk]. */
@@ -1328,9 +1327,9 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
     {
-	if (omp_get_thread_num () == 0) {
-		num_thread = omp_get_num_threads ();
-	}
+		if (omp_get_thread_num () == 0) {
+			num_thread = omp_get_num_threads ();
+		}
     }
 #else
 	num_thread=1;
@@ -1981,7 +1980,7 @@ t1 = SuperLU_timer_();
 	}
 	SUPERLU_FREE(Btmp);
 #endif
-#else /* use cuSparse*/
+#else
 
 // #if HAVE_CUDA
 // cudaProfilerStart();
@@ -2002,8 +2001,8 @@ t1 = SuperLU_timer_();
 
 
 #ifdef HAVE_NVSHMEM
-		checkGPU(gpuMemcpy(d_status, d_status_save, k * sizeof(int), gpuMemcpyDeviceToDevice));
-		checkGPU(gpuMemcpy(d_statusmod, d_statusmod_save, 2* nlb * sizeof(int), gpuMemcpyDeviceToDevice));
+	checkGPU(gpuMemcpy(d_status, d_status_save, k * sizeof(int), gpuMemcpyDeviceToDevice));
+	checkGPU(gpuMemcpy(d_statusmod, d_statusmod_save, 2* nlb * sizeof(int), gpuMemcpyDeviceToDevice));
 	//for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
 	checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(uint64_t)));
     checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(uint64_t)));
@@ -2053,6 +2052,7 @@ t1 = SuperLU_timer_();
 	// checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 	stat_loc[0]->ops[SOLVE] += d_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+
 
 #endif
 #endif
@@ -2497,7 +2497,7 @@ t1 = SuperLU_timer_();
 			    } /* check Tag */
 			} /* end for nfrecv ... */
                     } /* while not finished ... */
-	    }
+       	    }
         } // end of parallel
 		for (lk=0;lk<nsupers_j;++lk){
 			if(LBtree_ptr[lk].empty_==NO){
@@ -2596,16 +2596,16 @@ t1 = SuperLU_timer_();
 		for(ii=0;ii<sizelsum;ii++)
 			lsum[thread_id*sizelsum+ii]=zero;
 	}
-	/* Set up the headers in lsum[]. */
+  	/* Set up the headers in lsum[]. */
 //#pragma omp simd lastprivate(krow,lk,il)
-	for (k = 0; k < nsupers; ++k) {
+    	for (k = 0; k < nsupers; ++k) {
 	    krow = PROW( k, grid );
 	    if ( myrow == krow ) {
 	       lk = LBi( k, grid );   /* Local block number. */
 	       il = LSUM_BLK( lk );
 	       lsum[il - LSUM_H] = k; /* Block number prepended in the header. */
 	    }
-	}
+    	}
 
 #else
 	for (k = 0; k < nsupers; ++k) {
@@ -2759,8 +2759,8 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	knsupc = sp_ienv_dist(3, options);
 
  #ifdef HAVE_NVSHMEM
-	    checkGPU(gpuMemcpy(d_status, d_status_u_save, k * sizeof(int), gpuMemcpyDeviceToDevice));
-	    checkGPU(gpuMemcpy(d_statusmod, d_statusmod_u_save, 2* nlb * sizeof(int), gpuMemcpyDeviceToDevice));
+	checkGPU(gpuMemcpy(d_status, d_status_u_save, k * sizeof(int), gpuMemcpyDeviceToDevice));
+	checkGPU(gpuMemcpy(d_statusmod, d_statusmod_u_save, 2* nlb * sizeof(int), gpuMemcpyDeviceToDevice));
     //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
     checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(uint64_t)));
     checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(uint64_t)));
@@ -2817,6 +2817,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	}
 
 	stat_loc[0]->ops[SOLVE] += d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+
 
 #endif
 }else{  /* CPU trisolve*/
@@ -3238,8 +3239,10 @@ if ( options->GPURES == YES ) {
 	stat->utime[SOL_TRSM] += tmp1;
 	stat->utime[SOL_GEMM] += tmp2;
 	stat->utime[SOL_COMM] += tmp3;
+
 	stat->ops[SOLVE] += d_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu)
-	    + d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+	+ d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+
 
 	/* Deallocate storage. */
 	for(i=0;i<num_thread;i++){
@@ -3318,3 +3321,4 @@ if ( options->GPURES == YES ) {
 
     return;
 } /* PDGSTRS */
+

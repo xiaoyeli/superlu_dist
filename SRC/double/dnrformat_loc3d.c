@@ -572,6 +572,33 @@ int dScatter_B3d(superlu_dist_options_t *options,
     gridinfo_t *grid2d = &(grid3d->grid2d);
     int gpures = (options && options->GPURES == YES);
 
+    /*
+     * Fast path for the common degenerate 3D case with only one process
+     * in the Z dimension.  In this case the 2D and 3D RHS row partitions
+     * are identical, so the general B2d -> B1 -> Btmp -> B path only
+     * performs redundant device copies and MPI collectives.
+     *
+     * This shortcut is enabled only for GPURES.  The CPU path below is kept
+     * unchanged.
+     */
+    if (gpures && grid3d->npdep == 1) {
+#ifdef GPU_ACC
+        ddevice_matcopy_wrap(A3d->m_loc, nrhs,
+                                  B, ldb,
+                                  B2d, A2d->m_loc);
+        checkGPU(gpuFree(B2d));
+		if ( rankorder == 0 ) { // these are not used, but SUPERLU_FREE() will be called in xFreeNRformat_loc3d()
+	     A3d->procs_to_send_list = SUPERLU_MALLOC(1 * sizeof(int));
+	     A3d->send_count_list = SUPERLU_MALLOC(1 * sizeof(int));
+	     A3d->procs_recv_from_list = SUPERLU_MALLOC(1 * sizeof(int));
+	     A3d->recv_count_list = SUPERLU_MALLOC(1 * sizeof(int));
+		}
+        return 0;
+#else
+        ABORT("GPURES requires GPU_ACC in dScatter_B3d().");
+#endif
+    }
+
     double *B1 = NULL;  // on 2D layer 0
     if (grid3d->zscp.Iam == 0)
     {

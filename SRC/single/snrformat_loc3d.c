@@ -290,6 +290,7 @@ void sGatherNRformat_loc3d
  */
 void sGatherNRformat_loc3d_allgrid
 (
+ superlu_dist_options_t *options,
  fact_t Fact,     // how matrix A will be factorized
  NRformat_loc *A, // input, on 3D grid
  float *B,       // input
@@ -482,6 +483,38 @@ void sGatherNRformat_loc3d_allgrid
 	b_counts_int   = A3d->b_counts_int;
 	b_disp         = A3d->b_disp;;
 
+	if (options && options->GPURES == YES) {
+#ifdef GPU_ACC
+	    /* Btmp <- compact(B), compacting device B */
+	    float *Btmp, *B1;
+	    checkGPU(gpuMalloc((void**)&Btmp,
+			       sizeof(float) * (size_t)A->m_loc * (size_t)nrhs));
+	    sdevice_matcopy_wrap(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
+
+	    checkGPU(gpuMalloc((void**)&B1,
+			       sizeof(float) * (size_t)A2d->m_loc * (size_t)nrhs));
+	    checkGPU(gpuMalloc((void**)&A3d->B2d,
+			       sizeof(float) * (size_t)A2d->m_loc * (size_t)nrhs));
+
+	    // B1 <- allgatherv(Btmp)
+	    MPI_Allgatherv(Btmp, nrhs * A->m_loc, MPI_FLOAT, B1,
+			   b_counts_int, b_disp,
+			   MPI_FLOAT, grid3d->zscp.comm);
+	    checkGPU(gpuFree(Btmp));
+
+	    // B2d <- colMajor(B1)
+	    for (int i = 0; i < grid3d->npdep; ++i)
+	    {
+		sdevice_matcopy_wrap(row_counts_int[i], nrhs,
+				     ((float*)A3d->B2d) + row_disp[i], A2d->m_loc,
+				     B1 + nrhs * row_disp[i], row_counts_int[i]);
+	    }
+
+	    checkGPU(gpuFree(B1));
+#else
+	    ABORT("GPURES requires GPU_ACC in sGatherNRformat_loc3d_allgrid().");
+#endif
+	} else {
 	/* Btmp <- compact(B), compacting B */
 	float *Btmp;
 	Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(float));
@@ -506,6 +539,7 @@ void sGatherNRformat_loc3d_allgrid
 		}
 
 	SUPERLU_FREE(B1);
+	}
 
     } /* end gather B2d */
 
@@ -515,7 +549,8 @@ void sGatherNRformat_loc3d_allgrid
  * Scatter B (solution) from 2D process layer 0 to 3D grid
  *   Output: X3d <- A^{-1} B2d
  */
-int sScatter_B3d(NRformat_loc3d *A3d,  // modified
+int sScatter_B3d(superlu_dist_options_t *options,
+		 NRformat_loc3d *A3d,  // modified
 		 gridinfo3d_t *grid3d)
 {
     float *B = (float *) A3d->B3d; // retrieve original pointer on 3D grid
@@ -535,11 +570,48 @@ int sScatter_B3d(NRformat_loc3d *A3d,  // modified
     int iam = grid3d->iam;
     int rankorder = grid3d->rankorder;
     gridinfo_t *grid2d = &(grid3d->grid2d);
+    int gpures = (options && options->GPURES == YES);
 
-    float *B1;  // on 2D layer 0
+    /*
+     * Fast path for the common degenerate 3D case with only one process
+     * in the Z dimension.  In this case the 2D and 3D RHS row partitions
+     * are identical, so the general B2d -> B1 -> Btmp -> B path only
+     * performs redundant device copies and MPI collectives.
+     *
+     * This shortcut is enabled only for GPURES.  The CPU path below is kept
+     * unchanged.
+     */
+    if (gpures && grid3d->npdep == 1) {
+#ifdef GPU_ACC
+        sdevice_matcopy_wrap(A3d->m_loc, nrhs,
+                                  B, ldb,
+                                  B2d, A2d->m_loc);
+        checkGPU(gpuFree(B2d));
+		if ( rankorder == 0 ) { // these are not used, but SUPERLU_FREE() will be called in xFreeNRformat_loc3d()
+	     A3d->procs_to_send_list = SUPERLU_MALLOC(1 * sizeof(int));
+	     A3d->send_count_list = SUPERLU_MALLOC(1 * sizeof(int));
+	     A3d->procs_recv_from_list = SUPERLU_MALLOC(1 * sizeof(int));
+	     A3d->recv_count_list = SUPERLU_MALLOC(1 * sizeof(int));
+		}
+        return 0;
+#else
+        ABORT("GPURES requires GPU_ACC in sScatter_B3d().");
+#endif
+    }
+
+    float *B1 = NULL;  // on 2D layer 0
     if (grid3d->zscp.Iam == 0)
     {
+	if (gpures) {
+#ifdef GPU_ACC
+	    checkGPU(gpuMalloc((void**)&B1,
+			       sizeof(float) * (size_t)A2d->m_loc * (size_t)nrhs));
+#else
+	    ABORT("GPURES requires GPU_ACC in sScatter_B3d().");
+#endif
+	} else {
         B1 = floatMalloc_dist(A2d->m_loc * nrhs);
+    }
     }
 
     // B1 <- BlockByBlock(B2d)
@@ -548,13 +620,32 @@ int sScatter_B3d(NRformat_loc3d *A3d,  // modified
         for (i = 0; i < grid3d->npdep; ++i)
         {
             /* code */
+	    if (gpures) {
+#ifdef GPU_ACC
+		sdevice_matcopy_wrap(row_counts_int[i], nrhs,
+				     B1 + nrhs * row_disp[i], row_counts_int[i],
+				     B2d + row_disp[i], A2d->m_loc);
+#else
+		ABORT("GPURES requires GPU_ACC in sScatter_B3d().");
+#endif
+	    } else {
             matCopy(row_counts_int[i], nrhs, B1 + nrhs * row_disp[i], row_counts_int[i],
                     B2d + row_disp[i], A2d->m_loc);
         }
     }
+    }
 
     float *Btmp; // on 3D grid
+    if (gpures) {
+#ifdef GPU_ACC
+	checkGPU(gpuMalloc((void**)&Btmp,
+			   sizeof(float) * (size_t)A3d->m_loc * (size_t)nrhs));
+#else
+	ABORT("GPURES requires GPU_ACC in sScatter_B3d().");
+#endif
+    } else {
     Btmp = floatMalloc_dist(A3d->m_loc * nrhs);
+    }
 
     // Btmp <- scatterv(B1), block-by-block
     if ( rankorder == 1 ) { /* XY-major in 3D grid */
@@ -792,14 +883,46 @@ int sScatter_B3d(NRformat_loc3d *A3d,  // modified
     } /* else Z-major */
 
     // B <- colMajor(Btmp)
+    if (gpures) {
+#ifdef GPU_ACC
+	sdevice_matcopy_wrap(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
+#else
+	ABORT("GPURES requires GPU_ACC in sScatter_B3d().");
+#endif
+    } else {
     matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
+    }
 
     /* free storage */
+    if (gpures) {
+#ifdef GPU_ACC
+	checkGPU(gpuFree(Btmp));
+#else
+	ABORT("GPURES requires GPU_ACC in sScatter_B3d().");
+#endif
+    } else {
     SUPERLU_FREE(Btmp);
+    }
     if (grid3d->zscp.Iam == 0) {
+	if (gpures) {
+#ifdef GPU_ACC
+	    checkGPU(gpuFree(B1));
+#else
+	    ABORT("GPURES requires GPU_ACC in sScatter_B3d().");
+#endif
+	} else {
 	SUPERLU_FREE(B1);
     }
+    }
+    if (gpures) {
+#ifdef GPU_ACC
+	checkGPU(gpuFree(B2d));
+#else
+	ABORT("GPURES requires GPU_ACC in sScatter_B3d().");
+#endif
+    } else {
 	SUPERLU_FREE(B2d); // YL: B2d is allocated in dGatherNRformat_loc3d_allgrid on all layers
+    }
 
     return 0;
 } /* sScatter_B3d */

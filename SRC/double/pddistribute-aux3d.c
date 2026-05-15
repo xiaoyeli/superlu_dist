@@ -466,13 +466,13 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
     }
 
     // Now check if I am only allocating the memory for the blocks I own
-    if ( myGrid )
+    if(myGrid)
     // if(0)
     {
         SupernodeToGridMap_t *superGridMap = trf3Dpartition->superGridMap;
         // int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
         int_t nsupers = trf3Dpartition->nsupers;
-        for(int k =0; k < nsupers; k++)
+        for(int k =0; k< nsupers; k++)
         {
             if(superGridMap[k] == NOT_IN_GRID)
             {

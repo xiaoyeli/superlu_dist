@@ -158,9 +158,9 @@ do
 # srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch -g $gpures -a $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_nrhs_${NRHS}_2d_gpu_${SUPERLU_ACC_OFFLOAD}_gpures${gpures}
 
 
-SUPERLU_ACC_OFFLOAD=1
+SUPERLU_ACC_OFFLOAD=0
 export GPU3DVERSION=0
-export SUPERLU_ACC_SOLVE=1
+export SUPERLU_ACC_SOLVE=0
 gpures=1
 echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -g $gpures -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_batch${batch}_gpures${gpures}
 "

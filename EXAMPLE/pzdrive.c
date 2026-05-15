@@ -9,6 +9,8 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
+
 /*! @file
  * \brief Driver program for PZGSSVX example
  *
@@ -57,9 +59,9 @@ int main(int argc, char *argv[])
     zSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     double   *berr;
-    doublecomplex   *b, *xtrue;
+    doublecomplex   *b, *xtrue, *d_b;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, gpures;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp;
@@ -84,6 +86,7 @@ int main(int argc, char *argv[])
     ir = -1;
     symbfact = -1;
     batch = 0;
+    gpures = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -115,12 +118,26 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
+
+
+    // //The following options test ILU
+    // options.IterRefine = SLU_DOUBLE;
+    // options.lookahead_etree   = YES;
+    // options.ILU_level = 0;
+    // options.ReplaceTinyPivot  = YES;
+    // options.ColPerm = NATURAL;
+    options.IterRefine = NOREFINE;
+    options.GPURES = NO;
+    // options.ColPerm = NATURAL;
+    // options.RowPerm = NATURAL;
+    // options.Equil = NO;
+
 #if 0
+    options.ParSymbFact = YES;
+    options.ColPerm = PARMETIS;
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
-    options.ColPerm = NATURAL;
     options.Equil = NO;
-    options.ReplaceTinyPivot = YES;
 #endif
 
     /* Parse command line argv[], may modify default options */
@@ -129,34 +146,39 @@ int main(int argc, char *argv[])
 	    c = *(*cpp+1);
 	    ++cpp;
 	    switch (c) {
-	      case 'h':
-		  printf("Options:\n");
-		  printf("\t-r <int>: process rows       (default %4d)\n", nprow);
-		  printf("\t-c <int>: process columns    (default %4d)\n", npcol);
-		  printf("\t-p <int>: row permutation    (default %4d)\n", options.RowPerm);
-		  printf("\t-q <int>: col permutation    (default %4d)\n", options.ColPerm);
-		  printf("\t-s <int>: parallel symbolic? (default %4d)\n", options.ParSymbFact);
-		  printf("\t-l <int>: lookahead level    (default %4d)\n", options.num_lookaheads);
-		  printf("\t-i <int>: iter. refinement   (default %4d)\n", options.IterRefine);
-		  printf("\t-b <int>: use batch mode?    (default %4d)\n", batch);
-		  exit(0);
-		  break;
-	      case 'r': nprow = atoi(*cpp);
-		        break;
-	      case 'c': npcol = atoi(*cpp);
-		        break;
-              case 'l': lookahead = atoi(*cpp);
-                        break;
-              case 'p': rowperm = atoi(*cpp);
-                        break;
-              case 'q': colperm = atoi(*cpp);
-                        break;
-	      case 's': symbfact = atoi(*cpp);
-		        break;
-              case 'i': ir = atoi(*cpp);
-                        break;
-              case 'b': batch = atoi(*cpp);
-                        break;
+            case 'h':
+                printf("Options:\n");
+                printf("\t-r <int>: process rows       (default %4d)\n", nprow);
+                printf("\t-c <int>: process columns    (default %4d)\n", npcol);
+                printf("\t-p <int>: row permutation    (default %4d)\n", options.RowPerm);
+                printf("\t-q <int>: col permutation    (default %4d)\n", options.ColPerm);
+                printf("\t-s <int>: parallel symbolic? (default %4d)\n", options.ParSymbFact);
+                printf("\t-l <int>: lookahead level    (default %4d)\n", options.num_lookaheads);
+                printf("\t-i <int>: iter. refinement   (default %4d)\n", options.IterRefine);
+                printf("\t-g <int>: gpu-resident solve?   (default %4d)\n", options.GPURES);
+                printf("\t-b <int>: use batch mode?    (default %4d)\n", batch);
+                exit(0);
+                break;
+            case 'r': nprow = atoi(*cpp);
+                    break;
+            case 'c': npcol = atoi(*cpp);
+                    break;
+            case 'l': lookahead = atoi(*cpp);
+                    break;
+            case 'p': rowperm = atoi(*cpp);
+                    break;
+            case 'q': colperm = atoi(*cpp);
+                    break;
+            case 's': symbfact = atoi(*cpp);
+                    break;
+            case 'a': nrhs = atoi(*cpp);
+                    break;
+            case 'i': ir = atoi(*cpp);
+                    break;
+            case 'b': batch = atoi(*cpp);
+                    break;
+            case 'g': gpures = atoi(*cpp);
+                    break;
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -172,9 +194,10 @@ int main(int argc, char *argv[])
     if (lookahead != -1) options.num_lookaheads = lookahead;
     if (ir != -1) options.IterRefine = ir;
     if (symbfact != -1) options.ParSymbFact = symbfact;
+    if (gpures != -1) options.GPURES = gpures;
 
     int superlu_acc_offload = get_acc_offload(&options);
-    
+
     /* In the batch mode: create multiple SuperLU grids,
         each grid solving one linear system. */
     if ( batch ) {
@@ -301,12 +324,20 @@ int main(int argc, char *argv[])
 		postfix = &((*cpp)[ii+1]);
 	}
     }
-    // printf("%s\n", postfix);
 
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
     zcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+
+#ifdef GPU_ACC
+    if ( options.GPURES == YES ){
+    // if (0 ){
+        checkGPU(gpuMalloc((void**)&d_b, sizeof(doublecomplex) * (size_t)(ldb*nrhs)));
+        checkGPU(gpuMemcpy(d_b, b, sizeof(doublecomplex) * (size_t)(ldb*nrhs), gpuMemcpyHostToDevice));
+    }
+#endif
+
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -327,6 +358,22 @@ int main(int argc, char *argv[])
     PStatInit(&stat);
 
     /* Call the linear equation solver. */
+if ( options.GPURES == YES ){
+// if ( 0 ){
+    pzgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
+	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
+
+    // options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
+    // checkGPU(gpuMemcpy(d_b, b, sizeof(doublecomplex) * (size_t)(ldb*nrhs), gpuMemcpyHostToDevice));
+    // pzgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
+	//     &LUstruct, &SOLVEstruct, berr, &stat, &info);
+
+#ifdef GPU_ACC
+    checkGPU(gpuMemcpy(b, d_b, sizeof(doublecomplex) * (size_t)(ldb*nrhs), gpuMemcpyDeviceToHost));
+    checkGPU (gpuFree (d_b));
+#endif
+
+}else
     pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
@@ -349,9 +396,10 @@ int main(int argc, char *argv[])
 
     Destroy_CompRowLoc_Matrix_dist(&A);
     zScalePermstructFree(&ScalePermstruct);
+    /* Free solve-side NVSHMEM buffers before zDestroy_LU finalizes NVSHMEM. */
+    zSolveFinalize(&options, &SOLVEstruct);
     zDestroy_LU(n, &grid, &LUstruct);
     zLUstructFree(&LUstruct);
-    zSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);

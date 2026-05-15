@@ -258,7 +258,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int_t fnz, i, ib, ijb, ilst, it, iukp, jj, klst,
           ldv, lptr, lptr0, lptrj, luptr, luptr0, luptrj,
           nlb, nub, rel, rukp, il, iu;
-    int jb, ljb, nsupc, knsupc, lb, lib;	
+    int jb, ljb, nsupc, knsupc, lb, lib;
     int Pc, Pr;
     int iam, kcol, krow, yourcol, mycol, myrow, pi, pj;
     int j, k, lk, nsupers;  /* k - current panel to work on */

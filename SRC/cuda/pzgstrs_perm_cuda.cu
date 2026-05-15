@@ -1,7 +1,6 @@
 
-
 #include <math.h>
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
@@ -25,19 +24,19 @@
  * assignment/copy is valid, but casts/arithmetic are not.
  */
 typedef double pxgstrs_real_t;
-static __host__ __device__ inline double pxgstrs_type_zero(void) { return (double)0.0; }
-static __host__ __device__ inline double pxgstrs_type_from_int(int_t v) { return (double)v; }
-static __host__ __device__ inline int pxgstrs_type_to_int(double v) { return (int)v; }
-static __host__ __device__ inline double pxgstrs_type_scale_real(double v, pxgstrs_real_t s) { return v * s; }
-static __host__ __device__ inline double pxgstrs_type_add(double a, double b) { return a + b; }
+static __host__ __device__ inline doublecomplex pxgstrs_type_zero(void) { doublecomplex z; z.r = 0.0; z.i = 0.0; return z; }
+static __host__ __device__ inline doublecomplex pxgstrs_type_from_int(int_t v) { doublecomplex z; z.r = (double)v; z.i = 0.0; return z; }
+static __host__ __device__ inline int pxgstrs_type_to_int(doublecomplex v) { return (int)v.r; }
+static __host__ __device__ inline doublecomplex pxgstrs_type_scale_real(doublecomplex v, pxgstrs_real_t s) { v.r *= s; v.i *= s; return v; }
+static __host__ __device__ inline doublecomplex pxgstrs_type_add(doublecomplex a, doublecomplex b) { a.r += b.r; a.i += b.i; return a; }
 #define pxgstrs_nvshmem_put_nbi(dst, src, count, pe) \
-    nvshmem_double_put_nbi((double*)(dst), (const double*)(src), (count), (pe))
+    nvshmem_double_put_nbi((double*)(dst), (const double*)(src), 2*(count), (pe))
 
 
 // This now only deals with 1 MPI case
 __global__ void
-pdReDistribute_B_to_X_gpu_proc1(double *B, int_t m_loc, int nrhs, int_t ldb,
-                          int_t fst_row, int_t *ilsum, double *x,
+pzReDistribute_B_to_X_gpu_proc1(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
+                          int_t fst_row, int_t *ilsum, doublecomplex *x,
 		                    int_t *perm_r, int_t *perm_c,
                           int_t *xsup, int_t *supno, gridinfo_t *grid, int_t row_per_th)
 {
@@ -60,7 +59,7 @@ pdReDistribute_B_to_X_gpu_proc1(double *B, int_t m_loc, int nrhs, int_t ldb,
         irow = perm_c[perm_r[crow+fst_row]];
         k = BlockNum(irow);
         l = X_BLK(k);
-        x[l - XK_H] = k;      /* Block number prepended in the header. */
+        x[l - XK_H] = pxgstrs_type_from_int(k);      /* Block number prepended in the header. */
 
         knsupc = SuperSize(k);
         irow = irow - FstBlockC(k); /* Relative row number in X-block */
@@ -76,9 +75,9 @@ pdReDistribute_B_to_X_gpu_proc1(double *B, int_t m_loc, int nrhs, int_t ldb,
 
 // This deals with multiple MPIs case
 __global__ void
-pdReDistribute_B_to_X_gpu_send(double *B, int_t m_loc, int nrhs, int_t ldb,
+pzReDistribute_B_to_X_gpu_send(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
                           int_t *perm_r, int_t *perm_c,
-                          int_t fst_row, int_t *ilsum, double *send_idbuf,
+                          int_t fst_row, int_t *ilsum, doublecomplex *send_idbuf,
                           int_t *xsup, int_t *supno, gridinfo_t *grid, int *ptr_to_idbuf, int_t row_per_th)
 {
   int_t  i, irow, j, k, gbi, crow;
@@ -118,8 +117,8 @@ pdReDistribute_B_to_X_gpu_send(double *B, int_t m_loc, int nrhs, int_t ldb,
 
 // This deals with multiple MPIs case
 __global__ void
-pdReDistribute_B_to_X_gpu_recv(double *x, int nrhs, int_t recvl,
-                          int_t fst_row, int_t *ilsum, double *recv_idbuf,
+pzReDistribute_B_to_X_gpu_recv(doublecomplex *x, int nrhs, int_t recvl,
+                          int_t fst_row, int_t *ilsum, doublecomplex *recv_idbuf,
                           int_t *xsup, int_t *supno, gridinfo_t *grid, int_t row_per_th)
 {
   int_t  i, j, k, knsupc, l, lk, crow;
@@ -144,7 +143,7 @@ pdReDistribute_B_to_X_gpu_recv(double *x, int nrhs, int_t recvl,
         knsupc = SuperSize(k);
         lk = LBi(k, grid);  /* Local block number. */
         l = X_BLK(lk);
-        x[l - XK_H] = k;      /* Block number prepended in the header. */
+        x[l - XK_H] = pxgstrs_type_from_int(k);      /* Block number prepended in the header. */
         // printf("i = %d, recv_idbuf[i*(nrhs+1)] is %f, irow = %d, and x[%d] is %d.\n", i, recv_idbuf[i*(nrhs+1)], irow, l-XK_H, (int) x[l-XK_H]);
 
         irow = irow - FstBlockC(k); /* Relative row number in X-block */
@@ -158,11 +157,11 @@ pdReDistribute_B_to_X_gpu_recv(double *x, int nrhs, int_t recvl,
 
   return;
 }
-void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, int_t ldb,
+void pzReDistribute_B_to_X_gpu_wrap(doublecomplex *B, int_t m_loc, int_t n, int nrhs, int_t ldb,
     int_t fst_row,
-    double *d_x,
-    dScalePermstruct_t *ScalePermstruct,
-    dSOLVEstruct_t *SOLVEstruct,
+    doublecomplex *d_x,
+    zScalePermstruct_t *ScalePermstruct,
+    zSOLVEstruct_t *SOLVEstruct,
     Glu_persist_t *Glu_persist,
     gridinfo_t *grid, gridinfo_t *d_grid, int_t *d_ilsum, int_t *d_xsup, int_t *d_supno)
  {
@@ -213,10 +212,10 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
  /* ------------------------------------------------------------
  Device data.
  ------------------------------------------------------------ */
- double *d_B = B;
+ doublecomplex *d_B = B;
 
- double *d_send_idbuf_B2X = NULL;
- double *d_recv_idbuf_B2X = NULL;
+ doublecomplex *d_send_idbuf_B2X = NULL;
+ doublecomplex *d_recv_idbuf_B2X = NULL;
 
 
  int_t nthreads = 256;
@@ -227,7 +226,7 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
 
  if (procs == 1) {
     if (m_loc > 0) {
-    pdReDistribute_B_to_X_gpu_proc1<<<nblocks, nthreads>>>(
+    pzReDistribute_B_to_X_gpu_proc1<<<nblocks, nthreads>>>(
     d_B, m_loc, nrhs, ldb, fst_row, d_ilsum, d_x,
     d_perm_r, d_perm_c, d_xsup, d_supno, d_grid, row_per_th);
 
@@ -249,14 +248,14 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     size_t send_alloc_elems = send_elems ? send_elems : 1;
     size_t recv_alloc_elems = recv_elems ? recv_elems : 1;
 
-    d_send_idbuf_B2X = (double*) nvshmem_malloc(send_alloc_elems * sizeof(double));
-    d_recv_idbuf_B2X = (double*) nvshmem_malloc(recv_alloc_elems * sizeof(double));
+    d_send_idbuf_B2X = (doublecomplex*) nvshmem_malloc(send_alloc_elems * sizeof(doublecomplex));
+    d_recv_idbuf_B2X = (doublecomplex*) nvshmem_malloc(recv_alloc_elems * sizeof(doublecomplex));
 
     if (!d_send_idbuf_B2X || !d_recv_idbuf_B2X)
     ABORT("nvshmem_malloc fails for B_to_X send/recv buffers.");
 
-    checkGPU(gpuMemset(d_send_idbuf_B2X, 0, send_alloc_elems * sizeof(double)));
-    checkGPU(gpuMemset(d_recv_idbuf_B2X, 0, recv_alloc_elems * sizeof(double)));
+    checkGPU(gpuMemset(d_send_idbuf_B2X, 0, send_alloc_elems * sizeof(doublecomplex)));
+    checkGPU(gpuMemset(d_recv_idbuf_B2X, 0, recv_alloc_elems * sizeof(doublecomplex)));
 
     /*
     Metadata exchange for remote receive offsets.
@@ -279,7 +278,7 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     nvshmem_barrier_all();
 
     if (m_loc > 0) {
-    pdReDistribute_B_to_X_gpu_send<<<nblocks, nthreads>>>(
+    pzReDistribute_B_to_X_gpu_send<<<nblocks, nthreads>>>(
     d_B, m_loc, nrhs, ldb, d_perm_r, d_perm_c,
     fst_row, d_ilsum, d_send_idbuf_B2X, d_xsup, d_supno,
     d_grid, d_ptr_to_idbuf_B2X, row_per_th);
@@ -320,7 +319,7 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     int_t nblocks_new = (l + nthreads * row_per_th - 1) /
     (nthreads * row_per_th);
 
-    pdReDistribute_B_to_X_gpu_recv<<<nblocks_new, nthreads>>>(
+    pzReDistribute_B_to_X_gpu_recv<<<nblocks_new, nthreads>>>(
     d_x, nrhs, l, fst_row, d_ilsum, d_recv_idbuf_B2X,
     d_xsup, d_supno, d_grid, row_per_th);
 
@@ -357,8 +356,8 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
 
 // This also only works for one MPI rank
 __global__ void
-pdReDistribute_X_to_B_gpu_proc1(int_t n, double *B, int_t m_loc, int_t ldb,
-                                int_t fst_row, int_t nrhs, double *x, int_t *ilsum,
+pzReDistribute_X_to_B_gpu_proc1(int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
+                                int_t fst_row, int_t nrhs, doublecomplex *x, int_t *ilsum,
                                 int_t *xsup, int_t *supno, gridinfo_t *grid, int_t row_per_th)
 {
   int_t  i, ii, irow, icomp, j, k, knsupc, l, lk, crow;
@@ -399,9 +398,9 @@ pdReDistribute_X_to_B_gpu_proc1(int_t n, double *B, int_t m_loc, int_t ldb,
 
 // This deals with multiple MPIs case
 __global__ void
-pdReDistribute_X_to_B_gpu_send(double *x, int nrhs, int_t ldb, int_t sendk, int_t *row_to_proc,
+pzReDistribute_X_to_B_gpu_send(doublecomplex *x, int nrhs, int_t ldb, int_t sendk, int_t *row_to_proc,
                           int_t num_diag_procs, int_t *diag_procs, int_t nsupers, int_t m_loc, int_t n,
-                          int_t fst_row, int_t *ilsum, double *send_idbuf,
+                          int_t fst_row, int_t *ilsum, doublecomplex *send_idbuf,
                           int_t *xsup, int_t *supno, gridinfo_t *grid, int *ptr_to_idbuf, int_t row_per_th)
 {
   int_t  i, irow, j, k, ii, jj, kk, knsupc, lk, l, crow;
@@ -454,8 +453,8 @@ pdReDistribute_X_to_B_gpu_send(double *x, int nrhs, int_t ldb, int_t sendk, int_
 
 // This deals with multiple MPIs case
 __global__ void
-pdReDistribute_X_to_B_gpu_recv(double *B, int_t m_loc, int nrhs, int_t recvl, int_t ldb,
-                          int_t fst_row, int_t *ilsum, double *recv_idbuf,
+pzReDistribute_X_to_B_gpu_recv(doublecomplex *B, int_t m_loc, int nrhs, int_t recvl, int_t ldb,
+                          int_t fst_row, int_t *ilsum, doublecomplex *recv_idbuf,
                           int_t *xsup, int_t *supno, gridinfo_t *grid, int_t row_per_th)
 {
   int_t  i, j, crow;
@@ -490,10 +489,10 @@ pdReDistribute_X_to_B_gpu_recv(double *B, int_t m_loc, int nrhs, int_t recvl, in
 }
 
 
-void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, int_t ldb,
+void pzReDistribute_X_to_B_gpu_wrap(doublecomplex *B, int_t m_loc, int_t n, int nrhs, int_t ldb,
     int_t fst_row,
-    int_t nsupers, double *d_x,
-    dScalePermstruct_t *ScalePermstruct, dSOLVEstruct_t *SOLVEstruct,
+    int_t nsupers, doublecomplex *d_x,
+    zScalePermstruct_t *ScalePermstruct, zSOLVEstruct_t *SOLVEstruct,
     Glu_persist_t *Glu_persist, gridinfo_t *grid, gridinfo_t *d_grid, int_t *d_ilsum, int_t *d_xsup, int_t *d_supno)
  {
 
@@ -505,13 +504,13 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
  int_t *d_row_to_proc = SOLVEstruct->d_row_to_proc;
  int_t *d_diag_procs = SOLVEstruct->d_diag_procs;
 
- double *d_B = B;
+ doublecomplex *d_B = B;
 
 
  int *d_ptr_to_idbuf_X2B = SOLVEstruct->d_ptr_to_idbuf_X2B;
 
- double *d_send_idbuf_X2B = NULL;
- double *d_recv_idbuf_X2B = NULL;
+ doublecomplex *d_send_idbuf_X2B = NULL;
+ doublecomplex *d_recv_idbuf_X2B = NULL;
 
  double t;
 
@@ -541,7 +540,7 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
  if (procs == 1) {
     t = SuperLU_timer_();
 
-    pdReDistribute_X_to_B_gpu_proc1<<<nblocks, nthreads>>>(
+    pzReDistribute_X_to_B_gpu_proc1<<<nblocks, nthreads>>>(
     n, d_B, m_loc, ldb, fst_row, nrhs, d_x,
     d_ilsum, d_xsup, d_supno, d_grid, row_per_th);
     checkGPU(gpuGetLastError());
@@ -611,15 +610,15 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     size_t alloc_send_elems = (size_t) max_send_elems_ull;
     size_t alloc_recv_elems = (size_t) max_recv_elems_ull;
 
-    d_send_idbuf_X2B = (double*) nvshmem_malloc(alloc_send_elems * sizeof(double));
-    d_recv_idbuf_X2B = (double*) nvshmem_malloc(alloc_recv_elems * sizeof(double));
+    d_send_idbuf_X2B = (doublecomplex*) nvshmem_malloc(alloc_send_elems * sizeof(doublecomplex));
+    d_recv_idbuf_X2B = (doublecomplex*) nvshmem_malloc(alloc_recv_elems * sizeof(doublecomplex));
     if (!d_send_idbuf_X2B || !d_recv_idbuf_X2B)
     ABORT("nvshmem_malloc fails for X_to_B send/recv buffers.");
 
 
 
-    checkGPU(gpuMemset(d_send_idbuf_X2B, 0, alloc_send_elems * sizeof(double)));
-    checkGPU(gpuMemset(d_recv_idbuf_X2B, 0, alloc_recv_elems * sizeof(double)));
+    checkGPU(gpuMemset(d_send_idbuf_X2B, 0, alloc_send_elems * sizeof(doublecomplex)));
+    checkGPU(gpuMemset(d_recv_idbuf_X2B, 0, alloc_recv_elems * sizeof(doublecomplex)));
 
 
     /* ------------------------------------------------------------
@@ -628,7 +627,7 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
 
     int_t nblocks_send = (n + nthreads * row_per_th - 1) / (nthreads * row_per_th);
     if (n > 0) {
-    pdReDistribute_X_to_B_gpu_send<<<nblocks_send, nthreads>>>(
+    pzReDistribute_X_to_B_gpu_send<<<nblocks_send, nthreads>>>(
     d_x, nrhs, ldb, k, d_row_to_proc, num_diag_procs, d_diag_procs,
     nsupers, m_loc, n, fst_row, d_ilsum, d_send_idbuf_X2B,
     d_xsup, d_supno, d_grid, d_ptr_to_idbuf_X2B, row_per_th);
@@ -684,7 +683,7 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
     ------------------------------------------------------------*/
     if (l > 0) {
     int_t nblocks_recv = (l + nthreads * row_per_th - 1) / (nthreads * row_per_th);
-    pdReDistribute_X_to_B_gpu_recv<<<nblocks_recv, nthreads>>>(
+    pzReDistribute_X_to_B_gpu_recv<<<nblocks_recv, nthreads>>>(
     d_B, m_loc, nrhs, l, ldb, fst_row, d_ilsum, d_recv_idbuf_X2B,
     d_xsup, d_supno, d_grid, row_per_th);
     checkGPU(gpuGetLastError());
@@ -718,10 +717,10 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
 
 
 __global__ void
-pdPermute_Dense_Matrix_gpu_send_kernel(const double *X, int_t m_loc, int_t fst_row,
+pzPermute_Dense_Matrix_gpu_send_kernel(const doublecomplex *X, int_t m_loc, int_t fst_row,
                                        const int_t *row_to_proc, const int *perm,
                                        int_t ldx, int nrhs,
-                                       double *send_idbuf, int *ptr_to_idbuf,
+                                       doublecomplex *send_idbuf, int *ptr_to_idbuf,
                                        int_t row_per_th)
 {
     int_t bid  = blockIdx.x;
@@ -747,9 +746,9 @@ pdPermute_Dense_Matrix_gpu_send_kernel(const double *X, int_t m_loc, int_t fst_r
 }
 
 __global__ void
-pdPermute_Dense_Matrix_gpu_recv_kernel(double *B, int_t m_loc, int_t fst_row,
+pzPermute_Dense_Matrix_gpu_recv_kernel(doublecomplex *B, int_t m_loc, int_t fst_row,
                                        int_t ldb, int nrhs,
-                                       const double *recv_idbuf, int_t recvl,
+                                       const doublecomplex *recv_idbuf, int_t recvl,
                                        int_t row_per_th)
 {
     int_t bid  = blockIdx.x;
@@ -775,9 +774,9 @@ pdPermute_Dense_Matrix_gpu_recv_kernel(double *B, int_t m_loc, int_t fst_row,
 }
 
 __global__ void
-pdPermute_Dense_Matrix_gpu_proc1(const double *X, int_t m_loc, int_t fst_row,
+pzPermute_Dense_Matrix_gpu_proc1(const doublecomplex *X, int_t m_loc, int_t fst_row,
                                  const int_t *perm, int_t ldx,
-                                 double *B, int_t ldb, int nrhs,
+                                 doublecomplex *B, int_t ldb, int nrhs,
                                  int_t row_per_th)
 {
     int_t bid  = blockIdx.x;
@@ -803,15 +802,15 @@ pdPermute_Dense_Matrix_gpu_proc1(const double *X, int_t m_loc, int_t fst_row,
     }
 }
 
-int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
+int pzPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
     int_t m_loc,
     int_t n,
-    double *d_X,
+    doublecomplex *d_X,
     int_t ldx,
-    double *d_B,
+    doublecomplex *d_B,
     int_t ldb,
     int nrhs,
-    gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct)
+    gridinfo_t *grid, zSOLVEstruct_t *SOLVEstruct)
 {
     int_t i;
     int procs = grid->nprow * grid->npcol;
@@ -824,7 +823,7 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
     int *d_ptr_to_idbuf_PermuteC = SOLVEstruct->d_ptr_to_idbuf_PermuteC;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(grid->iam, "Enter pdPermute_Dense_Matrix_gpu_wrap()");
+    CHECK_MALLOC(grid->iam, "Enter pzPermute_Dense_Matrix_gpu_wrap()");
 #endif
 
     int_t nthreads = 256;
@@ -843,7 +842,7 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
      */
     if (procs == 1) {
         if (m_loc > 0) {
-            pdPermute_Dense_Matrix_gpu_proc1<<<nblocks, nthreads>>>(
+            pzPermute_Dense_Matrix_gpu_proc1<<<nblocks, nthreads>>>(
                 d_X, m_loc, fst_row, d_perm, ldx,
                 d_B, ldb, nrhs, row_per_th);
 
@@ -860,7 +859,7 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
 #endif
 
 #if ( DEBUGlevel>=1 )
-        CHECK_MALLOC(grid->iam, "Exit pdPermute_Dense_Matrix_gpu_wrap()");
+        CHECK_MALLOC(grid->iam, "Exit pzPermute_Dense_Matrix_gpu_wrap()");
 #endif
     }else{
 #ifdef HAVE_NVSHMEM
@@ -881,7 +880,7 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
 
     for (i = 0; i < procs; ++i) sendcnts[i] = 0;
 
-    /* CPU count pass; same as original pdPermute_Dense_Matrix. */
+    /* CPU count pass; same as original pzPermute_Dense_Matrix. */
     for (i = fst_row; i < fst_row + m_loc; ++i) {
         int p = (int) row_to_proc[perm[i]];
         ++sendcnts[p];
@@ -911,27 +910,27 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
     size_t send_alloc_elems = send_elems ? send_elems : 1;
     size_t recv_alloc_elems = recv_elems ? recv_elems : 1;
 
-    double *d_send_idbuf_PermuteC = NULL;
-    double *d_recv_idbuf_PermuteC = NULL;
+    doublecomplex *d_send_idbuf_PermuteC = NULL;
+    doublecomplex *d_recv_idbuf_PermuteC = NULL;
 
 
-    d_send_idbuf_PermuteC = (double*) nvshmem_malloc(send_alloc_elems * sizeof(double));
-    d_recv_idbuf_PermuteC = (double*) nvshmem_malloc(recv_alloc_elems * sizeof(double));
+    d_send_idbuf_PermuteC = (doublecomplex*) nvshmem_malloc(send_alloc_elems * sizeof(doublecomplex));
+    d_recv_idbuf_PermuteC = (doublecomplex*) nvshmem_malloc(recv_alloc_elems * sizeof(doublecomplex));
     if (!d_send_idbuf_PermuteC || !d_recv_idbuf_PermuteC)
-        ABORT("nvshmem_malloc fails for pdPermute_Dense_Matrix buffers.");
+        ABORT("nvshmem_malloc fails for pzPermute_Dense_Matrix buffers.");
 
 
     checkGPU(gpuMemset(d_send_idbuf_PermuteC, 0,
-                       send_alloc_elems * sizeof(double)));
+                       send_alloc_elems * sizeof(doublecomplex)));
     checkGPU(gpuMemset(d_recv_idbuf_PermuteC, 0,
-                       recv_alloc_elems * sizeof(double)));
+                       recv_alloc_elems * sizeof(doublecomplex)));
 
 
     nvshmem_barrier_all();
 
 
     if (m_loc > 0) {
-        pdPermute_Dense_Matrix_gpu_send_kernel<<<nblocks, nthreads>>>(
+        pzPermute_Dense_Matrix_gpu_send_kernel<<<nblocks, nthreads>>>(
             d_X, m_loc, fst_row, d_row_to_proc, d_perm,
             ldx, nrhs, d_send_idbuf_PermuteC,
             d_ptr_to_idbuf_PermuteC, row_per_th);
@@ -980,7 +979,7 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
         int_t nblocks_recv = (l + nthreads * row_per_th - 1) /
                              (nthreads * row_per_th);
 
-        pdPermute_Dense_Matrix_gpu_recv_kernel<<<nblocks_recv, nthreads>>>(
+        pzPermute_Dense_Matrix_gpu_recv_kernel<<<nblocks_recv, nthreads>>>(
             d_B, m_loc, fst_row, ldb, nrhs,
             d_recv_idbuf_PermuteC, l, row_per_th);
 
@@ -1003,15 +1002,15 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
 #endif
 }
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(grid->iam, "Exit pdPermute_Dense_Matrix_gpu_wrap()");
+    CHECK_MALLOC(grid->iam, "Exit pzPermute_Dense_Matrix_gpu_wrap()");
 #endif
     return 0;
 }
 
 
 
-__global__ void dscale_and_copy_rhs_kernel(
-    double *B, double *X,
+__global__ void zscale_and_copy_rhs_kernel(
+    doublecomplex *B, doublecomplex *X,
     const pxgstrs_real_t *R, const pxgstrs_real_t *C,
     int_t m_loc, int_t fst_row,
     int_t ldb, int_t ldx,
@@ -1030,7 +1029,7 @@ __global__ void dscale_and_copy_rhs_kernel(
 
     int_t grow = fst_row + i;
 
-    double val = B[i + j * ldb];
+    doublecomplex val = B[i + j * ldb];
 
     if (notran) {
         if (rowequ) val = pxgstrs_type_scale_real(val, R[grow]);
@@ -1044,8 +1043,8 @@ __global__ void dscale_and_copy_rhs_kernel(
 
 
 
-__global__ void dundo_equilibration_rhs_kernel(
-    double *B,
+__global__ void zundo_equilibration_rhs_kernel(
+    doublecomplex *B,
     const pxgstrs_real_t *R,
     const pxgstrs_real_t *C,
     int_t m_loc,
@@ -1065,7 +1064,7 @@ __global__ void dundo_equilibration_rhs_kernel(
     int_t j = tid / m_loc;
     int_t grow = fst_row + i;
 
-    double val = B[i + j * ldb];
+    doublecomplex val = B[i + j * ldb];
 
     if (notran) {
         if (colequ) val = pxgstrs_type_scale_real(val, C[grow]);
@@ -1079,9 +1078,9 @@ __global__ void dundo_equilibration_rhs_kernel(
 
 
 
-void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t m_loc, int nrhs,
+void zscale_and_copy_rhs_wrap(doublecomplex *B, int_t ldb, doublecomplex *X, int_t ldx, int_t m_loc, int nrhs,
     int_t fst_row, int notran,int rowequ, int colequ,
-    dScalePermstruct_t *ScalePermstruct)
+    zScalePermstruct_t *ScalePermstruct)
  {
 
     int threads = 256;
@@ -1090,9 +1089,9 @@ void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t 
 
     if (total > 0) {
         if (rowequ==FALSE && colequ==FALSE){
-            checkGPU(gpuMemcpy(X, B, sizeof(double)*total, cudaMemcpyDeviceToDevice));
+            checkGPU(gpuMemcpy(X, B, sizeof(doublecomplex)*total, cudaMemcpyDeviceToDevice));
         }else{
-            dscale_and_copy_rhs_kernel<<<blocks, threads>>>(
+            zscale_and_copy_rhs_kernel<<<blocks, threads>>>(
                 B, X, ScalePermstruct->d_R, ScalePermstruct->d_C,
                 m_loc, fst_row,
                 ldb, ldx,
@@ -1109,9 +1108,9 @@ void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t 
 
 
 
- void dundo_equilibration_rhs_wrap(double *B, int_t ldb, int_t m_loc, int nrhs,
+ void zundo_equilibration_rhs_wrap(doublecomplex *B, int_t ldb, int_t m_loc, int nrhs,
     int_t fst_row, int notran,int rowequ, int colequ,
-    dScalePermstruct_t *ScalePermstruct)
+    zScalePermstruct_t *ScalePermstruct)
  {
     int threads = 256;
     int_t total = m_loc * nrhs;
@@ -1120,7 +1119,7 @@ void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t 
     if (total > 0) {
         if (rowequ==FALSE && colequ==FALSE){
         }else{
-            dundo_equilibration_rhs_kernel<<<blocks, threads>>>(
+            zundo_equilibration_rhs_kernel<<<blocks, threads>>>(
                 B, ScalePermstruct->d_R, ScalePermstruct->d_C,
                 m_loc, fst_row,
                 ldb, nrhs,
@@ -1133,8 +1132,8 @@ void dscale_and_copy_rhs_wrap(double *B, int_t ldb, double *X, int_t ldx, int_t 
  }
 
 
-__global__ void ddevice_matcopy_kernel(int_t m, int nrhs, double *dst,
-    int_t lddst, const double *src, int_t ldsrc)
+__global__ void zdevice_matcopy_kernel(int_t m, int nrhs, doublecomplex *dst,
+    int_t lddst, const doublecomplex *src, int_t ldsrc)
 {
     int_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     int_t total = m * (int_t)nrhs;
@@ -1147,42 +1146,42 @@ __global__ void ddevice_matcopy_kernel(int_t m, int nrhs, double *dst,
 }
 
 
-void ddevice_matcopy_wrap(int_t m, int nrhs, double *dst, int_t lddst,
-    const double *src, int_t ldsrc)
+void zdevice_matcopy_wrap(int_t m, int nrhs, doublecomplex *dst, int_t lddst,
+    const doublecomplex *src, int_t ldsrc)
 {
     int threads = 256;
     int_t total = m * (int_t)nrhs;
     int blocks = (total + threads - 1) / threads;
 
     if (total > 0) {
-        ddevice_matcopy_kernel<<<blocks, threads>>>(m, nrhs, dst, lddst, src, ldsrc);
+        zdevice_matcopy_kernel<<<blocks, threads>>>(m, nrhs, dst, lddst, src, ldsrc);
         checkGPU(gpuGetLastError());
         checkGPU(gpuDeviceSynchronize());
     }
 }
 
 
-__global__ void ddevice_add_to_vec_kernel(double *dst, const double *src, int_t n)
+__global__ void zdevice_add_to_vec_kernel(doublecomplex *dst, const doublecomplex *src, int_t n)
 {
     int_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < n) dst[tid] = pxgstrs_type_add(dst[tid], src[tid]);
 }
 
 
-void ddevice_add_to_vec_wrap(double *dst, const double *src, int_t n)
+void zdevice_add_to_vec_wrap(doublecomplex *dst, const doublecomplex *src, int_t n)
 {
     int threads = 256;
     int blocks = (n + threads - 1) / threads;
 
     if (n > 0) {
-        ddevice_add_to_vec_kernel<<<blocks, threads>>>(dst, src, n);
+        zdevice_add_to_vec_kernel<<<blocks, threads>>>(dst, src, n);
         checkGPU(gpuGetLastError());
         checkGPU(gpuDeviceSynchronize());
     }
 }
 
 
-__global__ void dtrs_B_init3d_zero_inactive_kernel(double *x, int nrhs,
+__global__ void ztrs_B_init3d_zero_inactive_kernel(doublecomplex *x, int nrhs,
     int_t nsupers, int_t nlb, const int_t *ilsum, const int_t *xsup,
     const SupernodeToGridMap_t *superGridMap, int nprow, int npcol,
     int myrow, int mycol)
@@ -1204,7 +1203,7 @@ __global__ void dtrs_B_init3d_zero_inactive_kernel(double *x, int nrhs,
 }
 
 
-void dtrs_B_init3d_zero_inactive_gpu_wrap(double *x, int nrhs,
+void ztrs_B_init3d_zero_inactive_gpu_wrap(doublecomplex *x, int nrhs,
     int_t nsupers, int_t nlb, const int_t *ilsum, const int_t *xsup,
     const SupernodeToGridMap_t *superGridMap, int nprow, int npcol,
     int myrow, int mycol)
@@ -1212,14 +1211,14 @@ void dtrs_B_init3d_zero_inactive_gpu_wrap(double *x, int nrhs,
     if (nlb <= 0) return;
 
     int threads = 256;
-    dtrs_B_init3d_zero_inactive_kernel<<<(int)nlb, threads>>>(
+    ztrs_B_init3d_zero_inactive_kernel<<<(int)nlb, threads>>>(
         x, nrhs, nsupers, nlb, ilsum, xsup, superGridMap,
         nprow, npcol, myrow, mycol);
     checkGPU(gpuGetLastError());
 }
 
 
-__global__ void dtrs_X_gather3d_pack_kernel(double *packbuf, const double *x,
+__global__ void ztrs_X_gather3d_pack_kernel(doublecomplex *packbuf, const doublecomplex *x,
     const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
     int_t nblocks)
 {
@@ -1234,7 +1233,7 @@ __global__ void dtrs_X_gather3d_pack_kernel(double *packbuf, const double *x,
 }
 
 
-__global__ void dtrs_X_gather3d_unpack_kernel(double *x, const double *packbuf,
+__global__ void ztrs_X_gather3d_unpack_kernel(doublecomplex *x, const doublecomplex *packbuf,
     const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
     int_t nblocks)
 {
@@ -1249,7 +1248,7 @@ __global__ void dtrs_X_gather3d_unpack_kernel(double *x, const double *packbuf,
 }
 
 
-__global__ void dtrs_X_gather3d_pack_zero_kernel(double *packbuf, double *x,
+__global__ void ztrs_X_gather3d_pack_zero_kernel(doublecomplex *packbuf, doublecomplex *x,
     const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
     int_t nblocks)
 {
@@ -1266,7 +1265,7 @@ __global__ void dtrs_X_gather3d_pack_zero_kernel(double *packbuf, double *x,
 }
 
 
-__global__ void dtrs_X_gather3d_unpack_add_kernel(double *x, const double *packbuf,
+__global__ void ztrs_X_gather3d_unpack_add_kernel(doublecomplex *x, const doublecomplex *packbuf,
     const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
     int_t nblocks)
 {
@@ -1281,56 +1280,56 @@ __global__ void dtrs_X_gather3d_unpack_add_kernel(double *x, const double *packb
 }
 
 
-void dtrs_X_gather3d_pack_gpu_wrap(double *packbuf, const double *x,
+void ztrs_X_gather3d_pack_gpu_wrap(doublecomplex *packbuf, const doublecomplex *x,
     const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
     int_t nblocks)
 {
     if (nblocks <= 0) return;
 
     int threads = 256;
-    dtrs_X_gather3d_pack_kernel<<<(int)nblocks, threads>>>(
+    ztrs_X_gather3d_pack_kernel<<<(int)nblocks, threads>>>(
         packbuf, x, offsets, lengths, pack_offsets, nblocks);
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
 }
 
 
-void dtrs_X_gather3d_pack_zero_gpu_wrap(double *packbuf, double *x,
+void ztrs_X_gather3d_pack_zero_gpu_wrap(doublecomplex *packbuf, doublecomplex *x,
     const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
     int_t nblocks)
 {
     if (nblocks <= 0) return;
 
     int threads = 256;
-    dtrs_X_gather3d_pack_zero_kernel<<<(int)nblocks, threads>>>(
+    ztrs_X_gather3d_pack_zero_kernel<<<(int)nblocks, threads>>>(
         packbuf, x, offsets, lengths, pack_offsets, nblocks);
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
 }
 
 
-void dtrs_X_gather3d_unpack_add_gpu_wrap(double *x, const double *packbuf,
+void ztrs_X_gather3d_unpack_add_gpu_wrap(doublecomplex *x, const doublecomplex *packbuf,
     const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
     int_t nblocks)
 {
     if (nblocks <= 0) return;
 
     int threads = 256;
-    dtrs_X_gather3d_unpack_add_kernel<<<(int)nblocks, threads>>>(
+    ztrs_X_gather3d_unpack_add_kernel<<<(int)nblocks, threads>>>(
         x, packbuf, offsets, lengths, pack_offsets, nblocks);
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
 }
 
 
-void dtrs_X_gather3d_unpack_gpu_wrap(double *x, const double *packbuf,
+void ztrs_X_gather3d_unpack_gpu_wrap(doublecomplex *x, const doublecomplex *packbuf,
     const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
     int_t nblocks)
 {
     if (nblocks <= 0) return;
 
     int threads = 256;
-    dtrs_X_gather3d_unpack_kernel<<<(int)nblocks, threads>>>(
+    ztrs_X_gather3d_unpack_kernel<<<(int)nblocks, threads>>>(
         x, packbuf, offsets, lengths, pack_offsets, nblocks);
     checkGPU(gpuGetLastError());
     checkGPU(gpuDeviceSynchronize());
@@ -1344,8 +1343,8 @@ void dtrs_X_gather3d_unpack_gpu_wrap(double *x, const double *packbuf,
 
 /*! \brief Initialize the nvshmem data structure for the GPU-resident interfaces
  */
-int dSolveInit_nvshmem_gpures(superlu_dist_options_t *options, int_t fst_row, int_t m_loc,
-    int_t nrhs, int_t n, gridinfo_t *grid,dSOLVEstruct_t *SOLVEstruct)
+int zSolveInit_nvshmem_gpures(superlu_dist_options_t *options, int_t fst_row, int_t m_loc,
+    int_t nrhs, int_t n, gridinfo_t *grid,zSOLVEstruct_t *SOLVEstruct)
 {
 int_t *row_to_proc=SOLVEstruct->row_to_proc;
 int *inv_perm_c=SOLVEstruct->inv_perm_c;
@@ -1375,8 +1374,8 @@ MPI_Allreduce(&recv_elems_ull, &max_recv_elems_ull,
 1, MPI_UNSIGNED_LONG_LONG, MPI_MAX, grid->comm);
 size_t alloc_send_elems = (size_t) max_send_elems_ull;
 size_t alloc_recv_elems = (size_t) max_recv_elems_ull;
-SOLVEstruct->d_send_idbuf_B2X = (double*) nvshmem_malloc(alloc_send_elems * sizeof(double));
-SOLVEstruct->d_recv_idbuf_B2X = (double*) nvshmem_malloc(alloc_recv_elems * sizeof(double));
+SOLVEstruct->d_send_idbuf_B2X = (doublecomplex*) nvshmem_malloc(alloc_send_elems * sizeof(doublecomplex));
+SOLVEstruct->d_recv_idbuf_B2X = (doublecomplex*) nvshmem_malloc(alloc_recv_elems * sizeof(doublecomplex));
 }
 
 {
@@ -1403,8 +1402,8 @@ MPI_Allreduce(&recv_elems_ull, &max_recv_elems_ull,
 1, MPI_UNSIGNED_LONG_LONG, MPI_MAX, grid->comm);
 size_t alloc_send_elems = (size_t) max_send_elems_ull;
 size_t alloc_recv_elems = (size_t) max_recv_elems_ull;
-SOLVEstruct->d_send_idbuf_X2B = (double*) nvshmem_malloc(alloc_send_elems * sizeof(double));
-SOLVEstruct->d_recv_idbuf_X2B = (double*) nvshmem_malloc(alloc_recv_elems * sizeof(double));
+SOLVEstruct->d_send_idbuf_X2B = (doublecomplex*) nvshmem_malloc(alloc_send_elems * sizeof(doublecomplex));
+SOLVEstruct->d_recv_idbuf_X2B = (doublecomplex*) nvshmem_malloc(alloc_recv_elems * sizeof(doublecomplex));
 if (!SOLVEstruct->d_send_idbuf_X2B || !SOLVEstruct->d_recv_idbuf_X2B)
 ABORT("nvshmem_malloc fails for X_to_B send/recv buffers.");
 }
@@ -1422,7 +1421,7 @@ int *rdispls_nrhs  = rdispls + procs;
 
 for (i = 0; i < procs; ++i) sendcnts[i] = 0;
 
-/* CPU count pass; same as original pdPermute_Dense_Matrix. */
+/* CPU count pass; same as original pzPermute_Dense_Matrix. */
 for (i = fst_row; i < fst_row + m_loc; ++i) {
  int p = (int) row_to_proc[inv_perm_c[i]];
  ++sendcnts[p];
@@ -1454,21 +1453,21 @@ MPI_Allreduce(&recv_elems_ull, &max_recv_elems_ull,
 1, MPI_UNSIGNED_LONG_LONG, MPI_MAX, grid->comm);
 size_t alloc_send_elems = (size_t) max_send_elems_ull;
 size_t alloc_recv_elems = (size_t) max_recv_elems_ull;
-SOLVEstruct->d_send_idbuf_PermuteC = (double*) nvshmem_malloc(alloc_send_elems * sizeof(double));
-SOLVEstruct->d_recv_idbuf_PermuteC = (double*) nvshmem_malloc(alloc_recv_elems * sizeof(double));
+SOLVEstruct->d_send_idbuf_PermuteC = (doublecomplex*) nvshmem_malloc(alloc_send_elems * sizeof(doublecomplex));
+SOLVEstruct->d_recv_idbuf_PermuteC = (doublecomplex*) nvshmem_malloc(alloc_recv_elems * sizeof(doublecomplex));
 if (!SOLVEstruct->d_send_idbuf_PermuteC || !SOLVEstruct->d_recv_idbuf_PermuteC)
- ABORT("nvshmem_malloc fails for pdPermute_Dense_Matrix buffers.");
+ ABORT("nvshmem_malloc fails for pzPermute_Dense_Matrix buffers.");
 SUPERLU_FREE(sendcnts);
 }
 
 #endif
 
 return 0;
-} /* dSolveInit_nvshmem_gpures */
+} /* zSolveInit_nvshmem_gpures */
 
 
 
-void dFree_nvshmem_gpures(superlu_dist_options_t *options,dSOLVEstruct_t *SOLVEstruct)
+void zFree_nvshmem_gpures(superlu_dist_options_t *options,zSOLVEstruct_t *SOLVEstruct)
 {
 #ifdef HAVE_NVSHMEM
     nvshmem_free(SOLVEstruct->d_send_idbuf_PermuteC);

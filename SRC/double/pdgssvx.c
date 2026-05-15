@@ -1549,7 +1549,7 @@ if ( options->GPURES == YES ){
 			for (j = 0; j < nrhs; ++j) {
 				irow = fst_row;
 				for (i = 0; i < m_loc; ++i) {
-		        	b_col[i] *= R[irow];
+			b_col[i] *= R[irow];
 					++irow;
 				}
 				b_col += ldb;

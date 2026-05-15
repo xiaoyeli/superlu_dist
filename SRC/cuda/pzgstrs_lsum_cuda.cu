@@ -11,6 +11,8 @@ at the top-level directory.
 
 
 
+
+
 /*! @file
  * \brief Solves a system of distributed linear equations A*X = B with a
  * general N-by-N matrix A using the LU factors computed previously.
@@ -63,7 +65,6 @@ extern "C" {
 
 
 // #define USESHARE1RHS 1
-
 //TODO: zgemv_device_dlsum_fmod is not used anymore and hence hasn't been created
 
 
@@ -261,6 +262,9 @@ void gemm_device_zlsum_fmod(
             }
         }
     }
+
+    // Callers may immediately reuse the same shared tiles for the next GEMM.
+    __syncthreads();
 
     // Store C regs->dev
     // if( beta == make_FloatingPoint_t(0.0,0.0) ) {
@@ -467,6 +471,9 @@ void gemm_device_zlsum_bmod_stridedB(
             }
         }
     }
+
+    // Callers may immediately reuse the same shared tiles for the next GEMM.
+    __syncthreads();
 }
 
 
@@ -554,7 +561,7 @@ __device__ void zC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 
 
     // ////forward to my root if I have received everything
-    // //double sum = 0;
+    // //doublecomplex sum = 0;
 
     // //for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
     // //    //printf("(%d), data, %d\n",mype,i);
@@ -593,7 +600,7 @@ __device__ void zC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 //    data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
 //}
 //////forward to my root if I have received everything
-////double sum = 0;
+////doublecomplex sum = 0;
 ////if (tid==0){
 ////    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
 ////        //printf("(%d), data, %d\n",mype,i);
@@ -640,7 +647,7 @@ __device__ void zC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 //    }
 //
 //////forward to my root if I have received everything
-////double sum = 0;
+////doublecomplex sum = 0;
 ////if (tid%32==0) {
 ////    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
 ////        //printf("(%d), data, %d\n",mype,i);
@@ -689,7 +696,7 @@ __device__ void zC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 //    }
 //
 //////forward to my root if I have received everything
-////double sum = 0;
+////doublecomplex sum = 0;
 //
 ////for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
 ////    //printf("(%d), data, %d\n",mype,i);
@@ -849,7 +856,7 @@ __global__ void zwait_bcrd
                    //printf("(%d,%d,%d),idx=%d,lib=%d,cnt=%d,i=%d/%d\n", mype, bid, tid,
                    //       d_colnummod[tid] * 2 + wm_val, lib, cnt,i,d_recv_cnt[d_colnummod[tid]]);
                    if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                       //double tmp_sum = 0;
+                       //doublecomplex tmp_sum = 0;
                        int ii = 0;
                        if (cnt == 2) {
                            for (ii = 0; ii < cnt; ++ii) {
@@ -902,7 +909,7 @@ __global__ void zwait_bcrd
                                //cnt=LRtree_ptr[lib].msgSize_;
                                my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
                                my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
-                               //double tmp_sum=0;
+                               //doublecomplex tmp_sum=0;
                                RHS_ITERATE(j) {
                                    for (int aab = 0; aab < knsupc; aab++) {
                                        zready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
@@ -995,7 +1002,7 @@ __global__ void zwait_bcrd
                //       wm_val,cnt,d_recv_cnt[lib],d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1]);
 
                if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                   //double tmp_sum = 0;
+                   //doublecomplex tmp_sum = 0;
                    int ii = 0;
                    if (cnt == 2) {
                        for (ii = 0; ii < cnt; ++ii) {
@@ -1285,11 +1292,11 @@ __global__ void zwait_bcrd_u
                     //printf("(%d,%d,%d),idx=%d,lib=%d,cnt=%d\n", mype, bid, tid,
                     //       d_colnummod[tid] * 2 + wm_val, lib, cnt);
                     if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                        //double tmp_sum = 0;
+                        //doublecomplex tmp_sum = 0;
                         int ii = 0;
                         if (cnt == 2) {
                             for (ii = 0; ii < cnt; ++ii) {
-                                // double tmp_sum = 0;
+                                // doublecomplex tmp_sum = 0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; ++aab) {
                                         //temp=z_atomicAdd(&lsum[il+i + j*knsupc], zready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
@@ -1314,7 +1321,7 @@ __global__ void zwait_bcrd_u
                         }
                         if (cnt == 1) {
                             if (flag_rd_q[lib * 2 + 1] == 1) ii = 1;
-                            // double tmp_sum = 0;
+                            // doublecomplex tmp_sum = 0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; ++aab) {
                                     //temp=z_atomicAdd(&lsum[il+i + j*knsupc], zready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
@@ -1339,7 +1346,7 @@ __global__ void zwait_bcrd_u
                                 //cnt=URtree_ptr[lib].msgSize_;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_;
-                                // double tmp_sum=0;
+                                // doublecomplex tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
                                         zready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
@@ -1429,7 +1436,7 @@ __global__ void zwait_bcrd_u
                 //       wm_val,cnt,d_recv_cnt[lib],d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1]);
 
                 if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                    // double tmp_sum = 0;
+                    // doublecomplex tmp_sum = 0;
                     int ii = 0;
                     if (cnt == 2) {
                         for (ii = 0; ii < cnt; ++ii) {
@@ -1740,8 +1747,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
     doublecomplex temp1;
     int_t lptr;      /* Starting position in lsub[*].                      */
     int aln_i;
-    // aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+    // aln_d = 1;//ceil(CACHELINE/(doublecomplex)dword);
+    aln_i = 1;//ceil(CACHELINE/(doublecomplex)iword);
     int   knsupc;    /* Size of supernode k.                               */
     int_t nlb;       /* Number of L blocks.                                */
 
@@ -1839,7 +1846,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                 temp1 = zero;
                 for (l = 0; l < knsupc; l++) {
                     doublecomplex ctemp;
-                    zz_mult(&ctemp, &Linv[l * knsupc + i], &x[ii + l + j*knsupc]);
+                    zz_mult(&ctemp, &Linv[l * knsupc + i], &x[ii + l+ j*knsupc]);
                     z_add(&temp1, &temp1, &ctemp);
 
                 }
@@ -1879,8 +1886,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
             }
             __syncthreads();
 
-            RHS_ITERATE(j)
-            for (i = tid; i < knsupc; i += block_size)
+            RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
                     x[i + ii + j * knsupc] = lsum[i + il + j * knsupc];
             __syncthreads();
         }//if(nrhs==1)
@@ -1903,7 +1909,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                 __threadfence();
             } while (msg_recv != 1);
             //printf("(%d,%d,%d,%d) in compute kernel, I have msg=%d,sz=%d,ofset=%d\n",mype,bid,tid,gc,msg_recv,LBtree_ptr[lk].msgSize_*nrhs+XK_H,maxrecvsz*lk);
-            //double sum=0;
+            //doublecomplex sum=0;
             //for (int myi=0;myi<LBtree_ptr[lk].msgSize_*nrhs+XK_H;myi++){
             //    sum+=zready_x[maxrecvsz*lk+myi];
             //}
@@ -1963,8 +1969,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                     temp1 = zero;
                     for (l = 0; l < knsupc; l++) {
                         doublecomplex ctemp;
-	                    zz_mult(&ctemp, &lusup[luptr_tmp1 + l * nsupr + i], &zready_x[l + maxrecvsz * keep_lk + j * knsupc]);
-	                    z_add(&temp1, &temp1, &ctemp);
+                        zz_mult(&ctemp, &lusup[luptr_tmp1 + l * nsupr + i], &zready_x[l + maxrecvsz * keep_lk + j * knsupc]);
+                        z_add(&temp1, &temp1, &ctemp);
                         //temp1+= lusup[luptr_tmp1+l*nsupr+i]*x[ii+j*knsupc+l];
                     }
                     doublecomplex tempm;
@@ -2024,7 +2030,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 
                             my_flag_rd[ik*RDMA_FLAG_SIZE]=lk;
                             my_flag_rd[ik*RDMA_FLAG_SIZE+1]=LRtree_ptr[lk].msgSize_;
-                            //double tmp_sum=0;
+                            //doublecomplex tmp_sum=0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < iknsupc; aab++) {
                                     zready_lsum[lk * maxrecvsz * 2 + aab +j * iknsupc] = lsum[il + aab +j * iknsupc];
@@ -2133,7 +2139,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
  int_t *xsup,
  int *bcols_masked,
  gridinfo_t *grid,
- int gemmflag
+  int gemmflag
 )
 {
     doublecomplex zero = {0.0, 0.0};
@@ -2153,8 +2159,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
    //  int iword = sizeof(int_t);
    //  int dword = sizeof (doublecomplex);
     int aln_i;
-   //  aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+   //  aln_d = 1;//ceil(CACHELINE/(doublecomplex)dword);
+    aln_i = 1;//ceil(CACHELINE/(doublecomplex)iword);
     int   knsupc;    /* Size of supernode k.                               */
     int nlb;       /* Number of L blocks.                                */
 
@@ -2255,13 +2261,13 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                     Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
                     if(gemmflag==0 || nrhs==1){
-
                         RHS_ITERATE(j){
+
                         for (i = tid; i < knsupc; i+=block_size){
                             temp1=zero;
                             for (l=0 ; l<knsupc ; l++){
                                 doublecomplex ctemp;
-                                zz_mult(&ctemp, &Linv[l*knsupc+i], &x[ii+l + j*knsupc]);
+                                zz_mult(&ctemp, &Linv[l*knsupc+i], &x[ii+l+ j*knsupc]);
                                 z_add(&temp1, &temp1, &ctemp);
 
                             }
@@ -2269,10 +2275,9 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                         }
                         }
                         __syncthreads();
-
                         RHS_ITERATE(j){
                         for (i = tid; i < knsupc; i+=block_size){
-                            x[i + ii+ j*knsupc] = lsum[il+i+ j*knsupc];
+                            x[i + ii + j*knsupc] = lsum[il+i+ j*knsupc];
                             // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
                             }
                         __syncthreads();
@@ -2287,7 +2292,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                         // __syncthreads();
 
 
-                        // zgemv_device_dlsum_fmod(
+                        // zgemv_device_zlsum_fmod(
                             // knsupc, knsupc, alpha,
                             // Linv, knsupc,
                             // &x[ii+j*knsupc], 1, beta,
@@ -2460,7 +2465,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                             // __syncthreads();
 
 
-                            // zgemv_device_dlsum_fmod(
+                            // zgemv_device_zlsum_fmod(
                                 // nbrow1, knsupc, alpha,
                                 // &lusup[luptr_tmp1], nsupr,
                                 // &x[ii], 1, beta,
@@ -2574,8 +2579,8 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
    //  int iword = sizeof(int_t);
    //  int dword = sizeof (doublecomplex);
     int aln_i;
-   //  aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+   //  aln_d = 1;//ceil(CACHELINE/(doublecomplex)dword);
+    aln_i = 1;//ceil(CACHELINE/(doublecomplex)iword);
     int   knsupc;    /* Size of supernode k.                               */
     int nlb;       /* Number of L blocks.                                */
 
@@ -2866,8 +2871,6 @@ void zlsum_fmod_inv_gpu_wrap
                 int procs
         ) {
 
-            
-
     int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
 
     int mype;
@@ -2887,6 +2890,7 @@ void zlsum_fmod_inv_gpu_wrap
             zlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
         }
         checkGPU(gpuGetLastError());
+        // checkGPU(gpuDeviceSynchronize());
      }else{
 
 #ifdef HAVE_NVSHMEM
@@ -3016,7 +3020,7 @@ int gemmflag
 	doublecomplex temp1;
      __shared__ doublecomplex temp2[MAXSUPER];
 	int aln_i;
-	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	aln_i = 1;//ceil(CACHELINE/(doublecomplex)iword);
 	int   knsupc;    /* Size of supernode k.                               */
 	int nub;       /* Number of L blocks.                                */
 
@@ -3121,8 +3125,7 @@ int gemmflag
 							lsum[il+i+ j*knsupc]=temp1; //reuse lsum as temporary output as it's no longer accessed
 						}
                         }
-                        __syncthreads();
-
+						__syncthreads();
                         RHS_ITERATE(j){
 						for (i = tid; i < knsupc; i+=block_size){
 							x[i + ii+j*knsupc] = lsum[il+i+j*knsupc];
@@ -3130,8 +3133,7 @@ int gemmflag
 							// printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
 							}
                         }
-                        __syncthreads();
-
+						__syncthreads();
 					}else{
 						__syncthreads();
 						for (int blx = 0; blx*BLK_M < knsupc; blx++){
@@ -3196,9 +3198,11 @@ int gemmflag
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 				ii = X_BLK( lib );
 
-                if(gemmflag==0 || nrhs==1){
+				if(gemmflag==0 || nrhs==1){
+				// if(0){
+                    RHS_ITERATE(j){
 					for (i=tid;i<knsupc;i+=block_size)
-						temp2[i]=x[ii+i];
+						temp2[i]=x[ii+i + j*knsupc];
 					__syncthreads();
                     for (i = tid; i < nrow; i+=block_size){
                         // printf("good1 bid nub i nrow %5d %5d %5d %5d\n",bid, nub, i, nrow);
@@ -3236,16 +3240,12 @@ int gemmflag
                         doublecomplex tempm;
                         tempm.r=-temp1.r;
                         tempm.i=-temp1.i;
-                        z_atomicAdd(&lsum[il+offset], tempm);
+                        z_atomicAdd(&lsum[il+offset + j*iknsupc], tempm);
 
                     }
                     __syncthreads();
-
-                    for (ub = tid; ub < nub; ub+=block_size){
-                        ik = lloc[ub];
-                        atomicSub(&bmod[ik*aln_i],1);
-                        // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
                     }
+
                 }else{
                     for (ub = 0; ub < nub; ub++){
                         ik = lloc[ub];
@@ -3284,12 +3284,17 @@ int gemmflag
                                 }
                             }
                         }
-                        if(tid==0)atomicSub(&bmod[ik*aln_i],1);
-                    }
+	                    }
 
-				}//if(nrhs==1)
-                __syncthreads();
-			// } /*if tid<Nchunk*/
+					}//if(nrhs==1)
+	                __syncthreads();
+                    for (ub = tid; ub < nub; ub+=block_size){
+                        ik = lloc[ub];
+                        atomicSub(&bmod[ik*aln_i],1);
+                        // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
+                    }
+	                __syncthreads();
+				// } /*if tid<Nchunk*/
 		} /* if nlb>0*/
 
 		// printf("nimbgood \n");
@@ -3349,7 +3354,7 @@ int gemmflag
       // volatile __shared__ doublecomplex temp2[MAXSUPER];
       volatile __shared__ int s_bmod;
       int aln_i;
-      aln_i = 1;//ceil(CACHELINE/(double)iword);
+      aln_i = 1;//ceil(CACHELINE/(doublecomplex)iword);
       int nub;       /* Number of U blocks.                                */
 
       int bid;
@@ -3463,7 +3468,7 @@ int gemmflag
                     // printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
 
                 }
-                // temp=z_atomicSub(&lsum[il+i],temp1);
+                // temp=d_atomicSub(&lsum[il+i],temp1);
                 doublecomplex tempm;
                 tempm.r=-temp1.r;
                 tempm.i=-temp1.i;
@@ -3626,7 +3631,7 @@ gridinfo_t *grid
     // volatile __shared__ doublecomplex temp2[MAXSUPER];
     volatile __shared__ int s_bmod;
     int aln_i;
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
+    aln_i = 1;//ceil(CACHELINE/(doublecomplex)iword);
 
     int bid;
     int_t tmp;
@@ -3726,7 +3731,7 @@ gridinfo_t *grid
                   // printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
 
               }
-              // temp=z_atomicSub(&lsum[il+i],temp1);
+              // temp=d_atomicSub(&lsum[il+i],temp1);
                 doublecomplex tempm;
                 tempm.r=-temp1.r;
                 tempm.i=-temp1.i;
@@ -3780,9 +3785,9 @@ gridinfo_t *grid
                   for (i = lne; i < iknsupc; i+=WARP_SIZE){
                       temp1=zero;
                       for (l=0 ; l<iknsupc ; l++){
-                        doublecomplex ctemp;
-                        zz_mult(&ctemp, &Uinv[l*iknsupc+i], &x[ii+l]);
-                        z_add(&temp1, &temp1, &ctemp);
+                         doublecomplex ctemp;
+                         zz_mult(&ctemp, &Uinv[l*iknsupc+i], &x[ii+l]);
+                         z_add(&temp1, &temp1, &ctemp);
                       }
                       s_lsum[i]=temp1; //reuse lsum as temporary output as it's no longer accessed
                   }
@@ -3894,7 +3899,7 @@ gridinfo_t *grid
 	doublecomplex temp1;
 	// __shared__ doublecomplex temp2[MAXSUPER];
 	int aln_i;
-	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	aln_i = 1;//ceil(CACHELINE/(doublecomplex)iword);
 	int   knsupc;    /* Size of supernode k.                               */
 	int nub;       /* Number of L blocks.                                */
 
@@ -4136,6 +4141,7 @@ gridinfo_t *grid
  *   Perform local block modifications: lsum[i] -= L_i,k * X[k].
  * </pre>
  */
+
  __global__ void zlsum_bmod_inv_gpu_mrhs_nvshmem
  /************************************************************************/
          (
@@ -4171,8 +4177,8 @@ gridinfo_t *grid
                  volatile int* d_statusmod,
                  int nblock_ex,
                  int maxsuper,
-         int* d_flag_mod_u,
-         int gemmflag
+                 int* d_flag_mod_u,
+                 int gemmflag
          )
  {
     doublecomplex zero = {0.0, 0.0};
@@ -4184,7 +4190,7 @@ gridinfo_t *grid
      doublecomplex temp1;
      __shared__ doublecomplex temp2[MAXSUPER];
      int aln_i;
-     aln_i = 1;//ceil(CACHELINE/(double)iword);
+     aln_i = 1;//ceil(CACHELINE/(doublecomplex)iword);
      int   knsupc;    /* Size of supernode k.                               */
      int nub;       /* Number of L blocks.                                */
 
@@ -4278,7 +4284,7 @@ gridinfo_t *grid
          Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 
          if(gemmflag==0 || nrhs==1){
-             RHS_ITERATE(j){
+            RHS_ITERATE(j){
              for (i = tid; i < knsupc; i+=block_size){
                  temp1=zero;
                  for (l=0 ; l<knsupc ; l++){
@@ -4288,8 +4294,8 @@ gridinfo_t *grid
 
                  }
                  lsum[il+i+ j*knsupc]=temp1; //reuse lsum as temporary output as it's no longer accessed
-             }
-             }
+            }
+            }
              __syncthreads();
 
              RHS_ITERATE(j){
@@ -4345,7 +4351,7 @@ gridinfo_t *grid
                  //msg_recv=flag_bc_q[gc];
                  __threadfence();
              } while (msg_recv != 1);
-             //double sum=0;
+             //doublecomplex sum=0;
              //for (int myi=0;myi<UBtree_ptr[lk].msgSize_*nrhs+XK_H;myi++){
              //    sum+=zready_x[maxrecvsz*lk+myi];
              //    printf("--- (%d,%d,%d), gc=%d,lk=%d, maxrecvsz=%d, myi=%d, idx=%d, val=%lf\n",
@@ -4381,8 +4387,9 @@ gridinfo_t *grid
          ii = X_BLK( lib );
 
          if(gemmflag==0 || nrhs==1){
+             RHS_ITERATE(j){
              for (i=tid;i<knsupc;i+=block_size)
-                 temp2[i]=zready_x[i + maxrecvsz*keep_lk]; // Nan
+                 temp2[i]=zready_x[i + maxrecvsz*keep_lk + j*knsupc]; // Nan
              __syncthreads();
              for (i = tid; i < nrow; i+=block_size){
                  // printf("good1 bid nub i nrow %5d %5d %5d %5d\n",bid, nub, i, nrow);
@@ -4420,8 +4427,10 @@ gridinfo_t *grid
                 doublecomplex tempm;
                 tempm.r=-temp1.r;
                 tempm.i=-temp1.i;
-                z_atomicAdd(&lsum[il+offset], tempm);
+                z_atomicAdd(&lsum[il+offset + j*iknsupc], tempm);
 
+             }
+             __syncthreads();
              }
          }else{
              for (ub = 0; ub < nub; ub++){
@@ -4441,7 +4450,7 @@ gridinfo_t *grid
                      for (int bly = 0; bly*BLK_N < nrhs; bly++){
 
                          gemm_device_zlsum_bmod_stridedB(iknsupc, nrhs, ncol, blx, bly,
-                         &lusup[luptr_tmp1], iknsupc, &x[ii], knsupc, rC,
+                         &lusup[luptr_tmp1], iknsupc, &zready_x[maxrecvsz*keep_lk], knsupc, rC,
                          alpha, beta, lptr, rel, usub);
 
                          #pragma unroll
@@ -4479,7 +4488,7 @@ gridinfo_t *grid
 
                      my_flag_rd[ik*RDMA_FLAG_SIZE]=ik;
                      my_flag_rd[ik*RDMA_FLAG_SIZE+1]=URtree_ptr[ik].msgSize_;
-                     // double tmp_sum=0;
+                     // doublecomplex tmp_sum=0;
                      RHS_ITERATE(j) {
                          for (int aab = 0; aab < iknsupc; aab++) {
                              zready_lsum[ik * maxrecvsz * 2 + aab +j * iknsupc] = lsum[l + aab +j * iknsupc];
@@ -4515,7 +4524,6 @@ gridinfo_t *grid
      //}
 
  } /* zlsum_bmod_inv_gpu_mrhs_nvshmem */
-
 
 
 

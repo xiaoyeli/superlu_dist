@@ -919,6 +919,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	dist_mem_use = sdistribute(options, n, &AC, Glu_freeable, LUstruct, grid);
 	stat->utime[DIST] = SuperLU_timer_() - t;
 
+
 	/* Deallocate storage used in symbolic factor. */
 	if ( Fact != SamePattern_SameRowPerm ) {
 	    iinfo = symbfact_SubFree(Glu_freeable);
@@ -931,7 +932,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	stat->utime[FACT] = SuperLU_timer_() - t;
 
 
-    /* nvshmem related.*/
+    /* nvshmem related */
     int nsupers = Glu_persist->supno[n-1] + 1;
 	#ifdef HAVE_NVSHMEM
 		int nc = CEILING( nsupers, grid->npcol);
@@ -945,7 +946,10 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		int ready_lsum_size = 2*maxrecvsz*nr;
 		if (get_acc_solve()){
 		nv_init_wrapper(grid->comm);
+
 		sprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+
+
 		}
 	#endif
 

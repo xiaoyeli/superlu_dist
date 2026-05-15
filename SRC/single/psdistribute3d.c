@@ -1119,27 +1119,23 @@ psdistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     }
     SUPERLU_FREE(xa);
 
+    if ( options->Fact != SamePattern_SameRowPerm ) {
+        // /* Flatten L metadata into one buffer. */
+        psflatten_LDATA(options, n, LUstruct, grid);
 
-
-	if ( options->Fact != SamePattern_SameRowPerm ) {
-		// /* Flatten L metadata into one buffer. */
-		psflatten_LDATA(options, n, LUstruct, grid);
-
-		// /* Compute communication structure for trisolve. */ 
-		if (get_new3dsolve()){
-			strs_compute_communication_structure(options, n, LUstruct,
-						 trf3Dpart->supernodeMask, grid);
-		}else{
-			int* supernodeMask = int32Malloc_dist(nsupers);
-			for(int ii=0; ii<nsupers; ii++)
-				supernodeMask[ii]=1;
-			strs_compute_communication_structure(options, n, LUstruct,
-						supernodeMask, grid);
-			SUPERLU_FREE(supernodeMask);
-		}
-	}
-
-
+        // /* Compute communication structure for trisolve. */
+        if (get_new3dsolve()){
+            strs_compute_communication_structure(options, n, LUstruct,
+                        trf3Dpart->supernodeMask, grid);
+        }else{
+            int* supernodeMask = int32Malloc_dist(nsupers);
+            for(int ii=0; ii<nsupers; ii++)
+                supernodeMask[ii]=1;
+            strs_compute_communication_structure(options, n, LUstruct,
+                        supernodeMask, grid);
+            SUPERLU_FREE(supernodeMask);
+        }
+    }
 
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
@@ -1149,5 +1145,5 @@ psdistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 
     return (mem_use+memTRS);
 
-} /* PSDISTRIBUTE3D_Yang */
+} /* PSDISTRIBUTE3D */
 

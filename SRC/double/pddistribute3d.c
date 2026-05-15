@@ -2477,4 +2477,5 @@ pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 
     return (mem_use+memTRS);
 
-} /* PDDISTRIBUTE3D_Yang */
+} /* PDDISTRIBUTE3D */
+

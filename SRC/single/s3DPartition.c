@@ -41,6 +41,9 @@ void snewTrfPartitionInit(int_t nsupers,  sLUstruct_t *LUstruct, gridinfo3d_t *g
     sForest_t **sForests = getForests(maxLvl, nsupers, setree, treeList);
 
     strf3Dpartition_t *trf3Dpart = LUstruct->trf3Dpart;
+#ifdef GPU_ACC
+    trf3Dpart->d_superGridMap = NULL;
+#endif
     trf3Dpart->sForests = sForests;
     trf3Dpart->nsupers = nsupers;
       int_t *myTreeIdxs = getGridTrees(grid3d);
@@ -165,6 +168,15 @@ void snewTrfPartitionInit(int_t nsupers,  sLUstruct_t *LUstruct, gridinfo3d_t *g
     // trf3Dpart->LUvsb = LUvsb;
     trf3Dpart->supernode2treeMap = createSupernode2TreeMap(nsupers, maxLvl, gNodeCount, gNodeLists);
     trf3Dpart->superGridMap = createSuperGridMap(nsupers, maxLvl, myTreeIdxs, myZeroTrIdxs, gNodeCount, gNodeLists);
+#ifdef GPU_ACC
+    if (get_acc_solve()) {
+        checkGPU(gpuMalloc((void**)&trf3Dpart->d_superGridMap,
+                           sizeof(SupernodeToGridMap_t) * (size_t)nsupers));
+        checkGPU(gpuMemcpy(trf3Dpart->d_superGridMap, trf3Dpart->superGridMap,
+                           sizeof(SupernodeToGridMap_t) * (size_t)nsupers,
+                           gpuMemcpyHostToDevice));
+    }
+#endif
     trf3Dpart->supernodeMask = supernodeMask;
     trf3Dpart->mxLeafNode = mxLeafNode;  // Sherry added these 3
     trf3Dpart->diagDims = ldts;
@@ -257,6 +269,27 @@ void sbcastPermutedSparseA(SuperMatrix *A,
         allocBcastArray ( (void **) &(ScalePermstruct->C), n*sizeof(float),
                           0, grid3d->zscp.comm);
 
+#ifdef GPU_ACC
+    if (get_acc_solve()) {
+        checkGPU(gpuMemcpy(ScalePermstruct->d_perm_r, ScalePermstruct->perm_r,
+                           sizeof(int) * (size_t)m, gpuMemcpyHostToDevice));
+        checkGPU(gpuMemcpy(ScalePermstruct->d_perm_c, ScalePermstruct->perm_c,
+                           sizeof(int) * (size_t)n, gpuMemcpyHostToDevice));
+        if (ScalePermstruct->DiagScale == ROW || ScalePermstruct->DiagScale == BOTH) {
+            if (!ScalePermstruct->d_R)
+                checkGPU(gpuMalloc((void**)&ScalePermstruct->d_R, sizeof(float) * (size_t)m));
+            checkGPU(gpuMemcpy(ScalePermstruct->d_R, ScalePermstruct->R,
+                               sizeof(float) * (size_t)m, gpuMemcpyHostToDevice));
+        }
+        if (ScalePermstruct->DiagScale == COL || ScalePermstruct->DiagScale == BOTH) {
+            if (!ScalePermstruct->d_C)
+                checkGPU(gpuMalloc((void**)&ScalePermstruct->d_C, sizeof(float) * (size_t)n));
+            checkGPU(gpuMemcpy(ScalePermstruct->d_C, ScalePermstruct->C,
+                               sizeof(float) * (size_t)n, gpuMemcpyHostToDevice));
+        }
+    }
+#endif
+
 
     /* ==== Broadcasting Glu_freeable ======= */
 //     typedef struct {
@@ -331,9 +364,9 @@ void sbcastPermutedSparseA(SuperMatrix *A,
             count=remainder;
     }else{
             count=chunk;
-    }  
+    }
         MPI_Bcast( &(Astore->nzval[idx]),  count*sizeof(float), MPI_BYTE, 0, grid3d->zscp.comm);
-        MPI_Bcast( &(Astore->colind[idx]), count*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);    
+        MPI_Bcast( &(Astore->colind[idx]), count*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
     }
     MPI_Bcast(Astore->rowptr, (Astore->m_loc+1)*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
 
@@ -347,5 +380,4 @@ void sbcastPermutedSparseA(SuperMatrix *A,
 #endif
 
 }
-
 
