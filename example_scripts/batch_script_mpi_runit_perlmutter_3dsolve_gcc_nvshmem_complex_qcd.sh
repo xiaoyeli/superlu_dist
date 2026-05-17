@@ -45,7 +45,7 @@ export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 nmpipergpu=1
 export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # 2: this can better saturate GPU
-export SUPERLU_RANKORDER='XY'  # Be careful: XY needs to be used when NOROWPERM or SolveOnly is used for 3D grids
+export SUPERLU_RANKORDER='XY'  # or 'Z'
 
 # ##NVSHMEM settings:
 # NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/

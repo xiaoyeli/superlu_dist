@@ -308,6 +308,222 @@ void zGatherNRformat_loc3d_allgrid
     int *b_counts_int;   // number of local B entries relative to all processes
     int *b_disp;         // including 'nrhs'
 
+
+    /*
+     * Special Z-major + NOROWPERM path.
+     *
+     * In Z-major ordering, the original z-column allgather collects ranks
+     * such as {0, pxy, 2*pxy, ...}.  For RowPerm == NOROWPERM, this is a
+     * hidden row permutation: the 2D factorization later assumes local row i
+     * means global row A2d->fst_row+i.  To preserve that invariant, gather
+     * the full 3D row stream in natural world-rank order, then extract the
+     * contiguous natural block assigned to this 2D rank:
+     *
+     *     grid2d rank p owns world ranks p*npdep ... (p+1)*npdep-1.
+     *
+     * The same natural ordering is used for B2d in both CPU and GPURES paths.
+     * This is intentionally a conservative correctness path; it uses full-grid
+     * Allgathervs and can be optimized later with sparse all-to-all exchange.
+     */
+    int natural_z_norowperm =
+        (options->RowPerm == NOROWPERM &&
+         grid3d->rankorder != 1 && grid3d->npdep > 1);
+
+    if (natural_z_norowperm) {
+        gridinfo_t *grid2d = &(grid3d->grid2d);
+        int npdep = grid3d->npdep;
+        int procs2d = grid2d->nprow * grid2d->npcol;
+        int nprocs3d = procs2d * npdep;
+        int base_rank = grid2d->iam * npdep;
+        int nrhs1 = (nrhs <= 0) ? 1 : nrhs;
+
+        int_t *all_row_counts = SUPERLU_MALLOC(nprocs3d * sizeof(int_t));
+        int_t *all_nnz_counts = SUPERLU_MALLOC(nprocs3d * sizeof(int_t));
+        int *all_row_counts_int = SUPERLU_MALLOC(nprocs3d * sizeof(int));
+        int *all_nnz_counts_int = SUPERLU_MALLOC(nprocs3d * sizeof(int));
+        int *all_row_disp = SUPERLU_MALLOC((nprocs3d + 1) * sizeof(int));
+        int *all_nnz_disp = SUPERLU_MALLOC((nprocs3d + 1) * sizeof(int));
+        int *all_b_counts_int = SUPERLU_MALLOC(nprocs3d * sizeof(int));
+        int *all_b_disp = SUPERLU_MALLOC((nprocs3d + 1) * sizeof(int));
+
+        MPI_Allgather(&A->m_loc, 1, mpi_int_t,
+                      all_row_counts, 1, mpi_int_t, grid3d->comm);
+        MPI_Allgather(&A->nnz_loc, 1, mpi_int_t,
+                      all_nnz_counts, 1, mpi_int_t, grid3d->comm);
+
+        all_row_disp[0] = 0;
+        all_nnz_disp[0] = 0;
+        all_b_disp[0] = 0;
+        for (int p = 0; p < nprocs3d; ++p) {
+            all_row_counts_int[p] = (int) all_row_counts[p];
+            all_nnz_counts_int[p] = (int) all_nnz_counts[p];
+            all_row_disp[p + 1] = all_row_disp[p] + all_row_counts_int[p];
+            all_nnz_disp[p + 1] = all_nnz_disp[p] + all_nnz_counts_int[p];
+            all_b_counts_int[p] = nrhs1 * all_row_counts_int[p];
+            all_b_disp[p + 1] = nrhs1 * all_row_disp[p + 1];
+        }
+
+        if (Fact == DOFACT) {
+            A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+            A3d->num_procs_to_send = SLU_EMPTY;
+            A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
+
+            row_counts_int = SUPERLU_MALLOC(npdep * sizeof(int));
+            nnz_counts_int = SUPERLU_MALLOC(npdep * sizeof(int));
+            b_counts_int = SUPERLU_MALLOC(npdep * sizeof(int));
+            row_disp = SUPERLU_MALLOC((npdep + 1) * sizeof(int));
+            nnz_disp = SUPERLU_MALLOC((npdep + 1) * sizeof(int));
+            b_disp = SUPERLU_MALLOC((npdep + 1) * sizeof(int));
+
+            row_disp[0] = 0;
+            nnz_disp[0] = 0;
+            b_disp[0] = 0;
+            for (int z = 0; z < npdep; ++z) {
+                int src_rank = base_rank + z;
+                row_counts_int[z] = all_row_counts_int[src_rank];
+                nnz_counts_int[z] = all_nnz_counts_int[src_rank];
+                b_counts_int[z] = nrhs1 * row_counts_int[z];
+                row_disp[z + 1] = row_disp[z] + row_counts_int[z];
+                nnz_disp[z + 1] = nnz_disp[z] + nnz_counts_int[z];
+                b_disp[z + 1] = nrhs1 * row_disp[z + 1];
+            }
+
+            A2d->colind = intMalloc_dist(nnz_disp[npdep]);
+            A2d->nzval = doublecomplexMalloc_dist(nnz_disp[npdep]);
+            A2d->rowptr = intMalloc_dist(row_disp[npdep] + 1);
+
+            A3d->A_nfmt         = A2d;
+            A3d->row_counts_int = row_counts_int;
+            A3d->row_disp       = row_disp;
+            A3d->nnz_counts_int = nnz_counts_int;
+            A3d->nnz_disp       = nnz_disp;
+            A3d->b_counts_int   = b_counts_int;
+            A3d->b_disp         = b_disp;
+            *A3d_addr = (NRformat_loc3d *) A3d;
+        } else {
+            A2d = A3d->A_nfmt;
+            row_counts_int = A3d->row_counts_int;
+            row_disp       = A3d->row_disp;
+            nnz_counts_int = A3d->nnz_counts_int;
+            nnz_disp       = A3d->nnz_disp;
+            b_counts_int   = A3d->b_counts_int;
+            b_disp         = A3d->b_disp;
+        }
+
+        if (Fact == DOFACT || Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
+            int total_rows = all_row_disp[nprocs3d];
+            int total_nnz = all_nnz_disp[nprocs3d];
+            doublecomplex *all_nzval = doublecomplexMalloc_dist(total_nnz);
+            int_t *all_colind = intMalloc_dist(total_nnz);
+            int_t *all_rowptr = intMalloc_dist(total_rows + 1);
+            all_rowptr[0] = 0;
+
+            MPI_Allgatherv(A->nzval, A->nnz_loc, SuperLU_MPI_DOUBLE_COMPLEX,
+                           all_nzval, all_nnz_counts_int, all_nnz_disp,
+                           SuperLU_MPI_DOUBLE_COMPLEX, grid3d->comm);
+            MPI_Allgatherv(A->colind, A->nnz_loc, mpi_int_t,
+                           all_colind, all_nnz_counts_int, all_nnz_disp,
+                           mpi_int_t, grid3d->comm);
+            MPI_Allgatherv(&A->rowptr[1], A->m_loc, mpi_int_t,
+                           &all_rowptr[1], all_row_counts_int, all_row_disp,
+                           mpi_int_t, grid3d->comm);
+
+            for (int p = 0; p < nprocs3d; ++p) {
+                for (int_t r = all_row_disp[p] + 1; r < all_row_disp[p + 1] + 1; ++r) {
+                    all_rowptr[r] += all_nnz_disp[p];
+                }
+            }
+
+            A2d->m_loc = row_disp[npdep];
+            A2d->fst_row = all_row_disp[base_rank];
+            A2d->rowptr[0] = 0;
+
+            doublecomplex *A2d_nzval = (doublecomplex *) A2d->nzval;
+            int_t out_nnz = 0;
+            for (int_t r = 0; r < A2d->m_loc; ++r) {
+                int_t global_row_in_all = A2d->fst_row + r;
+                int_t s0 = all_rowptr[global_row_in_all];
+                int_t s1 = all_rowptr[global_row_in_all + 1];
+                for (int_t jj = s0; jj < s1; ++jj) {
+                    A2d_nzval[out_nnz] = all_nzval[jj];
+                    A2d->colind[out_nnz] = all_colind[jj];
+                    ++out_nnz;
+                }
+                A2d->rowptr[r + 1] = out_nnz;
+            }
+            A2d->nnz_loc = out_nnz;
+
+            SUPERLU_FREE(all_nzval);
+            SUPERLU_FREE(all_colind);
+            SUPERLU_FREE(all_rowptr);
+        }
+
+        A3d->m_loc = A->m_loc;
+        A3d->B3d = (doublecomplex *) B;
+        A3d->ldb = ldb;
+        A3d->nrhs = nrhs;
+
+        if (nrhs > 0) {
+            if (options && options->GPURES == YES) {
+#ifdef GPU_ACC
+                doublecomplex *Btmp, *Ball;
+                checkGPU(gpuMalloc((void**)&Btmp,
+                                   sizeof(doublecomplex) * (size_t)A->m_loc * (size_t)nrhs));
+                zdevice_matcopy_wrap(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
+
+                checkGPU(gpuMalloc((void**)&Ball,
+                                   sizeof(doublecomplex) * (size_t)all_row_disp[nprocs3d] * (size_t)nrhs));
+                checkGPU(gpuMalloc((void**)&A3d->B2d,
+                                   sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs));
+
+                MPI_Allgatherv(Btmp, nrhs * A->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
+                               Ball, all_b_counts_int, all_b_disp,
+                               SuperLU_MPI_DOUBLE_COMPLEX, grid3d->comm);
+                checkGPU(gpuFree(Btmp));
+
+                for (int z = 0; z < npdep; ++z) {
+                    int src_rank = base_rank + z;
+                    zdevice_matcopy_wrap(row_counts_int[z], nrhs,
+                                         ((doublecomplex*)A3d->B2d) + row_disp[z], A2d->m_loc,
+                                         Ball + nrhs * all_row_disp[src_rank], row_counts_int[z]);
+                }
+                checkGPU(gpuFree(Ball));
+#else
+                ABORT("GPURES requires GPU_ACC in zGatherNRformat_loc3d_allgrid().");
+#endif
+            } else {
+                doublecomplex *Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(doublecomplex));
+                matCopy(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
+
+                doublecomplex *Ball = doublecomplexMalloc_dist(all_row_disp[nprocs3d] * nrhs);
+                A3d->B2d = doublecomplexMalloc_dist(A2d->m_loc * nrhs);
+
+                MPI_Allgatherv(Btmp, nrhs * A->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
+                               Ball, all_b_counts_int, all_b_disp,
+                               SuperLU_MPI_DOUBLE_COMPLEX, grid3d->comm);
+                SUPERLU_FREE(Btmp);
+
+                for (int z = 0; z < npdep; ++z) {
+                    int src_rank = base_rank + z;
+                    matCopy(row_counts_int[z], nrhs,
+                            ((doublecomplex*)A3d->B2d) + row_disp[z], A2d->m_loc,
+                            Ball + nrhs * all_row_disp[src_rank], row_counts_int[z]);
+                }
+                SUPERLU_FREE(Ball);
+            }
+        }
+
+        SUPERLU_FREE(all_row_counts);
+        SUPERLU_FREE(all_nnz_counts);
+        SUPERLU_FREE(all_row_counts_int);
+        SUPERLU_FREE(all_nnz_counts_int);
+        SUPERLU_FREE(all_row_disp);
+        SUPERLU_FREE(all_nnz_disp);
+        SUPERLU_FREE(all_b_counts_int);
+        SUPERLU_FREE(all_b_disp);
+        return;
+    }
+
     /********* Gather A2d *********/
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */

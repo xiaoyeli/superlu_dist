@@ -36,6 +36,9 @@ export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 nmpipergpu=1
 export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # 2: this can better saturate GPU
+export SUPERLU_RANKORDER='Z'  
+
+
 
 # ##NVSHMEM settings:
 # NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
@@ -161,7 +164,7 @@ do
 SUPERLU_ACC_OFFLOAD=0
 export GPU3DVERSION=0
 export SUPERLU_ACC_SOLVE=0
-gpures=1
+gpures=0
 echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -g $gpures -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_batch${batch}_gpures${gpures}
 "
 srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -g $gpures -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}_gpu_${SUPERLU_ACC_OFFLOAD}_cpp_${GPU3DVERSION}_nmpipergpu${nmpipergpu}_batch${batch}_gpures${gpures}
