@@ -33,6 +33,7 @@ export GPU3DVERSION=0
 export ANC25D=0
 export NEW3DSOLVE=1    
 export NEW3DSOLVETREECOMM=1
+export SLU_GPURES_TRACE=1
 export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
 
 # the supernode size has to be the same as -bs when options.SolveOnly is used
@@ -83,7 +84,7 @@ fi
 
 nprows=(1)
 npcols=(1)
-npz=(1)
+npz=(4)
 nrhs=(1 2 4 8 16)
 NTH=1
 NREP=1
@@ -175,7 +176,7 @@ do
 SUPERLU_ACC_OFFLOAD=1
 export GPU3DVERSION=0
 export SUPERLU_ACC_SOLVE=1
-gpures=0
+gpures=1
 
 
 dim0=${dims[0]}

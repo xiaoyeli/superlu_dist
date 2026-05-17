@@ -377,7 +377,9 @@ void zGatherNRformat_loc3d_allgrid
 	A2d->m_loc = row_disp[grid3d->npdep];
 
 	if (grid3d->rankorder == 1) { // XY-major
-		A2d->fst_row = A->fst_row;
+		int_t fst_row_2d = A->fst_row;
+		MPI_Bcast(&fst_row_2d, 1, mpi_int_t, 0, grid3d->zscp.comm);
+		A2d->fst_row = fst_row_2d;
 	} else { // Z-major
 		gridinfo_t *grid2d = &(grid3d->grid2d);
 		int procs2d = grid2d->nprow * grid2d->npcol;
@@ -445,7 +447,9 @@ void zGatherNRformat_loc3d_allgrid
 	A2d->m_loc = row_disp[grid3d->npdep];
 
 	if (grid3d->rankorder == 1) { // XY-major
-		A2d->fst_row = A->fst_row;
+		int_t fst_row_2d = A->fst_row;
+		MPI_Bcast(&fst_row_2d, 1, mpi_int_t, 0, grid3d->zscp.comm);
+		A2d->fst_row = fst_row_2d;
 	} else { // Z-major
 		gridinfo_t *grid2d = &(grid3d->grid2d);
 		int procs2d = grid2d->nprow * grid2d->npcol;
