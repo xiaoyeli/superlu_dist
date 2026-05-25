@@ -579,6 +579,7 @@ int main(int argc, char *argv[])
     Destroy_CompRowLoc_Matrix_dist(&A);
     zScalePermstructFree(&ScalePermstruct);
     zSolveFinalize(&options, &SOLVEstruct);
+    if (get_acc_solve()) pzgstrs_delete_device_lsum_x(&SOLVEstruct);
     zDestroy_LU(n, &grid.grid2d, &LUstruct);
     zLUstructFree(&LUstruct);
     SUPERLU_FREE(b);

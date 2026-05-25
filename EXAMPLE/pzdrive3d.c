@@ -566,6 +566,7 @@ int main (int argc, char *argv[])
     }
     /* Free solve-side NVSHMEM buffers before zDestroy_LU finalizes NVSHMEM. */
     zSolveFinalize (&options, &SOLVEstruct);
+    if (get_acc_solve()) pzgstrs_delete_device_lsum_x(&SOLVEstruct);
     zDestroy_LU (n, &(grid.grid2d), &LUstruct);
 
     zDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);

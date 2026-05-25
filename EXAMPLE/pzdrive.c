@@ -398,6 +398,7 @@ if ( options.GPURES == YES ){
     zScalePermstructFree(&ScalePermstruct);
     /* Free solve-side NVSHMEM buffers before zDestroy_LU finalizes NVSHMEM. */
     zSolveFinalize(&options, &SOLVEstruct);
+    if (get_acc_solve()) pzgstrs_delete_device_lsum_x(&SOLVEstruct);
     zDestroy_LU(n, &grid, &LUstruct);
     zLUstructFree(&LUstruct);
     SUPERLU_FREE(b);

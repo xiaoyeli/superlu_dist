@@ -527,6 +527,8 @@ void zprepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_siz
 
 void zdelete_multiGPU_buffers(){
 #ifdef HAVE_NVSHMEM
+    nvshmem_free(flag_bc_q);
+    nvshmem_free(flag_rd_q);
     nvshmem_free(my_flag_bc);
     nvshmem_free(my_flag_rd);
     nvshmem_free(zready_x);

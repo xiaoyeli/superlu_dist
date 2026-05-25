@@ -604,6 +604,7 @@ if (get_acc_solve()){
     SUPERLU_FREE(mystatusmod);
     SUPERLU_FREE(mystatus_u);
     SUPERLU_FREE(h_nfrecv_u);
+    SUPERLU_FREE(h_nfrecvmod_u);
     SUPERLU_FREE(mystatusmod_u);
 
     checkGPU (gpuFree (d_recv_cnt));
@@ -1097,23 +1098,35 @@ psgstrs_delete_device_lsum_x(sSOLVEstruct_t *SOLVEstruct)
     // sdelete_multiGPU_buffers();
 
     checkGPU(gpuFree(d_colnum));
+    checkGPU(gpuFree(d_colnum_u));
     checkGPU(gpuFree(d_mynum));
+    checkGPU(gpuFree(d_mynum_u));
     checkGPU(gpuFree(d_mymaskstart));
+    checkGPU(gpuFree(d_mymaskstart_u));
     checkGPU(gpuFree(d_mymasklength));
+    checkGPU(gpuFree(d_mymasklength_u));
     checkGPU(gpuFree(d_status));
     checkGPU(gpuFree(d_status_save));
     checkGPU(gpuFree(d_status_u_save));
     checkGPU(gpuFree(d_nfrecv));
+    checkGPU(gpuFree(d_nfrecv_u));
 
     checkGPU(gpuFree(d_nfrecvmod));
+    checkGPU(gpuFree(d_nfrecvmod_u));
     checkGPU(gpuFree(d_statusmod));
     checkGPU(gpuFree(d_statusmod_save));
     checkGPU(gpuFree(d_statusmod_u_save));
     checkGPU(gpuFree(d_mynummod));
+    checkGPU(gpuFree(d_mynummod_u));
     checkGPU(gpuFree(d_mymaskstartmod));
+    checkGPU(gpuFree(d_mymaskstartmod_u));
+    checkGPU(gpuFree(d_colnummod));
+    checkGPU(gpuFree(d_colnummod_u));
     checkGPU(gpuFree(d_mymasklengthmod));
+    checkGPU(gpuFree(d_mymasklengthmod_u));
     checkGPU(gpuFree(d_msgnum));
     checkGPU(gpuFree(d_flag_mod));
+    checkGPU(gpuFree(d_flag_mod_u));
     #endif
 
 #endif

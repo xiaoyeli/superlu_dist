@@ -537,6 +537,15 @@ struct xLUstruct_t
             gpuErrchk(cudaFree((A_gpu.dgpuGemmBuffs)));
 
 
+            gpuErrchk(cudaFree(A_gpu.dperm_c_supno));
+
+            for (int stream = 0; stream < A_gpu.numCudaStreams; stream++) {
+                gpuErrchk(cudaStreamDestroy(A_gpu.cuStreams[stream]));
+                gpuErrchk(cudaStreamDestroy(A_gpu.lookAheadLStream[stream]));
+                gpuErrchk(cudaStreamDestroy(A_gpu.lookAheadUStream[stream]));
+            }
+
+
             for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
             {
                 cusolverDnDestroy(A_gpu.cuSolveHandles[stream]);
