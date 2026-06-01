@@ -7,15 +7,18 @@
 #ifdef HAVE_CUDA
   #include <cuda_runtime.h>
   #include <cusolverDn.h>
+#endif
 #ifdef HAVE_MAGMA
+  /* Include MAGMA for both CUDA+MAGMA and HIP+MAGMA builds.
+     On CUDA, CUDA headers are already included above.
+     On HIP, magma.h pulls in the HIP-specific MAGMA headers. */
   #include "magma.h"
-#endif 
 #endif
 
 #include "lu_common.hpp"
-// #include "lupanels.hpp" 
+// #include "lupanels.hpp"
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 #define DEVICE_CALLABLE __device__
 #define CUDA_CALLABLE __host__ __device__
 #else
@@ -324,12 +327,12 @@ struct LUstructGPU_t
     size_t gemmBufferSize; 
     int numCudaStreams;     
     int maxSuperSize;
-    // double arrays are problematic 
-    cudaStream_t cuStreams[MAX_CUDA_STREAMS];
-    cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
-    
-    // Magma is needed for non-uniform batched execution 
-#ifdef HAVE_MAGMA
+    // double arrays are problematic
+    gpuStream_t cuStreams[MAX_CUDA_STREAMS];
+    gpublasHandle_t cuHandles[MAX_CUDA_STREAMS];
+
+    // Magma is needed for non-uniform batched execution (CUDA only)
+#if defined(HAVE_MAGMA) && defined(HAVE_CUDA)
     magma_queue_t magma_queue;
 #endif
 
@@ -345,28 +348,30 @@ struct LUstructGPU_t
        The sizes are uniform: ldt is the maximum among all the nodes.    */
     //    double* dFBufs[MAX_CUDA_STREAMS];
     // double* gpuGemmBuffs[MAX_CUDA_STREAMS];
-    double **dFBufs;       
+    double **dFBufs;
     double ** gpuGemmBuffs;
 
-    // GPU accessible array of gemm buffers 
+    // GPU accessible array of gemm buffers
     double** dgpuGemmBuffs;
-    
+
     double* LvalRecvBufs[MAX_CUDA_STREAMS];
     double* UvalRecvBufs[MAX_CUDA_STREAMS];
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];
     int_t* UidxRecvBufs[MAX_CUDA_STREAMS];
 
+#ifdef HAVE_CUDA
     cusolverDnHandle_t cuSolveHandles[MAX_CUDA_STREAMS];
+#endif
     double* diagFactWork[MAX_CUDA_STREAMS];
     int* diagFactInfo[MAX_CUDA_STREAMS]; // CPU pointers
     /*data structure for lookahead Update */
-    cublasHandle_t lookAheadLHandle[MAX_CUDA_STREAMS];
-    cudaStream_t lookAheadLStream[MAX_CUDA_STREAMS];
+    gpublasHandle_t lookAheadLHandle[MAX_CUDA_STREAMS];
+    gpuStream_t lookAheadLStream[MAX_CUDA_STREAMS];
 
     double *lookAheadLGemmBuffer[MAX_CUDA_STREAMS];
 
-    cublasHandle_t lookAheadUHandle[MAX_CUDA_STREAMS];
-    cudaStream_t lookAheadUStream[MAX_CUDA_STREAMS];
+    gpublasHandle_t lookAheadUHandle[MAX_CUDA_STREAMS];
+    gpuStream_t lookAheadUStream[MAX_CUDA_STREAMS];
 
     double *lookAheadUGemmBuffer[MAX_CUDA_STREAMS];
     
@@ -381,7 +386,7 @@ struct LUstructGPU_t
 
 void scatterGPU_driver(
     int iSt, int iEnd, int jSt, int jEnd, double *gemmBuff, int LDgemmBuff,
-    int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel, 
-    LUstructGPU_t *dA, cudaStream_t cuStream
+    int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel,
+    LUstructGPU_t *dA, gpuStream_t cuStream
 );
 

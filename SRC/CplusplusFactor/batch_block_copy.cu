@@ -45,7 +45,7 @@ void copy_block_vbatch_kernel(
 
 template<class T>
 int copy_block_vbatch(
-	cudaStream_t stream, int* m_batch, int* n_batch, int max_m, int max_n, 
+	gpuStream_t stream, int* m_batch, int* n_batch, int max_m, int max_n,
     T** dest_ptrs, int* dest_ld_batch, T** src_ptrs, int* src_ld_batch, int ops
 )
 {
@@ -77,15 +77,15 @@ int copy_block_vbatch(
         n_batch += batch_size;
 	}
 
-    if( cudaGetLastError() != cudaSuccess)
+    if( gpuGetLastError() != gpuSuccess)
         return -1;
 	return 0;
 }
 
-// Variable batch interface 
+// Variable batch interface
 extern "C" int scopyBlock_vbatch(
-    cudaStream_t stream, int* m_batch, int* n_batch, int max_m, int max_n, 
-    float** dest_ptrs, int* dest_ld_batch, float** src_ptrs, int* src_ld_batch, 
+    gpuStream_t stream, int* m_batch, int* n_batch, int max_m, int max_n,
+    float** dest_ptrs, int* dest_ld_batch, float** src_ptrs, int* src_ld_batch,
     int ops
 )
 {
@@ -96,8 +96,8 @@ extern "C" int scopyBlock_vbatch(
 }
 
 extern "C" int dcopyBlock_vbatch(
-    cudaStream_t stream, int* m_batch, int* n_batch, int max_m, int max_n, 
-    double** dest_ptrs, int* dest_ld_batch, double** src_ptrs, int* src_ld_batch, 
+    gpuStream_t stream, int* m_batch, int* n_batch, int max_m, int max_n,
+    double** dest_ptrs, int* dest_ld_batch, double** src_ptrs, int* src_ld_batch,
     int ops
 )
 {

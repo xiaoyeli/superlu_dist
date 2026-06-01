@@ -62,8 +62,18 @@ void xgstrf2(int_t k, Ftype* diagBlk, int_t LDA, Ftype* BlockUfactor, int_t LDU,
         if (ujrow[0] == zero) /* Test for singularity. */
         {
             *info = j + jfst + 1;
+            /* Replace the zero pivot to prevent NaN propagation in the scale
+               step, rank-1 update, and downstream operations (pdCompute_Diag_Inv
+               computes U^{-1} via local_dtrtri, which divides by diagonal
+               elements).  The CUDA path (cusolverDnDgetrf with devIpiv=NULL)
+               handles zero pivots implicitly without propagating them.
+               Note: diagFactorPackDiagBlockGPU passes a local_info so this
+               *info assignment does NOT reach pdgssvx3d's global return value. */
+            setDiagToThreshold(&diagBlk[luptr], thresh);
+            ujrow[0] = diagBlk[luptr]; /* keep ujrow[] in sync with diagBlk */
+            ++(stat->TinyPivots);
         }
-        else /* Scale the j-th column. */
+        /* Scale the j-th column (runs for both normal pivots and replaced zeros). */
         {
             Ftype temp;
             temp = one<Ftype>() / ujrow[0];
@@ -79,11 +89,32 @@ void xgstrf2(int_t k, Ftype* diagBlk, int_t LDA, Ftype* BlockUfactor, int_t LDU,
             int l = nsupc - j - 1;
             int incx = 1;
             int incy = LDU;
-            /* Rank-1 update */
-            Ftype alpha = -one<Ftype>();
-            superlu_ger<Ftype>(l, cols_left, alpha, &diagBlk[luptr + 1], incx,
-                         &ujrow[LDU], incy, &diagBlk[luptr + LDA + 1],
-                         LDA);
+            /* Rank-1 update: A -= x * y^T
+               For real types (double/float): use an inline loop instead of
+               superlu_ger() / BLAS dger_ to avoid calling an OpenBLAS kernel
+               compiled for AVX-512 (skylakex) on a CPU that only supports AVX2
+               (e.g. AMD EPYC 7763).  When the matrix dimensions exceed the BLAS
+               fallback threshold (~n>=16), OpenBLAS dispatches to an AVX-512
+               kernel and raises SIGILL on non-AVX-512 CPUs.
+               For complex types the binary operator* is not defined on the C
+               struct, so we keep the BLAS path (complex sizes are typically
+               smaller and less likely to hit the AVX-512 dispatch). */
+            if constexpr (std::is_same<Ftype, double>::value ||
+                          std::is_same<Ftype, float>::value) {
+                Ftype *x = &diagBlk[luptr + 1];      /* column of L (length l)  */
+                Ftype *y = &ujrow[LDU];               /* row of U (stride LDU)   */
+                Ftype *A = &diagBlk[luptr + LDA + 1]; /* trailing submatrix      */
+                for (int jj = 0; jj < cols_left; ++jj) {
+                    Ftype yj = y[jj * LDU];
+                    for (int ii = 0; ii < l; ++ii)
+                        A[ii + jj * LDA] -= x[ii] * yj;
+                }
+            } else {
+                Ftype alpha = -one<Ftype>();
+                superlu_ger<Ftype>(l, cols_left, alpha, &diagBlk[luptr + 1], incx,
+                             &ujrow[LDU], incy, &diagBlk[luptr + LDA + 1],
+                             LDA);
+            }
             stat->ops[FACT] += 2 * l * cols_left;
         }
 

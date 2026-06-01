@@ -5,7 +5,7 @@
 #include "mapsampler_api.h"
 #endif
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 #include "dlustruct_gpu.h"
 // #include "acc_aux.c"
 #endif
@@ -131,16 +131,21 @@ int_t pdgstrf3d_upacked(superlu_dist_options_t *options, int m, int n, AnormType
             {
                 double tilvl = SuperLU_timer_();
 
-                if (superlu_acc_offload)
-                #ifdef HAVE_CUDA
+                if (superlu_acc_offload) {
+                #if defined(HAVE_CUDA) || defined(HAVE_HIP)
                     LU_packed.dsparseTreeFactorGPU(sforest, dFBufs,
                                                    &gEtreeInfo,
                                                    tag_ub);
-                #endif
-                else
+                #else
                     LU_packed.dsparseTreeFactor(sforest, dFBufs,
                                                 &gEtreeInfo,
                                                 tag_ub);
+                #endif
+                } else {
+                    LU_packed.dsparseTreeFactor(sforest, dFBufs,
+                                                &gEtreeInfo,
+                                                tag_ub);
+                }
 
                 /*now reduce the updates*/
                 SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
@@ -151,7 +156,7 @@ int_t pdgstrf3d_upacked(superlu_dist_options_t *options, int m, int n, AnormType
             {
                 if (superlu_acc_offload)
                 {
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 		  //#define NDEBUG
 #ifndef NDEBUG
                     LU_packed.checkGPU();
@@ -181,8 +186,8 @@ int_t pdgstrf3d_upacked(superlu_dist_options_t *options, int m, int n, AnormType
         double tXferGpu2Host = SuperLU_timer_();
         if (superlu_acc_offload)
         {
-        #ifdef HAVE_CUDA
-            cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it
+        #if defined(HAVE_CUDA) || defined(HAVE_HIP)
+            gpuStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it
             LU_packed.copyLUGPUtoHost();
         #endif
         }
@@ -297,9 +302,9 @@ int_t xLUstruct_t<Ftype>::pdgstrf3d()
                         double tilvl = SuperLU_timer_();
 
                         if ( superlu_acc_offload ) {
-                            if ( options->batchCount==0 )
+                            if ( options->batchCount==0 ) {
                                 dsparseTreeFactorGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
-                            else {
+                            } else {
 				printf("Batch ERROR: should not get to this branch!\n");
 				// Sherry commented out the following
                                 //dsparseTreeFactorBatchGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);

@@ -11,9 +11,9 @@
 
 #include "lu_common.hpp"
 // #include "lupanels.hpp"  //unneeded?
-#include "lupanels_GPU.cuh" 
+#include "lupanels_GPU.cuh"
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 #define DEVICE_CALLABLE __device__
 #define CUDA_CALLABLE __host__ __device__
 #else
@@ -324,10 +324,10 @@ struct xLUstructGPU_t
     size_t gemmBufferSize; 
     int numCudaStreams;     
     int maxSuperSize;
-    // Ftype arrays are problematic 
-    cudaStream_t cuStreams[MAX_CUDA_STREAMS];
-    cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
-    
+    // Ftype arrays are problematic
+    gpuStream_t cuStreams[MAX_CUDA_STREAMS];
+    gpublasHandle_t cuHandles[MAX_CUDA_STREAMS];
+
     int* dperm_c_supno;
 
     /* Sherry: Allocate an array of buffers for the diagonal blocks
@@ -335,28 +335,30 @@ struct xLUstructGPU_t
        The sizes are uniform: ldt is the maximum among all the nodes.    */
     //    Ftype* dFBufs[MAX_CUDA_STREAMS];
     // Ftype* gpuGemmBuffs[MAX_CUDA_STREAMS];
-    Ftype **dFBufs;       
+    Ftype **dFBufs;
     Ftype ** gpuGemmBuffs;
 
-    // GPU accessible array of gemm buffers 
+    // GPU accessible array of gemm buffers
     Ftype** dgpuGemmBuffs;
-    
+
     Ftype* LvalRecvBufs[MAX_CUDA_STREAMS];
     Ftype* UvalRecvBufs[MAX_CUDA_STREAMS];
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];
     int_t* UidxRecvBufs[MAX_CUDA_STREAMS];
 
+#ifdef HAVE_CUDA
     cusolverDnHandle_t cuSolveHandles[MAX_CUDA_STREAMS];
+#endif
     Ftype* diagFactWork[MAX_CUDA_STREAMS];
     int* diagFactInfo[MAX_CUDA_STREAMS]; // CPU pointers
     /*data structure for lookahead Update */
-    cublasHandle_t lookAheadLHandle[MAX_CUDA_STREAMS];
-    cudaStream_t lookAheadLStream[MAX_CUDA_STREAMS];
+    gpublasHandle_t lookAheadLHandle[MAX_CUDA_STREAMS];
+    gpuStream_t lookAheadLStream[MAX_CUDA_STREAMS];
 
     Ftype *lookAheadLGemmBuffer[MAX_CUDA_STREAMS];
 
-    cublasHandle_t lookAheadUHandle[MAX_CUDA_STREAMS];
-    cudaStream_t lookAheadUStream[MAX_CUDA_STREAMS];
+    gpublasHandle_t lookAheadUHandle[MAX_CUDA_STREAMS];
+    gpuStream_t lookAheadUStream[MAX_CUDA_STREAMS];
 
     Ftype *lookAheadUGemmBuffer[MAX_CUDA_STREAMS];
     
@@ -372,14 +374,14 @@ struct xLUstructGPU_t
 template <typename Ftype>
 void scatterGPU_driver(
     int iSt, int iEnd, int jSt, int jEnd, Ftype *gemmBuff, int LDgemmBuff,
-    int maxSuperSize, int ldt, xlpanelGPU_t<Ftype> lpanel, xupanelGPU_t<Ftype> upanel, 
-    xLUstructGPU_t<Ftype> *dA, cudaStream_t cuStream
+    int maxSuperSize, int ldt, xlpanelGPU_t<Ftype> lpanel, xupanelGPU_t<Ftype> upanel,
+    xLUstructGPU_t<Ftype> *dA, gpuStream_t cuStream
 );
 
 template <typename Ftype>
 void scatterGPU_batchDriver(
-    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
-    int max_ilen, int max_jlen, Ftype **gemmBuff_ptrs, int *LDgemmBuff_batch, 
-    int maxSuperSize, int ldt, xlpanelGPU_t<Ftype> *lpanels, xupanelGPU_t<Ftype> *upanels, 
-    xLUstructGPU_t<Ftype> *dA, int batchCount, cudaStream_t cuStream
+    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch,
+    int max_ilen, int max_jlen, Ftype **gemmBuff_ptrs, int *LDgemmBuff_batch,
+    int maxSuperSize, int ldt, xlpanelGPU_t<Ftype> *lpanels, xupanelGPU_t<Ftype> *upanels,
+    xLUstructGPU_t<Ftype> *dA, int batchCount, gpuStream_t cuStream
 );

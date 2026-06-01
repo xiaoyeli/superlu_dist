@@ -101,7 +101,18 @@ at the top-level directory.
 #define  blockDim_y blockDim.y
 #define  gridDim_x gridDim.x
 #define  gridDim_y gridDim.y
-
+#define  gpu_thrust_par thrust::system::cuda::par
+#define gpuMemcpy2D cudaMemcpy2D
+#define gpublasSideMode_t cublasSideMode_t
+#define gpublasFillMode_t cublasFillMode_t
+#define gpublasOperation_t cublasOperation_t
+#define gpublasDiagType_t cublasDiagType_t
+#define GPUBLAS_SIDE_RIGHT CUBLAS_SIDE_RIGHT
+#define GPUBLAS_SIDE_LEFT CUBLAS_SIDE_LEFT
+#define GPUBLAS_FILL_MODE_UPPER CUBLAS_FILL_MODE_UPPER
+#define GPUBLAS_FILL_MODE_LOWER CUBLAS_FILL_MODE_LOWER
+#define GPUBLAS_DIAG_NON_UNIT CUBLAS_DIAG_NON_UNIT
+#define GPUBLAS_DIAG_UNIT CUBLAS_DIAG_UNIT
 
 
 
@@ -196,6 +207,18 @@ at the top-level directory.
 #define  blockDim_y hipBlockDim_y
 #define  gridDim_x hipGridDim_x
 #define  gridDim_y hipGridDim_y
+#define  gpu_thrust_par thrust::hip::par
+#define gpuMemcpy2D hipMemcpy2D
+#define gpublasSideMode_t hipblasSideMode_t
+#define gpublasFillMode_t hipblasFillMode_t
+#define gpublasOperation_t hipblasOperation_t
+#define gpublasDiagType_t hipblasDiagType_t
+#define GPUBLAS_SIDE_RIGHT HIPBLAS_SIDE_RIGHT
+#define GPUBLAS_SIDE_LEFT HIPBLAS_SIDE_LEFT
+#define GPUBLAS_FILL_MODE_UPPER HIPBLAS_FILL_MODE_UPPER
+#define GPUBLAS_FILL_MODE_LOWER HIPBLAS_FILL_MODE_LOWER
+#define GPUBLAS_DIAG_NON_UNIT HIPBLAS_DIAG_NON_UNIT
+#define GPUBLAS_DIAG_UNIT HIPBLAS_DIAG_UNIT
 
 
 #endif

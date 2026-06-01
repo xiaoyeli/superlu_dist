@@ -1,7 +1,11 @@
 #include <thrust/device_ptr.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
+#ifdef HAVE_CUDA
 #include <thrust/system/cuda/execution_policy.h>
+#elif defined(HAVE_HIP)
+#include <thrust/system/hip/execution_policy.h>
+#endif
 #include <thrust/transform_reduce.h>
 #include <thrust/transform_scan.h>
 #include <thrust/functional.h>
@@ -31,7 +35,7 @@ inline void marshallBatchedLUData(TBatchFactorizeWorkspace<T>* ws, int_t k_st, i
     );
 
     thrust::for_each(
-        thrust::system::cuda::par, thrust::counting_iterator<int_t>(0),
+        gpu_thrust_par, thrust::counting_iterator<int_t>(0),
         thrust::counting_iterator<int_t>(mdata.batchsize), func
     );
 }
@@ -52,7 +56,7 @@ inline void marshallBatchedTRSMUData(TBatchFactorizeWorkspace<T>* ws, int_t k_st
     );
 
     thrust::for_each(
-        thrust::system::cuda::par, thrust::counting_iterator<int_t>(0),
+        gpu_thrust_par, thrust::counting_iterator<int_t>(0),
         thrust::counting_iterator<int_t>(mdata.batchsize), func
     );
 }
@@ -72,7 +76,7 @@ inline void marshallBatchedTRSMLData(TBatchFactorizeWorkspace<T>* ws, int_t k_st
     );
 
     thrust::for_each(
-        thrust::system::cuda::par, thrust::counting_iterator<int_t>(0),
+        gpu_thrust_par, thrust::counting_iterator<int_t>(0),
         thrust::counting_iterator<int_t>(mdata.batchsize), func
     );
 }
@@ -94,14 +98,14 @@ inline void marshallBatchedSCUData(TBatchFactorizeWorkspace<T>* ws, int_t k_st, 
         d_localLU.Lnzval_bc_ptr, d_localLU.Lrowind_bc_ptr, ws->perm_c_supno, ws->xsup, ws->gemm_buff_ptrs
     );
 
-    thrust::for_each(thrust::system::cuda::par, start, end, func);
+    thrust::for_each(gpu_thrust_par, start, end, func);
 
     // Set the max dims in the marshalled data 
-    sc_mdata.max_m = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_m_array, sc_mdata.dev_m_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
-    sc_mdata.max_n = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_n_array, sc_mdata.dev_n_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
-    sc_mdata.max_k = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_k_array, sc_mdata.dev_k_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
-    sc_mdata.max_ilen = thrust::transform_reduce(thrust::system::cuda::par, start, end, element_diff<BatchDim_t>(sc_mdata.dev_ist, sc_mdata.dev_iend), 0, thrust::maximum<BatchDim_t>());
-    sc_mdata.max_jlen = thrust::transform_reduce(thrust::system::cuda::par, start, end, element_diff<BatchDim_t>(sc_mdata.dev_jst, sc_mdata.dev_jend), 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_m = thrust::reduce(gpu_thrust_par, sc_mdata.dev_m_array, sc_mdata.dev_m_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_n = thrust::reduce(gpu_thrust_par, sc_mdata.dev_n_array, sc_mdata.dev_n_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_k = thrust::reduce(gpu_thrust_par, sc_mdata.dev_k_array, sc_mdata.dev_k_array + sc_mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_ilen = thrust::transform_reduce(gpu_thrust_par, start, end, element_diff<BatchDim_t>(sc_mdata.dev_ist, sc_mdata.dev_iend), 0, thrust::maximum<BatchDim_t>());
+    sc_mdata.max_jlen = thrust::transform_reduce(gpu_thrust_par, start, end, element_diff<BatchDim_t>(sc_mdata.dev_jst, sc_mdata.dev_jend), 0, thrust::maximum<BatchDim_t>());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -356,7 +360,7 @@ inline void scatterGPU_batchDriver_flat(
     T **Unzval_br_new_ptr, int_t** Ucolind_br_ptr, T** Lnzval_bc_ptr, 
     int_t** Lrowind_bc_ptr, int_t** lblock_gid_ptrs, int_t **lblock_start_ptrs, 
     int_t *dperm_c_supno, int_t *xsup, int_t ldt, BatchDim_t max_ilen, BatchDim_t max_jlen, 
-    BatchDim_t batchCount, cudaStream_t cuStream
+    BatchDim_t batchCount, gpuStream_t cuStream
 )
 {
     const BatchDim_t op_increment = 65535;
@@ -383,14 +387,14 @@ void computeLBlockData(TBatchFactorizeWorkspace<T>* ws, int_t nsupers)
     LocalLU_type<T>& d_localLU = ws->d_localLU;
 
     // Allocate memory for the offsets and the pointers 
-    gpuErrchk( cudaMalloc(&ws->d_lblock_gid_offsets, sizeof(int64_t) * (nsupers + 1)) );
-    gpuErrchk( cudaMalloc(&ws->d_lblock_start_offsets, sizeof(int64_t) * (nsupers + 1)) );
-    gpuErrchk( cudaMalloc(&ws->d_lblock_gid_ptrs, sizeof(int_t*) * nsupers) );
-    gpuErrchk( cudaMalloc(&ws->d_lblock_start_ptrs, sizeof(int_t*) * nsupers) );
+    gpuErrchk( gpuMalloc(&ws->d_lblock_gid_offsets, sizeof(int64_t) * (nsupers + 1)) );
+    gpuErrchk( gpuMalloc(&ws->d_lblock_start_offsets, sizeof(int64_t) * (nsupers + 1)) );
+    gpuErrchk( gpuMalloc(&ws->d_lblock_gid_ptrs, sizeof(int_t*) * nsupers) );
+    gpuErrchk( gpuMalloc(&ws->d_lblock_start_ptrs, sizeof(int_t*) * nsupers) );
 
     // Initialize to the block counts for each panel
     thrust::for_each(
-        thrust::system::cuda::par, thrust::counting_iterator<int_t>(0), 
+        gpu_thrust_par, thrust::counting_iterator<int_t>(0), 
         thrust::counting_iterator<int_t>(nsupers + 1), BatchLDataSizeAssign_Func(
             d_localLU.Lrowind_bc_ptr, ws->d_lblock_gid_offsets, ws->d_lblock_start_offsets
     ) );
@@ -398,19 +402,19 @@ void computeLBlockData(TBatchFactorizeWorkspace<T>* ws, int_t nsupers)
     // Do an inclusive scan to compute offsets and get the total amount of blocks 
     ws->total_l_blocks = *(thrust::device_ptr<int64_t>(
         thrust::inclusive_scan(
-            thrust::system::cuda::par, ws->d_lblock_gid_offsets + 1, 
+            gpu_thrust_par, ws->d_lblock_gid_offsets + 1, 
             ws->d_lblock_gid_offsets + nsupers + 1, ws->d_lblock_gid_offsets + 1
     ) ) - 1);
 
     ws->total_start_size = *(thrust::device_ptr<int64_t>(
         thrust::inclusive_scan(
-            thrust::system::cuda::par, ws->d_lblock_start_offsets + 1, 
+            gpu_thrust_par, ws->d_lblock_start_offsets + 1, 
             ws->d_lblock_start_offsets + nsupers + 1, ws->d_lblock_start_offsets + 1
     ) ) - 1);
 
     // Allocate the block data 
-    gpuErrchk( cudaMalloc(&ws->d_lblock_gid_dat, sizeof(int_t) * ws->total_l_blocks) );
-    gpuErrchk( cudaMalloc(&ws->d_lblock_start_dat, sizeof(int_t) * ws->total_start_size) );
+    gpuErrchk( gpuMalloc(&ws->d_lblock_gid_dat, sizeof(int_t) * ws->total_l_blocks) );
+    gpuErrchk( gpuMalloc(&ws->d_lblock_start_dat, sizeof(int_t) * ws->total_start_size) );
 
     // Generate the pointers 
     generateOffsetPointers(ws->d_lblock_gid_dat, ws->d_lblock_gid_offsets, ws->d_lblock_gid_ptrs, nsupers);
@@ -418,7 +422,7 @@ void computeLBlockData(TBatchFactorizeWorkspace<T>* ws, int_t nsupers)
 
     // Now copy the data over from d_localLU
     thrust::for_each(
-        thrust::system::cuda::par, thrust::counting_iterator<int_t>(0), 
+        gpu_thrust_par, thrust::counting_iterator<int_t>(0), 
         thrust::counting_iterator<int_t>(nsupers), BatchLDataAssign_Func(
         d_localLU.Lrowind_bc_ptr, ws->d_lblock_gid_ptrs, ws->d_lblock_start_ptrs
     ) );
@@ -469,25 +473,25 @@ void batchAllocateGemmBuffers(
 	    }
 	}
     // Allocate the gemm buffers 
-    gpuErrchk( cudaMalloc(&(ws->gemm_buff_ptrs), sizeof(T*) * mxLeafNode) );
-    gpuErrchk( cudaMalloc(&(ws->gemm_buff_offsets), sizeof(int64_t) * (mxLeafNode + 1)) );
+    gpuErrchk( gpuMalloc(&(ws->gemm_buff_ptrs), sizeof(T*) * mxLeafNode) );
+    gpuErrchk( gpuMalloc(&(ws->gemm_buff_offsets), sizeof(int64_t) * (mxLeafNode + 1)) );
 
     // Copy the host offset to the device 
-    gpuErrchk( cudaMemcpy( ws->gemm_buff_offsets + 1, gemmCsizes.data(), mxLeafNode * sizeof(int64_t), cudaMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy( ws->gemm_buff_offsets + 1, gemmCsizes.data(), mxLeafNode * sizeof(int64_t), gpuMemcpyHostToDevice) );
     *(thrust::device_ptr<int64_t>(ws->gemm_buff_offsets)) = 0;
 
     int64_t total_entries = *(thrust::device_ptr<int64_t>(
         thrust::inclusive_scan(
-            thrust::system::cuda::par, ws->gemm_buff_offsets + 1, 
+            gpu_thrust_par, ws->gemm_buff_offsets + 1, 
             ws->gemm_buff_offsets + mxLeafNode + 1, ws->gemm_buff_offsets + 1
     ) ) - 1);
 
     // Allocate the base memory and generate the pointers on the device
-    gpuErrchk(cudaMalloc(&(ws->gemm_buff_base), sizeof(T) * total_entries));
+    gpuErrchk(gpuMalloc(&(ws->gemm_buff_base), sizeof(T) * total_entries));
     generateOffsetPointers(ws->gemm_buff_base, ws->gemm_buff_offsets, ws->gemm_buff_ptrs, mxLeafNode);
 
     // Allocate GPU copy for the node list 
-    gpuErrchk(cudaMalloc(&(ws->perm_c_supno), sizeof(int_t) * mx_fsize));
+    gpuErrchk(gpuMalloc(&(ws->perm_c_supno), sizeof(int_t) * mx_fsize));
 }
 
 template<class T>
@@ -497,36 +501,36 @@ void copyHostLUDataToGPU(TBatchFactorizeWorkspace<T>* ws, LocalLU_type<T>* host_
 
     // Allocate data, offset and ptr arrays for the indices and lower triangular blocks 
     d_localLU.Lrowind_bc_cnt = host_Llu->Lrowind_bc_cnt;
-    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_dat), d_localLU.Lrowind_bc_cnt * sizeof(int_t)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_offset), nsupers * sizeof(long int)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_ptr), nsupers * sizeof(int_t*)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Lrowind_bc_dat), d_localLU.Lrowind_bc_cnt * sizeof(int_t)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Lrowind_bc_offset), nsupers * sizeof(long int)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Lrowind_bc_ptr), nsupers * sizeof(int_t*)) );
 
     d_localLU.Lnzval_bc_cnt = host_Llu->Lnzval_bc_cnt;
-    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_dat), d_localLU.Lnzval_bc_cnt * sizeof(T)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_offset), nsupers * sizeof(long int)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_ptr), nsupers * sizeof(T*)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Lnzval_bc_dat), d_localLU.Lnzval_bc_cnt * sizeof(T)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Lnzval_bc_offset), nsupers * sizeof(long int)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Lnzval_bc_ptr), nsupers * sizeof(T*)) );
 
     // Allocate data, offset and ptr arrays for the indices and upper triangular blocks 
     d_localLU.Ucolind_br_cnt = host_Llu->Ucolind_br_cnt;
-    gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_dat), d_localLU.Ucolind_br_cnt * sizeof(int_t)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_offset), nsupers * sizeof(int64_t)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_ptr), nsupers * sizeof(int_t*)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Ucolind_br_dat), d_localLU.Ucolind_br_cnt * sizeof(int_t)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Ucolind_br_offset), nsupers * sizeof(int64_t)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Ucolind_br_ptr), nsupers * sizeof(int_t*)) );
 
     d_localLU.Unzval_br_new_cnt = host_Llu->Unzval_br_new_cnt;
-    gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_dat), d_localLU.Unzval_br_new_cnt * sizeof(T)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_offset), nsupers * sizeof(int64_t)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_ptr), nsupers * sizeof(T*)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Unzval_br_new_dat), d_localLU.Unzval_br_new_cnt * sizeof(T)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Unzval_br_new_offset), nsupers * sizeof(int64_t)) );
+    gpuErrchk( gpuMalloc(&(d_localLU.Unzval_br_new_ptr), nsupers * sizeof(T*)) );
 
     // Copy the index and nzval data over to the GPU 
-    gpuErrchk( cudaMemcpy(d_localLU.Lrowind_bc_dat, host_Llu->Lrowind_bc_dat, d_localLU.Lrowind_bc_cnt * sizeof(int_t), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Lrowind_bc_offset, host_Llu->Lrowind_bc_offset, nsupers * sizeof(long int), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Lnzval_bc_dat, host_Llu->Lnzval_bc_dat, d_localLU.Lnzval_bc_cnt * sizeof(T), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Lnzval_bc_offset, host_Llu->Lnzval_bc_offset, nsupers * sizeof(long int), cudaMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy(d_localLU.Lrowind_bc_dat, host_Llu->Lrowind_bc_dat, d_localLU.Lrowind_bc_cnt * sizeof(int_t), gpuMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy(d_localLU.Lrowind_bc_offset, host_Llu->Lrowind_bc_offset, nsupers * sizeof(long int), gpuMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy(d_localLU.Lnzval_bc_dat, host_Llu->Lnzval_bc_dat, d_localLU.Lnzval_bc_cnt * sizeof(T), gpuMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy(d_localLU.Lnzval_bc_offset, host_Llu->Lnzval_bc_offset, nsupers * sizeof(long int), gpuMemcpyHostToDevice) );
     
-    gpuErrchk( cudaMemcpy(d_localLU.Ucolind_br_dat, host_Llu->Ucolind_br_dat, d_localLU.Ucolind_br_cnt * sizeof(int_t), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Ucolind_br_offset, host_Llu->Ucolind_br_offset, nsupers * sizeof(int64_t), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Unzval_br_new_dat, host_Llu->Unzval_br_new_dat, d_localLU.Unzval_br_new_cnt * sizeof(T), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Unzval_br_new_offset, host_Llu->Unzval_br_new_offset, nsupers * sizeof(int64_t), cudaMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy(d_localLU.Ucolind_br_dat, host_Llu->Ucolind_br_dat, d_localLU.Ucolind_br_cnt * sizeof(int_t), gpuMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy(d_localLU.Ucolind_br_offset, host_Llu->Ucolind_br_offset, nsupers * sizeof(int64_t), gpuMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy(d_localLU.Unzval_br_new_dat, host_Llu->Unzval_br_new_dat, d_localLU.Unzval_br_new_cnt * sizeof(T), gpuMemcpyHostToDevice) );
+    gpuErrchk( gpuMemcpy(d_localLU.Unzval_br_new_offset, host_Llu->Unzval_br_new_offset, nsupers * sizeof(int64_t), gpuMemcpyHostToDevice) );
     
     // Generate the pointers using the offsets 
     generateOffsetPointers(d_localLU.Lrowind_bc_dat, d_localLU.Lrowind_bc_offset, d_localLU.Lrowind_bc_ptr, nsupers);
@@ -561,7 +565,7 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         ws->magma_queue
     );
     
-    int max_info = thrust::reduce(thrust::system::cuda::par, mdata.dev_info_array, mdata.dev_info_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
+    int max_info = thrust::reduce(gpu_thrust_par, mdata.dev_info_array, mdata.dev_info_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
     printf("Factor info = %d max_info = %d\n", info, max_info);
 
     // Upper panel batched triangular solves
@@ -621,7 +625,7 @@ int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sfores
     
     // Host list of nodes in the order of factorization copied to the GPU 
     int_t *perm_c_supno = sforest->nodeList; 
-    gpuErrchk(cudaMemcpy(ws->perm_c_supno, perm_c_supno, sizeof(int_t) * nnodes, cudaMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ws->perm_c_supno, perm_c_supno, sizeof(int_t) * nnodes, gpuMemcpyHostToDevice));
 
     // Tree containing the supernode limits per level 
     treeTopoInfo_t *treeTopoInfo = &sforest->topoInfo;
@@ -644,7 +648,7 @@ TBatchFactorizeWorkspace<T>* getBatchFactorizeWorkspaceT(
     TBatchFactorizeWorkspace<T>* ws = new TBatchFactorizeWorkspace<T>();
     
     int device_id;
-    gpuErrchk( cudaGetDevice(&device_id) );
+    gpuErrchk( gpuGetDevice(&device_id) );
 
     int_t* xsup = LUstruct->Glu_persist->xsup;
     int_t n = xsup[nsupers];
@@ -661,14 +665,18 @@ TBatchFactorizeWorkspace<T>* getBatchFactorizeWorkspaceT(
     ws->nsupers = nsupers;
 
     // Set up device handles 
-    gpuErrchk( cudaStreamCreate(&ws->stream) );
-    cublasCreate( &ws->cuhandle );
+    gpuErrchk( gpuStreamCreate(&ws->stream) );
+    gpublasCreate( &ws->cuhandle );
+#ifdef HAVE_CUDA
     magma_queue_create_from_cuda(device_id, ws->stream, ws->cuhandle, NULL, &ws->magma_queue);
+#elif defined(HAVE_HIP)
+    magma_queue_create_from_hip(device_id, ws->stream, ws->cuhandle, NULL, &ws->magma_queue);
+#endif
 
     // Copy the xsup to the GPU 
     tic = SuperLU_timer_();
-    gpuErrchk(cudaMalloc(&ws->xsup, (nsupers + 1) * sizeof(int_t)));
-    gpuErrchk(cudaMemcpy(ws->xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice));
+    gpuErrchk(gpuMalloc(&ws->xsup, (nsupers + 1) * sizeof(int_t)));
+    gpuErrchk(gpuMemcpy(ws->xsup, xsup, (nsupers + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
 
     // Copy the flattened LU data over to the GPU 
     // TODO: I currently have to make a GPU friendly copy of the globa ids of blocks within L
@@ -706,8 +714,8 @@ void copyGPULUDataToHostT(
     double tic = SuperLU_timer_();
     
     // Only need to copy the nzval data arrays when moving from the GPU to the Host 
-    gpuErrchk( cudaMemcpy(host_Llu->Lnzval_bc_dat, d_localLU.Lnzval_bc_dat, d_localLU.Lnzval_bc_cnt * sizeof(T), cudaMemcpyDeviceToHost) );
-    gpuErrchk( cudaMemcpy(host_Llu->Unzval_br_new_dat, d_localLU.Unzval_br_new_dat, d_localLU.Unzval_br_new_cnt * sizeof(T), cudaMemcpyDeviceToHost) );
+    gpuErrchk( gpuMemcpy(host_Llu->Lnzval_bc_dat, d_localLU.Lnzval_bc_dat, d_localLU.Lnzval_bc_cnt * sizeof(T), gpuMemcpyDeviceToHost) );
+    gpuErrchk( gpuMemcpy(host_Llu->Unzval_br_new_dat, d_localLU.Unzval_br_new_dat, d_localLU.Unzval_br_new_cnt * sizeof(T), gpuMemcpyDeviceToHost) );
     
     double copy_time = SuperLU_timer_() - tic;
 
@@ -727,36 +735,36 @@ void copyGPULUDataToHostT(
 template<class T>
 void freeBatchFactorizeWorkspaceT(TBatchFactorizeWorkspace<T>* ws)
 {
-    gpuErrchk( cudaFree(ws->d_lblock_gid_dat) );
-    gpuErrchk( cudaFree(ws->d_lblock_gid_offsets) );
-    gpuErrchk( cudaFree(ws->d_lblock_gid_ptrs) );
-    gpuErrchk( cudaFree(ws->d_lblock_start_dat) );
-    gpuErrchk( cudaFree(ws->d_lblock_start_offsets) );
-    gpuErrchk( cudaFree(ws->d_lblock_start_ptrs) );
-    gpuErrchk( cudaFree(ws->gemm_buff_base) );
-    gpuErrchk( cudaFree(ws->gemm_buff_offsets) );
-    gpuErrchk( cudaFree(ws->gemm_buff_ptrs) );
-    gpuErrchk( cudaFree(ws->perm_c_supno) );
-    gpuErrchk( cudaFree(ws->xsup) );
+    gpuErrchk( gpuFree(ws->d_lblock_gid_dat) );
+    gpuErrchk( gpuFree(ws->d_lblock_gid_offsets) );
+    gpuErrchk( gpuFree(ws->d_lblock_gid_ptrs) );
+    gpuErrchk( gpuFree(ws->d_lblock_start_dat) );
+    gpuErrchk( gpuFree(ws->d_lblock_start_offsets) );
+    gpuErrchk( gpuFree(ws->d_lblock_start_ptrs) );
+    gpuErrchk( gpuFree(ws->gemm_buff_base) );
+    gpuErrchk( gpuFree(ws->gemm_buff_offsets) );
+    gpuErrchk( gpuFree(ws->gemm_buff_ptrs) );
+    gpuErrchk( gpuFree(ws->perm_c_supno) );
+    gpuErrchk( gpuFree(ws->xsup) );
 
     LocalLU_type<T>& d_localLU = ws->d_localLU;
-    gpuErrchk( cudaFree(d_localLU.Lrowind_bc_dat) );
-    gpuErrchk( cudaFree(d_localLU.Lrowind_bc_offset) );
-    gpuErrchk( cudaFree(d_localLU.Lrowind_bc_ptr) );
-    gpuErrchk( cudaFree(d_localLU.Lnzval_bc_dat) );
-    gpuErrchk( cudaFree(d_localLU.Lnzval_bc_offset) );
-    gpuErrchk( cudaFree(d_localLU.Lnzval_bc_ptr) );
-    gpuErrchk( cudaFree(d_localLU.Ucolind_br_dat) );
-    gpuErrchk( cudaFree(d_localLU.Ucolind_br_offset) );
-    gpuErrchk( cudaFree(d_localLU.Ucolind_br_ptr) );
-    gpuErrchk( cudaFree(d_localLU.Unzval_br_new_dat) );
-    gpuErrchk( cudaFree(d_localLU.Unzval_br_new_offset) );
-    gpuErrchk( cudaFree(d_localLU.Unzval_br_new_ptr) );
+    gpuErrchk( gpuFree(d_localLU.Lrowind_bc_dat) );
+    gpuErrchk( gpuFree(d_localLU.Lrowind_bc_offset) );
+    gpuErrchk( gpuFree(d_localLU.Lrowind_bc_ptr) );
+    gpuErrchk( gpuFree(d_localLU.Lnzval_bc_dat) );
+    gpuErrchk( gpuFree(d_localLU.Lnzval_bc_offset) );
+    gpuErrchk( gpuFree(d_localLU.Lnzval_bc_ptr) );
+    gpuErrchk( gpuFree(d_localLU.Ucolind_br_dat) );
+    gpuErrchk( gpuFree(d_localLU.Ucolind_br_offset) );
+    gpuErrchk( gpuFree(d_localLU.Ucolind_br_ptr) );
+    gpuErrchk( gpuFree(d_localLU.Unzval_br_new_dat) );
+    gpuErrchk( gpuFree(d_localLU.Unzval_br_new_offset) );
+    gpuErrchk( gpuFree(d_localLU.Unzval_br_new_ptr) );
 #ifdef HAVE_MAGMA
     magma_queue_destroy(ws->magma_queue);
 #endif
-    cublasDestroy( ws->cuhandle );
-    gpuErrchk( cudaStreamDestroy(ws->stream) );
+    gpublasDestroy( ws->cuhandle );
+    gpuErrchk( gpuStreamDestroy(ws->stream) );
     //YL: not sure why the destructor TBatchLUMarshallData and TBatchSCUMarshallData are not called. Calling them explicitly here. 
     ws->marshall_data.DeleteTBatchLUMarshallData();
     ws->sc_marshall_data.DeleteTBatchSCUMarshallData();

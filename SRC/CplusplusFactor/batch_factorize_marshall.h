@@ -272,7 +272,7 @@ inline void generateOffsetPointers(T *base_mem, offT *offsets, T **ptrs, size_t 
     UnaryOffsetPtrAssign<T, offT> offset_ptr_functor(base_mem, offsets, ptrs);
 
     thrust::for_each(
-        thrust::system::cuda::par, thrust::counting_iterator<offT>(0),
+        gpu_thrust_par, thrust::counting_iterator<offT>(0),
         thrust::counting_iterator<offT>(num_arrays), offset_ptr_functor
     );
 }

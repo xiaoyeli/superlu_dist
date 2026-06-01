@@ -19,25 +19,25 @@ struct TBatchLUMarshallData
 
     void DeleteTBatchLUMarshallData()
     {
-        gpuErrchk(cudaFree(dev_diag_ptrs));
-        gpuErrchk(cudaFree(dev_panel_ptrs));
-        gpuErrchk(cudaFree(dev_diag_ld_array));
-        gpuErrchk(cudaFree(dev_diag_dim_array));
-        gpuErrchk(cudaFree(dev_info_array));
-        gpuErrchk(cudaFree(dev_panel_ld_array));
-        gpuErrchk(cudaFree(dev_panel_dim_array));
+        gpuErrchk(gpuFree(dev_diag_ptrs));
+        gpuErrchk(gpuFree(dev_panel_ptrs));
+        gpuErrchk(gpuFree(dev_diag_ld_array));
+        gpuErrchk(gpuFree(dev_diag_dim_array));
+        gpuErrchk(gpuFree(dev_info_array));
+        gpuErrchk(gpuFree(dev_panel_ld_array));
+        gpuErrchk(gpuFree(dev_panel_dim_array));
     }
 
     void setBatchSize(BatchDim_t batch_size)
     {
-        gpuErrchk(cudaMalloc(&dev_diag_ptrs, batch_size * sizeof(T*)));
-        gpuErrchk(cudaMalloc(&dev_panel_ptrs, batch_size * sizeof(T*)));
+        gpuErrchk(gpuMalloc(&dev_diag_ptrs, batch_size * sizeof(T*)));
+        gpuErrchk(gpuMalloc(&dev_panel_ptrs, batch_size * sizeof(T*)));
 
-        gpuErrchk(cudaMalloc(&dev_diag_ld_array, batch_size * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_diag_dim_array, (batch_size + 1) * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_info_array, batch_size * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_panel_ld_array, batch_size * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_panel_dim_array, (batch_size + 1) * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_diag_ld_array, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_diag_dim_array, (batch_size + 1) * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_info_array, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_panel_ld_array, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_panel_dim_array, (batch_size + 1) * sizeof(BatchDim_t)));
     }
 
     // Diagonal device pointer data 
@@ -69,39 +69,39 @@ struct TBatchSCUMarshallData
 
     void DeleteTBatchSCUMarshallData()
     {
-        gpuErrchk(cudaFree(dev_A_ptrs));
-        gpuErrchk(cudaFree(dev_B_ptrs));
-        gpuErrchk(cudaFree(dev_C_ptrs));
-        gpuErrchk(cudaFree(dev_lda_array));
-        gpuErrchk(cudaFree(dev_ldb_array));
-        gpuErrchk(cudaFree(dev_ldc_array));
-        gpuErrchk(cudaFree(dev_m_array));
-        gpuErrchk(cudaFree(dev_n_array));
-        gpuErrchk(cudaFree(dev_k_array));
-        gpuErrchk(cudaFree(dev_ist));
-        gpuErrchk(cudaFree(dev_iend));
-        gpuErrchk(cudaFree(dev_jst));
-        gpuErrchk(cudaFree(dev_jend));
+        gpuErrchk(gpuFree(dev_A_ptrs));
+        gpuErrchk(gpuFree(dev_B_ptrs));
+        gpuErrchk(gpuFree(dev_C_ptrs));
+        gpuErrchk(gpuFree(dev_lda_array));
+        gpuErrchk(gpuFree(dev_ldb_array));
+        gpuErrchk(gpuFree(dev_ldc_array));
+        gpuErrchk(gpuFree(dev_m_array));
+        gpuErrchk(gpuFree(dev_n_array));
+        gpuErrchk(gpuFree(dev_k_array));
+        gpuErrchk(gpuFree(dev_ist));
+        gpuErrchk(gpuFree(dev_iend));
+        gpuErrchk(gpuFree(dev_jst));
+        gpuErrchk(gpuFree(dev_jend));
     }
 
     void setBatchSize(BatchDim_t batch_size)
     {
-        gpuErrchk(cudaMalloc(&dev_A_ptrs, batch_size * sizeof(T*)));
-        gpuErrchk(cudaMalloc(&dev_B_ptrs, batch_size * sizeof(T*)));
-        gpuErrchk(cudaMalloc(&dev_C_ptrs, batch_size * sizeof(T*)));
+        gpuErrchk(gpuMalloc(&dev_A_ptrs, batch_size * sizeof(T*)));
+        gpuErrchk(gpuMalloc(&dev_B_ptrs, batch_size * sizeof(T*)));
+        gpuErrchk(gpuMalloc(&dev_C_ptrs, batch_size * sizeof(T*)));
 
-        gpuErrchk(cudaMalloc(&dev_lda_array, batch_size * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_ldb_array, batch_size * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_ldc_array, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_lda_array, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_ldb_array, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_ldc_array, batch_size * sizeof(BatchDim_t)));
 
-        gpuErrchk(cudaMalloc(&dev_m_array, (batch_size + 1) * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_n_array, (batch_size + 1) * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_k_array, (batch_size + 1) * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_m_array, (batch_size + 1) * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_n_array, (batch_size + 1) * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_k_array, (batch_size + 1) * sizeof(BatchDim_t)));
 
-        gpuErrchk(cudaMalloc(&dev_ist, batch_size * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_iend, batch_size * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_jst, batch_size * sizeof(BatchDim_t)));
-        gpuErrchk(cudaMalloc(&dev_jend, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_ist, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_iend, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_jst, batch_size * sizeof(BatchDim_t)));
+        gpuErrchk(gpuMalloc(&dev_jend, batch_size * sizeof(BatchDim_t)));
     }
 
     // GEMM device pointer data 
@@ -124,12 +124,12 @@ struct TBatchSCUMarshallData
 
 template<class T>
 struct TBatchFactorizeWorkspace {
-    // Library handles 
-#ifdef HAVE_MAGMA    
+    // Library handles
+#ifdef HAVE_MAGMA
     magma_queue_t magma_queue;
 #endif
-    cudaStream_t stream;
-    cublasHandle_t cuhandle;
+    gpuStream_t stream;
+    gpublasHandle_t cuhandle;
     
     // Marshall data 
     TBatchLUMarshallData<T> marshall_data;

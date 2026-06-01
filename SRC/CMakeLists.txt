@@ -356,6 +356,9 @@ if (TPL_ENABLE_HIPLIB)
     hip/pdgstrs_lsum_cuda.hip.cpp
     hip/dsuperlu_gpu.hip.cpp
     hip/superlu_gpu_utils.hip.cpp
+    hip/LUgpuCHandle_interface_impl.hip.cpp
+    hip/batch_factorize.hip.cpp
+    hip/batch_block_copy.hip.cpp
   )
   if(enable_single)
     list(APPEND hipsources hip/psgstrs_lsum_cuda.hip.cpp hip/ssuperlu_gpu.hip.cpp)

@@ -3,7 +3,7 @@
 // #include "lupanels.hpp"
 #include "cublas_cusolver_wrappers.hpp"
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
@@ -57,7 +57,7 @@ int_t xLUstruct_t<Ftype>::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
                 zRecvUPanelGPU(k0, sender, alpha, beta);
             }
         }
-        cudaStreamSynchronize(A_gpu.cuStreams[0]) ;
+        gpuStreamSynchronize(A_gpu.cuStreams[0]) ;
         // return 0;
         SCT->ancsReduce += SuperLU_timer_() - treduce;
     }
@@ -100,12 +100,12 @@ int_t xLUstruct_t<Ftype>::zRecvLPanelGPU(int_t k0, int_t senderGrid, Ftype alpha
 					 grid3d->zscp.comm, &status);
 
 			/*reduce the updates*/
-            cublasHandle_t handle=A_gpu.cuHandles[0];
-            cudaStream_t cuStream = A_gpu.cuStreams[0];
-            cublasSetStream(handle, cuStream);
+            gpublasHandle_t handle=A_gpu.cuHandles[0];
+            gpuStream_t cuStream = A_gpu.cuStreams[0];
+            gpublasSetStream(handle, cuStream);
             myCublasScal<Ftype>(handle, lPanelVec[lk].nzvalSize(), &alpha, lPanelVec[lk].blkPtrGPU(0), 1);
             myCublasAxpy<Ftype>(handle, lPanelVec[lk].nzvalSize(), &beta, A_gpu.LvalRecvBufs[0], 1, lPanelVec[lk].blkPtrGPU(0), 1);
-			cudaStreamSynchronize(cuStream);
+			gpuStreamSynchronize(cuStream);
             
 		}
 	}
@@ -143,12 +143,12 @@ int_t xLUstruct_t<Ftype>::zRecvUPanelGPU(int_t k0, int_t senderGrid, Ftype alpha
 					 grid3d->zscp.comm, &status);
 
 			/*reduce the updates*/
-            cublasHandle_t handle=A_gpu.cuHandles[0];
-            cudaStream_t cuStream = A_gpu.cuStreams[0];
-            cublasSetStream(handle, cuStream);
+            gpublasHandle_t handle=A_gpu.cuHandles[0];
+            gpuStream_t cuStream = A_gpu.cuStreams[0];
+            gpublasSetStream(handle, cuStream);
 			myCublasScal<Ftype>(handle, uPanelVec[lk].nzvalSize(), &alpha, uPanelVec[lk].blkPtrGPU(0), 1);
 			myCublasAxpy<Ftype>(handle, uPanelVec[lk].nzvalSize(), &beta, A_gpu.UvalRecvBufs[0], 1, uPanelVec[lk].blkPtrGPU(0), 1);
-            cudaStreamSynchronize(cuStream);
+            gpuStreamSynchronize(cuStream);
 		}
 	}
 	return 0;

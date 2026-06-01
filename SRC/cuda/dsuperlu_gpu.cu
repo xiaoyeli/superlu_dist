@@ -206,8 +206,10 @@ void Scatter_GPU_kernel(
 
 	/* thread block assignment: this thread block is
 	   assigned to block (lb, j) in 2D grid */
-	int lb = blockIdx.x + ii_st;
-	int j  = blockIdx.y + jj_st;
+	// int lb = blockIdx.x + ii_st;
+	int lb = blockIdx_x + ii_st;
+	// int j  = blockIdx.y + jj_st;
+	int j  = blockIdx_y + jj_st;
 
 	extern __shared__ int s[];
 	int* indirect_lptr = s;  /* row-wise */
@@ -218,7 +220,8 @@ void Scatter_GPU_kernel(
 
 	int* pfxStorage = (int*) &IndirectJ3[ldt];
 
-	int thread_id = threadIdx.x;
+	// int thread_id = threadIdx.x;
+	int thread_id = threadIdx_x;
 
 	int iukp = Ublock_info[j].iukp;
 	int jb = Ublock_info[j].jb;
@@ -277,7 +280,8 @@ void Scatter_GPU_kernel(
 		/* Each thread is responsible for one block column */
 		__shared__ int ljb_ind;
 		/*do a search ljb_ind at local row lib*/
-		int blks_per_threads = CEILING(num_u_blocks, blockDim.x);
+		// int blks_per_threads = CEILING(num_u_blocks, blockDim.x);
+		int blks_per_threads = CEILING(num_u_blocks, blockDim_x);
 		// printf("blockDim.x =%d \n", blockDim.x);
 
 		for (int i = 0; i < blks_per_threads; ++i)
@@ -313,14 +317,16 @@ void Scatter_GPU_kernel(
 		__syncthreads();
 
 		/* threads are divided into multiple columns */
-		int ColPerBlock = blockDim.x / temp_nbrow;
+		// int ColPerBlock = blockDim.x / temp_nbrow;
+		int ColPerBlock = blockDim_x / temp_nbrow;
 
 		// if (thread_id < blockDim.x)
 		// 	IndirectJ1[thread_id] = 0;
 		if (thread_id < ldt)
 			IndirectJ1[thread_id] = 0;
 
-		if (thread_id < blockDim.x)
+		// if (thread_id < blockDim.x)
+		if (thread_id < blockDim_x)
 		{
 		    if (thread_id < nsupc)
 		    {
@@ -364,7 +370,8 @@ void Scatter_GPU_kernel(
 
 		__shared__ int lib_ind;
 		/*do a search lib_ind for lib*/
-		int blks_per_threads = CEILING(num_l_blocks, blockDim.x);
+		// int blks_per_threads = CEILING(num_l_blocks, blockDim.x);
+		int blks_per_threads = CEILING(num_l_blocks, blockDim_x);
 		for (int i = 0; i < blks_per_threads; ++i)
 		{
 			if (thread_id * blks_per_threads + i < num_l_blocks &&
@@ -397,7 +404,8 @@ void Scatter_GPU_kernel(
 			IndirectJ3[thread_id] = (int) A_gpu->scubufs[streamId].usub_IndirectJ3[cum_ncol + thread_id];
 		__syncthreads();
 
-		int ColPerBlock = blockDim.x / temp_nbrow;
+		// int ColPerBlock = blockDim.x / temp_nbrow;
+		int ColPerBlock = blockDim_x / temp_nbrow;
 
 		nzval = &LnzvalVec[LnzvalPtr[ljb]] + luptrj;
 		ddevice_scatter_l_2D(

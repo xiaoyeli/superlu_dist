@@ -5,7 +5,7 @@
 // #include "lupanels.hpp"
 #include "xlupanels.hpp"
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 #include "lupanels_GPU.cuh"
 #include "xlupanels_GPU.cuh"
 
@@ -29,30 +29,36 @@ int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, diagFactBufs_ty
 
     double t0 = SuperLU_timer_();
     int ksupc = SuperSize(k);
-    cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
-    cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[offset];
-    cudaStream_t cuStream = A_gpu.cuStreams[offset];
+    gpublasHandle_t cubHandle = A_gpu.cuHandles[offset];
+    gpuStream_t cuStream = A_gpu.cuStreams[offset];
 
     /*======= Diagonal Factorization ======*/
     if (iam == procIJ(k, k))
     {
+#ifdef HAVE_CUDA
+        cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[offset];
         lPanelVec[g2lCol(k)].diagFactorCuSolver(k,
                                                 cusolverH, cuStream,
                                                 A_gpu.diagFactWork[offset], A_gpu.diagFactInfo[offset], // CPU pointers
                                                 A_gpu.dFBufs[offset], ksupc, // CPU pointers
                                                 thresh, xsup, options, stat, info);
+#else
+        /* HIP path: no-pivot dense GPU LU via a custom on-device kernel with
+           tiny/zero-pivot replacement (rocSOLVER's getrf_npvt would NaN on the
+           singular diagonal blocks of ill-conditioned matrices).  Runs on cuStream. */
+        lPanelVec[g2lCol(k)].diagFactorGPU(k,
+                                           cuStream,
+                                           A_gpu.dFBufs[offset], ksupc,   // GPU pointers
+                                           thresh, xsup, options, stat, info);
+#endif /* HAVE_CUDA / HAVE_HIP */
 	stat->ops[FACT] += 2.0/3.0 * ksupc * ksupc;
     }
-
-    // CHECK_MALLOC(iam, "after diagFactorCuSolver()");
 
     // TODO: need to synchronize the cuda stream
     /*======= Diagonal Broadcast ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
                   get_mpi_type<Ftype>(), kcol(k), (grid->rscp).comm);
-
-    // CHECK_MALLOC(iam, "after row Bcast");
 
     if (mycol == kcol(k))
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
@@ -64,7 +70,7 @@ int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, diagFactBufs_ty
         uPanelVec[g2lRow(k)].panelSolveGPU(
             cubHandle, cuStream,
             ksupc, A_gpu.dFBufs[offset], ksupc);
-        cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
+        gpuStreamSynchronize(cuStream); // synchronize before broadcast
     if(uPanelVec[g2lRow(k)].nzvalSize()>0){
 	int ncols = uPanelVec[g2lRow(k)].nzcols();
 	stat->ops[FACT] += ksupc*ksupc * ncols; // Sherry added 5/4/25
@@ -76,7 +82,7 @@ int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, diagFactBufs_ty
         lPanelVec[g2lCol(k)].panelSolveGPU(
             cubHandle, cuStream,
             ksupc, A_gpu.dFBufs[offset], ksupc);
-        cudaStreamSynchronize(cuStream);
+        gpuStreamSynchronize(cuStream);
 	if(lPanelVec[g2lCol(k)].nzvalSize()>0){
 	int nrows = lPanelVec[g2lCol(k)].nzrows();
 	stat->ops[FACT] += ksupc*ksupc * nrows; // Sherry added 5/4/25
@@ -97,18 +103,28 @@ int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buff
 
     double t0 = SuperLU_timer_();
     int ksupc = SuperSize(k);
-    cublasHandle_t cubHandle = A_gpu.cuHandles[handle_offset];
-    cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[handle_offset];
-    cudaStream_t cuStream = A_gpu.cuStreams[handle_offset];
+    gpublasHandle_t cubHandle = A_gpu.cuHandles[handle_offset];
+    gpuStream_t cuStream = A_gpu.cuStreams[handle_offset];
 
     /*======= Diagonal Factorization ======*/
     if (iam == procIJ(k, k))
     {
+#ifdef HAVE_CUDA
+        cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[handle_offset];
         lPanelVec[g2lCol(k)].diagFactorCuSolver(k,
                                                 cusolverH, cuStream,
                                                 A_gpu.diagFactWork[handle_offset], A_gpu.diagFactInfo[handle_offset], // CPU pointers
                                                 A_gpu.dFBufs[buffer_offset], ksupc,                                   // CPU pointers
                                                 thresh, xsup, options, stat, info);
+#else
+        /* HIP path: no-pivot dense GPU LU via a custom on-device kernel with
+           tiny/zero-pivot replacement (rocSOLVER's getrf_npvt would NaN on the
+           singular diagonal blocks of ill-conditioned matrices).  Runs on cuStream. */
+        lPanelVec[g2lCol(k)].diagFactorGPU(k,
+                                           cuStream,
+                                           A_gpu.dFBufs[buffer_offset], ksupc,  // GPU pointers
+                                           thresh, xsup, options, stat, info);
+#endif /* HAVE_CUDA / HAVE_HIP */
     }
 
     // CHECK_MALLOC(iam, "after diagFactorCuSolver()");
@@ -131,7 +147,7 @@ int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buff
         uPanelVec[g2lRow(k)].panelSolveGPU(
             cubHandle, cuStream,
             ksupc, A_gpu.dFBufs[buffer_offset], ksupc);
-        cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
+        gpuStreamSynchronize(cuStream); // synchronize before broadcast
     }
 
     if (mycol == kcol(k))
@@ -139,7 +155,7 @@ int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buff
         lPanelVec[g2lCol(k)].panelSolveGPU(
             cubHandle, cuStream,
             ksupc, A_gpu.dFBufs[buffer_offset], ksupc);
-        cudaStreamSynchronize(cuStream);
+        gpuStreamSynchronize(cuStream);
     }
     SCT->tDiagFactorPanelSolve += (SuperLU_timer_() - t0);
 
@@ -152,8 +168,8 @@ int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolveGPU(int_t k, int_t offset, diagFa
 {
     double t0 = SuperLU_timer_();
     int_t ksupc = SuperSize(k);
-    cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
-    cudaStream_t cuStream = A_gpu.cuStreams[offset];
+    gpublasHandle_t cubHandle = A_gpu.cuHandles[offset];
+    gpuStream_t cuStream = A_gpu.cuStreams[offset];
     if (iam == procIJ(k, k))
     {
 
@@ -175,22 +191,22 @@ int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolveGPU(int_t k, int_t offset, diagFa
     if (myrow == krow(k))
     {
 
-        cudaMemcpy(A_gpu.dFBufs[offset], dFBufs[offset]->BlockLFactor,
-                   ksupc * ksupc * sizeof(Ftype), cudaMemcpyHostToDevice);
+        gpuMemcpy(A_gpu.dFBufs[offset], dFBufs[offset]->BlockLFactor,
+                   ksupc * ksupc * sizeof(Ftype), gpuMemcpyHostToDevice);
         uPanelVec[g2lRow(k)].panelSolveGPU(
             cubHandle, cuStream,
             ksupc, A_gpu.dFBufs[offset], ksupc);
-        cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
+        gpuStreamSynchronize(cuStream); // synchronize before broadcast
     }
 
     if (mycol == kcol(k))
     {
-        cudaMemcpy(A_gpu.dFBufs[offset], dFBufs[offset]->BlockUFactor,
-                   ksupc * ksupc * sizeof(Ftype), cudaMemcpyHostToDevice);
+        gpuMemcpy(A_gpu.dFBufs[offset], dFBufs[offset]->BlockUFactor,
+                   ksupc * ksupc * sizeof(Ftype), gpuMemcpyHostToDevice);
         lPanelVec[g2lCol(k)].panelSolveGPU(
             cubHandle, cuStream,
             ksupc, A_gpu.dFBufs[offset], ksupc);
-        cudaStreamSynchronize(cuStream);
+        gpuStreamSynchronize(cuStream);
     }
     SCT->tDiagFactorPanelSolve += (SuperLU_timer_() - t0);
 
@@ -221,16 +237,16 @@ int_t xLUstruct_t<Ftype>::dPanelBcastGPU(int_t k, int_t offset)
         MPI_Bcast(k_upanel.gpuPanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
         MPI_Bcast(k_upanel.gpuPanel.val, UvalSendCounts[k], get_mpi_type<Ftype>(), krow(k), grid3d->cscp.comm);
         // copy the index to cpu
-        gpuErrchk(cudaMemcpy(k_upanel.index, k_upanel.gpuPanel.index,
-                             sizeof(int_t) * UidxSendCounts[k], cudaMemcpyDeviceToHost));
+        gpuErrchk(gpuMemcpy(k_upanel.index, k_upanel.gpuPanel.index,
+                             sizeof(int_t) * UidxSendCounts[k], gpuMemcpyDeviceToHost));
     }
 
     if (LidxSendCounts[k] > 0)
     {
         MPI_Bcast(k_lpanel.gpuPanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
         MPI_Bcast(k_lpanel.gpuPanel.val, LvalSendCounts[k], get_mpi_type<Ftype>(), kcol(k), grid3d->rscp.comm);
-        gpuErrchk(cudaMemcpy(k_lpanel.index, k_lpanel.gpuPanel.index,
-                             sizeof(int_t) * LidxSendCounts[k], cudaMemcpyDeviceToHost));
+        gpuErrchk(gpuMemcpy(k_lpanel.index, k_lpanel.gpuPanel.index,
+                             sizeof(int_t) * LidxSendCounts[k], gpuMemcpyDeviceToHost));
     }
     SCT->tPanelBcast += (SuperLU_timer_() - t0);
     return 0;
@@ -413,7 +429,7 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
             int_t offset = getBufferOffset(k0, k1, oldWinSize, winParity, halfWin);
             // printf("Syncing stream %d on offset %d\n", k0, offset);
             if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
-                gpuErrchk(cudaStreamSynchronize(A_gpu.cuStreams[offset]));
+                gpuErrchk(gpuStreamSynchronize(A_gpu.cuStreams[offset]));
         }
 
         k1 = k1_next;
@@ -432,8 +448,8 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
             int_t k = perm_c_supno[k0];
 
             int_t ksupc = SuperSize(k);
-            cublasHandle_t cubHandle = A_gpu.cuHandles[0];
-            cudaStream_t cuStream = A_gpu.cuStreams[0];
+            gpublasHandle_t cubHandle = A_gpu.cuHandles[0];
+            gpuStream_t cuStream = A_gpu.cuStreams[0];
             dDiagFactorPanelSolveGPU(k, 0, dFBufs);
             /*=======   Panel Broadcast             ======*/
             // panelBcastGPU(k, 0);
@@ -538,8 +554,8 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
             int_t k = perm_c_supno[k0];
             int_t offset = k0 - k_st;
             int_t ksupc = SuperSize(k);
-            cublasHandle_t cubHandle = A_gpu.cuHandles[0];
-            cudaStream_t cuStream = A_gpu.cuStreams[0];
+            gpublasHandle_t cubHandle = A_gpu.cuHandles[0];
+            gpuStream_t cuStream = A_gpu.cuStreams[0];
             /*=======   Diagonal Factorization      ======*/
             if (iam == procIJ(k, k))
             {
@@ -554,9 +570,9 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
                                                                 dFBufs[offset]->BlockUFactor, ksupc, // CPU pointers
                                                                 dFBufs[offset]->BlockLFactor, ksupc, // CPU pointers
                                                                 thresh, xsup, options, stat, info);
-// cudaStreamSynchronize(cuStream);
+// gpuStreamSynchronize(cuStream);
 #ifndef NDEBUG
-                cudaStreamSynchronize(cuStream);
+                gpuStreamSynchronize(cuStream);
                 lPanelVec[g2lCol(k)].checkGPU();
 #endif
             }
@@ -575,30 +591,30 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
 #ifndef NDEBUG
                 uPanelVec[g2lRow(k)].checkGPU();
 #endif
-                cudaMemcpy(A_gpu.dFBufs[0], dFBufs[offset]->BlockLFactor,
-                           ksupc * ksupc * sizeof(Ftype), cudaMemcpyHostToDevice);
+                gpuMemcpy(A_gpu.dFBufs[0], dFBufs[offset]->BlockLFactor,
+                           ksupc * ksupc * sizeof(Ftype), gpuMemcpyHostToDevice);
                 uPanelVec[g2lRow(k)].panelSolveGPU(
                     cubHandle, cuStream,
                     ksupc, A_gpu.dFBufs[0], ksupc);
-                cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
+                gpuStreamSynchronize(cuStream); // synchronize befpre broadcast
 #ifndef NDEBUG
                 uPanelVec[g2lRow(k)].panelSolve(ksupc, dFBufs[offset]->BlockLFactor, ksupc);
-                cudaStreamSynchronize(cuStream);
+                gpuStreamSynchronize(cuStream);
                 uPanelVec[g2lRow(k)].checkGPU();
 #endif
             }
 
             if (mycol == kcol(k))
             {
-                cudaMemcpy(A_gpu.dFBufs[0], dFBufs[offset]->BlockUFactor,
-                           ksupc * ksupc * sizeof(Ftype), cudaMemcpyHostToDevice);
+                gpuMemcpy(A_gpu.dFBufs[0], dFBufs[offset]->BlockUFactor,
+                           ksupc * ksupc * sizeof(Ftype), gpuMemcpyHostToDevice);
                 lPanelVec[g2lCol(k)].panelSolveGPU(
                     cubHandle, cuStream,
                     ksupc, A_gpu.dFBufs[0], ksupc);
-                cudaStreamSynchronize(cuStream);
+                gpuStreamSynchronize(cuStream);
 #ifndef NDEBUG
                 lPanelVec[g2lCol(k)].panelSolve(ksupc, dFBufs[offset]->BlockUFactor, ksupc);
-                cudaStreamSynchronize(cuStream);
+                gpuStreamSynchronize(cuStream);
                 lPanelVec[g2lCol(k)].checkGPU();
 #endif
             }
@@ -621,8 +637,8 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
                 MPI_Bcast(k_upanel.gpuPanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
                 MPI_Bcast(k_upanel.gpuPanel.val, UvalSendCounts[k], get_mpi_type<Ftype>(), krow(k), grid3d->cscp.comm);
                 // copy the index to cpu
-                cudaMemcpy(k_upanel.index, k_upanel.gpuPanel.index,
-                           sizeof(int_t) * UidxSendCounts[k], cudaMemcpyDeviceToHost);
+                gpuMemcpy(k_upanel.index, k_upanel.gpuPanel.index,
+                           sizeof(int_t) * UidxSendCounts[k], gpuMemcpyDeviceToHost);
 
 #ifndef NDEBUG
                 MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
@@ -634,8 +650,8 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
             {
                 MPI_Bcast(k_lpanel.gpuPanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
                 MPI_Bcast(k_lpanel.gpuPanel.val, LvalSendCounts[k], get_mpi_type<Ftype>(), kcol(k), grid3d->rscp.comm);
-                cudaMemcpy(k_lpanel.index, k_lpanel.gpuPanel.index,
-                           sizeof(int_t) * LidxSendCounts[k], cudaMemcpyDeviceToHost);
+                gpuMemcpy(k_lpanel.index, k_lpanel.gpuPanel.index,
+                           sizeof(int_t) * LidxSendCounts[k], gpuMemcpyDeviceToHost);
 
 #ifndef NDEBUG
                 MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
@@ -655,10 +671,10 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
                 dSchurComplementUpdateGPU(
                     streamId,
                     k, k_lpanel, k_upanel);
-// cudaStreamSynchronize(cuStream); // there is sync inside the kernel
+// gpuStreamSynchronize(cuStream); // there is sync inside the kernel
 #ifndef NDEBUG
                 dSchurComplementUpdate(k, k_lpanel, k_upanel);
-                cudaStreamSynchronize(cuStream);
+                gpuStreamSynchronize(cuStream);
                 checkGPU();
 #endif
             }

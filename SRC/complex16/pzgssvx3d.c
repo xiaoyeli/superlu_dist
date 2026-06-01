@@ -1008,7 +1008,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		    if(options->batchCount == 0)
 		    {
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
                         zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 					  SCT, options, stat, thresh, info);
 

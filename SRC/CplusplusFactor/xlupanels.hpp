@@ -3,7 +3,7 @@
 #include <iostream>
 #include "superlu_ddefs.h"   // superlu_defs.h ??
 #include "lu_common.hpp"
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 #include "lupanels_GPU.cuh"
 #include "xlupanels_GPU.cuh"
 #include "gpuCommon.hpp"
@@ -25,7 +25,7 @@ public:
     Ftype *val;
     // ifdef GPU acceraleration
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
     xlpanelGPU_t<Ftype> gpuPanel;
 #endif
     // bool isDiagIncluded;
@@ -33,7 +33,7 @@ public:
     xlpanel_t(int_t k, int_t *lsub, Ftype *nzval, int_t *xsup, int_t isDiagIncluded);
 
     // default constuctor
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
     xlpanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
@@ -133,13 +133,13 @@ public:
     //     // SUPERLU_FREE(val);
     // }
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
     xlpanelGPU_t<Ftype> copyToGPU();
     xlpanelGPU_t<Ftype> copyToGPU(void *basePtr); // when we are doing a single allocation
     int checkGPU();
     int copyBackToGPU();
 
-    int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
+    int_t panelSolveGPU(gpublasHandle_t handle, gpuStream_t cuStream,
                         int_t ksupsz,
                         Ftype *DiagBlk, // device pointer
                         int_t LDD);
@@ -147,9 +147,10 @@ public:
     int_t diagFactorPackDiagBlockGPU(int_t k,
                                      Ftype *UBlk, int_t LDU,     // CPU pointers
                                      Ftype *DiagLBlk, int_t LDD, // CPU pointers
-                                     Ftype thresh, int_t *xsup,
+                                     threshPivValType<Ftype> thresh, int_t *xsup,
                                      superlu_dist_options_t *options,
                                      SuperLUStat_t *stat, int *info);
+#ifdef HAVE_CUDA
     int_t diagFactorCuSolver(int_t k,
                              cusolverDnHandle_t cusolverH, cudaStream_t cuStream,
                              Ftype *dWork, int *dInfo,   // GPU pointers
@@ -157,6 +158,22 @@ public:
                              threshPivValType<Ftype> thresh, int_t *xsup,
                              superlu_dist_options_t *options,
                              SuperLUStat_t *stat, int *info);
+#endif /* HAVE_CUDA */
+
+#if defined(HAVE_HIP)
+    /* HIP equivalent of diagFactorCuSolver: factors the diagonal block on the
+       GPU via a custom no-pivot LU kernel (diagBlkLU_kernel) with tiny/zero-
+       pivot replacement, mirroring SuperLU's CPU xgstrf2.  rocsolver_*getrf_npvt
+       is unsuitable: it divides by zero pivots and emits NaN on the
+       (near-)singular diagonal blocks of ill-conditioned matrices, whereas
+       the cuSolver path tolerates them.  Stays fully on-device. */
+    int_t diagFactorGPU(int_t k,
+                        gpuStream_t cuStream,
+                        Ftype *dDiagBuf, int_t LDD, // GPU pointers
+                        threshPivValType<Ftype> thresh, int_t *xsup,
+                        superlu_dist_options_t *options,
+                        SuperLUStat_t *stat, int *info);
+#endif /* HAVE_HIP */
 
     Ftype *blkPtrGPU(int k)
     {
@@ -177,14 +194,14 @@ class xupanel_t
 public:
     int_t *index;
     Ftype *val;
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
     // xupanelGPU_t<Ftype>* upanelGPU;
     xupanelGPU_t<Ftype> gpuPanel;
 #endif
 
     // xupanel_t(int_t *usub, Ftype *uval);
     xupanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup);
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
     xupanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
@@ -304,13 +321,13 @@ public:
     //     SUPERLU_FREE(val);
     // }
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
     xupanelGPU_t<Ftype> copyToGPU();
     // TODO: implement with baseptr
     xupanelGPU_t<Ftype> copyToGPU(void *basePtr);
     int copyBackToGPU();
 
-    int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
+    int_t panelSolveGPU(gpublasHandle_t handle, gpuStream_t cuStream,
                         int_t ksupsz, Ftype *DiagBlk, int_t LDD);
     int checkGPU();
 
@@ -333,7 +350,7 @@ public:
 template <typename Ftype>
 struct xLUstruct_t
 {
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
     xlpanelGPU_t<Ftype> *lPanelVec_GPU;
     xupanelGPU_t<Ftype> *uPanelVec_GPU;
 #endif
@@ -455,17 +472,17 @@ struct xLUstruct_t
             {
                 if (lPanelVec[i].index){
                     SUPERLU_FREE(lPanelVec[i].index);
-                    #ifdef HAVE_CUDA
+                    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
                     if (superlu_acc_offload){
-                        gpuErrchk(cudaFree(lPanelVec_GPU[i].index));
+                        gpuErrchk(gpuFree(lPanelVec_GPU[i].index));
                     }
                     #endif
                 }
                 if (lPanelVec[i].val){
                     // SUPERLU_FREE(lPanelVec[i].val);
-                    #ifdef HAVE_CUDA
+                    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
                     if (superlu_acc_offload){
-                        gpuErrchk(cudaFree(lPanelVec_GPU[i].val));
+                        gpuErrchk(gpuFree(lPanelVec_GPU[i].val));
                     }
                     #endif
                 }
@@ -476,19 +493,19 @@ struct xLUstruct_t
             {
                 if (uPanelVec[i].index){
                     SUPERLU_FREE(uPanelVec[i].index);
-                    #ifdef HAVE_CUDA
+                    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
                     if (superlu_acc_offload){
-                        gpuErrchk(cudaFree(uPanelVec_GPU[i].index));
+                        gpuErrchk(gpuFree(uPanelVec_GPU[i].index));
                     }
-                    #endif                   
+                    #endif
                 }
                 if (uPanelVec[i].val){
                     SUPERLU_FREE(uPanelVec[i].val);
-                    #ifdef HAVE_CUDA
+                    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
                     if (superlu_acc_offload){
-                        gpuErrchk(cudaFree(uPanelVec_GPU[i].val));
+                        gpuErrchk(gpuFree(uPanelVec_GPU[i].val));
                     }
-                    #endif                    
+                    #endif
                 }
             }
 
@@ -522,51 +539,51 @@ struct xLUstruct_t
             SUPERLU_FREE(diagFactBufs[i]);
 
         /* Sherry added the following and Yang modified it */
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
         if (superlu_acc_offload)
         {
             if ( options->batchCount > 0 ) { /* use batch code */
                 ABORT("batchCount>0 should not reach this point!!\n");
             }
             for (i = 0; i < A_gpu.numCudaStreams; ++i) {
-                gpuErrchk(cudaFree(A_gpu.dFBufs[i]));
-                gpuErrchk(cudaFree(A_gpu.gpuGemmBuffs[i]));
+                gpuErrchk(gpuFree(A_gpu.dFBufs[i]));
+                gpuErrchk(gpuFree(A_gpu.gpuGemmBuffs[i]));
             }
             SUPERLU_FREE(A_gpu.dFBufs);
             SUPERLU_FREE(A_gpu.gpuGemmBuffs);
-            gpuErrchk(cudaFree((A_gpu.dgpuGemmBuffs)));
+            gpuErrchk(gpuFree((A_gpu.dgpuGemmBuffs)));
 
 
             for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
             {
+#ifdef HAVE_CUDA
                 cusolverDnDestroy(A_gpu.cuSolveHandles[stream]);
-                cublasDestroy(A_gpu.cuHandles[stream]);
-                cublasDestroy(A_gpu.lookAheadLHandle[stream]);
-                cublasDestroy(A_gpu.lookAheadUHandle[stream]);
+#endif
+                gpublasDestroy(A_gpu.cuHandles[stream]);
+                gpublasDestroy(A_gpu.lookAheadLHandle[stream]);
+                gpublasDestroy(A_gpu.lookAheadUHandle[stream]);
             }
 
 
             for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
             {
-                gpuErrchk(cudaFree(A_gpu.LvalRecvBufs[stream]));
-                gpuErrchk(cudaFree(A_gpu.UvalRecvBufs[stream]));
-                gpuErrchk(cudaFree(A_gpu.LidxRecvBufs[stream]));
-                gpuErrchk(cudaFree(A_gpu.UidxRecvBufs[stream]));
+                gpuErrchk(gpuFree(A_gpu.LvalRecvBufs[stream]));
+                gpuErrchk(gpuFree(A_gpu.UvalRecvBufs[stream]));
+                gpuErrchk(gpuFree(A_gpu.LidxRecvBufs[stream]));
+                gpuErrchk(gpuFree(A_gpu.UidxRecvBufs[stream]));
                 // the space for diagonal factor on GPU
-                gpuErrchk(cudaFree(A_gpu.diagFactWork[stream]));
-                gpuErrchk(cudaFree(A_gpu.diagFactInfo[stream]));
+                gpuErrchk(gpuFree(A_gpu.diagFactWork[stream]));
+                gpuErrchk(gpuFree(A_gpu.diagFactInfo[stream]));
                 /*lookAhead buffers and stream*/
-                gpuErrchk(cudaFree(A_gpu.lookAheadLGemmBuffer[stream]));
-                gpuErrchk(cudaFree(A_gpu.lookAheadUGemmBuffer[stream]));
+                gpuErrchk(gpuFree(A_gpu.lookAheadLGemmBuffer[stream]));
+                gpuErrchk(gpuFree(A_gpu.lookAheadUGemmBuffer[stream]));
             }
 
-            gpuErrchk(cudaFree(A_gpu.xsup));
-            gpuErrchk(cudaFree(A_gpu.lPanelVec));
-            gpuErrchk(cudaFree(A_gpu.uPanelVec));
+            gpuErrchk(gpuFree(A_gpu.xsup));
+            gpuErrchk(gpuFree(A_gpu.lPanelVec));
+            gpuErrchk(gpuFree(A_gpu.uPanelVec));
 
-            gpuErrchk(cudaFree(dA_gpu));
-
-
+            gpuErrchk(gpuFree(dA_gpu));
         }
 #endif
 
@@ -653,7 +670,7 @@ struct xLUstruct_t
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
     // GPU related functions
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
     int_t setLUstruct_GPU();
     int_t dsparseTreeFactorGPU(
         sForest_t *sforest,
@@ -679,7 +696,7 @@ struct xLUstruct_t
     int_t dSchurCompUpdatePartGPU(
         int_t iSt, int_t iEnd, int_t jSt, int_t jEnd,
         int_t k, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel,
-        cublasHandle_t handle, cudaStream_t cuStream,
+        gpublasHandle_t handle, gpuStream_t cuStream,
         Ftype *gemmBuff);
     int_t lookAheadUpdateGPU(
         int streamId,

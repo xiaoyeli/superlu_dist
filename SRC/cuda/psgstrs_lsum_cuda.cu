@@ -2314,8 +2314,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs
 
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
                 do{
-                    tmp=fmod[lib*aln_i];
-                    __threadfence();
+                    tmp=atomicAdd(&fmod[lib*aln_i], 0);
                 }while(tmp>0);
 
             }
@@ -2725,8 +2724,7 @@ __global__ void slsum_fmod_inv_gpu_1rhs_warp
 
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
                 do{
-                    tmp=fmod[lib*aln_i];
-                    __threadfence();
+                    tmp=atomicAdd(&fmod[lib*aln_i], 0);
                 }while(tmp>0);
 
             }
@@ -3128,8 +3126,7 @@ gridinfo_t *grid
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 			    // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
 				do{
-					tmp=bmod[lib*aln_i];
-					__threadfence();
+					tmp=atomicAdd(&bmod[lib*aln_i], 0);
 				}while(tmp>0);
 
 			}
@@ -3458,8 +3455,7 @@ gridinfo_t *grid
             if(lne==0){  /*only the first thread in a warp handles the lock */
                 // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
                 do{
-                    tmp=bmod[lib*aln_i];
-                    __threadfence();
+                    tmp=atomicAdd(&bmod[lib*aln_i], 0);
                 }while(tmp>-1);
             }
             #ifdef HAVE_CUDA
@@ -3720,8 +3716,7 @@ gridinfo_t *grid
           if(lne==0){  /*only the first thread in a warp handles the lock */
               // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
               do{
-                  tmp=bmod[lib*aln_i];
-                  __threadfence();
+                  tmp=atomicAdd(&bmod[lib*aln_i], 0);
               }while(tmp>-1);
           }
           #ifdef HAVE_CUDA
@@ -3968,8 +3963,7 @@ gridinfo_t *grid
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 			    // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
 				do{
-					tmp=bmod[lib*aln_i];
-					__threadfence();
+					tmp=atomicAdd(&bmod[lib*aln_i], 0);
 				}while(tmp>0);
 
 			}
@@ -4244,8 +4238,7 @@ gridinfo_t *grid
              lib = LBi( k, grid ); /* Local block number, row-wise. */
              // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
              do{
-                 tmp=bmod[lib*aln_i];
-                 __threadfence();
+                 tmp=atomicAdd(&bmod[lib*aln_i], 0);
              }while(tmp>0);
 
          }

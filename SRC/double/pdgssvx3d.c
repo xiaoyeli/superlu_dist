@@ -1009,7 +1009,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		    if(options->batchCount == 0)
 		    {
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
                         dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 					  SCT, options, stat, thresh, info);
 
