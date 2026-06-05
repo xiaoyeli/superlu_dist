@@ -2231,6 +2231,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
                 do{
                     tmp=atomicAdd(&fmod[lib*aln_i], 0);
+                    __threadfence();
                 }while(tmp>0);
 
             }
@@ -2660,6 +2661,7 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
                 do{
                     tmp=atomicAdd(&fmod[lib*aln_i], 0);
+                    __threadfence();
                 }while(tmp>0);
 
             }
@@ -3076,6 +3078,7 @@ int gemmflag
 			    // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
 				do{
 					tmp=atomicAdd(&bmod[lib*aln_i], 0);
+					__threadfence();
 				}while(tmp>0);
 
 			}
@@ -3421,6 +3424,7 @@ int gemmflag
                 // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
                 do{
                     tmp=atomicAdd(&bmod[lib*aln_i], 0);
+                    __threadfence();
                 }while(tmp>-1);
             }
             #ifdef HAVE_CUDA
@@ -3695,6 +3699,7 @@ gridinfo_t *grid
               // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
               do{
                   tmp=atomicAdd(&bmod[lib*aln_i], 0);
+                  __threadfence();
               }while(tmp>-1);
           }
           #ifdef HAVE_CUDA
@@ -3955,6 +3960,7 @@ gridinfo_t *grid
 			    // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
 				do{
 					tmp=atomicAdd(&bmod[lib*aln_i], 0);
+					__threadfence();
 				}while(tmp>0);
 
 			}
@@ -4240,6 +4246,7 @@ gridinfo_t *grid
              // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
              do{
                  tmp=atomicAdd(&bmod[lib*aln_i], 0);
+                 __threadfence();
              }while(tmp>0);
 
          }
