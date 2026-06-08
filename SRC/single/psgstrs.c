@@ -29,6 +29,79 @@ at the top-level directory.
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
 
+/* ===========================================================================
+ * CLUSTER-SPECIFIC WORKAROUND (this machine only) -- not part of the AMD/HIP
+ * GPU port.  The OpenBLAS installed on this cluster is a single-target build
+ * compiled for Intel skylakex (AVX-512); it ignores OPENBLAS_CORETYPE, so its
+ * LAPACK strtri_ dispatches AVX-512 kernels that raise SIGILL (illegal
+ * instruction) on this node's AMD EPYC 7763 CPU (AVX2 only).  Verified: with
+ * the stock strtri_ the GPU-solve "computing inverse of diagonal blocks" step
+ * crashes with signal 4 even with OPENBLAS_CORETYPE=ZEN set.
+ *
+ * On a normally-built (multi-arch / native) BLAS, revert these two call sites
+ * to the standard LAPACK strtri_ and this inline routine can be removed.
+ *
+ * Inline triangular matrix inversion (drop-in replacement for LAPACK strtri_).
+ * For the small diagonal supernode blocks factored here (n <= SUPERLU_MAXSUP)
+ * an O(n^3) loop is perfectly acceptable.  Single-precision analog of
+ * local_dtrtri in SRC/double/pdgstrs.c.
+ * ===========================================================================
+ *
+ * Column-major (Fortran) storage: A(i,j) == A[j*lda + i]  (0-indexed).
+ *
+ * uplo  = 'L'/'l' : lower triangular;  'U'/'u' : upper triangular
+ * diag  = 'U'/'u' : unit diagonal (not referenced); 'N'/'n' : non-unit
+ */
+static void local_strtri(const char *uplo, const char *diag,
+                         int *pn, float *A, int *plda, int *info)
+{
+    int n = *pn, lda = *plda;
+    int i, j, k;
+    int unit = (diag[0] == 'U' || diag[0] == 'u');
+    *info = 0;
+    if (n == 0) return;
+
+    if (uplo[0] == 'L' || uplo[0] == 'l') {
+        /* Lower triangular: process columns left to right. */
+        for (j = 0; j < n; j++) {
+            if (!unit) {
+                if (A[j*lda+j] == 0.0f) { *info = j+1; return; }
+                A[j*lda+j] = 1.0f / A[j*lda+j];
+            }
+            for (i = j+1; i < n; i++) {
+                /* L^{-1}(i,j) = -(L(i,j)*L^{-1}(j,j)
+                 *                 + sum_{k=j+1}^{i-1} L(i,k)*L^{-1}(k,j)) / L(i,i)
+                 * For unit diagonal L^{-1}(j,j)=1 and L(i,i)=1, so the
+                 * leading factor is just 1 and we divide by 1. */
+                float s = unit ? A[j*lda+i]
+                               : A[j*lda+i] * A[j*lda+j]; /* L(i,j)*L^{-1}(j,j) */
+                for (k = j+1; k < i; k++)
+                    s += A[k*lda+i] * A[j*lda+k]; /* L(i,k)*L^{-1}(k,j) */
+                /* A[i*lda+i] is still the original L(i,i) since col i > j */
+                A[j*lda+i] = unit ? -s : -s / A[i*lda+i];
+            }
+        }
+    } else {
+        /* Upper triangular: process columns right to left. */
+        for (j = n-1; j >= 0; j--) {
+            if (!unit) {
+                if (A[j*lda+j] == 0.0f) { *info = j+1; return; }
+                A[j*lda+j] = 1.0f / A[j*lda+j];
+            }
+            for (i = j-1; i >= 0; i--) {
+                /* U^{-1}(i,j) = -(U(i,j)*U^{-1}(j,j)
+                 *                 + sum_{k=i+1}^{j-1} U(i,k)*U^{-1}(k,j)) / U(i,i)
+                 * A[j*lda+j] is already U^{-1}(j,j) (or 1 for unit).
+                 * A[i*lda+i] is still original U(i,i) since col i < j. */
+                float s = A[j*lda+i] * (unit ? 1.0f : A[j*lda+j]); /* U(i,j)*U^{-1}(j,j) */
+                for (k = i+1; k < j; k++)
+                    s += A[k*lda+i] * A[j*lda+k]; /* U(i,k)*U^{-1}(k,j) */
+                A[j*lda+i] = unit ? -s : -s / A[i*lda+i];
+            }
+        }
+    }
+}
+
 #ifdef GPU_ACC
 #include "gpu_api_utils.h"
 #endif
@@ -758,10 +831,13 @@ psCompute_Diag_Inv(int_t n, sLUstruct_t *LUstruct,gridinfo_t *grid,
 	              }
  		  }
 
-		  /* Triangular inversion */
-   		  strtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
+		  /* Triangular inversion.  CLUSTER-SPECIFIC (this machine only):
+		   * local_strtri avoids SIGILL from this cluster's AVX-512-only
+		   * OpenBLAS on the AVX2 EPYC CPU.  On a normal BLAS install, use
+		   * the standard LAPACK strtri_ instead (see note at its definition). */
+   		  local_strtri("L","U",&knsupc,Linv,&knsupc,&INFO);
 
-		  strtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);
+		  local_strtri("U","N",&knsupc,Uinv,&knsupc,&INFO);
 
 	      } /* end if(lsub) */
 		} /* end if (mycol === kcol) */
