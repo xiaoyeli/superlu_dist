@@ -701,6 +701,12 @@ extern void psgsrfs3d(superlu_dist_options_t *, int_t,
 	        strf3Dpartition_t*  , float *, int_t, float *, int_t, int,
 	        sSOLVEstruct_t *, float *, SuperLUStat_t *, int *);
 
+extern void psgsrfs3d_d2(superlu_dist_options_t *, int_t,
+            SuperMatrix *, float, sLUstruct_t *,
+	        sScalePermstruct_t *, gridinfo3d_t *,
+	        strf3Dpartition_t*  , float *, int_t, float *, int_t, int,
+	        sSOLVEstruct_t *, float *, SuperLUStat_t *, int *, double *);
+
 
 extern void psgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
                   SuperMatrix *, float, sLUstruct_t *,
@@ -1104,6 +1110,9 @@ extern int screate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, float
 extern int screate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
 				 int nrhs, float **rhs, int *ldb, float **x, int *ldx,
 				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+extern int screate_batch_systems_multiple(handle_t *SparseMatrix_handles, int batchCount,
+                 int nrhs, float **RHSptr, int *ldRHS, float **xtrue, int *ldX,
+                 FILE **fp, char * postfix, gridinfo3d_t *grid3d);
 
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts
    it to a NRformat_loc distributed in 2D grid in grid-0 */
@@ -1119,6 +1128,11 @@ extern void psgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 		       sScalePermstruct_t *, float B[], int ldb, int nrhs,
 		       gridinfo3d_t *, sLUstruct_t *, sSOLVEstruct_t *,
 		       float *berr, SuperLUStat_t *, int *info);
+extern void psgssvx3d_d2 (superlu_dist_options_t *, SuperMatrix *,
+		       sScalePermstruct_t *, float B[], int ldb, int nrhs,
+		       gridinfo3d_t *, sLUstruct_t *, sSOLVEstruct_t *,
+		       float *berr, float *err_bounds, SuperLUStat_t *,
+		       int *info, double *xtrue);
 extern int_t psgstrf3d(superlu_dist_options_t *, int m, int n, float anorm,
 		       strf3Dpartition_t*, SCT_t *, sLUstruct_t *,
 		       gridinfo3d_t *, SuperLUStat_t *, int *);
@@ -1604,6 +1618,25 @@ extern int sequil_batch(
     );
 extern int spivot_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
+    float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr
+    //    DeviceContext context /* device context including queues, events, dependencies */
+    );
+extern int psgssvx3d_csc_vbatch(
+        superlu_dist_options_t *, int batchCount, int *m, int *n, int *nnz,
+        int nrhs, handle_t *, float **RHSptr, int *ldRHS,
+        float **ReqPtr, float **CeqPtr,
+        int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
+        handle_t *F, float **Xptr, int *ldX, float **Berrs,
+        gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
+        //DeviceContext context /* device context including queues, events, dependencies */
+        );
+extern int sequil_vbatch(
+    superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
+    float **ReqPtr, float **CeqPtr, DiagScale_t *
+    //    DeviceContext context /* device context including queues, events, dependencies */
+    );
+extern int spivot_vbatch(
+    superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
     float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr
     //    DeviceContext context /* device context including queues, events, dependencies */
     );

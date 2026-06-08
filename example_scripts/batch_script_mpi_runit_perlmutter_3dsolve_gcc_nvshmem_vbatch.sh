@@ -37,7 +37,7 @@ nmpipergpu=1
 export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # 2: this can better saturate GPU
 
 ##NVSHMEM settings:
-NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/common/software/nersc9/nvshmem/3.2.5-1-25.03
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
@@ -171,11 +171,12 @@ fi
 # echo "Variable size batch example"
 # srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 2 -f .dat $CFS/m2957/tianyi/matrix/vbatch_test/test | tee $CFS/m2957/tianyi/superlu_results/SLU.o_vbatch_test_2
 
-echo "Variable size batch EMT example"
-srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 1 $CFS/m2957/tianyi/matrix/EMTrun/EMTrun1/EMTrun1_total.dat | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun1_total
-srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 2 -f .dat $CFS/m2957/tianyi/matrix/EMTrun/EMTrun1/EMTrun1_ | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun1_2
+export OMP_NUM_THREADS=1
+echo "Variable size batch EMT example (double precision)"
 # srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 1 $CFS/m2957/tianyi/matrix/EMTrun/EMTrun1/EMTrun1_total.dat | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun1_total
-# srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 3 -f .dat $CFS/m2957/tianyi/matrix/EMTrun/EMTrun2/EMTrun2_ | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun2_3
+# srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 2 -f .dat $CFS/m2957/tianyi/matrix/EMTrun/EMTrun1/EMTrun1_ | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun1_2
+# srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 1 $CFS/m2957/tianyi/matrix/EMTrun/EMTrun1/EMTrun1_total.dat | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun1_total
+srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 3 -f .dat $CFS/m2957/tianyi/matrix/EMTrun/EMTrun2/EMTrun2_ | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun2_3
 # srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 1 $CFS/m2957/tianyi/matrix/EMTrun/EMTrun2/EMTrun2_total.dat | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun2_total
 # srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 2 -f .dat $CFS/m2957/tianyi/matrix/EMTrun/EMTrun3/EMTrun3_ | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun3_2
 # srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 1 $CFS/m2957/tianyi/matrix/EMTrun/EMTrun3/EMTrun3_total.dat | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun3_total
@@ -189,6 +190,10 @@ srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -b 2 -f .dat $CFS/m2957/tianyi/matrix/
 # srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -p 0 -b 1 $CFS/m2957/tianyi/matrix/EMTrun/EMTrun3/EMTrun3_total.dat | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun3_total_p_0
 # srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -p 0 -b 2 -f .dat $CFS/m2957/tianyi/matrix/EMTrun/EMTrun4/EMTrun4_ | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun4_2_p_0
 # srun -n 1 -N 1 ./EXAMPLE/pddrive3d_vbatch -p 0 -b 1 $CFS/m2957/tianyi/matrix/EMTrun/EMTrun4/EMTrun4_total.dat | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_vbatch_EMTrun4_total_p_0
+
+# echo "Variable size batch EMT example (single precision)"
+# srun -n 1 -N 1 ./EXAMPLE/psdrive3d_vbatch -b 2 -f .dat $CFS/m2957/tianyi/matrix/EMTrun/EMTrun1/EMTrun1_ | tee $CFS/m2957/tianyi/superlu_results/EMT_results/SLU.o_svbatch_EMTrun1_2
+
 
 # batchCount=(1 10 100 500 1000)
 # # batchCount=(1000)

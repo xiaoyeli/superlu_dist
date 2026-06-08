@@ -249,7 +249,9 @@ if(enable_single)
     single/psgsmv_AXglobal.c
     single/psGetDiagU.c
     single/psgssvx3d.c     ## 3D code
-    single/sssvx3dAux.c  
+    single/psgssvx3d_d2.c  ## 3D code with double-precision IR
+    single/psgsrfs3d_d2.c  ## double-precision 3D iterative refinement
+    single/sssvx3dAux.c
     single/snrformat_loc3d.c 
     single/psgstrf3d.c 
     single/streeFactorization.c
@@ -268,6 +270,9 @@ if(enable_single)
     single/psgssvx3d_csc_batch.c # batch in CSC format
     single/sequil_batch.c # batch in CSC format
     single/spivot_batch.c
+    single/psgssvx3d_csc_vbatch.c # variable-size batch in CSC format
+    single/sequil_vbatch.c
+    single/spivot_vbatch.c
   )
 if (TPL_ENABLE_CUDALIB)
     list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/ssuperlu_gpu.cu)

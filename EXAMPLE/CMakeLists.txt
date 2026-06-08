@@ -173,7 +173,17 @@ if(enable_single)
   set(SEXM3D3 psdrive3d3.c screate_matrix.c screate_matrix3d.c)
   add_executable(psdrive3d3 ${SEXM3D3})
   target_link_libraries(psdrive3d3 ${all_link_libs})
-  install(TARGETS psdrive3d3 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
+  install(TARGETS psdrive3d3 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
+  set(SEXM3D_VB psdrive3d_vbatch.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d_vbatch ${SEXM3D_VB})
+  target_link_libraries(psdrive3d_vbatch ${all_link_libs})
+  install(TARGETS psdrive3d_vbatch RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
+  set(SEXM3D_D2 psdrive3d_d2.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d_d2 ${SEXM3D_D2})
+  target_link_libraries(psdrive3d_d2 ${all_link_libs})
+  install(TARGETS psdrive3d_d2 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
 
 endif() #### end enable_single
 
