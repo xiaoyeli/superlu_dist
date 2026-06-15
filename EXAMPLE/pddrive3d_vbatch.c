@@ -214,7 +214,11 @@ main (int argc, char *argv[])
                     char buf[sizeof(int)*8+1];
                     int lenbuf = snprintf(buf, sizeof(int)*8+1, "%d", bc);
 
-                    char name[100];
+                    /* Size to fit the full path: prefix (*cpp) + batch index
+                       (buf) + postfix + NUL.  A fixed name[100] overflowed for
+                       long absolute paths, which a _FORTIFY_SOURCE (Release)
+                       build aborts on. */
+                    char name[strlen(*cpp) + strlen(buf) + strlen(postfix) + 1];
                     strcpy(name, *cpp);
                     strcat(name, buf);
                     strcat(name, postfix);
