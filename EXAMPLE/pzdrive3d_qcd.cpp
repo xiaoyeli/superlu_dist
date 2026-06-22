@@ -302,8 +302,9 @@ int main(int argc, char *argv[])
     npdep = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
     double t0=0;
-    int nsolves=1;
+    int nsolves=10;
     int gpures=-1;
+    double min_time = 1e10;
     
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -542,11 +543,15 @@ int main(int argc, char *argv[])
     options.SolveOnly= NO; // YL: options->SolveOnly will set Fact to DOFACT for distribution 
     options.Fact = FACTORED;
 
-    t0 = w_time();
-    for (int i = 0; i < nsolves; ++i)
-      pzgssvx3d(&options, &A, &ScalePermstruct, solve_b, ldb, nrhs, &grid,
-                &LUstruct, &SOLVEstruct, berr, &stat, &info);
-    if (rank == 0) std::cout << "Time to apply ILU(0): " << (w_time() - t0)/nsolves << std::endl;
+
+    for (int i = 0; i < nsolves; ++i){
+        t0 = w_time();  
+        pzgssvx3d(&options, &A, &ScalePermstruct, solve_b, ldb, nrhs, &grid,
+                    &LUstruct, &SOLVEstruct, berr, &stat, &info);
+        double elapsed = w_time() - t0;
+        if (elapsed < min_time) min_time = elapsed;
+    }
+    if (rank == 0) std::cout << "Min time to apply ILU(0): " << min_time << std::endl;
 
 #ifdef GPU_ACC
     if (options.GPURES == YES) {

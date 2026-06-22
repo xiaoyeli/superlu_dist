@@ -84,7 +84,7 @@ fi
 
 nprows=(1)
 npcols=(1)
-npz=(4)
+npz=(1)
 nrhs=(1 2 4 8 16)
 NTH=1
 NREP=1
@@ -175,7 +175,7 @@ do
 
 SUPERLU_ACC_OFFLOAD=1
 export GPU3DVERSION=0
-export SUPERLU_ACC_SOLVE=1
+export SUPERLU_ACC_SOLVE=2
 gpures=1
 
 
