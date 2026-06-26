@@ -304,7 +304,13 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     }
 #endif
 
-    int gpu_enabled = get_acc_offload(options);
+#if defined(SLU_HAVE_LAPACK)
+    int gpu_trisolve_enabled = get_acc_solve();
+#else 
+    int gpu_trisolve_enabled = 0;
+#endif
+
+    int gpu_factor_enabled = get_acc_offload(options);
     
     printf("**************************************************\n");
     printf(".. blocking parameters from sp_ienv():\n");
@@ -314,7 +320,8 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**    min GEMM m*k*n to use GPU  : %d\n", (int) sp_ienv_dist(7, options));
     printf(".. parallel environment:\n");
     printf("**    OpenMP threads             : %4d\n", num_threads);
-    printf("**    GPU enabled?               : %4d\n", gpu_enabled);
+    printf("**    GPU factor?               : %4d\n", gpu_factor_enabled);
+    printf("**    GPU trisolve?             : %4d\n", gpu_trisolve_enabled);
     printf("**************************************************\n");
 }
 
