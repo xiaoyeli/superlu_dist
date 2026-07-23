@@ -33,7 +33,7 @@ void validateInput_pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
         *info = -1;
     else if (options->ColPerm < 0 || options->ColPerm > MY_PERMC)
         *info = -1;
-    else if (options->IterRefine < 0 || options->IterRefine > SLU_EXTRA)
+    else if (options->IterRefine < 0 || options->IterRefine > SLU_GMRES)
         *info = -1;
     else if (options->IterRefine == SLU_EXTRA)
     {

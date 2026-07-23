@@ -594,7 +594,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	*info = -1;
     else if ( options->ColPerm < NATURAL || options->ColPerm > MY_PERMC )
 	*info = -1;
-    else if ( options->IterRefine < NOREFINE || options->IterRefine > SLU_EXTRA )
+    else if ( options->IterRefine < NOREFINE || options->IterRefine > SLU_GMRES )
 	*info = -1;
     else if ( options->IterRefine == SLU_EXTRA ) {
 	*info = -1;
@@ -1548,8 +1548,8 @@ if (get_acc_solve()){
 	   Use iterative refinement to improve the computed solution and
 	   compute error bounds and backward error estimates for it.
 	   ------------------------------------------------------------*/
-	if ( options->IterRefine ) {
-	    /* Improve the solution by iterative refinement. */
+	if ( options->IterRefine || options->UseGMRES ) {
+	    /* Iterative refinement, or (options->UseGMRES) a direct GMRES solve. */
 	    int_t *it;
             int_t *colind_gsmv = SOLVEstruct->A_colind_gsmv;
 	          /* This was allocated and set to NULL in dSolveInit() */
@@ -1629,8 +1629,36 @@ if (get_acc_solve()){
 		}
 	    }
 
+	    if ( options->UseGMRES ) {
+		/* Direct solve (options->UseGMRES, driver -g 1): solve A x = b with
+		   right-preconditioned GMRES, preconditioner M = LU (pdgstrs),
+		   starting from x0 = 0 -- the LU factors are used ONLY as the
+		   preconditioner, not as the initial solution.  This is NOT
+		   iterative refinement (contrast -i 4 = GMRES inside the IR
+		   correction); it replaces the triangular solve entirely. */
+		int gmres_totit = 0, jj_;
+		for (jj_ = 0; jj_ < nrhs; ++jj_) {
+		    for (i = 0; i < m_loc; ++i) X[(size_t)jj_*ldx+i] = B[(size_t)jj_*ldb+i];
+		    pdgmres(options, n, A, LUstruct, ScalePermstruct, grid,
+			    SOLVEstruct1->gsmv_comm, &X[(size_t)jj_*ldx], m_loc,
+			    fst_row, 50 /*restart*/, 2000 /*maxit*/, 1e-14 /*rtol*/,
+			    1e-14 /*atol*/, 0 /*0=MGS,1=CGS*/,
+			    SOLVEstruct1, &gmres_totit, stat, info);
+		}
+#if ( PRNTlevel>=1 )
+		if ( !iam )
+		    printf(".. pdgmres direct solve: %d total GMRES iterations\n",
+			   gmres_totit);
+#endif
+		for (jj_ = 0; jj_ < nrhs; ++jj_) berr[jj_] = 0.0;
+	    } else {
+	    /* IterRefine == SLU_GMRES selects a GMRES inner solve for the
+	       correction inside pdgsrfs; otherwise the classical triangular
+	       solve is used.  The outer (true-residual) refinement loop is the
+	       same either way. */
 	    pdgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 		    B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
+	    }
 
             /* Deallocate the storage associated with SOLVEstruct1 */
 	    if ( nrhs > 1 ) {

@@ -244,6 +244,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->DiagInv = NO;
 #endif
     options->Use_TensorCore    = NO;
+    options->UseGMRES          = 0; /* default: direct triangular solve */
 }
 
 /*! \brief Print the options setting.
@@ -415,8 +416,8 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
             printf("\tSolve flops\t%e\tMflops \t%8.2f\n",
                    solveflop,
                    solveflop * 1e-6 / utime[SOLVE]);
-        if (options->IterRefine != NOREFINE)
-        {
+        if (options->IterRefine != NOREFINE || options->UseGMRES)
+        {   /* utime[REFINE] holds the GMRES-solve time when UseGMRES. */
             printf("\tREFINEMENT time    %8.3f\tSteps%8d\n\n",
                    utime[REFINE], stat->RefineSteps);
         }

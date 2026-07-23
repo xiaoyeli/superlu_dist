@@ -701,6 +701,22 @@ extern void pdgsrfs3d(superlu_dist_options_t *, int_t,
 	        dtrf3Dpartition_t*  , double *, int_t, double *, int_t, int,
 	        dSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
 
+/* GMRES inner-solve kernels for iterative refinement (IterRefine==SLU_GMRES).
+   Each solves A d = r (r in/out via the X argument; d returned) with the LU
+   factors as left preconditioner. */
+extern void pdgmres(superlu_dist_options_t *, int_t, SuperMatrix *,
+                    dLUstruct_t *, dScalePermstruct_t *, gridinfo_t *,
+                    pdgsmv_comm_t *, double *X, int_t m_loc, int_t fst_row,
+                    int restart, int maxit, double rtol, double atol, int gs,
+                    dSOLVEstruct_t *, int *totit, SuperLUStat_t *, int *);
+
+extern void pdgmres3d(superlu_dist_options_t *, int_t, SuperMatrix *,
+                    dLUstruct_t *, dScalePermstruct_t *, gridinfo3d_t *,
+                    dtrf3Dpartition_t *, pdgsmv_comm_t *,
+                    double *X, int_t m_loc, int_t fst_row,
+                    int restart, int maxit, double rtol, double atol, int gs,
+                    dSOLVEstruct_t *, int *totit, SuperLUStat_t *, int *);
+
 
 extern void pdgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
                   SuperMatrix *, double, dLUstruct_t *,

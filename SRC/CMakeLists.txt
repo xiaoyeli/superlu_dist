@@ -147,6 +147,7 @@ if(enable_double)
     double/pdgstrs_lsum.c
     double/pdgstrs_Bglobal.c
     double/pdgsrfs.c
+    double/pdgmres.c
     double/pdgsmv.c
     double/pdgsrfs_ABXglobal.c
     double/pdgsmv_AXglobal.c

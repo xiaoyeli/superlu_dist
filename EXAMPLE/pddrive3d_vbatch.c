@@ -22,6 +22,7 @@ at the top-level directory.
  * January 7, 2024 Complete the batch interface
  *
  */
+#include <math.h>
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -116,7 +117,7 @@ main (int argc, char *argv[])
     double *b, *xtrue;
     int_t m, n;
     int nprow, npcol, npdep;
-    int equil,colperm, rowperm, ir, lookahead;
+    int equil,colperm, rowperm, ir, lookahead, gmres = 0;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
@@ -196,6 +197,8 @@ main (int argc, char *argv[])
                       break;
             case 'q': colperm = atoi(*cpp);
                       break;
+            case 'g': gmres = atoi(*cpp);
+                        break;
             case 'i': ir = atoi(*cpp);
                       break;
             case 's': nrhs = atoi(*cpp);
@@ -341,6 +344,7 @@ main (int argc, char *argv[])
     if (rowperm != -1) options.RowPerm = rowperm;
     if (colperm != -1) options.ColPerm = colperm;
     if (ir != -1) options.IterRefine = ir;
+    options.UseGMRES = gmres;
     if (lookahead != -1) options.num_lookaheads = lookahead;
     
     if (!iam) {
@@ -441,9 +445,23 @@ main (int argc, char *argv[])
 			    RHSptr, ldRHS, ReqPtr, CeqPtr, RpivPtr, CpivPtr,
 			    DiagScale, F, Xptr, ldX, Berrs, &grid, &stat, &info);
 
-	printf("**** Backward errors ****\n");
+	printf("**** Backward / forward errors ****\n");
 	for (int d = 0; d < batchCount; ++d) {
-	    printf("\tSystem %d: Berr = %e\n", d, Berrs[d][0]);
+	    /* Forward error vs. the known generated true solution xtrues[d]:
+	         componentwise  max_i |x - xtrue|_i / |xtrue|_i
+	         normwise       ||x - xtrue||_inf / ||xtrue||_inf
+	       (first RHS column). */
+	    double *xc = Xptr[d], *xt = xtrues[d];
+	    double ferr_cw = 0.0, dxmax = 0.0, xtmax = 0.0;
+	    for (int i = 0; i < nd[d]; ++i) {
+		double diff = fabs(xc[i] - xt[i]);
+		double axt  = fabs(xt[i]);
+		if ( axt > 0.0 && diff/axt > ferr_cw ) ferr_cw = diff/axt;
+		if ( diff > dxmax ) dxmax = diff;
+		if ( axt  > xtmax ) xtmax = axt;
+	    }
+	    printf("\tSystem %d: Berr = %e   Ferr_cwise = %e   Ferr_norm = %e\n",
+		   d, Berrs[d][0], ferr_cw, (xtmax > 0.0 ? dxmax/xtmax : 0.0));
 	    //printf("\t\tDiagScale[%d] %d\n", d, DiagScale[d]);
 	}
 	

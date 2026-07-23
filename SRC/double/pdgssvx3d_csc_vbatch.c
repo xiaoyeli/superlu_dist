@@ -119,7 +119,7 @@ pdgssvx3d_csc_vbatch(
 	*info = -1;
     else if (options->ColPerm < 0 || options->ColPerm > MY_PERMC)
 	*info = -1;
-    else if (options->IterRefine < 0 || options->IterRefine > SLU_EXTRA)
+    else if (options->IterRefine < 0 || options->IterRefine > SLU_GMRES)
 	*info = -1;
     else if (options->IterRefine == SLU_EXTRA)
 	{
@@ -346,6 +346,7 @@ pdgssvx3d_csc_vbatch(
     options_big.Fact = options->Fact;
     options_big.ReplaceTinyPivot = options->ReplaceTinyPivot;
     options_big.IterRefine = options->IterRefine;
+    options_big.UseGMRES = options->UseGMRES;
     options_big.Trans = options->Trans;
     options_big.SolveInitialized = options->SolveInitialized;
     options_big.RefineInitialized = options->RefineInitialized;
