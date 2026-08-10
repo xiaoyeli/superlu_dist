@@ -29,21 +29,21 @@ at the top-level directory.
  * <pre>
  * @param[in]      options solver options
  * @param[in]      batchCount number of matrices in the batch
- * @param[in]      m row dimension of the matrices
- * @param[in]      n column dimension of the matrices
- * @param[in]      nnz number of non-zero entries in each matrix
+ * @param[in]      m pointer to the row dimensions of the matrices in the batch
+ * @param[in]      n pointer to the column dimensions of the matrices in the batch
+ * @param[in]      nnz pointer to the number of non-zero entries of the matrices in the batch
  * @param[in]      nrhs number of right-hand-sides
  * @param[in,out]  SparseMatrix_handles  array of sparse matrix handles, of size 'batchCount', each pointing to the actual storage in CSC format, see 'NCformat' in SuperMatix structure
  *      Each A is overwritten by row/col scaling R*A*C
  * @param[in,out]  RHSptr  array of pointers to dense storage of right-hand sides B
  *      Each B is overwritten by row/col scaling R*B*C
  * @param[in]      ldRHS array of leading dimensions of RHS
- * @param[in,out]  ReqPtr array of pointers to diagonal row scaling vectors R, each of size m
+ * @param[in,out]  ReqPtr array of pointers to diagonal row scaling vectors R, of size 'batchCount', size of the kth one is m[k],
  *    ReqPtr[] are allocated internally if equilibration is asked for
- * @param[in,out]  CeqPtr array of pointers to diagonal colum scaling vectors C, each of size n
+ * @param[in,out]  CeqPtr array of pointers to diagonal colum scaling vectors C, of size 'batchCount', size of the kth one is n[k],
  *    CeqPtr[] are allocated internally if equilibration is asked for
- * @param[in,out]  RpivPtr array of pointers to row permutation vectors, each of size m
- * @param[in,out]  CpivPtr array of pointers to column permutation vectors, each of size n
+ * @param[in,out]  RpivPtr array of pointers to row permutation vectors, of size 'batchCount', size of the kth one is m[k]
+ * @param[in,out]  CpivPtr array of pointers to column permutation vectors, of size 'batchCount', size of the kth one is n[k]
  * @param[in,out]  DiagScale array of indicators how equilibration is done for each matrix
  * @param[out]     F array of handles pointing to the factored matrices
  * @param[out]     Xptr array of pointers to dense storage of solution
@@ -69,13 +69,15 @@ pdgssvx3d_csc_vbatch(
 						  */
 		double **RHSptr, // array of pointers to dense RHS storage
 		int *ldRHS, // array of leading dimensions of RHS
-		double **ReqPtr, /* array of pointers to diagonal row scaling vectors,
-				     each of size M   */
-		double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
-				    each of size N    */
-		int **RpivPtr, /* array of pointers to row permutation vectors , each of size M */
-		int **CpivPtr, /* array of pointers to column permutation vectors , each of size N */
-		DiagScale_t *DiagScale, /* indicate how equilibration is done for each matrix */
+		double **ReqPtr, /* array of pointers to diagonal row scaling vectors, size batchCount,
+				    size of the kth one is m[k]   */
+		double **CeqPtr, /* array of pointers to diagonal column scaling vectors, size batchCount,
+				    size of the kth one is n[k]    */
+		int **RpivPtr, /* array of pointers to row permutation vectors , size batchCount,
+				    size of the kth one is m[k] */
+		int **CpivPtr, /* array of pointers to column permutation vectors , size batchCount,
+				    size of the kth one is n[k] */
+		DiagScale_t *DiagScale, /* array of indicators how equilibration is done for each matrix */
 		handle_t *F, /* array of handles pointing to the factored matrices */
  		double **Xptr, // array of pointers to dense solution storage
 		int *ldX, // array of leading dimensions of X
@@ -88,7 +90,7 @@ pdgssvx3d_csc_vbatch(
 {
     /* Steps in this routine
      1. Loop through all matrices A_i, perform preprocessing (all in serial format)
-            1.1 equilibration
+        1.1 equilibration
 	    1.2 numerical pivoting (e.g., MC64)
 	    1.3 sparsity reordering
 
@@ -146,6 +148,7 @@ pdgssvx3d_csc_vbatch(
 
     int colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t i, iinfo, j, k, irow;
+    int *ainfo = SUPERLU_MALLOC(batchCount * sizeof(int));
     double *C, *R; //*C1, *R1, amax, anorm, colcnd, rowcnd;
     float GA_mem_use;	/* memory usage by global A */
     float dist_mem_use; /* memory usage during distribution */
@@ -157,8 +160,8 @@ pdgssvx3d_csc_vbatch(
     /**** equilibration (LAPACK style) ****/
     /* ReqPtr[] and CeqPtr[] are allocated internally */
     /* Each A may be overwritten by R*A*C */
-    dequil_vbatch(options, batchCount, m, n, SparseMatrix_handles,
-		 ReqPtr, CeqPtr, DiagScale);
+    int eqinfo = dequil_vbatch(options, batchCount, m, n, SparseMatrix_handles,
+		ReqPtr, CeqPtr, DiagScale, ainfo);
 
     stat->utime[EQUIL] = SuperLU_timer_() - t;
     t = SuperLU_timer_();
@@ -169,8 +172,10 @@ pdgssvx3d_csc_vbatch(
      * perm_r[]'s are applied to each matrix.
      */
     /* no internal malloc */
-    dpivot_vbatch(options, batchCount, m, n, SparseMatrix_handles,
-		 ReqPtr, CeqPtr, DiagScale, RpivPtr);
+    int pvinfo = dpivot_vbatch(options, batchCount, m, n, SparseMatrix_handles,
+		 ReqPtr, CeqPtr, DiagScale, RpivPtr, ainfo);
+
+    SUPERLU_FREE(ainfo);
 
     stat->utime[ROWPERM] = SuperLU_timer_() - t;
 
