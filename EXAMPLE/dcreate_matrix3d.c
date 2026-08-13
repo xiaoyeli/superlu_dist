@@ -812,3 +812,107 @@ CHECK_MALLOC(iam, "Enter dcreate_batch_systems()");
 #endif
     return 0;
 } /* end dcreate_batch_systems_mult */
+
+/*! \brief Read one time step of a batch: matrix d from fpA[d] and its
+ *  right-hand side from fpB[d], instead of generating the RHS.
+ *
+ * The RHS (and the optional reference solution read from fpX[d]) are stored one
+ * value per line after a "m nrhs" header line, which is the layout the EMT
+ * time-step decks use.  Pass fpX = NULL when there is no reference solution;
+ * xtrue[] is then filled with zeros and the caller should ignore it.
+ *
+ * Storage for the matrices, RHSptr[] and xtrue[] is allocated here; release it
+ * with dbatch_systems_free() before reading the next time step.
+ */
+int dcreate_batch_systems_rhsfile(handle_t *SparseMatrix_handles, int batchCount,
+                 int nrhs, double **RHSptr, int *ldRHS, double **xtrue, int *ldX,
+                 FILE **fpA, FILE **fpB, FILE **fpX, char * postfix,
+                 gridinfo3d_t *grid3d)
+{
+    int_t    m, n, nnz;
+    int      i, j, d;
+    int      iam = grid3d->iam;
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Enter dcreate_batch_systems_rhsfile()");
+#endif
+
+    for (d = 0; d < batchCount; ++d) {
+        int_t    *rowind, *colptr;
+        double   *nzval;
+
+        if (!strcmp(postfix, "rua"))
+            dreadhb_dist(iam, fpA[d], &m, &n, &nnz, &nzval, &rowind, &colptr);
+        else if ( (!strcmp(postfix, "mtx")) || (!strcmp(postfix, "mm")) )
+            dreadMM_dist(fpA[d], &m, &n, &nnz, &nzval, &rowind, &colptr);
+        else if (!strcmp(postfix, "rb"))
+            dreadrb_dist(iam, fpA[d], &m, &n, &nnz, &nzval, &rowind, &colptr);
+        else if (!strcmp(postfix, "dat"))
+            dreadtriple_dist(fpA[d], &m, &n, &nnz, &nzval, &rowind, &colptr);
+        else if (!strcmp(postfix, "datnh"))
+            dreadtriple_noheader(fpA[d], &m, &n, &nnz, &nzval, &rowind, &colptr);
+        else if (!strcmp(postfix, "bin"))
+            dread_binary(fpA[d], &m, &n, &nnz, &nzval, &rowind, &colptr);
+        else
+            ABORT("File format not known");
+
+        /* The readers above hand back storage they allocated; hand it straight
+           to the SuperMatrix rather than copying it as the other
+           dcreate_batch_systems* routines do. */
+        SuperMatrix *Ad = (SuperMatrix *) SUPERLU_MALLOC( sizeof(SuperMatrix) );
+        dCreate_CompCol_Matrix_dist(Ad, m, n, nnz, nzval, rowind, colptr,
+                                    SLU_NC, SLU_D, SLU_GE);
+        SparseMatrix_handles[d] = (handle_t) Ad;
+
+        RHSptr[d] = doubleMalloc_dist( m * nrhs );
+        xtrue[d]  = doubleMalloc_dist( n * nrhs );
+        ldRHS[d] = m;
+        ldX[d] = n;
+
+        /* Read the RHS: "m nrhs" header, then the values column by column.
+           Use long long for the header so the scanf width matches whatever
+           int_t is configured to. */
+        long long bm, bn;
+        if ( fscanf(fpB[d], "%lld%lld", &bm, &bn) != 2 )
+            ABORT("Cannot read the RHS header");
+        if ( bm != (long long) m )
+            ABORT("RHS row count does not match the matrix");
+        for (j = 0; j < nrhs; ++j)
+            for (i = 0; i < m; ++i)
+                if ( fscanf(fpB[d], "%lf", &RHSptr[d][j*m + i]) != 1 )
+                    ABORT("Cannot read the RHS values");
+
+        if ( fpX ) {
+            long long xm, xn;
+            if ( fscanf(fpX[d], "%lld%lld", &xm, &xn) != 2 )
+                ABORT("Cannot read the reference-solution header");
+            if ( xm != (long long) n )
+                ABORT("Reference solution size does not match the matrix");
+            for (j = 0; j < nrhs; ++j)
+                for (i = 0; i < n; ++i)
+                    if ( fscanf(fpX[d], "%lf", &xtrue[d][j*n + i]) != 1 )
+                        ABORT("Cannot read the reference-solution values");
+        } else {
+            for (i = 0; i < n * nrhs; ++i) xtrue[d][i] = 0.0;
+        }
+    }
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit dcreate_batch_systems_rhsfile()");
+#endif
+    return 0;
+} /* end dcreate_batch_systems_rhsfile */
+
+/*! \brief Release one time step's batch allocated by
+ *  dcreate_batch_systems_rhsfile(). */
+void dbatch_systems_free(handle_t *SparseMatrix_handles, int batchCount,
+                 double **RHSptr, double **xtrue)
+{
+    for (int d = 0; d < batchCount; ++d) {
+        SuperMatrix *Ad = (SuperMatrix *) SparseMatrix_handles[d];
+        Destroy_CompCol_Matrix_dist(Ad);
+        SUPERLU_FREE(Ad);
+        SUPERLU_FREE(RHSptr[d]);
+        SUPERLU_FREE(xtrue[d]);
+    }
+} /* end dbatch_systems_free */
