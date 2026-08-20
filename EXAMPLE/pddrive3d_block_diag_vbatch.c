@@ -21,6 +21,7 @@ at the top-level directory.
  * August 27, 2022  Add batch option
  *
  */
+#include <stdio.h>
 #include "superlu_ddefs.h"  
 
 /*! \brief
@@ -118,7 +119,7 @@ main (int argc, char *argv[])
     int lookahead, colperm, rowperm, ir;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
-    FILE *fp, *fopen ();
+    FILE *fp;
     extern int cpp_defs ();
     int ii, omp_mpi_level, batchCount = 0;
     int*    usermap;     /* The following variables are used for batch solves */

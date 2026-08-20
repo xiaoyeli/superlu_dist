@@ -22,6 +22,7 @@ at the top-level directory.
  * January 7, 2024 Complete the batch interface
  *
  */
+#include <stdio.h>
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -119,7 +120,7 @@ main (int argc, char *argv[])
     int equil,colperm, rowperm, ir, lookahead;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
-    FILE *fp, *fopen ();
+    FILE *fp;
     extern int cpp_defs ();
     int ii, omp_mpi_level, batchCount = 0;
     int*    usermap;     /* The following variables are used for batch solves */
