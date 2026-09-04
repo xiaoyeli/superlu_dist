@@ -236,12 +236,13 @@ pdgssvx3d_csc_vbatch2(
     double t = SuperLU_timer_();
 
     if ( !reuse ) {
+	int *ainfo = SUPERLU_MALLOC(batchCount * sizeof(int));
 
 	/**** equilibration (LAPACK style) ****/
 	/* ReqPtr[] and CeqPtr[] are allocated internally */
 	/* Each A may be overwritten by R*A*C */
 	dequil_vbatch(options, batchCount, m, n, SparseMatrix_handles,
-		      ReqPtr, CeqPtr, DiagScale);
+		      ReqPtr, CeqPtr, DiagScale, ainfo);
 
 	stat->utime[EQUIL] = SuperLU_timer_() - t;
 	t = SuperLU_timer_();
@@ -253,7 +254,9 @@ pdgssvx3d_csc_vbatch2(
 	 */
 	/* no internal malloc */
 	dpivot_vbatch(options, batchCount, m, n, SparseMatrix_handles,
-		      ReqPtr, CeqPtr, DiagScale, RpivPtr);
+		      ReqPtr, CeqPtr, DiagScale, RpivPtr, ainfo);
+
+	SUPERLU_FREE(ainfo);
 
 	stat->utime[ROWPERM] = SuperLU_timer_() - t;
 
