@@ -1681,7 +1681,7 @@ extern int dequil_batch(
     );
 extern int dequil_vbatch(
     superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
-    double **ReqPtr, double **CeqPtr, DiagScale_t *
+    double **ReqPtr, double **CeqPtr, DiagScale_t *, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
 extern int dpivot_batch(
@@ -1691,7 +1691,7 @@ extern int dpivot_batch(
     );
 extern int dpivot_vbatch(
     superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
-    double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr
+    double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
 
