@@ -59,4 +59,5 @@ zwrite_binary_withname(int_t n, int_t nnz,
     printf("dump binary file ... # of doubles fwrite: %d\n", nnz_written);
     assert(nnz_written == 2*nnz);
     fclose(fp1);
+    return 0;
 }

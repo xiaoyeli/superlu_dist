@@ -23,40 +23,45 @@ at the top-level directory.
  *
  * @param[in]      options solver options
  * @param[in]      batchCount number of matrices in the batch
- * @param[in]      m row dimension of the matrices
- * @param[in]      n column dimension of the matrices
+ * @param[in]      m pointer to the row dimensions of the matrices in the batch
+ * @param[in]      n pointer to the column dimensions of the matrices in the batch
  * @param[in, out] SparseMatrix_handles pointers to the matrices in the batch, each pointing to the actual stoage in CSC format
  *     On entry, the original matrices
  *     On exit, each matrix may be overwritten by diag(R)*A*diag(C)
  * @param[out]     ReqPtr pointers to row scaling vectors (allocated internally)
  * @param[out]     CeqPtr pointers to column scaling vectors (allocated internally)
  * @param[in, out] DiagScale arrays indicating how each system is equilibrated: {ROW, COL, BOTH}
+ * @param[in, out] info pointer to the equilibration success indicator of each system
  *
- * Return value i:
- *     = 0: successful exit
- *     > 0: indicates the first matrix in the batch has zero row or column
- *          if i <= m: the i-th row of A is exactly zero
- *          if i >  m: the (i-m)-th column of A is exactly zero
+ * Return value:
+ *     0,  success
+ *     k, indicates that the k-th matrix is the first one in the batch encountering error, can check info[k]
  * </pre>
  */
 int
 dequil_vbatch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
     int batchCount, /* number of matrices in the batch */
-    int *m, /* matrix row dimension */
-    int *n, /* matrix column dimension */
+    int *m, /* array of matrix row dimension, of size 'batchCount' */
+    int *n, /* array of matrix column dimension, of size 'batchCount' */
     handle_t  *SparseMatrix_handles, /* array of sparse matrix handles, of size 'batchCount',
 				      * each pointing to the actual storage
 				      */
-    double **ReqPtr, /* array of pointers to diagonal row scaling vectors,
-			each of size M   */
-    double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
-			each of size N    */
-    DiagScale_t *DiagScale /* How equilibration is done for each matrix. */
+    double **ReqPtr, /* array of pointers to diagonal row scaling vectors, of size 'batchCount',
+			size of the kth one is m[k]   */
+    double **CeqPtr, /* array of pointers to diagonal column scaling vectors, of size 'batchCount',
+			size of the kth one is n[k]    */
+    DiagScale_t *DiagScale, /* How equilibration is done for each matrix. */
     //    DeviceContext context /* device context including queues, events, dependencies */
+	int *info /* Equilibration success indicator of each system, of size 'batchCount'
+			= 0: successful exit
+			> 0: indicates the first matrix in the batch has zero row or column
+				if i <= m: the i-th row of A is exactly zero
+				if i > m: the (i-m)-th column of A is exactly zero
+			< 0: the ith place has an illegal argument */
 		  )
 {
-    int i, j, irow, icol, info = 0;
+    int i, j, irow, icol, rinfo = 0;
     fact_t Fact = options->Fact;
     int factored = (Fact == FACTORED);
     int Equil = (!factored && options->Equil == YES);
@@ -69,6 +74,7 @@ dequil_vbatch(
     SuperMatrix **A = SUPERLU_MALLOC(batchCount * sizeof(SuperMatrix *));
     for (i = 0; i < batchCount; ++i) {
 	A[i] = (SuperMatrix *) SparseMatrix_handles[i];
+	info[i] = 0;
     }
 
     /* Loop through each matrix in the batch */
@@ -157,6 +163,7 @@ dequil_vbatch(
 		/* Compute the row and column scalings. */
 
 		dgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
+		info[k] = iinfo;
 		
 		if (iinfo > 0) {
 		    if (iinfo <= m[k]) {
@@ -168,8 +175,10 @@ dequil_vbatch(
 			fprintf(stderr, "Matrix %d: the %d-th column of A is exactly zero\n", k, (int)iinfo - n[k]);
 #endif
 		    }
-		} else if (iinfo < 0) {
-		    if ( info==0 ) info = iinfo;
+		}
+
+		if ((iinfo != 0) && (rinfo == 0)) {
+			rinfo = k+1;
 		}
 
 		/* Now iinfo == 0 */
@@ -200,5 +209,5 @@ dequil_vbatch(
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Exit dequil_batch()");
 #endif
-    return info;
+    return rinfo;
 } /* end dequil_batch */
