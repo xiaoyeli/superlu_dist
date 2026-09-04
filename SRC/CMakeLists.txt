@@ -167,7 +167,6 @@ if(enable_double)
     double/dsuperlu_blas.c
     double/pdgssvx3d_csc_batch.c # batch in CSC format
     double/pdgssvx3d_csc_vbatch.c
-    double/pdgssvx3d_csc_vbatch2.c # variable-size batch, repeated same-pattern solves
     double/dequil_batch.c # batch in CSC format
     double/dequil_vbatch.c
     double/dpivot_batch.c
@@ -273,7 +272,6 @@ if(enable_single)
     single/sequil_batch.c # batch in CSC format
     single/spivot_batch.c
     single/psgssvx3d_csc_vbatch.c # variable-size batch in CSC format
-    single/psgssvx3d_csc_vbatch2.c # variable-size batch, repeated same-pattern solves
     single/sequil_vbatch.c
     single/spivot_vbatch.c
   )

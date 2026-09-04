@@ -391,38 +391,6 @@ typedef struct {
     #endif
 } sSOLVEstruct_t;
 
-/*! \brief Persistent state for repeated variable-size batch solves that share
- *  one sparsity pattern; see psgssvx3d_csc_vbatch2().
- *
- * The caller owns the struct; zero it with svbatch_ctx_init() before the first
- * (Fact = DOFACT) call and release it with svbatch_ctx_free() after the last.
- * Everything in here is built on the first call and reused on every subsequent
- * SamePattern_SameRowPerm call: the internal 1x1x1 grid, the stacked
- * block-diagonal matrix A_big and its CSR arrays, and the factorization
- * metadata (etree, perm_c of the big system, symbolic factorization, and the
- * distributed L/U structure).
- */
-typedef struct {
-    int       initialized;  /* 0 until the first psgssvx3d_csc_vbatch2() call */
-    int       batchCount;   /* batch size the context was built for */
-    int       nrhs;         /* number of RHS the context was built for */
-    int       m_big;        /* row dimension of the stacked system */
-    int       n_big;        /* column dimension of the stacked system */
-    int       nnz_big;      /* nonzeros in the stacked system */
-    int       gridalloc;    /* 1 if the internal grid needs superlu_gridexit3d */
-    gridinfo3d_t grid;      /* internal 1x1x1 grid, created once */
-    superlu_dist_options_t options_big; /* options used for the stacked solve */
-    sScalePermstruct_t ScalePermstruct;
-    sLUstruct_t        LUstruct;
-    sSOLVEstruct_t     SOLVEstruct;
-    SuperMatrix A_big;      /* NR_loc stacked matrix; values refreshed per call */
-    float    *a_big;        /* A_big values,  size nnz_big */
-    int_t    *colind;       /* A_big colind,  size nnz_big */
-    int_t    *rowptr;       /* A_big rowptr,  size m_big+1 */
-    float    *b;            /* stacked RHS / solution workspace, m_big*nrhs */
-    float    *berr;         /* backward error of the stacked solve, size nrhs */
-} svbatch_ctx_t;
-
 /*==== For 3D code ====*/
 
 // new structures for pdgstrf_4_8
@@ -1649,17 +1617,8 @@ extern int psgssvx3d_csc_batch(
 		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
 		//DeviceContext context /* device context including queues, events, dependencies */
 		);
-extern int psgssvx3d_csc_vbatch2(
-        superlu_dist_options_t *, svbatch_ctx_t *ctx,
-        int batchCount, int *m, int *n, int *nnz,
-        int nrhs, handle_t *, float **RHSptr, int *ldRHS,
-        float **ReqPtr, float **CeqPtr,
-        int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
-        handle_t *F, float **Xptr, int *ldX, float **Berrs,
-        gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
-        );
-extern void svbatch_ctx_init(svbatch_ctx_t *ctx);
-extern void svbatch_ctx_free(svbatch_ctx_t *ctx);
+/* Release the batch state held in F[0] by psgssvx3d_csc_vbatch(). */
+extern void svbatch_free(handle_t *F);
 extern int sequil_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
     float **ReqPtr, float **CeqPtr, DiagScale_t *

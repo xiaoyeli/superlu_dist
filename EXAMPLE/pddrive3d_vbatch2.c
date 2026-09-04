@@ -37,11 +37,11 @@ at the top-level directory.
  *
  * The first time step is solved with options.Fact = DOFACT, which does the
  * full preprocessing.  Every later step uses SamePattern_SameRowPerm, which
- * reuses, through the dvbatch_ctx_t context:
+ * reuses, through the state carried in F[0]:
  *        ReqPtr, CeqPtr  : equilibration of each matrix in the batch
  *        RpivPtr         : row permutation of each matrix
  *        CpivPtr         : column permutation of each matrix
- *        ctx             : etree, perm_c and symbolic factorization of the
+ *        F[0]            : etree, perm_c and symbolic factorization of the
  *                          stacked block-diagonal system, its distributed L/U
  *                          structure, the SpTRSV metadata, and the internal
  *                          process grid
@@ -122,7 +122,6 @@ main (int argc, char *argv[])
     superlu_dist_options_t options;
     SuperLUStat_t stat;
     gridinfo3d_t grid;
-    dvbatch_ctx_t ctx;
     int nprow, npcol, npdep;
     int equil, colperm, rowperm, ir, lookahead, gmres = 0;
     int iam, info, nrhs;
@@ -309,7 +308,8 @@ main (int argc, char *argv[])
        ALLOCATE THE BATCH METADATA THAT LIVES ACROSS ALL TIME STEPS.
        ------------------------------------------------------------ */
     handle_t *SparseMatrix_handles = SUPERLU_MALLOC( batchCount * sizeof(handle_t) );
-    handle_t *F = NULL; /* factored-matrix handles: not produced yet */
+    handle_t Fstate[1] = {0}; /* carries the state reused across steps */
+    handle_t *F = Fstate;
     double **RHSptr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
     double **xtrues = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
     int *ldRHS = int32Malloc_dist(batchCount);
@@ -331,7 +331,6 @@ main (int argc, char *argv[])
     FILE **fpB = (FILE **) SUPERLU_MALLOC( batchCount * sizeof(FILE *) );
     FILE **fpX = (FILE **) SUPERLU_MALLOC( batchCount * sizeof(FILE *) );
 
-    dvbatch_ctx_init(&ctx);
 
     double t_setup = 0.0, t_solve = 0.0;
 
@@ -388,7 +387,7 @@ main (int argc, char *argv[])
 	PStatInit (&stat);
 	t0 = SuperLU_timer_();
 
-	pdgssvx3d_csc_vbatch2(&options, &ctx, batchCount,
+	pdgssvx3d_csc_vbatch(&options, batchCount,
 			      md, nd, nnzd, nrhs, SparseMatrix_handles,
 			      RHSptr, ldRHS, ReqPtr, CeqPtr, RpivPtr, CpivPtr,
 			      DiagScale, F, Xptr, ldX, Berrs, &grid, &stat, &info);
@@ -450,7 +449,7 @@ main (int argc, char *argv[])
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
-    dvbatch_ctx_free(&ctx);
+    dvbatch_free(F);
 
     for (int d = 0; d < batchCount; ++d) {
 	if ( DiagScale[d] == ROW || DiagScale[d] == BOTH ) SUPERLU_FREE(ReqPtr[d]);
