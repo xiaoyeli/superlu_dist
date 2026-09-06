@@ -10,14 +10,13 @@ at the top-level directory.
 */
 
 
-
 /*
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab
  * November 5, 2023
  * Last update:
  */
-#include "superlu_sdefs.h"
+#include "superlu_zdefs.h"
 
 /*! \brief Compute row pivotings for each matrix, for numerical stability
  * <pre>
@@ -43,7 +42,7 @@ at the top-level directory.
  * </pre>
  */
 int
-spivot_vbatch(
+zpivot_vbatch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
     int batchCount, /* number of matrices in the batch */
     int *m, /* array of matrix row dimension, of size 'batchCount' */
@@ -51,9 +50,9 @@ spivot_vbatch(
     handle_t  *SparseMatrix_handles, /* array of sparse matrix handles,
 				      * of size 'batchCount', each pointing to the actual storage
 				      */
-    float **ReqPtr, /* array of pointers to diagonal row scaling vectors, of size 'batchCount',
+    double **ReqPtr, /* array of pointers to diagonal row scaling vectors, of size 'batchCount',
 			size of the kth one is m[k]   */
-    float **CeqPtr, /* array of pointers to diagonal column scaling vectors, of size 'batchCount',
+    double **CeqPtr, /* array of pointers to diagonal column scaling vectors, of size 'batchCount',
 			size of the kth one is n[k]    */
     DiagScale_t *DiagScale, /* How equilibration is done for each matrix. */
     int **RpivPtr, /* array of pointers to row permutation vectors, of size 'batchCount',
@@ -71,7 +70,7 @@ spivot_vbatch(
 
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(0, "Enter spivot_batch()");
+    CHECK_MALLOC(0, "Enter zpivot_batch()");
 #endif
 
     /* Decipher the input matrices */
@@ -84,18 +83,18 @@ spivot_vbatch(
 
     int_t *colptr;
     int_t *rowind;
-    float *a, *at;
+    doublecomplex *a, *at;
     int_t nnz;
 
     /* Loop through each matrix in the batch */
     for (int d = 0; d < batchCount; ++d) {
 
-	float *R1, *C1;
+	double *R1, *C1;
 	if (job == 5) {
 	/* Allocate storage for scaling factors. */
-	if (!(R1 = floatMalloc_dist(m[d])))
+	if (!(R1 = doubleMalloc_dist(m[d])))
 	    ABORT("SUPERLU_MALLOC fails for R1[]");
-	if (!(C1 = floatMalloc_dist(n[d])))
+	if (!(C1 = doubleMalloc_dist(n[d])))
 	    ABORT("SUPERLU_MALLOC fails for C1[]");
     }
 
@@ -105,9 +104,9 @@ spivot_vbatch(
 	/* If the matrix type is SLU_NR (CSR), then need to convert to CSC first */
 	if ( A[d]->Stype == SLU_NR ) { /* CSR format */
 	    NRformat *Astore = (NRformat *) A[d]->Store;
-	    a = (float *)Astore->nzval;
+	    a = (doublecomplex *)Astore->nzval;
 
-	    sCompRow_to_CompCol_dist(m[d], n[d], nnz, a,
+	    zCompRow_to_CompCol_dist(m[d], n[d], nnz, a,
 				     Astore->colind, Astore->rowptr,
 				     &at, &rowind, &colptr);
 
@@ -115,15 +114,15 @@ spivot_vbatch(
 	    nnz = Astore->nnz;
 	} else { /* CSC format */
 	    NCformat *Astore = (NCformat *) A[d]->Store;
-	    a = (float *)Astore->nzval;
+	    a = (doublecomplex *)Astore->nzval;
 	    colptr = Astore->colptr;
 	    rowind = Astore->rowind;
 	    nnz = Astore->nnz;
 	}
 
 	/* Row and column scaling factors. */
-	float *R = ReqPtr[d];
-	float *C = CeqPtr[d];
+	double *R = ReqPtr[d];
+	double *C = CeqPtr[d];
 
 	if ( !factored ) { /* Skip this if already factored. */
 
@@ -143,7 +142,7 @@ spivot_vbatch(
 			}
 		    } else if (options->RowPerm == LargeDiag_MC64) {
 			/* Finds a row permutation (serial) */
-			iinfo = sldperm_dist(job, m[d], nnz, colptr, rowind, a,
+			iinfo = zldperm_dist(job, m[d], nnz, colptr, rowind, a,
 					     perm_r, R1, C1);
 			info[d] = iinfo;
 
@@ -166,12 +165,13 @@ spivot_vbatch(
 
 				    /* Scale the matrix further.
 				       A <-- diag(R1)*A*diag(C1)            */
-				    float cj;
+				    double cj;
 				    for (j = 0; j < n[d]; ++j) {
 					cj = C1[j];
 					for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 					    irow = rowind[i];
-					    a[i] *= R1[irow] * cj;
+	                                    zd_mult(&a[i], &a[i], R1[irow]);
+           				    zd_mult(&a[i], &a[i], cj);
 
 					}
 				    }
@@ -198,7 +198,7 @@ spivot_vbatch(
 					irow = rowind[i];
 					rowind[i] = perm_r[irow];
 #if (PRNTlevel >= 2)
-				        dprod *= fabs(a[i]);
+				        dprod *= slud_z_abs1(&a[i]);
 #endif
 				    }
 				}
@@ -211,9 +211,9 @@ spivot_vbatch(
 #if (PRNTlevel >= 2)
 					/* New diagonal */
 					if (job == 2 || job == 3)
-					    dmin = SUPERLU_MIN(dmin, fabs(a[i]));
+			                    dmin = SUPERLU_MIN(dmin, slud_z_abs1(&a[i]));
 					else if (job == 4)
-					    dsum += fabs(a[i]);
+				            dsum += slud_z_abs1(&a[i]);
 #endif
 				    } /* end for i ... */
 				}  /* end for j ... */
@@ -273,8 +273,8 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
 
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(0, "Exit spivot_batch()");
+    CHECK_MALLOC(0, "Exit zpivot_batch()");
 #endif
     return rinfo;
 
-} /* end spivot_batch */
+} /* end zpivot_batch */

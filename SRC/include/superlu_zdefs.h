@@ -391,7 +391,36 @@ typedef struct {
     #endif
 } zSOLVEstruct_t;
 
-
+/*! \brief Persistent state for repeated batch solves that share one sparsity
+ *  pattern.  Callers hold it only as the opaque handle F[0], see
+ *  pzgssvx3d_csc_vbatch().
+ *
+ * Everything here is built on the Fact = DOFACT call and reused on every
+ * subsequent SamePattern_SameRowPerm call: the internal 1x1x1 grid, the
+ * stacked block-diagonal matrix A_big and its CSR arrays, and the
+ * factorization metadata (etree, perm_c of the big system, symbolic
+ * factorization, and the distributed L/U structure).
+ */
+typedef struct {
+    int       initialized;  /* 0 until the first factorization is stored */
+    int       batchCount;   /* batch size the state was built for */
+    int       nrhs;         /* number of RHS the state was built for */
+    int       m_big;        /* row dimension of the stacked system */
+    int       n_big;        /* column dimension of the stacked system */
+    int       nnz_big;      /* nonzeros in the stacked system */
+    int       gridalloc;    /* 1 if the internal grid needs superlu_gridexit3d */
+    gridinfo3d_t grid;      /* internal 1x1x1 grid, created once */
+    superlu_dist_options_t options_big; /* options used for the stacked solve */
+    zScalePermstruct_t ScalePermstruct;
+    zLUstruct_t        LUstruct;
+    zSOLVEstruct_t     SOLVEstruct;
+    SuperMatrix A_big;      /* NR_loc stacked matrix; values refreshed per call */
+    doublecomplex   *a_big;        /* A_big values,  size nnz_big */
+    int_t    *colind;       /* A_big colind,  size nnz_big */
+    int_t    *rowptr;       /* A_big rowptr,  size m_big+1 */
+    doublecomplex   *b;            /* stacked RHS / solution workspace, m_big*nrhs */
+    doublecomplex   *berr;         /* backward error of the stacked solve, size nrhs */
+} zvbatch_ctx_t;
 
 /*==== For 3D code ====*/
 
@@ -701,6 +730,21 @@ extern void pzgsrfs3d(superlu_dist_options_t *, int_t,
 	        ztrf3Dpartition_t*  , doublecomplex *, int_t, doublecomplex *, int_t, int,
 	        zSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
 
+/* GMRES inner-solve kernels for iterative refinement (IterRefine==SLU_GMRES).
+   Each solves A d = r (r in/out via the X argument; d returned) with the LU
+   factors as left preconditioner. */
+extern void pzgmres(superlu_dist_options_t *, int_t, SuperMatrix *,
+                    zLUstruct_t *, zScalePermstruct_t *, gridinfo_t *,
+                    pzgsmv_comm_t *, doublecomplex *X, int_t m_loc, int_t fst_row,
+                    int restart, int maxit, double rtol, double atol, int gs,
+                    zSOLVEstruct_t *, int *totit, SuperLUStat_t *, int *);
+
+extern void pzgmres3d(superlu_dist_options_t *, int_t, SuperMatrix *,
+                    zLUstruct_t *, zScalePermstruct_t *, gridinfo3d_t *,
+                    ztrf3Dpartition_t *, pzgsmv_comm_t *,
+                    doublecomplex *X, int_t m_loc, int_t fst_row,
+                    int restart, int maxit, double rtol, double atol, int gs,
+                    zSOLVEstruct_t *, int *totit, SuperLUStat_t *, int *);
 
 extern void pzgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
                   SuperMatrix *, double, zLUstruct_t *,
@@ -983,8 +1027,8 @@ extern int  zread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
 extern int
 zwrite_binary_withname(int_t n, int_t nnz,
-	      doublecomplex *values, int_t *rowind, int_t *colptr, char *newfile);                      
-
+	      doublecomplex *values, int_t *rowind, int_t *colptr, char *newfile);
+	      
 extern void validateInput_pzgssvx3d(superlu_dist_options_t *, SuperMatrix *A,
        int ldb, int nrhs, gridinfo3d_t *, int *info);
 extern void zallocScalePermstruct_RC(zScalePermstruct_t *, int_t m, int_t n);
@@ -1011,7 +1055,7 @@ extern void  zPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 			   zLocalLU_t *);
 extern void  zPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  zPrint_CompCol_triplet(SuperMatrix *);
-extern void  file_zPrint_NCPformat_triplet(FILE *, SuperMatrix *);    
+extern void  file_zPrint_NCPformat_triplet(FILE *, SuperMatrix *);
 extern void  zPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   zPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
@@ -1109,6 +1153,17 @@ extern int zcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, doubl
 extern int zcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
 				 int nrhs, doublecomplex **rhs, int *ldb, doublecomplex **x, int *ldx,
 				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+extern int zcreate_batch_systems_multiple(handle_t *SparseMatrix_handles, int batchCount,
+                 int nrhs, doublecomplex **RHSptr, int *ldRHS, doublecomplex **xtrue, int *ldX,
+                 FILE **fp, char * postfix, gridinfo3d_t *grid3d);
+/* One time step of a batch whose right-hand sides (and optionally the reference
+   solutions) are read from their own files rather than generated. */
+extern int zcreate_batch_systems_rhsfile(handle_t *SparseMatrix_handles, int batchCount,
+                 int nrhs, doublecomplex **RHSptr, int *ldRHS, doublecomplex **xtrue, int *ldX,
+                 FILE **fpA, FILE **fpB, FILE **fpX, char * postfix,
+                 gridinfo3d_t *grid3d);
+extern void zbatch_systems_free(handle_t *SparseMatrix_handles, int batchCount,
+                 doublecomplex **RHSptr, doublecomplex **xtrue);
 
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts
    it to a NRformat_loc distributed in 2D grid in grid-0 */
@@ -1605,11 +1660,32 @@ extern int pzgssvx3d_csc_batch(
 extern int zequil_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
     double **ReqPtr, double **CeqPtr, DiagScale_t *
-    //    DeviceContext context /* device context including queues, events, dependencies */
+    // DeviceContext context /* device context including queues, events, dependencies */
     );
 extern int zpivot_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
     double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr
+    // DeviceContext context /* device context including queues, events, dependencies */
+    );
+extern int pzgssvx3d_csc_vbatch(
+        superlu_dist_options_t *, int batchCount, int *m, int *n, int *nnz,
+        int nrhs, handle_t *, doublecomplex **RHSptr, int *ldRHS,
+        double **ReqPtr, double **CeqPtr,
+        int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
+        handle_t *F, doublecomplex **Xptr, int *ldX, double **Berrs,
+        gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
+        //DeviceContext context /* device context including queues, events, dependencies */
+        );
+/* Release the batch state held in F[0] by pzgssvx3d_csc_vbatch(). */
+extern void zvbatch_free(handle_t *F);
+extern int zequil_vbatch(
+    superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
+    double **ReqPtr, double **CeqPtr, DiagScale_t *, int *info
+    //    DeviceContext context /* device context including queues, events, dependencies */
+    );
+extern int zpivot_vbatch(
+    superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
+    double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
 
@@ -1620,7 +1696,7 @@ extern void zDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
 			   Glu_persist_t *Glu_persist, zLocalLU_t *Llu);
 extern void zDumpUblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
 			   Glu_persist_t *Glu_persist, zLocalLU_t *Llu);
-    
+
 /*== end 3D prototypes ===================*/
 
 extern doublecomplex *zready_x;

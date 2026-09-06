@@ -10,14 +10,13 @@ at the top-level directory.
 */
 
 
-
 /*
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab
  * November 5, 2023
  * Last update:
  */
-#include "superlu_sdefs.h"
+#include "superlu_zdefs.h"
 
 /*! \brief Equilibrate the systems using the LAPACK-style algorithm
  *
@@ -39,7 +38,7 @@ at the top-level directory.
  * </pre>
  */
 int
-sequil_vbatch(
+zequil_vbatch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
     int batchCount, /* number of matrices in the batch */
     int *m, /* array of matrix row dimension, of size 'batchCount' */
@@ -47,9 +46,9 @@ sequil_vbatch(
     handle_t  *SparseMatrix_handles, /* array of sparse matrix handles, of size 'batchCount',
 				      * each pointing to the actual storage
 				      */
-    float **ReqPtr, /* array of pointers to diagonal row scaling vectors, of size 'batchCount',
+    double **ReqPtr, /* array of pointers to diagonal row scaling vectors, of size 'batchCount',
 			size of the kth one is m[k]   */
-    float **CeqPtr, /* array of pointers to diagonal column scaling vectors, of size 'batchCount',
+    double **CeqPtr, /* array of pointers to diagonal column scaling vectors, of size 'batchCount',
 			size of the kth one is n[k]    */
     DiagScale_t *DiagScale, /* How equilibration is done for each matrix. */
     //    DeviceContext context /* device context including queues, events, dependencies */
@@ -68,7 +67,7 @@ sequil_vbatch(
     int notran = (options->Trans == NOTRANS);
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(0, "Enter sequil_batch()");
+    CHECK_MALLOC(0, "Enter zequil_batch()");
 #endif
     /* Decipher the input matrices */
     SuperMatrix **A = SUPERLU_MALLOC(batchCount * sizeof(SuperMatrix *));
@@ -81,7 +80,7 @@ sequil_vbatch(
     for (int k = 0; k < batchCount; ++k) {
 
 	NCformat *Astore = (NCformat *) A[k]->Store;
-	float *a = (float *) Astore->nzval;
+	doublecomplex *a = (doublecomplex *) Astore->nzval;
 	int_t *colptr = Astore->colptr;
 	int_t *rowind = Astore->rowind;
 
@@ -91,8 +90,8 @@ sequil_vbatch(
 	 */
 
 	/* The following arrays are replicated on all processes. */
-	float *R = ReqPtr[k];
-	float *C = CeqPtr[k];
+	double *R = ReqPtr[k];
+	double *C = CeqPtr[k];
 
 	/* Allocate stoage if not factored & ask for equilibration */
 	if (Equil && Fact != SamePattern_SameRowPerm) {
@@ -100,17 +99,17 @@ sequil_vbatch(
 	    //switch (ScalePermstruct->DiagScale)
 	    switch ( DiagScale[k] ) {
 		case NOEQUIL:
-		    if (!(R = (float *)floatMalloc_dist(m[k]))) ABORT("Malloc fails for R[].");
-		    if (!(C = (float *)floatMalloc_dist(n[k]))) ABORT("Malloc fails for C[].");
+		    if (!(R = (double *)doubleMalloc_dist(m[k]))) ABORT("Malloc fails for R[].");
+		    if (!(C = (double *)doubleMalloc_dist(n[k]))) ABORT("Malloc fails for C[].");
 		    ReqPtr[k] = R;
 		    CeqPtr[k] = C;
 		    break;
 		case ROW: /* R[] was already allocated before */
-		    if (!(C = (float *)floatMalloc_dist(n[k]))) ABORT("Malloc fails for C[].");
+		    if (!(C = (double *)doubleMalloc_dist(n[k]))) ABORT("Malloc fails for C[].");
 		    CeqPtr[k] = C;
 		    break;
 		case COL: /* C[] was already allocated before */
-		    if (!(R = (float *)floatMalloc_dist(m[k]))) ABORT("Malloc fails for R[].");
+		    if (!(R = (double *)doubleMalloc_dist(m[k]))) ABORT("Malloc fails for R[].");
 		    ReqPtr[k] = R;
 		    break;
 		default:
@@ -130,25 +129,25 @@ sequil_vbatch(
 			for (j = 0; j < n[k]; ++j) {
 			    for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 				irow = rowind[i];
-				a[i] *= R[irow]; /* Scale rows. */
+	                        zd_mult(&a[i], &a[i], R[irow]);
 			    }
 			}
 			break;
 		    case COL:
 			for (j = 0; j < n[k]; ++j) {
-			    float cj = C[j];
+			    double cj = C[j];
 			    for (i = colptr[j]; i < colptr[j+1]; ++i) {
-				a[i] *= cj; /* Scale columns. */
+	                        zd_mult(&a[i], &a[i], cj);
 			    }
 			}
 			break;
 		    case BOTH:
 			for (j = 0; j < n[k]; ++j) {
-			    float cj = C[j];
+			    double cj = C[j];
 			    for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 				irow = rowind[i];
-				a[i] *= R[irow] * cj; /* Scale rows and cols. */
-
+                                zd_mult(&a[i], &a[i], R[irow]);
+			        zd_mult(&a[i], &a[i], cj);
 			    }
 			}
 			break;
@@ -158,11 +157,11 @@ sequil_vbatch(
 
 		int iinfo;
 		char equed[1];
-		float amax, anorm, colcnd, rowcnd;
+		double amax, anorm, colcnd, rowcnd;
 
 		/* Compute the row and column scalings. */
 
-		sgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
+		zgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
 		info[k] = iinfo;
 
 		if (iinfo > 0) {
@@ -185,7 +184,7 @@ sequil_vbatch(
 
 		/* Equilibrate matrix A if it is badly-scaled.
 		   A <-- diag(R)*A*diag(C)                     */
-		slaqgs_dist(A[k], R, C, rowcnd, colcnd, amax, equed);
+		zlaqgs_dist(A[k], R, C, rowcnd, colcnd, amax, equed);
 
 		if (strncmp(equed, "R", 1) == 0) {
 		    DiagScale[k] = ROW;
@@ -207,7 +206,7 @@ sequil_vbatch(
     } /* end for k ... batchCount */
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(0, "Exit sequil_batch()");
+    CHECK_MALLOC(0, "Exit zequil_batch()");
 #endif
     return rinfo;
-} /* end sequil_batch */
+} /* end zequil_batch */

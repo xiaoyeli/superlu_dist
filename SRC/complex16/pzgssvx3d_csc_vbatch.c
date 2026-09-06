@@ -10,13 +10,12 @@ at the top-level directory.
 */
 
 
-
 /*
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab
  * Last update:
  */
-#include "superlu_sdefs.h"
+#include "superlu_zdefs.h"
 #include "superlu_defs.h"
 #include "superlu_upacked.h"
 #include <stdbool.h>
@@ -28,14 +27,14 @@ at the top-level directory.
  * GPU build that churns the CUDA device binding and fails with
  * "cudaErrorInvalidDevice: invalid device ordinal".
  */
-static void svbatch_ctx_release_factors(svbatch_ctx_t *ctx)
+static void zvbatch_ctx_release_factors(zvbatch_ctx_t *ctx)
 {
     if ( !ctx->initialized ) return;
 
-    sDestroy_LU(ctx->n_big, &(ctx->grid.grid2d), &(ctx->LUstruct));
-    sSolveFinalize(&(ctx->options_big), &(ctx->SOLVEstruct));
-    sScalePermstructFree(&(ctx->ScalePermstruct));
-    sLUstructFree(&(ctx->LUstruct));
+    zDestroy_LU(ctx->n_big, &(ctx->grid.grid2d), &(ctx->LUstruct));
+    zSolveFinalize(&(ctx->options_big), &(ctx->SOLVEstruct));
+    zScalePermstructFree(&(ctx->ScalePermstruct));
+    zLUstructFree(&(ctx->LUstruct));
 
     /* Destroy_CompRowLoc_Matrix_dist() frees a_big/colind/rowptr as well,
        since they are the store of A_big. */
@@ -50,31 +49,31 @@ static void svbatch_ctx_release_factors(svbatch_ctx_t *ctx)
     ctx->berr = NULL;
 
     ctx->initialized = 0;  /* the grid stays; gridalloc is left set */
-} /* end svbatch_ctx_release_factors */
+} /* end zvbatch_ctx_release_factors */
 
 /*! \brief Release the contents of a context, grid included. */
-static void svbatch_ctx_destroy(svbatch_ctx_t *ctx)
+static void zvbatch_ctx_destroy(zvbatch_ctx_t *ctx)
 {
-    svbatch_ctx_release_factors(ctx);
+    zvbatch_ctx_release_factors(ctx);
     if ( ctx->gridalloc ) {
 	superlu_gridexit3d(&(ctx->grid));
 	ctx->gridalloc = 0;
     }
-} /* end svbatch_ctx_destroy */
+} /* end zvbatch_ctx_destroy */
 
-/*! rief Release the batch state held in F[0] by psgssvx3d_csc_vbatch().
+/*! rief Release the batch state held in F[0] by pzgssvx3d_csc_vbatch().
  *
  * Call this after the last solve of a time-stepping loop.  Safe on F = NULL
  * and on an F[0] that was never populated; F[0] is reset to 0.
  */
-void svbatch_free(handle_t *F)
+void zvbatch_free(handle_t *F)
 {
     if ( F == NULL || F[0] == 0 ) return;
-    svbatch_ctx_t *ctx = (svbatch_ctx_t *) F[0];
-    svbatch_ctx_destroy(ctx);
+    zvbatch_ctx_t *ctx = (zvbatch_ctx_t *) F[0];
+    zvbatch_ctx_destroy(ctx);
     SUPERLU_FREE(ctx);
     F[0] = 0;
-} /* end svbatch_free */
+} /* end zvbatch_free */
 
 
 /*! \brief Solve a batch of linear systems Ai * Xi = Bi repeatedly, when every
@@ -84,8 +83,8 @@ void svbatch_free(handle_t *F)
  * one call to the next.
  *
  * <pre>
- * This is the "same pattern" companion of psgssvx3d_csc_vbatch(), in the same
- * spirit as psdrive3d2 / PSGSSVX3D with options->Fact = SamePattern_SameRowPerm.
+ * This is the "same pattern" companion of pzgssvx3d_csc_vbatch(), in the same
+ * spirit as pzdrive3d2 / PZGSSVX3D with options->Fact = SamePattern_SameRowPerm.
  * It is meant for time-stepping simulations, where at every step the batch has
  * the same structure and only the numerical values change.
  *
@@ -142,7 +141,7 @@ void svbatch_free(handle_t *F)
  *     built and released inside this call).  Otherwise F[0] must be 0 on the
  *     Fact = DOFACT call; this routine stores the state there and every later
  *     SamePattern_SameRowPerm call reads it back.  Release it with
- *     svbatch_free(F) after the last solve.
+ *     zvbatch_free(F) after the last solve.
  * @param[out]     Xptr array of pointers to dense storage of solution
  * @param[in]      ldX array of leading dimensions of X
  * @param[out]     Berrs array of pointers to backward errors
@@ -153,7 +152,7 @@ void svbatch_free(handle_t *F)
  * </pre>
  */
 int
-psgssvx3d_csc_vbatch(
+pzgssvx3d_csc_vbatch(
 		superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
 		int batchCount, /* number of matrices in the batch */
 		int *m, /* array of matrix row dimensions, size batchCount */
@@ -164,11 +163,11 @@ psgssvx3d_csc_vbatch(
 						  * of size 'batchCount',
 						  * each pointing to the actual storage
 						  */
-		float **RHSptr, // array of pointers to dense RHS storage
+		doublecomplex **RHSptr, // array of pointers to dense RHS storage
 		int *ldRHS, // array of leading dimensions of RHS
-		float **ReqPtr, /* array of pointers to diagonal row scaling vectors, size batchCount,
+		double **ReqPtr, /* array of pointers to diagonal row scaling vectors, size batchCount,
 				    size of the kth one is m[k]   */
-		float **CeqPtr, /* array of pointers to diagonal column scaling vectors, size batchCount,
+		double **CeqPtr, /* array of pointers to diagonal column scaling vectors, size batchCount,
 				    size of the kth one is n[k]    */
 		int **RpivPtr, /* array of pointers to row permutation vectors , size batchCount,
 				    size of the kth one is m[k] */
@@ -176,10 +175,10 @@ psgssvx3d_csc_vbatch(
 				    size of the kth one is n[k] */
 		DiagScale_t *DiagScale, /* array of indicators how equilibration is done for each matrix */
 		handle_t *F, /* NULL, or F[0] = opaque handle to the batch state kept
-			      * across calls sharing a pattern; see svbatch_free() */
- 		float **Xptr, // array of pointers to dense solution storage
+			      * across calls sharing a pattern; see zvbatch_free() */
+ 		doublecomplex **Xptr, // array of pointers to dense solution storage
 		int *ldX, // array of leading dimensions of X
-		float **Berrs, /* array of poiniters to backward errors */
+		double **Berrs, /* array of poiniters to backward errors */
 		gridinfo3d_t *grid3d,
 		SuperLUStat_t *stat,
 		int *info
@@ -195,7 +194,7 @@ psgssvx3d_csc_vbatch(
        F != NULL, F[0]==0 : first call, the state is built and stored in F[0].
        F != NULL, F[0]!=0 : a previous call's state, reused or rebuilt. */
     int persist = (F != NULL);
-    svbatch_ctx_t *ctx = (persist && F[0]) ? (svbatch_ctx_t *) F[0] : NULL;
+    zvbatch_ctx_t *ctx = (persist && F[0]) ? (zvbatch_ctx_t *) F[0] : NULL;
     int reuse = (Fact == SamePattern_SameRowPerm && ctx != NULL);
 
     if (Fact < 0 || Fact > FACTORED)
@@ -213,7 +212,7 @@ psgssvx3d_csc_vbatch(
 		    "Extra precise iterative refinement yet to support.");
 	}
     else if (batchCount < 0) *info = -2;
-    else if (A0->nrow != A0->ncol || A0->nrow < 0 || A0->Stype != SLU_NC || A0->Dtype != SLU_S || A0->Mtype != SLU_GE)
+    else if (A0->nrow != A0->ncol || A0->nrow < 0 || A0->Stype != SLU_NC || A0->Dtype != SLU_Z || A0->Mtype != SLU_GE)
 	*info = -7;
     else if (nrhs < 0)
 	{
@@ -221,47 +220,47 @@ psgssvx3d_csc_vbatch(
 	}
     /* The stored state must match how it was built. */
     else if (Fact == SamePattern_SameRowPerm && ctx == NULL) {
-	fprintf(stderr, "psgssvx3d_csc_vbatch: SamePattern_SameRowPerm asked "
+	fprintf(stderr, "pzgssvx3d_csc_vbatch: SamePattern_SameRowPerm asked "
 		"for, but F holds no state; call with Fact = DOFACT and a "
 		"non-NULL F first.\n");
 	*info = -16;
     }
     else if (reuse && (ctx->batchCount != batchCount || ctx->nrhs != nrhs)) {
-	fprintf(stderr, "psgssvx3d_csc_vbatch: batchCount/nrhs (%d/%d) differ "
+	fprintf(stderr, "pzgssvx3d_csc_vbatch: batchCount/nrhs (%d/%d) differ "
 		"from the ones the state in F was built with (%d/%d).\n",
 		batchCount, nrhs, ctx->batchCount, ctx->nrhs);
 	*info = -16;
     }
     if (*info) {
-	pxerr_dist("psgssvx3d_csc_vbatch", &(grid3d->grid2d), -(*info));
+	pxerr_dist("pzgssvx3d_csc_vbatch", &(grid3d->grid2d), -(*info));
 	return -1;
     }
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(grid3d->iam, "Enter psgssvx3d_csc_vbatch()");
+    CHECK_MALLOC(grid3d->iam, "Enter pzgssvx3d_csc_vbatch()");
 #endif
 
     /* Single-shot solves keep the state on the stack and release it before
        returning; persistent ones own a heap copy addressed by F[0]. */
-    svbatch_ctx_t local_ctx;
+    zvbatch_ctx_t local_ctx;
     if ( ctx == NULL ) {
 	if ( persist ) {
-	    ctx = (svbatch_ctx_t *) SUPERLU_MALLOC( sizeof(svbatch_ctx_t) );
+	    ctx = (zvbatch_ctx_t *) SUPERLU_MALLOC( sizeof(zvbatch_ctx_t) );
 	    if ( !ctx ) ABORT("Malloc fails for the batch state");
 	    F[0] = (handle_t) ctx;
 	} else {
 	    ctx = &local_ctx;
 	}
-	memset(ctx, 0, sizeof(svbatch_ctx_t));
+	memset(ctx, 0, sizeof(zvbatch_ctx_t));
     } else if ( !reuse ) {
 	/* Fact = DOFACT on state that already holds a factorization: drop the
 	   factors and rebuild, but keep the grid. */
-	svbatch_ctx_release_factors(ctx);
+	zvbatch_ctx_release_factors(ctx);
     }
 
     int colequ, rowequ;
     int_t i, j, k;
-    float *C, *R;
+    double *C, *R;
     int d; /* index into each matrix in the batch */
 
     double t = SuperLU_timer_();
@@ -272,7 +271,7 @@ psgssvx3d_csc_vbatch(
 	/**** equilibration (LAPACK style) ****/
 	/* ReqPtr[] and CeqPtr[] are allocated internally */
 	/* Each A may be overwritten by R*A*C */
-	sequil_vbatch(options, batchCount, m, n, SparseMatrix_handles,
+	zequil_vbatch(options, batchCount, m, n, SparseMatrix_handles,
 		      ReqPtr, CeqPtr, DiagScale, ainfo);
 
 	stat->utime[EQUIL] = SuperLU_timer_() - t;
@@ -284,7 +283,7 @@ psgssvx3d_csc_vbatch(
 	 * perm_r[]'s are applied to each matrix.
 	 */
 	/* no internal malloc */
-	spivot_vbatch(options, batchCount, m, n, SparseMatrix_handles,
+	zpivot_vbatch(options, batchCount, m, n, SparseMatrix_handles,
 		      ReqPtr, CeqPtr, DiagScale, RpivPtr, ainfo);
 
 	SUPERLU_FREE(ainfo);
@@ -306,7 +305,7 @@ psgssvx3d_csc_vbatch(
 
 	/* Reuse path: the caller handed us matrices with fresh values in the
 	 * original structure.  Redo by hand, from the stored data, exactly
-	 * what sequil_vbatch() and spivot_vbatch() did on the DOFACT call:
+	 * what zequil_vbatch() and zpivot_vbatch() did on the DOFACT call:
 	 * scale A by the stored R and C, then permute its rows by the stored
 	 * perm_r.  Both are O(nnz); the reordering (get_perm_c_vbatch) is
 	 * skipped altogether, since the pattern of Pr*A has not changed.
@@ -314,7 +313,7 @@ psgssvx3d_csc_vbatch(
 	for (d = 0; d < batchCount; ++d) {
 	    SuperMatrix *Ad = (SuperMatrix *) SparseMatrix_handles[d];
 	    NCformat *Astore = (NCformat *) Ad->Store;
-	    float *a = (float *) Astore->nzval;
+	    doublecomplex *a = (doublecomplex *) Astore->nzval;
 	    int_t *colptr = Astore->colptr;
 	    int_t *rowind = Astore->rowind;
 	    int *perm_r = RpivPtr[d];
@@ -327,10 +326,11 @@ psgssvx3d_csc_vbatch(
 	    /* A <- diag(R) * A * diag(C), using the untouched row indices */
 	    if ( rowequ || colequ ) {
 		for (j = 0; j < n[d]; ++j) {
-		    float cj = colequ ? C[j] : 1.0;
+		    double cj = colequ ? C[j] : 1.0;
 		    for (i = colptr[j]; i < colptr[j+1]; ++i) {
-			float ri = rowequ ? R[rowind[i]] : 1.0;
-			a[i] *= ri * cj;
+			double ri = rowequ ? R[rowind[i]] : 1.0;
+			zd_mult(&a[i], &a[i], ri);
+			zd_mult(&a[i], &a[i], cj);
 		    }
 		}
 	    }
@@ -366,27 +366,27 @@ psgssvx3d_csc_vbatch(
 
     if ( reuse &&
 	 (m_big != ctx->m_big || n_big != ctx->n_big || nnz_big != ctx->nnz_big) ) {
-	fprintf(stderr, "psgssvx3d_csc_vbatch: the stacked system changed "
+	fprintf(stderr, "pzgssvx3d_csc_vbatch: the stacked system changed "
 		"(m %d->%d, n %d->%d, nnz %d->%d); the pattern is not the "
 		"same.\n", ctx->m_big, m_big, ctx->n_big, n_big,
 		ctx->nnz_big, nnz_big);
 	*info = -2;
-	pxerr_dist("psgssvx3d_csc_vbatch", &(grid3d->grid2d), -(*info));
+	pxerr_dist("pzgssvx3d_csc_vbatch", &(grid3d->grid2d), -(*info));
 	return -1;
     }
 
-    float *a_big;
+    doublecomplex *a_big;
     int_t *colind;
     int_t *rowptr;
-    float *b;
+    doublecomplex *b;
 
     if ( !reuse ) {
 	/* Allocate the storage that the context will own from now on.  A_big
 	   takes ownership of a_big/colind/rowptr below. */
-	a_big = (float *) floatMalloc_dist(nnz_big);
+	a_big = (doublecomplex *) doublecomplexMalloc_dist(nnz_big);
 	colind = (int_t *) intMalloc_dist(nnz_big);
 	rowptr = (int_t *) intMalloc_dist(n_big + 1);
-	if ( !(b = floatMalloc_dist(m_big * nrhs)) ) ABORT("Malloc fails for b[:,nrhs]");
+	if ( !(b = doublecomplexMalloc_dist(m_big * nrhs)) ) ABORT("Malloc fails for b[:,nrhs]");
     } else {
 	a_big = ctx->a_big;
 	colind = ctx->colind;
@@ -394,7 +394,7 @@ psgssvx3d_csc_vbatch(
 	b = ctx->b;
     }
 
-    float *nzval_d; /* each diagonal block */
+    doublecomplex *nzval_d; /* each diagonal block */
     int_t *colind_d;
     int_t *rowptr_d;
     int_t nnz_d, col, row, offset_m;
@@ -403,7 +403,7 @@ psgssvx3d_csc_vbatch(
     j = 0;   /* running sum of total nnz */
     row = 0;
     col = 0;
-    float alpha = -1.0, beta = 1.0;
+    doublecomplex alpha = {-1.0, 0.0}, beta = {1.0, 0.0};
     offset_m = 0;
 
     for (d = 0; d < batchCount; ++d) {
@@ -419,7 +419,7 @@ psgssvx3d_csc_vbatch(
 	    Astore->rowind[i] = perm_c[Astore->rowind[i]];
 
 	/* Convert to CSR format. */
-	sCompCol_to_CompRow_dist(m[d], n[d], Astore->nnz, Astore->nzval, Astore->colptr,
+	zCompCol_to_CompRow_dist(m[d], n[d], Astore->nnz, Astore->nzval, Astore->colptr,
 				 Astore->rowind, &nzval_d, &rowptr_d, &colind_d);
 
 	/* Copy this CSR matrix to a diagonal block of A_big.
@@ -445,14 +445,14 @@ psgssvx3d_csc_vbatch(
 	SUPERLU_FREE(rowptr_d);
 
 	/* Transform the right-hand side: RHS overwritten by B <= R*B */
-	float *rhs;
+	doublecomplex *rhs;
 
 	rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
 	if ( rowequ ) { /* Scale RHS by R[] */
 	    R = ReqPtr[d];
 	    rhs = RHSptr[d]; // first RHS
 	    for (k = 0; k < nrhs; ++k) {
-		for (i = 0; i < m[d]; ++i) rhs[i] *= R[i];
+		for (i = 0; i < m[d]; ++i) zd_mult(&rhs[i], &rhs[i], R[i]);
 		rhs += ldRHS[d]; /* move to next RHS */
 	    }
 	}
@@ -476,8 +476,8 @@ psgssvx3d_csc_vbatch(
 
     if ( !reuse ) {
 	/* Set up A_big in NR_loc format; it takes ownership of the arrays. */
-	sCreate_CompRowLoc_Matrix_dist(&(ctx->A_big), m_big, n_big, nnz_big, m_big, 0,
-				       a_big, colind, rowptr, SLU_NR_loc, SLU_S, SLU_GE);
+	zCreate_CompRowLoc_Matrix_dist(&(ctx->A_big), m_big, n_big, nnz_big, m_big, 0,
+				       a_big, colind, rowptr, SLU_NR_loc, SLU_Z, SLU_GE);
 
 	/* Modify the input options.
 	 * Turn off preprocessing options for the big system.
@@ -497,12 +497,12 @@ psgssvx3d_csc_vbatch(
 	}
 
 	/* Initialize ScalePermstruct and LUstruct. */
-	sScalePermstructInit (m_big, n_big, &(ctx->ScalePermstruct));
-	sLUstructInit (n_big, &(ctx->LUstruct));
+	zScalePermstructInit (m_big, n_big, &(ctx->ScalePermstruct));
+	zLUstructInit (n_big, &(ctx->LUstruct));
 
-	if (!(ctx->berr = floatCalloc_dist (nrhs))) ABORT ("Malloc fails for berr[].");
+	if (!(ctx->berr = doubleCalloc_dist (nrhs))) ABORT ("Malloc fails for berr[].");
 
-	/* Seed these once.  psgssvx3d() flips them to YES as it initializes
+	/* Seed these once.  pzgssvx3d() flips them to YES as it initializes
 	   SOLVEstruct and the refinement workspace; since both live in the
 	   context, the later calls must see YES and skip re-initializing. */
 	ctx->options_big.SolveInitialized = options->SolveInitialized;
@@ -534,42 +534,20 @@ psgssvx3d_csc_vbatch(
 
     /* perm_c_big may not be Identity due to etree postordering, however,
      * since b[] is transormed back to the solution of the original BIG system,
-     * we do not need to consider perm_c_big outside psgssvx3d().
+     * we do not need to consider perm_c_big outside pzgssvx3d().
      */
-    if ( ctx->options_big.IterRefine >= SLU_DOUBLE ) {
-	/* Double-precision iterative refinement on the stacked system.
-	 * err_bounds[] is scratch/output for the d2 refine; xtrue_big is only
-	 * touched under PRNTlevel>=2 diagnostics, so a zeroed dummy suffices.
-	 * Both are per-call scratch and are not worth keeping in the state. */
-	extern double *doubleCalloc_dist(int_t);
-	float *err_bounds;
-	double *xtrue_big;
-	if (!(err_bounds = floatCalloc_dist(3 * nrhs)))
-	    ABORT("Malloc fails for err_bounds[].");
-	if (!(xtrue_big = doubleCalloc_dist((int_t) m_big * nrhs)))
-	    ABORT("Malloc fails for xtrue_big[].");
-
-	psgssvx3d_d2 (&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct),
-		      b, m_big, nrhs, &(ctx->grid),
-		      &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr,
-		      err_bounds, stat, info, xtrue_big);
-
-	SUPERLU_FREE(err_bounds);
-	SUPERLU_FREE(xtrue_big);
-    } else {
-	psgssvx3d (&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct),
-		   b, m_big, nrhs, &(ctx->grid),
-		   &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr, stat, info);
-    }
+    pzgssvx3d (&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct),
+	       b, m_big, nrhs, &(ctx->grid),
+	       &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr, stat, info);
 
 #if (PRNTlevel >= 1)
     printf("\tBIG system: berr[0] %e\n", ctx->berr[0]);
-    printf("after psgssvx3d: DiagScale %d\n", ctx->ScalePermstruct.DiagScale);
+    printf("after pzgssvx3d: DiagScale %d\n", ctx->ScalePermstruct.DiagScale);
 #endif
 
     if ( *info ) {  /* Something is wrong */
         if ( grid3d->iam==0 ) {
-	    printf("ERROR: INFO = %d returned from psgssvx3d()\n", *info);
+	    printf("ERROR: INFO = %d returned from pzgssvx3d()\n", *info);
 	    fflush(stdout);
 	}
     }
@@ -578,14 +556,14 @@ psgssvx3d_csc_vbatch(
 	PStatPrint (options, stat, &(grid3d->grid2d)); /* Print 2D statistics.*/
     }
 
-    /* NOTE: unlike psgssvx3d_csc_vbatch(), the L/U factors, the stacked matrix
+    /* NOTE: unlike pzgssvx3d_csc_vbatch(), the L/U factors, the stacked matrix
        and the internal grid are deliberately NOT destroyed here -- they are
-       what the next SamePattern_SameRowPerm call reuses.  svbatch_free(F)
+       what the next SamePattern_SameRowPerm call reuses.  zvbatch_free(F)
        releases them. */
 
     /* Copy the big solution into individual ones, and compute B'errs */
-    float bn, rn;  // inf-norm of B and R
-    float *x;
+    double bn, rn;  // inf-norm of B and R
+    doublecomplex *x;
     offset_m = 0;
     for (d = 0; d < batchCount; ++d) {
 
@@ -602,22 +580,22 @@ psgssvx3d_csc_vbatch(
 	}
 
 	/* Compute residual: Pc*Pr*(R*b) - (Pc*Pr*R*A*C)*z
-	 * Now x = Pc'*y, where y is computed from psgssvx3d()
+	 * Now x = Pc'*y, where y is computed from pzgssvx3d()
 	 */
 	x = Xptr[d];
 	for (k = 0; k < nrhs; ++k) {
 	    bn = 0.; // norm of B
 	    rn = 0.; // norm of R
 	    for (i = 0; i < m[d]; ++i) {
-		bn = SUPERLU_MAX( bn, fabs(RHSptr[d][k*m[d] + i]) );
+		bn = SUPERLU_MAX( bn, slud_z_abs1( &(RHSptr[d][k*m[d] + i]) ) );
 
 		/* permute RHS by Pc*Pr, use b[] as temporary storage */
 		b[k*m_big + offset_m + perm_c[perm_r[i]]] = RHSptr[d][k*ldRHS[d] + i];
 	    }
 
-	    sp_sgemv_dist("N", alpha, A, x, 1, beta, &b[k*m_big + offset_m], 1);
+	    sp_zgemv_dist("N", alpha, A, x, 1, beta, &b[k*m_big + offset_m], 1);
 
-	    for (i = 0; i < m[d]; ++i) rn = SUPERLU_MAX( rn, fabs(b[k*m_big + offset_m + i]) );
+	    for (i = 0; i < m[d]; ++i) rn = SUPERLU_MAX( rn, slud_z_abs1( &b[k*m_big + offset_m + i]) );
 	    Berrs[d][k] = rn / bn;
 	    x += ldX[d]; /* move to next x */
 	} /* end for k ... */
@@ -631,18 +609,18 @@ psgssvx3d_csc_vbatch(
 	    C = CeqPtr[d];
 	    x = Xptr[d];
 	    for (k = 0; k < nrhs; ++k) {
-		for (i = 0; i < n[d]; ++i) x[i] *= C[i];
+		for (i = 0; i < n[d]; ++i) zd_mult(&x[i], &x[i], C[i]);
 		x += ldX[d]; /* move to next x */
 	    }
 	}
 
     } /* end for d ... batchCount */
 
-    if ( !persist ) svbatch_ctx_destroy(ctx); /* single-shot: nothing survives */
+    if ( !persist ) zvbatch_ctx_destroy(ctx); /* single-shot: nothing survives */
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(grid3d->iam, "Exit psgssvx3d_csc_vbatch()");
+    CHECK_MALLOC(grid3d->iam, "Exit pzgssvx3d_csc_vbatch()");
 #endif
 
     return 0;
-} /* end psgssvx3d_csc_vbatch */
+} /* end pzgssvx3d_csc_vbatch */

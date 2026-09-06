@@ -179,9 +179,6 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     dCreate_CompCol_Matrix_dist(&GA, m, n, nnz, nzval, rowind, colptr,
                                 SLU_NC, SLU_D, SLU_GE);
 
-    //dPrint_CompCol_Matrix_dist(&GA);
-
-
     /* Generate the exact solution and compute the right-hand side. */
     if ( !(b_global = doubleMalloc_dist(m * nrhs)) )
         ABORT("Malloc fails for b[]");
@@ -198,8 +195,8 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
         MPI_Bcast( xtrue_global, n*nrhs, MPI_DOUBLE, 0, grid3d->comm );
         MPI_Bcast( b_global, m*nrhs, MPI_DOUBLE, 0, grid3d->comm );
     }
-	
-    
+
+
 
     /*************************************************
      * Change GA to a local A with NR_loc format     *
@@ -293,8 +290,7 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     CHECK_MALLOC(iam, "Exit dcreate_matrix()");
 #endif
     return 0;
-}
-
+} /* end dcreate_matrix_postfix3d  */
 
 /* \brief
  *
@@ -607,9 +603,14 @@ int dcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, double **rhs
     CHECK_MALLOC(iam, "Exit dcreate_matrix()");
 #endif
     return 0;
-}
+} /* end dcreate_block_diag_3d */
 
 
+/*
+ * This routine mimics the batch setup.
+ * It reads a sparse matrix from a file, then creates *batchCount* copies,
+ * and assign a handle pointing to a copy.
+ */
 int dcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
 			  int nrhs, double **RHSptr,
 			  int *ldRHS, double **xtrue, int *ldX,
@@ -711,6 +712,9 @@ int dcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
     return 0;
 } /* end dcreate_batch_systems */
 
+/*
+ * Read multiple files in a directory, then set up multiple systems.
+ */
 int dcreate_batch_systems_multiple(handle_t *SparseMatrix_handles, int batchCount,
                  int nrhs, double **RHSptr, int *ldRHS, double **xtrue, int *ldX,
                  FILE **fp, char * postfix, gridinfo3d_t *grid3d)
@@ -811,7 +815,8 @@ CHECK_MALLOC(iam, "Enter dcreate_batch_systems()");
     CHECK_MALLOC(iam, "Exit dcreate_batch_systems()");
 #endif
     return 0;
-} /* end dcreate_batch_systems_mult */
+} /* end dcreate_batch_systems_multiple */
+
 
 /*! \brief Read one time step of a batch: matrix d from fpA[d] and its
  *  right-hand side from fpB[d], instead of generating the RHS.
@@ -916,3 +921,4 @@ void dbatch_systems_free(handle_t *SparseMatrix_handles, int batchCount,
         SUPERLU_FREE(xtrue[d]);
     }
 } /* end dbatch_systems_free */
+

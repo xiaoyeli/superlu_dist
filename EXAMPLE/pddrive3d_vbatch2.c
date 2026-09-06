@@ -11,10 +11,10 @@ at the top-level directory.
 
 
 /*! @file
- * \brief Driver program for PDGSSVX3D_CSC_VBATCH2 example
+ * \brief Example program for PDGSSVX3D_CSC_VBATCH
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  *
@@ -28,9 +28,7 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * The driver program PDDRIVE3D_VBATCH2.
- *
- * This example illustrates how to use PDGSSVX3D_CSC_VBATCH2 to solve a batch
+ * This example illustrates how to use PDGSSVX3D_CSC_VBATCH to solve a batch
  * of systems repeatedly -- once per time step -- when the sparsity pattern of
  * every matrix in the batch stays the same from step to step.  It is the batch
  * counterpart of pddrive3d2.

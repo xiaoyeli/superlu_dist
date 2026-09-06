@@ -9,9 +9,8 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
 /*! @file
- * \brief Example program for PSGSSVX3D_CSC_VBATCH
+ * \brief Example program for PZGSSVX3D_CSC_VBATCH
  *
  * <pre>
  * -- Distributed SuperLU routine (version 9.3) --
@@ -20,7 +19,7 @@ at the top-level directory.
  *
  */
 #include <math.h>
-#include "superlu_sdefs.h"
+#include "superlu_zdefs.h"
 
 /*! \brief
  *
@@ -28,10 +27,10 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * This example illustrates how to use PSGSSVX3D_CSC_VBATCH to solve a batch
+ * This example illustrates how to use PZGSSVX3D_CSC_VBATCH to solve a batch
  * of systems repeatedly -- once per time step -- when the sparsity pattern of
  * every matrix in the batch stays the same from step to step.  It is the batch
- * counterpart of psdrive3d2.
+ * counterpart of pzdrive3d2.
  *
  * The first time step is solved with options.Fact = DOFACT, which does the
  * full preprocessing.  Every later step uses SamePattern_SameRowPerm, which
@@ -59,7 +58,7 @@ at the top-level directory.
  *      .../IEEE39_IBL_100steps/IEEE39_IBL_7/IEEE39_IBL_7_x_1.dat
  *
  * The program may be run by typing
- *    mpiexec -np <p> psdrive3d_vbatch2 -b <batchCount> -t <nsteps> \
+ *    mpiexec -np <p> pzdrive3d_vbatch2 -b <batchCount> -t <nsteps> \
  *                                      -f <suffix> <prefix>
  *
  * </pre>
@@ -308,8 +307,8 @@ main (int argc, char *argv[])
     handle_t *SparseMatrix_handles = SUPERLU_MALLOC( batchCount * sizeof(handle_t) );
     handle_t Fstate[1] = {0}; /* carries the state reused across steps */
     handle_t *F = Fstate;
-    float **RHSptr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
-    float **xtrues = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
+    doublecomplex **RHSptr = (doublecomplex **) SUPERLU_MALLOC( batchCount * sizeof(doublecomplex *) );
+    doublecomplex **xtrues = (doublecomplex **) SUPERLU_MALLOC( batchCount * sizeof(doublecomplex *) );
     int *ldRHS = int32Malloc_dist(batchCount);
     int *ldX = int32Malloc_dist(batchCount);
     int *md = int32Malloc_dist(batchCount);
@@ -317,13 +316,13 @@ main (int argc, char *argv[])
     int *nnzd = int32Malloc_dist(batchCount);
 
     /* These carry the preprocessing from step 0 into every later step. */
-    float **ReqPtr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
-    float **CeqPtr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
+    double **ReqPtr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
+    double **CeqPtr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
     int **RpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
     int **CpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
     DiagScale_t *DiagScale = (DiagScale_t *) SUPERLU_MALLOC( batchCount * sizeof(DiagScale_t) );
-    float **Xptr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
-    float **Berrs = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
+    doublecomplex **Xptr = (doublecomplex **) SUPERLU_MALLOC( batchCount * sizeof(doublecomplex *) );
+    double **Berrs = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
 
     FILE **fpA = (FILE **) SUPERLU_MALLOC( batchCount * sizeof(FILE *) );
     FILE **fpB = (FILE **) SUPERLU_MALLOC( batchCount * sizeof(FILE *) );
@@ -347,7 +346,7 @@ main (int argc, char *argv[])
 	int havex = checkx &&
 	    open_step_files(fpX, prefix, base, t, "x_", batchCount, postfix, 0);
 
-	screate_batch_systems_rhsfile(SparseMatrix_handles, batchCount, nrhs,
+	zcreate_batch_systems_rhsfile(SparseMatrix_handles, batchCount, nrhs,
 				      RHSptr, ldRHS, xtrues, ldX,
 				      fpA, fpB, (havex ? fpX : NULL),
 				      suffix, &grid);
@@ -372,8 +371,8 @@ main (int argc, char *argv[])
 		DiagScale[d] = NOEQUIL;
 		RpivPtr[d] = int32Malloc_dist(md[d]);
 		CpivPtr[d] = int32Malloc_dist(nd[d]);
-		Xptr[d] = floatMalloc_dist( nd[d] * nrhs );
-		Berrs[d] = floatMalloc_dist( nrhs );
+		Xptr[d] = doublecomplexMalloc_dist( nd[d] * nrhs );
+		Berrs[d] = doubleMalloc_dist( nrhs );
 	    }
 	    options.Fact = DOFACT;
 	} else {
@@ -385,7 +384,7 @@ main (int argc, char *argv[])
 	PStatInit (&stat);
 	t0 = SuperLU_timer_();
 
-	psgssvx3d_csc_vbatch(&options, batchCount,
+	pzgssvx3d_csc_vbatch(&options, batchCount,
 			      md, nd, nnzd, nrhs, SparseMatrix_handles,
 			      RHSptr, ldRHS, ReqPtr, CeqPtr, RpivPtr, CpivPtr,
 			      DiagScale, F, Xptr, ldX, Berrs, &grid, &stat, &info);
@@ -395,7 +394,7 @@ main (int argc, char *argv[])
 
 	if ( info ) {
 	    if ( !iam ) printf("ERROR: INFO = %d returned at step %d\n", info, t);
-	    sbatch_systems_free(SparseMatrix_handles, batchCount, RHSptr, xtrues);
+	    zbatch_systems_free(SparseMatrix_handles, batchCount, RHSptr, xtrues);
 	    break;
 	}
 
@@ -409,10 +408,12 @@ main (int argc, char *argv[])
 		   reference solutions. */
 		double ferr_cw = 0.0, dxmax = 0.0, xtmax = 0.0;
 		if ( havex ) {
-		    float *xc = Xptr[d], *xt = xtrues[d];
+		    doublecomplex *xc = Xptr[d], *xt = xtrues[d];
 		    for (int i = 0; i < nd[d]; ++i) {
-			float diff = fabs(xc[i] - xt[i]);
-			float axt  = fabs(xt[i]);
+	   	        doublecomplex temp;
+                        z_sub(&temp, &xc[i], &xt[i]);
+			double diff = slud_z_abs(&temp);
+			double axt  = slud_z_abs(&xt[i]);
 		    
 			if ( axt > 0.0 && diff/axt > ferr_cw ) ferr_cw = diff/axt;
 			if ( diff > dxmax ) dxmax = diff;
@@ -430,7 +431,7 @@ main (int argc, char *argv[])
 
 	/* The matrices were overwritten by Pc*Pr*R*A*C; the next step reads a
 	   fresh copy in the original structure. */
-	sbatch_systems_free(SparseMatrix_handles, batchCount, RHSptr, xtrues);
+	zbatch_systems_free(SparseMatrix_handles, batchCount, RHSptr, xtrues);
 
     } /* end for t ... nsteps */
 
@@ -448,7 +449,7 @@ main (int argc, char *argv[])
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
-    svbatch_free(F);
+    zvbatch_free(F);
 
     for (int d = 0; d < batchCount; ++d) {
 	if ( DiagScale[d] == ROW || DiagScale[d] == BOTH ) SUPERLU_FREE(ReqPtr[d]);

@@ -9,9 +9,8 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
 /*! @file
- * \brief Example program for PSGSSVX3D_CSC_VBATCH
+ * \brief Example program for PZGSSVX3D_CSC_VBATCH
  *
  * <pre>
  * -- Distributed SuperLU routine (version 9.3) --
@@ -24,7 +23,7 @@ at the top-level directory.
  */
 #include <math.h>
 #include <stdio.h>
-#include "superlu_sdefs.h"
+#include "superlu_zdefs.h"
 
 /*! \brief
  *
@@ -32,18 +31,18 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * This example illustrates how to use PSGSSVX3D_CSC_VBATCH with the full
+ * This example illustrates how to use PZGSSVX3D_CSC_VBATCH with the full
  * (default) options to solve a linear system.
  *
  * Five basic steps are required:
  *   1. Initialize the MPI environment and the SuperLU process grid
  *   2. Set up the input matrix and the right-hand side
  *   3. Set the options argument
- *   4. Call psgssvx3d_csc_vbatch
+ *   4. Call pzgssvx3d_csc_vbatch
  *   5. Release the process grid and terminate the MPI environment
  *
  * The program may be run by typing
- *    mpiexec -np <p> psdrive3d -r <proc rows> -c <proc columns> \
+ *    mpiexec -np <p> pzdrive3d -r <proc rows> -c <proc columns> \
  *                                   -d <proc Z-dimension> <input_file>
  * NOTE: total number of processes p = r * c * d
  *       d must be a power-of-two, e.g., 1, 2, 4, ...
@@ -51,12 +50,13 @@ at the top-level directory.
  * </pre>
  */
 
-static void matCheck(int n, int m, float* A, int LDA,
-       float* B, int LDB)
+static void matCheck(int n, int m, doublecomplex* A, int LDA,
+       doublecomplex* B, int LDB)
 {
     for(int j=0; j<m;j++)
         for (int i = 0; i < n; ++i) {
-	    assert(A[i+ LDA*j] == B[i+ LDB*j]);
+	    assert( (A[i+ LDA*j].r == B[i+ LDB*j].r)
+	    	    && (A[i+ LDA*j].i == B[i+ LDB*j].i) );
 	}
     printf("B check passed\n");
     return;
@@ -78,17 +78,17 @@ static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
     assert(A->fst_row == B->fst_row);
 
 #if 0
-    float *Aval = (float *)A->nzval, *Bval = (float *)B->nzval;
-    Printfloat5("A", A->nnz_loc, Aval);
-    Printfloat5("B", B->nnz_loc, Bval);
+    doublecomplex *Aval = (doublecomplex *)A->nzval, *Bval = (doublecomplex *)B->nzval;
+    Printdoublecomplex5("A", A->nnz_loc, Aval);
+    Printdoublecomplex5("B", B->nnz_loc, Bval);
     fflush(stdout);
 #endif
 
-    float * Aval = (float *) A->nzval;
-    float * Bval = (float *) B->nzval;
+    doublecomplex * Aval = (doublecomplex *) A->nzval;
+    doublecomplex * Bval = (doublecomplex *) B->nzval;
     for (int_t i = 0; i < A->nnz_loc; i++)
     {
-        assert( Aval[i] == Bval[i] );
+        assert( (Aval[i].r == Bval[i].r) && (Aval[i].i == Bval[i].i) );
         assert((A->colind)[i] == (B->colind)[i]);
 	printf("colind[] correct\n");
     }
@@ -108,12 +108,12 @@ main (int argc, char *argv[])
     superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;  // Now, A is on all 3D processes
-    sScalePermstruct_t ScalePermstruct;
-    sLUstruct_t LUstruct;
-    sSOLVEstruct_t SOLVEstruct;
+    zScalePermstruct_t ScalePermstruct;
+    zLUstruct_t LUstruct;
+    zSOLVEstruct_t SOLVEstruct;
     gridinfo3d_t grid;
-    float *berr;
-    float *b, *xtrue;
+    double *berr;
+    doublecomplex *b, *xtrue;
     int_t m, n;
     int nprow, npcol, npdep;
     int equil,colperm, rowperm, ir, lookahead, gmres = 0;
@@ -373,32 +373,32 @@ main (int argc, char *argv[])
 	   SOLVE THE BATCH LINEAR SYSTEM.
 	   ------------------------------------------------------------ */
 	printf("batchCount %d\n", batchCount);
-	// screate_block_diag_3d(&A, batchCount, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &grid);
+	// zcreate_block_diag_3d(&A, batchCount, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &grid);
 
         handle_t *F = NULL; /* NULL = single-shot, no state kept */
-	float **RHSptr;
+	doublecomplex **RHSptr;
 	int *ldRHS, *md, *nd, *nnzd;
-	float **ReqPtr;
-	float **CeqPtr;
+	double **ReqPtr;
+	double **CeqPtr;
 	DiagScale_t *DiagScale;
 	int **RpivPtr;
 	int **CpivPtr;
-	float **Xptr, **xtrues;
+	doublecomplex **Xptr, **xtrues;
 	int *ldX;
-	float **Berrs;
+	double **Berrs;
 
 	handle_t *SparseMatrix_handles = SUPERLU_MALLOC( batchCount *  sizeof(handle_t) );
-	RHSptr = (float **) SUPERLU_MALLOC( batchCount *  sizeof(float *) );
+	RHSptr = (doublecomplex **) SUPERLU_MALLOC( batchCount *  sizeof(doublecomplex *) );
 	ldRHS = int32Malloc_dist(batchCount);
-	xtrues = (float **) SUPERLU_MALLOC( batchCount *  sizeof(float *) );
+	xtrues = (doublecomplex **) SUPERLU_MALLOC( batchCount *  sizeof(doublecomplex *) );
 	ldX = int32Malloc_dist(batchCount);
 
     if (dir) {
-        screate_batch_systems_multiple(SparseMatrix_handles, batchCount, nrhs, RHSptr, ldRHS,
+        zcreate_batch_systems_multiple(SparseMatrix_handles, batchCount, nrhs, RHSptr, ldRHS,
             xtrues, ldX, fparray, suffix, &grid);
     }
     else {
-        screate_batch_systems(SparseMatrix_handles, batchCount, nrhs, RHSptr, ldRHS,
+        zcreate_batch_systems(SparseMatrix_handles, batchCount, nrhs, RHSptr, ldRHS,
             xtrues, ldX, fp, suffix, &grid);
     }
 
@@ -408,7 +408,7 @@ main (int argc, char *argv[])
     for (int d = 0; d < batchCount; ++d) {
         SuperMatrix *Ad = (SuperMatrix *) SparseMatrix_handles[d];
         NCformat *Adstore = Ad->Store;
-        float *ad = Adstore->nzval;
+        doublecomplex *ad = Adstore->nzval;
         md[d] = Ad->nrow;
         nd[d] = Ad->ncol;
         nnzd[d] = Adstore->nnz;
@@ -416,30 +416,30 @@ main (int argc, char *argv[])
 
 	// SuperMatrix *A = (SuperMatrix *) SparseMatrix_handles[0];
 	// NCformat *Astore = A->Store;
-	// float *a = Astore->nzval;
+	// doublecomplex *a = Astore->nzval;
 	// m = A->nrow;
 	// n = A->ncol;
 
-	ReqPtr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
-	CeqPtr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
+	ReqPtr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
+	CeqPtr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
 	RpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
 	CpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
 	DiagScale = (DiagScale_t *) SUPERLU_MALLOC( batchCount * sizeof(DiagScale_t) );
-	Xptr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float*) );
-	Berrs = (float **) SUPERLU_MALLOC( batchCount * sizeof(float*) );
+	Xptr = (doublecomplex **) SUPERLU_MALLOC( batchCount * sizeof(doublecomplex*) );
+	Berrs = (double **) SUPERLU_MALLOC( batchCount * sizeof(double*) );
 	for (int d = 0; d < batchCount; ++d) {
 	    DiagScale[d] = NOEQUIL;
 	    RpivPtr[d] = int32Malloc_dist(md[d]);
 	    CpivPtr[d] = int32Malloc_dist(nd[d]);
-	    Xptr[d] = floatMalloc_dist( nd[d] *  nrhs );
-	    Berrs[d] = floatMalloc_dist( nrhs );
+	    Xptr[d] = doublecomplexMalloc_dist( nd[d] *  nrhs );
+	    Berrs[d] = doubleMalloc_dist( nrhs );
 	}
 
 	/* Initialize the statistics variables. */
 	PStatInit (&stat);
 
 	/* Call batch solver */
-	psgssvx3d_csc_vbatch(&options, batchCount,
+	pzgssvx3d_csc_vbatch(&options, batchCount,
 			    md, nd, nnzd, nrhs, SparseMatrix_handles,
 			    RHSptr, ldRHS, ReqPtr, CeqPtr, RpivPtr, CpivPtr,
 			    DiagScale, F, Xptr, ldX, Berrs, &grid, &stat, &info);
@@ -450,11 +450,13 @@ main (int argc, char *argv[])
 	         componentwise  max_i |x - xtrue|_i / |xtrue|_i
 	         normwise       ||x - xtrue||_inf / ||xtrue||_inf
 	       (first RHS column). */
-	    float *xc = Xptr[d], *xt = xtrues[d];
-	    float ferr_cw = 0.0, dxmax = 0.0, xtmax = 0.0;
+	    doublecomplex *xc = Xptr[d], *xt = xtrues[d];
+	    double ferr_cw = 0.0, dxmax = 0.0, xtmax = 0.0;
 	    for (int i = 0; i < nd[d]; ++i) {
-		float diff = fabs(xc[i] - xt[i]);
-			float axt  = fabs(xt[i]);
+	   	doublecomplex temp;
+                z_sub(&temp, &xc[i], &xt[i]);
+		double diff = slud_z_abs(&temp);
+		double axt  = slud_z_abs(&xt[i]);
 		if ( axt > 0.0 && diff/axt > ferr_cw ) ferr_cw = diff/axt;
 		if ( diff > dxmax ) dxmax = diff;
 		if ( axt  > xtmax ) xtmax = axt;
@@ -500,28 +502,28 @@ main (int argc, char *argv[])
 #define NRFRMT
 #ifndef NRFRMT
         if ( grid.zscp.Iam == 0 )  // only in process layer 0
-        screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
+        zcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
 
 #else
-        screate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+        zcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
-	// screate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+	// zcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
 	// 			 &xtrue, &ldx, fp, suffix, &(grid));
     }
 
 #if 0  // following code is only for checking *Gather* routine
     NRformat_loc *Astore, *Astore0;
-    float* B2d;
-    NRformat_loc Atmp = sGatherNRformat_loc(
+    doublecomplex* B2d;
+    NRformat_loc Atmp = zGatherNRformat_loc(
                             (NRformat_loc *) A.Store,
                             b, ldb, nrhs, &B2d,
                             &grid);
     Astore = &Atmp;
     SuperMatrix Aref;
-    float *bref, *xtrueref;
+    doublecomplex *bref, *xtrueref;
     if ( grid.zscp.Iam == 0 )  // only in process layer 0
     {
-        screate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
+        zcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
                                &xtrueref, &ldx, fp0,
                                suffix, &(grid.grid2d));
         Astore0 = (NRformat_loc *) Aref.Store;
@@ -543,7 +545,7 @@ main (int argc, char *argv[])
     #endif
 #endif
 
-    if (!(berr = floatMalloc_dist (nrhs)))
+    if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
 
     /* ------------------------------------------------------------
@@ -566,24 +568,24 @@ main (int argc, char *argv[])
     // n = A.ncol;
 
     /* Initialize ScalePermstruct and LUstruct. */
-    sScalePermstructInit (m, n, &ScalePermstruct);
-    sLUstructInit (n, &LUstruct);
+    zScalePermstructInit (m, n, &ScalePermstruct);
+    zLUstructInit (n, &LUstruct);
 
     /* Initialize the statistics variables. */
     PStatInit (&stat);
 
     /* Call the linear equation solver. */
-    psgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+    pzgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
-	    printf("ERROR: INFO = %d returned from psgssvx3d()\n", info);
+	    printf("ERROR: INFO = %d returned from pzgssvx3d()\n", info);
 	    fflush(stdout);
 	}
     } else {
         /* Check the accuracy of the solution. */
-        psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+        pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                               nrhs, b, ldb, xtrue, ldx, grid.comm);
     }
 
@@ -594,17 +596,17 @@ main (int argc, char *argv[])
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
-    sDestroy_LU (n, &(grid.grid2d), &LUstruct);
-    sSolveFinalize (&options, &SOLVEstruct);
+    zDestroy_LU (n, &(grid.grid2d), &LUstruct);
+    zSolveFinalize (&options, &SOLVEstruct);
 
-    sDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
+    zDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
     Destroy_CompRowLoc_Matrix_dist (&A);
     SUPERLU_FREE (b);
     SUPERLU_FREE (xtrue);
     SUPERLU_FREE (berr);
-    sScalePermstructFree (&ScalePermstruct);
-    sLUstructFree (&LUstruct);
+    zScalePermstructFree (&ScalePermstruct);
+    zLUstructFree (&LUstruct);
 
     if (dir) {
         for (int bc = 0; bc < batchCount; bc++) {

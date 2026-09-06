@@ -391,6 +391,37 @@ typedef struct {
     #endif
 } sSOLVEstruct_t;
 
+/*! \brief Persistent state for repeated batch solves that share one sparsity
+ *  pattern.  Callers hold it only as the opaque handle F[0], see
+ *  psgssvx3d_csc_vbatch().
+ *
+ * Everything here is built on the Fact = DOFACT call and reused on every
+ * subsequent SamePattern_SameRowPerm call: the internal 1x1x1 grid, the
+ * stacked block-diagonal matrix A_big and its CSR arrays, and the
+ * factorization metadata (etree, perm_c of the big system, symbolic
+ * factorization, and the distributed L/U structure).
+ */
+typedef struct {
+    int       initialized;  /* 0 until the first factorization is stored */
+    int       batchCount;   /* batch size the state was built for */
+    int       nrhs;         /* number of RHS the state was built for */
+    int       m_big;        /* row dimension of the stacked system */
+    int       n_big;        /* column dimension of the stacked system */
+    int       nnz_big;      /* nonzeros in the stacked system */
+    int       gridalloc;    /* 1 if the internal grid needs superlu_gridexit3d */
+    gridinfo3d_t grid;      /* internal 1x1x1 grid, created once */
+    superlu_dist_options_t options_big; /* options used for the stacked solve */
+    sScalePermstruct_t ScalePermstruct;
+    sLUstruct_t        LUstruct;
+    sSOLVEstruct_t     SOLVEstruct;
+    SuperMatrix A_big;      /* NR_loc stacked matrix; values refreshed per call */
+    float   *a_big;        /* A_big values,  size nnz_big */
+    int_t    *colind;       /* A_big colind,  size nnz_big */
+    int_t    *rowptr;       /* A_big rowptr,  size m_big+1 */
+    float   *b;            /* stacked RHS / solution workspace, m_big*nrhs */
+    float   *berr;         /* backward error of the stacked solve, size nrhs */
+} svbatch_ctx_t;
+
 /*==== For 3D code ====*/
 
 // new structures for pdgstrf_4_8
@@ -699,12 +730,45 @@ extern void psgsrfs3d(superlu_dist_options_t *, int_t,
 	        strf3Dpartition_t*  , float *, int_t, float *, int_t, int,
 	        sSOLVEstruct_t *, float *, SuperLUStat_t *, int *);
 
-extern void psgsrfs3d_d2(superlu_dist_options_t *, int_t,
-            SuperMatrix *, float, sLUstruct_t *,
-	        sScalePermstruct_t *, gridinfo3d_t *,
-	        strf3Dpartition_t*  , float *, int_t, float *, int_t, int,
-	        sSOLVEstruct_t *, float *, SuperLUStat_t *, int *, double *);
+extern void psgssvx3d_d2(superlu_dist_options_t *options, SuperMatrix *A,
+			   sScalePermstruct_t *ScalePermstruct,
+			   float B[], int ldb, int nrhs, gridinfo3d_t *grid3d,
+			   sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct,
+			   float *berr, float *err_bounds, SuperLUStat_t *stat,
+			   int *info, double *xtrue);
+extern void
+psgsrfs3d_d2(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+	     float anorm, sLUstruct_t *LUstruct,
+	     sScalePermstruct_t *ScalePermstruct, gridinfo3d_t *grid3d,
+	     strf3Dpartition_t *trf3Dpartition,
+	     float *B, int_t ldb, float *X, int_t ldx, int nrhs,
+	     sSOLVEstruct_t *SOLVEstruct, float *err_bounds,
+	     SuperLUStat_t *stat, int *info,
+	     double *xtrue);
+extern void
+psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
+	     sScalePermstruct_t *ScalePermstruct,
+	     float B[], int ldb, int nrhs, gridinfo_t *grid,
+	     sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct,
+	     float *err_bounds, SuperLUStat_t *stat, int *info,
+	     double *xtrue);
+			   
 
+/* GMRES inner-solve kernels for iterative refinement (IterRefine==SLU_GMRES).
+   Each solves A d = r (r in/out via the X argument; d returned) with the LU
+   factors as left preconditioner. */
+extern void psgmres(superlu_dist_options_t *, int_t, SuperMatrix *,
+                    sLUstruct_t *, sScalePermstruct_t *, gridinfo_t *,
+                    psgsmv_comm_t *, float *X, int_t m_loc, int_t fst_row,
+                    int restart, int maxit, double rtol, double atol, int gs,
+                    sSOLVEstruct_t *, int *totit, SuperLUStat_t *, int *);
+
+extern void psgmres3d(superlu_dist_options_t *, int_t, SuperMatrix *,
+                    sLUstruct_t *, sScalePermstruct_t *, gridinfo3d_t *,
+                    strf3Dpartition_t *, psgsmv_comm_t *,
+                    float *X, int_t m_loc, int_t fst_row,
+                    int restart, int maxit, double rtol, double atol, int gs,
+                    sSOLVEstruct_t *, int *totit, SuperLUStat_t *, int *);
 
 extern void psgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
                   SuperMatrix *, float, sLUstruct_t *,
@@ -983,7 +1047,10 @@ extern void  sreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  float **, int_t **, int_t **);
 extern int  sread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  float **, int_t **, int_t **);
-
+extern int
+swrite_binary_withname(int_t n, int_t nnz,
+	      float *values, int_t *rowind, int_t *colptr, char *newfile);
+	      
 extern void validateInput_psgssvx3d(superlu_dist_options_t *, SuperMatrix *A,
        int ldb, int nrhs, gridinfo3d_t *, int *info);
 extern void sallocScalePermstruct_RC(sScalePermstruct_t *, int_t m, int_t n);
@@ -1134,11 +1201,6 @@ extern void psgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 		       sScalePermstruct_t *, float B[], int ldb, int nrhs,
 		       gridinfo3d_t *, sLUstruct_t *, sSOLVEstruct_t *,
 		       float *berr, SuperLUStat_t *, int *info);
-extern void psgssvx3d_d2 (superlu_dist_options_t *, SuperMatrix *,
-		       sScalePermstruct_t *, float B[], int ldb, int nrhs,
-		       gridinfo3d_t *, sLUstruct_t *, sSOLVEstruct_t *,
-		       float *berr, float *err_bounds, SuperLUStat_t *,
-		       int *info, double *xtrue);
 extern int_t psgstrf3d(superlu_dist_options_t *, int m, int n, float anorm,
 		       strf3Dpartition_t*, SCT_t *, sLUstruct_t *,
 		       gridinfo3d_t *, SuperLUStat_t *, int *);
@@ -1617,17 +1679,15 @@ extern int psgssvx3d_csc_batch(
 		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
 		//DeviceContext context /* device context including queues, events, dependencies */
 		);
-/* Release the batch state held in F[0] by psgssvx3d_csc_vbatch(). */
-extern void svbatch_free(handle_t *F);
 extern int sequil_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
     float **ReqPtr, float **CeqPtr, DiagScale_t *
-    //    DeviceContext context /* device context including queues, events, dependencies */
+    // DeviceContext context /* device context including queues, events, dependencies */
     );
 extern int spivot_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
     float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr
-    //    DeviceContext context /* device context including queues, events, dependencies */
+    // DeviceContext context /* device context including queues, events, dependencies */
     );
 extern int psgssvx3d_csc_vbatch(
         superlu_dist_options_t *, int batchCount, int *m, int *n, int *nnz,
@@ -1638,14 +1698,16 @@ extern int psgssvx3d_csc_vbatch(
         gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
         //DeviceContext context /* device context including queues, events, dependencies */
         );
+/* Release the batch state held in F[0] by psgssvx3d_csc_vbatch(). */
+extern void svbatch_free(handle_t *F);
 extern int sequil_vbatch(
     superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
-    float **ReqPtr, float **CeqPtr, DiagScale_t *
+    float **ReqPtr, float **CeqPtr, DiagScale_t *, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
 extern int spivot_vbatch(
     superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
-    float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr
+    float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
 

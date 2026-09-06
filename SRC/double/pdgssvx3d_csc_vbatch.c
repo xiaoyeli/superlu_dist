@@ -21,38 +21,7 @@ at the top-level directory.
 #include "superlu_upacked.h"
 #include <stdbool.h>
 
-/*! rief Persistent state for repeated batch solves that share one sparsity
- *  pattern.  Private to this file; callers hold it only as the opaque handle
- *  F[0], see pdgssvx3d_csc_vbatch().
- *
- * Everything here is built on the Fact = DOFACT call and reused on every
- * subsequent SamePattern_SameRowPerm call: the internal 1x1x1 grid, the
- * stacked block-diagonal matrix A_big and its CSR arrays, and the
- * factorization metadata (etree, perm_c of the big system, symbolic
- * factorization, and the distributed L/U structure).
- */
-typedef struct {
-    int       initialized;  /* 0 until the first factorization is stored */
-    int       batchCount;   /* batch size the state was built for */
-    int       nrhs;         /* number of RHS the state was built for */
-    int       m_big;        /* row dimension of the stacked system */
-    int       n_big;        /* column dimension of the stacked system */
-    int       nnz_big;      /* nonzeros in the stacked system */
-    int       gridalloc;    /* 1 if the internal grid needs superlu_gridexit3d */
-    gridinfo3d_t grid;      /* internal 1x1x1 grid, created once */
-    superlu_dist_options_t options_big; /* options used for the stacked solve */
-    dScalePermstruct_t ScalePermstruct;
-    dLUstruct_t        LUstruct;
-    dSOLVEstruct_t     SOLVEstruct;
-    SuperMatrix A_big;      /* NR_loc stacked matrix; values refreshed per call */
-    double   *a_big;        /* A_big values,  size nnz_big */
-    int_t    *colind;       /* A_big colind,  size nnz_big */
-    int_t    *rowptr;       /* A_big rowptr,  size m_big+1 */
-    double   *b;            /* stacked RHS / solution workspace, m_big*nrhs */
-    double   *berr;         /* backward error of the stacked solve, size nrhs */
-} dvbatch_ctx_t;
-
-/*! rief Drop the factorization but keep the internal process grid, so a new
+/*! \brief Drop the factorization but keep the internal process grid, so a new
  *  Fact = DOFACT call can rebuild on top of it.
  *
  * Tearing the grid down and recreating it per call is what this avoids: on a
@@ -83,7 +52,7 @@ static void dvbatch_ctx_release_factors(dvbatch_ctx_t *ctx)
     ctx->initialized = 0;  /* the grid stays; gridalloc is left set */
 } /* end dvbatch_ctx_release_factors */
 
-/*! rief Release the contents of a context, grid included. */
+/*! \brief Release the contents of a context, grid included. */
 static void dvbatch_ctx_destroy(dvbatch_ctx_t *ctx)
 {
     dvbatch_ctx_release_factors(ctx);

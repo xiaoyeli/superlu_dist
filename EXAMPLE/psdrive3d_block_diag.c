@@ -10,19 +10,18 @@ at the top-level directory.
 */
 
 
+
 /*! @file
- * \brief Example program for PSGSSVX3D_CSC_VBATCH
+ * \brief Driver program for PSGSSVX3D example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
- * August 27, 2022 Add batch option
- * January 7, 2024 Complete the batch interface
+ * August 27, 2022  Add batch option
  *
  */
-#include <math.h>
 #include <stdio.h>
 #include "superlu_sdefs.h"
 
@@ -32,14 +31,19 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * This example illustrates how to use PSGSSVX3D_CSC_VBATCH with the full
+ * The example program PSDRIVE3D_BLOCK_DIAG.
+ *
+ * This example illustrates how to use PSGSSVX3D with the full
  * (default) options to solve a linear system.
+ *
+ * There is an option to stack *batchCount* identical matrices as a larger
+ * block diagonal matrix.
  *
  * Five basic steps are required:
  *   1. Initialize the MPI environment and the SuperLU process grid
  *   2. Set up the input matrix and the right-hand side
  *   3. Set the options argument
- *   4. Call psgssvx3d_csc_vbatch
+ *   4. Call psgssvx
  *   5. Release the process grid and terminate the MPI environment
  *
  * The program may be run by typing
@@ -78,9 +82,9 @@ static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
     assert(A->fst_row == B->fst_row);
 
 #if 0
-    float *Aval = (float *)A->nzval, *Bval = (float *)B->nzval;
-    Printfloat5("A", A->nnz_loc, Aval);
-    Printfloat5("B", B->nnz_loc, Bval);
+    double *Aval = (double *)A->nzval, *Bval = (double *)B->nzval;
+    Printdouble5("A", A->nnz_loc, Aval);
+    Printdouble5("B", B->nnz_loc, Bval);
     fflush(stdout);
 #endif
 
@@ -116,7 +120,7 @@ main (int argc, char *argv[])
     float *b, *xtrue;
     int_t m, n;
     int nprow, npcol, npdep;
-    int equil,colperm, rowperm, ir, lookahead, gmres = 0;
+    int lookahead, colperm, rowperm, ir;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp;
@@ -136,15 +140,10 @@ main (int argc, char *argv[])
     npcol = 1;            /* Default process columns.   */
     npdep = 1;            /* replication factor must be power of two */
     nrhs = 1;             /* Number of right-hand side. */
-    equil = -1;
+    lookahead = -1;
     colperm = -1;
     rowperm = -1;
     ir = -1;
-    lookahead = -1;
-
-    int dir = 0;
-    char postfix[10];
-    FILE **fparray;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -188,57 +187,27 @@ main (int argc, char *argv[])
             case 'd':
                 npdep = atoi (*cpp);
                 break;
-            case 'b': batchCount = atoi(*cpp);
-                      break;
-            case 'e': equil = atoi(*cpp);
+            case 'l': lookahead = atoi(*cpp);
                       break;
             case 'p': rowperm = atoi(*cpp);
                       break;
             case 'q': colperm = atoi(*cpp);
                       break;
-            case 'g': gmres = atoi(*cpp);
-                        break;
             case 'i': ir = atoi(*cpp);
                       break;
+            case 'b': batchCount = atoi(*cpp);
+                      break;
             case 's': nrhs = atoi(*cpp);
-                      break;
-            case 'l': lookahead = atoi(*cpp);
-                      break;
-            case 'f': strcpy(postfix, *cpp); dir = 1;
                       break;
             }
         }
         else
-        {   /* Last arg is considered a filename or a directory name*/
-            if (dir) {
-                fparray = malloc(sizeof(FILE*) * batchCount);
-                for (int bc = 0; bc < batchCount; bc++) {
-                    char buf[sizeof(int)*8+1];
-                    int lenbuf = snprintf(buf, sizeof(int)*8+1, "%d", bc);
-
-                    /* Size to fit the full path: prefix (*cpp) + batch index
-                       (buf) + postfix + NUL.  A fixed name[100] overflowed for
-                       long absolute paths, which a _FORTIFY_SOURCE (Release)
-                       build aborts on. */
-                    char name[strlen(*cpp) + strlen(buf) + strlen(postfix) + 1];
-                    strcpy(name, *cpp);
-                    strcat(name, buf);
-                    strcat(name, postfix);
-
-                    if (!(fparray[bc] = fopen (name, "r")))
-                    {
-                        ABORT ("File does not exist");
-                    }
-                }
-                break;
+        {   /* Last arg is considered a filename */
+            if (!(fp = fopen (*cpp, "r")))
+            {
+                ABORT ("File does not exist");
             }
-            else {
-                if (!(fp = fopen (*cpp, "r")))
-                {
-                    ABORT ("File does not exist");
-                }
-                break;
-            }
+            break;
         }
     }
 
@@ -306,208 +275,33 @@ main (int argc, char *argv[])
     CHECK_MALLOC (iam, "Enter main()");
 #endif
 
-    /* Set the default input options:
-       options.Fact              = DOFACT;
-       options.Equil             = YES;
-       options.ParSymbFact       = NO;
-       options.ColPerm           = METIS_AT_PLUS_A;
-       options.RowPerm           = LargeDiag_MC64;
-       options.ReplaceTinyPivot  = NO;
-       options.IterRefine        = SLU_DOUBLE;
-       options.Trans             = NOTRANS;
-       options.SolveInitialized  = NO;
-       options.RefineInitialized = NO;
-       options.PrintStat         = YES;
-       options->num_lookaheads    = 10;
-       options->lookahead_etree   = NO;
-       options->SymPattern        = NO;
-       options.DiagInv           = NO;
-     */
-    set_default_options_dist (&options);
-    options.Algo3d = YES;
-    options.IterRefine = NOREFINE;
-    // options.ParSymbFact       = YES;
-    // options.ColPerm           = PARMETIS;
-#if 0
-    options.DiagInv           = YES; // only if SLU_HAVE_LAPACK
-    options.ReplaceTinyPivot = YES;
-    options.RowPerm = NOROWPERM;
-    options.ColPerm = NATURAL;
-    options.ReplaceTinyPivot = YES;
-#endif
-
-    if ( batchCount > 0 )
-        options.batchCount = batchCount;
-
-    if (equil != -1) options.Equil = equil;
-    if (rowperm != -1) options.RowPerm = rowperm;
-    if (colperm != -1) options.ColPerm = colperm;
-    if (ir != -1) options.IterRefine = ir;
-    options.UseGMRES = gmres;
-    if (lookahead != -1) options.num_lookaheads = lookahead;
-
-    if (!iam) {
-	print_sp_ienv_dist(&options);
-	print_options_dist(&options);
-	fflush(stdout);
-    }
-
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------ */
-    if (dir) {
-        suffix = &(postfix[1]);
-    }
-    else {
-        for (ii = 0; ii<strlen(*cpp); ii++) {
-            if((*cpp)[ii]=='.'){
-                suffix = &((*cpp)[ii+1]);
-                // printf("%s\n", suffix);
-            }
-        }
-    }
-
-
-    if ( batchCount > 0 ) {
-	/* ------------------------------------------------------------
-	   SOLVE THE BATCH LINEAR SYSTEM.
-	   ------------------------------------------------------------ */
-	printf("batchCount %d\n", batchCount);
-	// screate_block_diag_3d(&A, batchCount, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &grid);
-
-        handle_t *F = NULL; /* NULL = single-shot, no state kept */
-	float **RHSptr;
-	int *ldRHS, *md, *nd, *nnzd;
-	float **ReqPtr;
-	float **CeqPtr;
-	DiagScale_t *DiagScale;
-	int **RpivPtr;
-	int **CpivPtr;
-	float **Xptr, **xtrues;
-	int *ldX;
-	float **Berrs;
-
-	handle_t *SparseMatrix_handles = SUPERLU_MALLOC( batchCount *  sizeof(handle_t) );
-	RHSptr = (float **) SUPERLU_MALLOC( batchCount *  sizeof(float *) );
-	ldRHS = int32Malloc_dist(batchCount);
-	xtrues = (float **) SUPERLU_MALLOC( batchCount *  sizeof(float *) );
-	ldX = int32Malloc_dist(batchCount);
-
-    if (dir) {
-        screate_batch_systems_multiple(SparseMatrix_handles, batchCount, nrhs, RHSptr, ldRHS,
-            xtrues, ldX, fparray, suffix, &grid);
-    }
-    else {
-        screate_batch_systems(SparseMatrix_handles, batchCount, nrhs, RHSptr, ldRHS,
-            xtrues, ldX, fp, suffix, &grid);
-    }
-
-    md = int32Malloc_dist(batchCount);
-    nd = int32Malloc_dist(batchCount);
-    nnzd = int32Malloc_dist(batchCount);
-    for (int d = 0; d < batchCount; ++d) {
-        SuperMatrix *Ad = (SuperMatrix *) SparseMatrix_handles[d];
-        NCformat *Adstore = Ad->Store;
-        float *ad = Adstore->nzval;
-        md[d] = Ad->nrow;
-        nd[d] = Ad->ncol;
-        nnzd[d] = Adstore->nnz;
-    }
-
-	// SuperMatrix *A = (SuperMatrix *) SparseMatrix_handles[0];
-	// NCformat *Astore = A->Store;
-	// float *a = Astore->nzval;
-	// m = A->nrow;
-	// n = A->ncol;
-
-	ReqPtr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
-	CeqPtr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float *) );
-	RpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
-	CpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
-	DiagScale = (DiagScale_t *) SUPERLU_MALLOC( batchCount * sizeof(DiagScale_t) );
-	Xptr = (float **) SUPERLU_MALLOC( batchCount * sizeof(float*) );
-	Berrs = (float **) SUPERLU_MALLOC( batchCount * sizeof(float*) );
-	for (int d = 0; d < batchCount; ++d) {
-	    DiagScale[d] = NOEQUIL;
-	    RpivPtr[d] = int32Malloc_dist(md[d]);
-	    CpivPtr[d] = int32Malloc_dist(nd[d]);
-	    Xptr[d] = floatMalloc_dist( nd[d] *  nrhs );
-	    Berrs[d] = floatMalloc_dist( nrhs );
+    for (ii = 0; ii<strlen(*cpp); ii++) {
+	if((*cpp)[ii]=='.'){
+	    suffix = &((*cpp)[ii+1]);
+	    // printf("%s\n", suffix);
 	}
-
-	/* Initialize the statistics variables. */
-	PStatInit (&stat);
-
-	/* Call batch solver */
-	psgssvx3d_csc_vbatch(&options, batchCount,
-			    md, nd, nnzd, nrhs, SparseMatrix_handles,
-			    RHSptr, ldRHS, ReqPtr, CeqPtr, RpivPtr, CpivPtr,
-			    DiagScale, F, Xptr, ldX, Berrs, &grid, &stat, &info);
-
-	printf("**** Backward / forward errors ****\n");
-	for (int d = 0; d < batchCount; ++d) {
-	    /* Forward error vs. the known generated true solution xtrues[d]:
-	         componentwise  max_i |x - xtrue|_i / |xtrue|_i
-	         normwise       ||x - xtrue||_inf / ||xtrue||_inf
-	       (first RHS column). */
-	    float *xc = Xptr[d], *xt = xtrues[d];
-	    float ferr_cw = 0.0, dxmax = 0.0, xtmax = 0.0;
-	    for (int i = 0; i < nd[d]; ++i) {
-		float diff = fabs(xc[i] - xt[i]);
-			float axt  = fabs(xt[i]);
-		if ( axt > 0.0 && diff/axt > ferr_cw ) ferr_cw = diff/axt;
-		if ( diff > dxmax ) dxmax = diff;
-		if ( axt  > xtmax ) xtmax = axt;
-	    }
-	    printf("\tSystem %d: Berr = %e   Ferr_cwise = %e   Ferr_norm = %e\n",
-		   d, Berrs[d][0], ferr_cw, (xtmax > 0.0 ? dxmax/xtmax : 0.0));
-	    //printf("\t\tDiagScale[%d] %d\n", d, DiagScale[d]);
-	}
-
-	/* Free matrices pointed to by the handles, and ReqPtr[], etc. */
-	for (int d = 0; d < batchCount; ++d) {
-	    if ( DiagScale[d] == ROW || DiagScale[d] == BOTH )
-		SUPERLU_FREE(ReqPtr[d]);
-	    if ( DiagScale[d] == COL || DiagScale[d] == BOTH )
-		SUPERLU_FREE(CeqPtr[d]);
-	    SUPERLU_FREE(RpivPtr[d]);
-	    SUPERLU_FREE(CpivPtr[d]);
-	    SUPERLU_FREE(Xptr[d]);
-	    SUPERLU_FREE(Berrs[d]);
-	    // A = (SuperMatrix *) SparseMatrix_handles[d];
-	    //	    Destroy_CompRowLoc_Matrix_dist (A);
-	}
-	SUPERLU_FREE(SparseMatrix_handles);
-	SUPERLU_FREE(RHSptr);
-	SUPERLU_FREE(ldRHS);
-    SUPERLU_FREE(md);
-    SUPERLU_FREE(nd);
-    SUPERLU_FREE(nnzd);
-	SUPERLU_FREE(xtrues);
-	SUPERLU_FREE(ldX);
-	SUPERLU_FREE(ReqPtr);
-	SUPERLU_FREE(CeqPtr);
-	SUPERLU_FREE(RpivPtr);
-	SUPERLU_FREE(CpivPtr);
-	SUPERLU_FREE(DiagScale);
-	SUPERLU_FREE(Xptr);
-	SUPERLU_FREE(Berrs);
-
-	goto out;
-
-    } else {
+    }
 
 #define NRFRMT
 #ifndef NRFRMT
-        if ( grid.zscp.Iam == 0 )  // only in process layer 0
-        screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
+    if ( grid.zscp.Iam == 0 )  // only in process layer 0
+	screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
 
 #else
-        screate_matrix_postfix3d(&A, nrhs, &b, &ldb,
-                             &xtrue, &ldx, fp, suffix, &(grid));
-	// screate_matrix_postfix3d(&A, nrhs, &b, &ldb,
-	// 			 &xtrue, &ldx, fp, suffix, &(grid));
+    // *fp0 = *fp;
+
+    if ( batchCount > 0 ) {
+	printf("batchCount %d\n", batchCount);
+	screate_block_diag_3d(&A, batchCount, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &grid);
+    } else {
+	screate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+				 &xtrue, &ldx, fp, suffix, &(grid));
     }
+
+    //printf("ldx %d, ldb %d\n", ldx, ldb);
 
 #if 0  // following code is only for checking *Gather* routine
     NRformat_loc *Astore, *Astore0;
@@ -549,21 +343,65 @@ main (int argc, char *argv[])
     /* ------------------------------------------------------------
        NOW WE SOLVE THE LINEAR SYSTEM.
        ------------------------------------------------------------ */
+
+    /* Set the default input options:
+       options.Fact              = DOFACT;
+       options.Equil             = YES;
+       options.ParSymbFact       = NO;
+       options.ColPerm           = METIS_AT_PLUS_A;
+       options.RowPerm           = LargeDiag_MC64;
+       options.ReplaceTinyPivot  = NO;
+       options.IterRefine        = SLU_DOUBLE;
+       options.Trans             = NOTRANS;
+       options.SolveInitialized  = NO;
+       options.RefineInitialized = NO;
+       options.PrintStat         = YES;
+       options->num_lookaheads    = 10;
+       options->lookahead_etree   = NO;
+       options->SymPattern        = NO;
+       options.DiagInv           = NO;
+     */
+    set_default_options_dist (&options);
+    options.ReplaceTinyPivot = YES;
+    options.IterRefine = NOREFINE;
+    options.DiagInv           = YES;
+    // options.ParSymbFact       = YES;
+    // options.ColPerm           = PARMETIS;
+#if 0
+    options.ReplaceTinyPivot = YES;
+    options.RowPerm = NOROWPERM;
+    options.ColPerm = NATURAL;
+    options.Equil = NO;
+    options.ReplaceTinyPivot = YES;
+#endif
+
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+
+    if ( batchCount > 0 )
+        options.batchCount = batchCount;
+
+    if (!iam) {
+	print_sp_ienv_dist(&options);
+	print_options_dist(&options);
+	fflush(stdout);
+    }
+
 #ifdef NRFRMT  // matrix is on 3D process grid
     m = A.nrow;
     n = A.ncol;
 #else
     if ( grid.zscp.Iam == 0 )  // Process layer 0
     {
-    m = A.nrow;
+	m = A.nrow;
         n = A.ncol;
     }
     // broadcast m, n to all the process layers;
     MPI_Bcast( &m, 1, mpi_int_t, 0,  grid.zscp.comm);
     MPI_Bcast( &n, 1, mpi_int_t, 0,  grid.zscp.comm);
 #endif
-    // m = A.nrow;
-    // n = A.ncol;
 
     /* Initialize ScalePermstruct and LUstruct. */
     sScalePermstructInit (m, n, &ScalePermstruct);
@@ -591,11 +429,12 @@ main (int argc, char *argv[])
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
+    // sDestroy_LU (n, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
-	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
+	    PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
-    sDestroy_LU (n, &(grid.grid2d), &LUstruct);
     sSolveFinalize (&options, &SOLVEstruct);
+    sDestroy_LU (n, &(grid.grid2d), &LUstruct);
 
     sDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
@@ -605,29 +444,19 @@ main (int argc, char *argv[])
     SUPERLU_FREE (berr);
     sScalePermstructFree (&ScalePermstruct);
     sLUstructFree (&LUstruct);
-
-    if (dir) {
-        for (int bc = 0; bc < batchCount; bc++) {
-            fclose(fparray[bc]);
-        }
-        free(fparray);
-    }
-    else {
-        fclose(fp);
-    }
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
 out:
-#if 0  // the following makes sense only for coarse-grain parallel model
     if ( batchCount ) {
 	result_min[0] = stat.utime[FACT];
 	result_min[1] = stat.utime[SOLVE];
 	result_max[0] = stat.utime[FACT];
 	result_max[1] = stat.utime[SOLVE];
-	MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
 	if (!myrank) {
 	    printf("Batch solves returning data:\n");
 	    printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
@@ -636,7 +465,6 @@ out:
 	    fflush(stdout);
 	}
     }
-#endif
 
     superlu_gridexit3d (&grid);
     if ( iam != -1 )PStatFree (&stat);
