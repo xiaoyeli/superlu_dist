@@ -528,12 +528,14 @@ ACM Trans. Math. Software, Volume 49, No. 1, March 2023.
 **Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)
 **Nan Ding**, Lawrence Berkeley National Lab, [nanding@lbl.gov](nanding@lbl.gov)
 **John Gilbert**, UC Santa Barbara, [gilbert@cs.ucsb.edu](gilbert@cs.ucsb.edu)
-**Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)
+**Laura Grigori**, EPFL, [laura.grigori@epfl.ch](laura.grigori@epfl.ch)
 **Paul Lin**, Lawrence Berkeley National Lab, [paullin@lbl.gov](paullin@lbl.gov)
 **Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)
-**Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)
-**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)
-**Ichitaro Yamazaki**, Univ. of Tennessee, [ic.yamazaki@gmail.com](ic.yamazaki@gmail.com)
+**Piyush Sao**, Oak Ridge National Lab, [saopk@ornl.gov](saopk@ornl.gov)
+**Oguz Selvitopi**, Lawrence Berkeley National Lab, [roselvitopi@lbl.gov](roselvitopi@lbl.gov)
+**Meiyue Shao**, Fudan Univ., [meiyue.shao@gmail.com](meiyue.shao@gmail.com)
+**Tianyi Shi**, Lawrence Berkeley National Lab, [tianyishi@lbl.gov](tianyishi@lbl.gov)
+**Ichitaro Yamazaki**, Sandia National Labs, [iyamaza@sandia.gov](iyamaza@sandia.gov)
 
 
 # RELEASE VERSIONS
