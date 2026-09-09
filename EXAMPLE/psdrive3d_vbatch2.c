@@ -126,6 +126,8 @@ main (int argc, char *argv[])
     char **cpp, c, *suffix;
     extern int cpp_defs ();
     int omp_mpi_level, batchCount = 0, nsteps = 1, checkx = 1;
+    int inmode = 0;  /* -m: 0 = time-step deck (matrix + rhs + solution),
+                        1 = matrix only, RHS generated */
     int myrank;
 
     nprow = 1;            /* Default process rows.      */
@@ -175,6 +177,12 @@ main (int argc, char *argv[])
                 printf ("\t-t <int>: number of time steps (default %d)\n", nsteps);
                 printf ("\t-x <int>: 1 = check against the _x_ reference "
 			"solution files (default %d)\n", checkx);
+                printf ("\t-m <int>: input mode (default %d)\n", inmode);
+                printf ("\t          0 = time-step deck: <prefix><t>/<base><t>_<d>,\n"
+                        "\t              its _rhs_<d> and optional _x_<d>\n");
+                printf ("\t          1 = matrix only: <prefix> is one matrix file,\n"
+                        "\t              used for every system and every step; the\n"
+                        "\t              RHS is generated as b = A*xtrue\n");
                 printf ("\t-f <str>: file name suffix (default %s)\n", postfix);
                 exit (0);
                 break;
@@ -192,6 +200,8 @@ main (int argc, char *argv[])
             case 't': nsteps = atoi(*cpp);
                       break;
             case 'x': checkx = atoi(*cpp);
+                      break;
+            case 'm': inmode = atoi(*cpp);
                       break;
             case 'e': equil = atoi(*cpp);
                       break;
@@ -276,7 +286,10 @@ main (int argc, char *argv[])
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 	printf("Time-step deck prefix:\t%s\n", prefix);
 	printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
-	printf("batchCount %d, time steps %d\n", batchCount, nsteps);
+	printf("batchCount %d, time steps %d, input mode %d (%s)\n",
+	       batchCount, nsteps, inmode,
+	       (inmode == 1 ? "matrix only, RHS generated"
+	                    : "time-step deck: matrix + rhs + solution"));
 	fflush(stdout);
     }
 
@@ -330,6 +343,13 @@ main (int argc, char *argv[])
     FILE **fpX = (FILE **) SUPERLU_MALLOC( batchCount * sizeof(FILE *) );
 
 
+    /* Matrix-only mode reads the same file at every step; open it once. */
+    FILE *fpsingle = NULL;
+    if ( inmode == 1 && !(fpsingle = fopen(prefix, "r")) ) {
+	fprintf(stderr, "Cannot open %s\n", prefix);
+	ABORT("File does not exist");
+    }
+
     double t_setup = 0.0, t_solve = 0.0;
 
     /* ------------------------------------------------------------
@@ -339,22 +359,38 @@ main (int argc, char *argv[])
 
 	double t0 = SuperLU_timer_();
 
-	open_step_files(fpA, prefix, base, t, "", batchCount, postfix, 1);
-	open_step_files(fpB, prefix, base, t, "rhs_", batchCount, postfix, 1);
-	/* The reference solutions are optional; some steps of the EMT decks
-	   ship no _x_ files, and a missing one only disables the forward-error
-	   report for that step. */
-	int havex = checkx &&
-	    open_step_files(fpX, prefix, base, t, "x_", batchCount, postfix, 0);
+	int havex;
 
-	screate_batch_systems_rhsfile(SparseMatrix_handles, batchCount, nrhs,
-				      RHSptr, ldRHS, xtrues, ldX,
-				      fpA, fpB, (havex ? fpX : NULL),
-				      suffix, &grid);
+	if ( inmode == 1 ) {
+	    /* Matrix-only input: <prefix> is a single matrix file.  It is used
+	       for every system in the batch and re-read at every step, so the
+	       pattern is identical from step to step, which is exactly what the
+	       reuse path requires.  The RHS is generated as b = A*xtrue, and
+	       that generated xtrue is the forward-error reference. */
+	    if ( fpsingle ) fclose(fpsingle);
+	    if ( !(fpsingle = fopen(prefix, "r")) ) ABORT("Cannot reopen the matrix file");
+	    screate_batch_systems(SparseMatrix_handles, batchCount, nrhs,
+				  RHSptr, ldRHS, xtrues, ldX,
+				  fpsingle, suffix, &grid);
+	    havex = 1;
+	} else {
+	    open_step_files(fpA, prefix, base, t, "", batchCount, postfix, 1);
+	    open_step_files(fpB, prefix, base, t, "rhs_", batchCount, postfix, 1);
+	    /* The reference solutions are optional; some steps of the EMT decks
+	       ship no _x_ files, and a missing one only disables the
+	       forward-error report for that step. */
+	    havex = checkx &&
+		open_step_files(fpX, prefix, base, t, "x_", batchCount, postfix, 0);
 
-	close_step_files(fpA, batchCount);
-	close_step_files(fpB, batchCount);
-	if ( havex ) close_step_files(fpX, batchCount);
+	    screate_batch_systems_rhsfile(SparseMatrix_handles, batchCount, nrhs,
+					  RHSptr, ldRHS, xtrues, ldX,
+					  fpA, fpB, (havex ? fpX : NULL),
+					  suffix, &grid);
+
+	    close_step_files(fpA, batchCount);
+	    close_step_files(fpB, batchCount);
+	    if ( havex ) close_step_files(fpX, batchCount);
+	}
 
 	for (int d = 0; d < batchCount; ++d) {
 	    SuperMatrix *Ad = (SuperMatrix *) SparseMatrix_handles[d];
@@ -444,6 +480,8 @@ main (int argc, char *argv[])
 	printf("**************************************************\n");
 	fflush(stdout);
     }
+
+    if ( fpsingle ) fclose(fpsingle);
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
