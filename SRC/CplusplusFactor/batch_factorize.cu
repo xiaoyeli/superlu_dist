@@ -364,7 +364,17 @@ inline void scatterGPU_batchDriver_flat(
 )
 {
     const BatchDim_t op_increment = 65535;
-    
+
+    /* A tree level can contain only supernodes with no off-diagonal blocks, in
+       which case marshallBatchedSCUData's transform_reduce returns 0 for
+       max_ilen / max_jlen (its init value).  dim3(0, 0, n) is an illegal launch
+       configuration, so cudaLaunchKernel fails with
+       cudaErrorInvalidConfiguration; thrust then reports that sticky error on
+       its next call as the misleading "parallel_for failed:
+       cudaErrorInvalidDevice".  There is nothing to scatter in that case. */
+    if (max_ilen == 0 || max_jlen == 0 || batchCount == 0)
+        return;
+
     for(BatchDim_t op_start = 0; op_start < batchCount; op_start += op_increment)
 	{
 		BatchDim_t batch_size = std::min(op_increment, batchCount - op_start);
@@ -600,6 +610,16 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, ws->magma_queue
     );
     
+    if (getenv("SLU_DEBUG_BATCH_SCU"))
+    {
+        printf("[scu] k_st %lld batchsize %lld  max_m %lld max_n %lld max_k %lld  max_ilen %lld max_jlen %lld%s\n",
+               (long long)k_st, (long long)sc_mdata.batchsize,
+               (long long)sc_mdata.max_m, (long long)sc_mdata.max_n, (long long)sc_mdata.max_k,
+               (long long)sc_mdata.max_ilen, (long long)sc_mdata.max_jlen,
+               (sc_mdata.max_ilen == 0 || sc_mdata.max_jlen == 0) ? "   <-- ZERO GRID DIM (skipped)" : "");
+        fflush(stdout);
+    }
+
     scatterGPU_batchDriver_flat<T>(
         k_st, ws->maxSuperSize, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array,
         d_localLU.Unzval_br_new_ptr, d_localLU.Ucolind_br_ptr, d_localLU.Lnzval_bc_ptr, 
