@@ -1111,7 +1111,8 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
 		    printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
-			   sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
+			   (int)sp_ienv_dist(2,options), (int)sp_ienv_dist(3,options),
+			   (int)sp_ienv_dist(6,options));
 		    fflush(stdout);
 	        }
 #endif

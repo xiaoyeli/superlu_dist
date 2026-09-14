@@ -244,6 +244,7 @@ if(enable_single)
     single/psgstrs_lsum.c
     single/psgstrs_Bglobal.c
     single/psgsrfs.c
+    single/psgmres.c
     single/psgsrfs_d2.c
     single/psgsmv.c
     single/psgsrfs_ABXglobal.c
@@ -327,6 +328,7 @@ if(enable_complex16)
       complex16/pzgstrs_lsum.c
       complex16/pzgstrs_Bglobal.c
       complex16/pzgsrfs.c
+      complex16/pzgmres.c
       complex16/pzgsmv.c
       complex16/pzgsrfs_ABXglobal.c
       complex16/pzgsmv_AXglobal.c

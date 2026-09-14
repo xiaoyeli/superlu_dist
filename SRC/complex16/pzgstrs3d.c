@@ -80,71 +80,73 @@ int_t ztrs_B_init3d_newsolve(int_t nsupers, doublecomplex* x, int nrhs, zLUstruc
     doublecomplex zero = {0.0, 0.0};
     doublecomplex* xtmp;
     sForest_t** sForests = trf3Dpartition->sForests;
-    int_t Pr = grid->nprow;
-    
-    int_t nlb = CEILING (nsupers, Pr);    /* Number of local block rows. */
+    int Pr = grid->nprow;
+    int nlb = CEILING (nsupers, Pr);    /* Number of local block rows. */
 
-    if(grid3d->zscp.Np>1){
-    if (!(xtmp = doublecomplexCalloc_dist (Llu->ldalsum * nrhs + nlb * XK_H)))
-    ABORT ("Malloc fails for xtmp[].");
 
-	for (int_t k = 0; k < nsupers; ++k)
+    if(grid3d->zscp.Np>1) {
+        if (!(xtmp = doublecomplexCalloc_dist (Llu->ldalsum * nrhs + nlb * XK_H)))
+            ABORT ("Malloc fails for xtmp[].");
+
+	for (int k = 0; k < nsupers; ++k)
 	{
 		/* code */
-		int_t krow = PROW (k, grid);
-		int_t kcol = PCOL (k, grid);
+		int krow = PROW (k, grid);
+		int kcol = PCOL (k, grid);
 
 		if (myrow == krow && mycol == kcol)
 		{
-			int_t lk = LBi(k, grid);
-			int_t ii = X_BLK (lk);
-			int_t knsupc = SuperSize(k);
-            MPI_Bcast( &x[ii - XK_H], knsupc * nrhs + XK_H, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->zscp.comm);
-            for (int_t i=0; i<XK_H; ++i){
-                xtmp[ii-XK_H+i] = x[ii - XK_H+i];
-            }
-            for (int_t i=0; i<knsupc * nrhs; ++i){
-                xtmp[ii+i] = x[ii+i];
-                x[ii+i] = zero;
-            }
+		    int lk = LBi(k, grid);
+		    int ii = X_BLK (lk);
+		    int knsupc = SuperSize(k);
+                    MPI_Bcast( &x[ii - XK_H], knsupc * nrhs + XK_H, SuperLU_MPI_DOUBLE_COMPLEX,
+		    	       0, grid3d->zscp.comm);
+                    for (int i=0; i<XK_H; ++i){
+                        xtmp[ii-XK_H+i] = x[ii - XK_H+i];
+            	    }
+            	    for (int_t i=0; i<knsupc * nrhs; ++i){
+                        xtmp[ii+i] = x[ii+i];
+                	x[ii+i] = zero;
+                    }
 		}
 	}
 
 
-    // fill corresponding RHSs
-    for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
-    {
+    	// fill corresponding RHSs
+    	for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
+    	{
         // printf("gana grid3d->zscp.iam %5d ilvl %5d myZeroTrIdxs[ilvl] %5d myTreeIdxs[ilvl] %5d\n",grid3d->zscp.Iam, ilvl, myZeroTrIdxs[ilvl],myTreeIdxs[ilvl]);
-        if (!myZeroTrIdxs[ilvl])
-        {
-            int_t tree = myTreeIdxs[ilvl];
-            sForest_t* sforest = sForests[myTreeIdxs[ilvl]];
-            /*main loop over all the super nodes*/
-            if (sforest)
-            {
-                int_t nnodes = sforest->nNodes ;
-	            int_t *nodeList = sforest->nodeList ;
-                for (int_t k0 = 0; k0 < nnodes; ++k0)
-	            {
-		            int_t k = nodeList[k0];
-                    int_t krow = PROW (k, grid);
-                    int_t kcol = PCOL (k, grid);
+           if (!myZeroTrIdxs[ilvl])
+           {
+	       int_t tree = myTreeIdxs[ilvl];
+               sForest_t* sforest = sForests[myTreeIdxs[ilvl]];
+               /*main loop over all the super nodes*/
+               if (sforest)
+               {
+                   int_t nnodes = sforest->nNodes ;
+	           int_t *nodeList = sforest->nodeList ;
+                   for (int_t k0 = 0; k0 < nnodes; ++k0)
+	           {
+		        int k = nodeList[k0];
+                        int krow = PROW (k, grid);
+                        int kcol = PCOL (k, grid);
 
-                    if (myrow == krow && mycol == kcol)
-                    {
-                        int_t lk = LBi(k, grid);
-                        int_t ii = X_BLK (lk);
-                        int_t knsupc = SuperSize(k);
-                        for(int_t i=0; i<knsupc * nrhs; ++i)
-                            x[ii +i]= xtmp[ii+i];
+                    	if (myrow == krow && mycol == kcol)
+                    	{
+                            int lk = LBi(k, grid);
+                            int ii = X_BLK (lk);
+                            int knsupc = SuperSize(k);
+                            for (int_t i=0; i<knsupc * nrhs; ++i)
+                                x[ii +i]= xtmp[ii+i];
+                        }
                     }
                 }
             }
-        }
+        } /* end for ilvl ... */
+	
+        SUPERLU_FREE (xtmp);
     }
-    SUPERLU_FREE (xtmp);
-    }
-	return 0;
+    return 0;
 }
 
 // #ifdef HAVE_NVSHMEM
@@ -1558,7 +1560,7 @@ int_t ztrs_X_gather3d(doublecomplex* x, int nrhs, ztrf3Dpartition_t*  trf3Dparti
 	int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 	int_t myGrid = grid3d->zscp.Iam;
 	int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
-    if(grid3d->zscp.Np>1){
+
 	for (int_t ilvl = 0; ilvl < maxLvl - 1; ++ilvl)
 	{
 		int_t sender, receiver;
@@ -1590,7 +1592,7 @@ int_t ztrs_X_gather3d(doublecomplex* x, int nrhs, ztrf3Dpartition_t*  trf3Dparti
 
 		}
 	}
-    }
+
 	return 0;
 }
 
@@ -2013,9 +2015,9 @@ int_t zleafForestForwardSolve3d(superlu_dist_options_t *options, int_t treeId, i
 	zLocalLU_t *Llu = LUstruct->Llu;
 	int_t* xsup = Glu_persist->xsup;
 	int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
-	int_t nsupers = Glu_persist->supno[n - 1] + 1;
-	int_t Pr = grid->nprow;
-	int_t nlb = CEILING (nsupers, Pr);
+	int nsupers = Glu_persist->supno[n - 1] + 1;
+	int Pr = grid->nprow;
+	int nlb = CEILING (nsupers, Pr);
 
 	treeTopoInfo_t* treeTopoInfo = &sforest->topoInfo;
 	int_t* eTreeTopLims = treeTopoInfo->eTreeTopLims;
@@ -3045,7 +3047,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*8; // YL: this is a rough estimate
     } else
-    
+
 #endif /* match #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) */
     { /* CPU trisolve */
 
@@ -6324,8 +6326,7 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
         ptr_to_ibuf = gstrs_comm->ptr_to_ibuf;
         ptr_to_dbuf = gstrs_comm->ptr_to_dbuf;
 
-
-	if(procs==1){ // faster memory copy when procs=1
+	if( procs== 1 ) { // faster memory copy when procs=1
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -6334,7 +6335,7 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 #ifdef _OPENMP
 #pragma omp master
 #endif
-	{
+	  {
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
 #if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
@@ -6347,95 +6348,95 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 			k = BlockNum( irow );
 			knsupc = SuperSize( k );
 			l = X_BLK( k );
-
 			x[l - XK_H].r = k; /* Block number prepended in the header. */
 			x[l - XK_H].i = 0;
-
 			irow = irow - FstBlockC(k); /* Relative row number in X-block */
 			RHS_ITERATE(j) {
 			x[l + irow + j*knsupc] = B[i + j*ldb];
 			}
-		}
-	}
-	}
-	}else{
-
-        /* ------------------------------------------------------------
-           NOW COMMUNICATE THE ACTUAL DATA.
-           ------------------------------------------------------------ */
-        k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
-        l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
-        if (!(send_ibuf = intMalloc_dist (k + l)))
-            ABORT ("Malloc fails for send_ibuf[].");
-        recv_ibuf = send_ibuf + k;
-        if (!(send_dbuf = doublecomplexMalloc_dist ((k + l) * (size_t) nrhs)))
+		} /* end for */
+	    } /* end omp master */
+	  } /* end omp parallel */
+	  
+	} else {
+	
+          /* ------------------------------------------------------------
+             NOW COMMUNICATE THE ACTUAL DATA.
+             ------------------------------------------------------------ */
+             k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
+             l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
+             if (!(send_ibuf = intMalloc_dist (k + l)))
+	     	ABORT ("Malloc fails for send_ibuf[].");
+             recv_ibuf = send_ibuf + k;
+            if (!(send_dbuf = doublecomplexMalloc_dist ((k + l) * (size_t) nrhs)))
             ABORT ("Malloc fails for send_dbuf[].");
-        recv_dbuf = send_dbuf + k * nrhs;
+            recv_dbuf = send_dbuf + k * nrhs;
 
-        for (p = 0; p < procs; ++p)
-        {
-            ptr_to_ibuf[p] = sdispls[p];
-            ptr_to_dbuf[p] = sdispls[p] * nrhs;
-        }
-
-        /* Copy the row indices and values to the send buffer. */
-        for (i = 0, l = fst_row; i < m_loc; ++i, ++l)
-        {
-            irow = perm_c[perm_r[l]];   /* Row number in Pc*Pr*B */
-            gbi = BlockNum (irow);
-            p = PNUM (PROW (gbi, grid), PCOL (gbi, grid), grid);    /* Diagonal process */
-            k = ptr_to_ibuf[p];
-            send_ibuf[k] = irow;
-            k = ptr_to_dbuf[p];
-            for (int_t j = 0; j < nrhs; ++j)
+            for (p = 0; p < procs; ++p)
             {
-                /* RHS is stored in row major in the buffer. */
-                send_dbuf[k++] = B[i + j * ldb];
+                ptr_to_ibuf[p] = sdispls[p];
+                ptr_to_dbuf[p] = sdispls[p] * nrhs;
             }
-            ++ptr_to_ibuf[p];
-            ptr_to_dbuf[p] += nrhs;
-        }
 
-        /* Communicate the (permuted) row indices. */
-        MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
-                       recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
-
-        /* Communicate the numerical values. */
-        MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
-                       recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
-                       grid->comm);
-
-        /* ------------------------------------------------------------
-           Copy buffer into X on the diagonal processes.
-           ------------------------------------------------------------ */
-        ii = 0;
-        for (p = 0; p < procs; ++p)
-        {
-            jj = rdispls_nrhs[p];
-            for (int_t i = 0; i < RecvCnt[p]; ++i)
+            /* Copy the row indices and values to the send buffer. */
+            for (i = 0, l = fst_row; i < m_loc; ++i, ++l)
             {
-                /* Only the diagonal processes do this; the off-diagonal processes
-                   have 0 RecvCnt. */
-                irow = recv_ibuf[ii];   /* The permuted row index. */
-                k = BlockNum (irow);
-                knsupc = SuperSize (k);
-                lk = LBi (k, grid); /* Local block number. */
-                l = X_BLK (lk);
-			    x[l - XK_H].r = k; /* Block number prepended in the header. */
-			    x[l - XK_H].i = 0;
-                irow = irow - FstBlockC (k);    /* Relative row number in X-block */
+                irow = perm_c[perm_r[l]];   /* Row number in Pc*Pr*B */
+                gbi = BlockNum (irow);
+                p = PNUM (PROW (gbi, grid), PCOL (gbi, grid), grid);    /* Diagonal process */
+                k = ptr_to_ibuf[p];
+                send_ibuf[k] = irow;
+                k = ptr_to_dbuf[p];
                 for (int_t j = 0; j < nrhs; ++j)
                 {
-                    x[l + irow + j * knsupc] = recv_dbuf[jj++];
+                    /* RHS is stored in row major in the buffer. */
+                    send_dbuf[k++] = B[i + j * ldb];
                 }
-                ++ii;
+                ++ptr_to_ibuf[p];
+                ptr_to_dbuf[p] += nrhs;
             }
-        }
 
-        SUPERLU_FREE (send_ibuf);
-        SUPERLU_FREE (send_dbuf);
+            /* Communicate the (permuted) row indices. */
+            MPI_Alltoallv (send_ibuf, SendCnt, sdispls, MPI_INT,
+                           recv_ibuf, RecvCnt, rdispls, MPI_INT, grid->comm);
+
+            /* Communicate the numerical values. */
+            MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
+            		   recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
+                           grid->comm);
+
+            /* ------------------------------------------------------------
+              Copy buffer into X on the diagonal processes.
+              ------------------------------------------------------------ */
+              ii = 0;
+              for (p = 0; p < procs; ++p)
+              {
+		  jj = rdispls_nrhs[p];
+            	  for (int_t i = 0; i < RecvCnt[p]; ++i)
+            	  {
+		      /* Only the diagonal processes do this; the off-diagonal processes
+                   	   have 0 RecvCnt. */
+                      irow = recv_ibuf[ii];   /* The permuted row index. */
+                      k = BlockNum (irow);
+                      knsupc = SuperSize (k);
+                      lk = LBi (k, grid); /* Local block number. */
+                      l = X_BLK (lk);
+		      x[l - XK_H].r = k; /* Block number prepended in the header. */
+		      x[l - XK_H].i = 0;
+		      irow = irow - FstBlockC (k);    /* Relative row number in X-block */
+                      for (int_t j = 0; j < nrhs; ++j)
+                      {
+                          x[l + irow + j * knsupc] = recv_dbuf[jj++];
+                      }
+                      ++ii;
+            	  }
+              } /* end for p ... */
+
+              SUPERLU_FREE (send_ibuf);
+              SUPERLU_FREE (send_dbuf);
+        } /* end if-else */
     }
-    }
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit pzReDistribute3d_B_to_X()");
 #endif
@@ -6471,7 +6472,7 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
     int *ptr_to_ibuf, *ptr_to_dbuf;
     int_t *send_ibuf, *recv_ibuf;
     doublecomplex *send_dbuf, *recv_dbuf;
-    int iam, p, q, pkk, procs,j;
+    int iam, p, q, pkk, procs, j;
     int_t num_diag_procs, *diag_procs;
     gridinfo_t * grid = &(grid3d->grid2d);
 #if ( DEBUGlevel>=1 )
@@ -6488,16 +6489,16 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
     procs = grid->nprow * grid->npcol;
     if (!grid3d->zscp.Iam)
     {
-    if(procs==1){ //faster memory copy when procs=1
+        if( procs==1 ) { //faster memory copy when procs=1
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
-	{
+	  {
 #ifdef _OPENMP
 #pragma omp master
 #endif
-	{
+	  {
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
 #if defined __GNUC__  && !defined __NVCOMPILER && !defined __FUJITSU
@@ -6505,112 +6506,114 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
 #endif
 #endif
 		for (k = 0; k < nsupers; k++) {
-		knsupc = SuperSize( k );
-		lk = LBi( k, grid ); /* Local block number */
-		irow = FstBlockC( k );
-		l = X_BLK( lk );
-		for (i = 0; i < knsupc; ++i) {
+		    knsupc = SuperSize( k );
+		    lk = LBi( k, grid ); /* Local block number */
+		    irow = FstBlockC( k );
+		    l = X_BLK( lk );
+		    for (i = 0; i < knsupc; ++i) {
 			RHS_ITERATE(j) { /* RHS is stored in row major in the buffer. */
 				B[irow-fst_row +i + j*ldb] = x[l + i + j*knsupc];
-			}
-			}
+		        }
+		    }
 		}
-	}
-	}
+	    } /* end omp master */
+	  } /* end omp parallel */
 
-	}else{
+        } else { /* procs>1 */
+	
+            int_t *row_to_proc = SOLVEstruct->row_to_proc;  /* row-process mapping */
+            pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
 
-        int_t *row_to_proc = SOLVEstruct->row_to_proc;  /* row-process mapping */
-        pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
+            SendCnt = gstrs_comm->X_to_B_SendCnt;
+            SendCnt_nrhs = gstrs_comm->X_to_B_SendCnt + procs;
+            RecvCnt = gstrs_comm->X_to_B_SendCnt + 2 * procs;
+            RecvCnt_nrhs = gstrs_comm->X_to_B_SendCnt + 3 * procs;
+            sdispls = gstrs_comm->X_to_B_SendCnt + 4 * procs;
+            sdispls_nrhs = gstrs_comm->X_to_B_SendCnt + 5 * procs;
+            rdispls = gstrs_comm->X_to_B_SendCnt + 6 * procs;
+            rdispls_nrhs = gstrs_comm->X_to_B_SendCnt + 7 * procs;
+            ptr_to_ibuf = gstrs_comm->ptr_to_ibuf;
+            ptr_to_dbuf = gstrs_comm->ptr_to_dbuf;
 
-        SendCnt = gstrs_comm->X_to_B_SendCnt;
-        SendCnt_nrhs = gstrs_comm->X_to_B_SendCnt + procs;
-        RecvCnt = gstrs_comm->X_to_B_SendCnt + 2 * procs;
-        RecvCnt_nrhs = gstrs_comm->X_to_B_SendCnt + 3 * procs;
-        sdispls = gstrs_comm->X_to_B_SendCnt + 4 * procs;
-        sdispls_nrhs = gstrs_comm->X_to_B_SendCnt + 5 * procs;
-        rdispls = gstrs_comm->X_to_B_SendCnt + 6 * procs;
-        rdispls_nrhs = gstrs_comm->X_to_B_SendCnt + 7 * procs;
-        ptr_to_ibuf = gstrs_comm->ptr_to_ibuf;
-        ptr_to_dbuf = gstrs_comm->ptr_to_dbuf;
-
-        k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
-        l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
-        if (!(send_ibuf = intMalloc_dist (k + l)))
-            ABORT ("Malloc fails for send_ibuf[].");
-        recv_ibuf = send_ibuf + k;
-        if (!(send_dbuf = doublecomplexMalloc_dist ((k + l) * nrhs)))
-            ABORT ("Malloc fails for send_dbuf[].");
-        recv_dbuf = send_dbuf + k * nrhs;
-        for (p = 0; p < procs; ++p)
-        {
-            ptr_to_ibuf[p] = sdispls[p];
-            ptr_to_dbuf[p] = sdispls_nrhs[p];
-        }
-        num_diag_procs = SOLVEstruct->num_diag_procs;
-        diag_procs = SOLVEstruct->diag_procs;
-
-        for (p = 0; p < num_diag_procs; ++p)
-        {
-            /* For all diagonal processes. */
-            pkk = diag_procs[p];
-            if (iam == pkk)
+            k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
+            l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
+            if (!(send_ibuf = intMalloc_dist (k + l)))
+                ABORT ("Malloc fails for send_ibuf[].");
+            recv_ibuf = send_ibuf + k;
+            if (!(send_dbuf = doublecomplexMalloc_dist ((k + l) * nrhs)))
+                ABORT ("Malloc fails for send_dbuf[].");
+            recv_dbuf = send_dbuf + k * nrhs;
+            for (p = 0; p < procs; ++p)
             {
-                for (k = p; k < nsupers; k += num_diag_procs)
+                ptr_to_ibuf[p] = sdispls[p];
+                ptr_to_dbuf[p] = sdispls_nrhs[p];
+            }
+            num_diag_procs = SOLVEstruct->num_diag_procs;
+            diag_procs = SOLVEstruct->diag_procs;
+
+            for (p = 0; p < num_diag_procs; ++p)
+            {
+                /* For all diagonal processes. */
+                pkk = diag_procs[p];
+                if (iam == pkk)
                 {
-                    knsupc = SuperSize (k);
-                    lk = LBi (k, grid); /* Local block number */
-                    irow = FstBlockC (k);
-                    l = X_BLK (lk);
-                    for (i = 0; i < knsupc; ++i)
+                    for (k = p; k < nsupers; k += num_diag_procs)
                     {
-
-                        ii = irow;
-
-                        q = row_to_proc[ii];
-                        jj = ptr_to_ibuf[q];
-                        send_ibuf[jj] = ii;
-                        jj = ptr_to_dbuf[q];
-                        for (int_t j = 0; j < nrhs; ++j)
+                        knsupc = SuperSize (k);
+                        lk = LBi (k, grid); /* Local block number */
+                        irow = FstBlockC (k);
+                        l = X_BLK (lk);
+                        for (i = 0; i < knsupc; ++i)
                         {
-                            /* RHS stored in row major in buffer. */
-                            send_dbuf[jj++] = x[l + i + j * knsupc];
-                        }
-                        ++ptr_to_ibuf[q];
-                        ptr_to_dbuf[q] += nrhs;
-                        ++irow;
-                    }
+
+                            ii = irow;
+
+                            q = row_to_proc[ii];
+                            jj = ptr_to_ibuf[q];
+                            send_ibuf[jj] = ii;
+                            jj = ptr_to_dbuf[q];
+                            for (int_t j = 0; j < nrhs; ++j)
+                            {
+                                /* RHS stored in row major in buffer. */
+                                send_dbuf[jj++] = x[l + i + j * knsupc];
+                            }
+                            ++ptr_to_ibuf[q];
+                            ptr_to_dbuf[q] += nrhs;
+                            ++irow;
+                        } /* end for i ... */
+                    } /* end for k ... */
+                }
+            } /* end for p ... */
+
+            /* ------------------------------------------------------------
+               COMMUNICATE THE (PERMUTED) ROW INDICES AND NUMERICAL VALUES.
+               ------------------------------------------------------------ */
+            MPI_Alltoallv (send_ibuf, SendCnt, sdispls, MPI_INT,
+                           recv_ibuf, RecvCnt, rdispls, MPI_INT, grid->comm);
+            MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
+                           recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
+                           grid->comm);
+
+            /* ------------------------------------------------------------
+               COPY THE BUFFER INTO B.
+               ------------------------------------------------------------ */
+            for (i = 0, k = 0; i < m_loc; ++i)
+            {
+                irow = recv_ibuf[i];
+                irow -= fst_row;        /* Relative row number */
+                for (int_t j = 0; j < nrhs; ++j)
+                {
+                    /* RHS is stored in row major in the buffer. */
+                    B[irow + j * ldb] = recv_dbuf[k++];
                 }
             }
-        }
 
-        /* ------------------------------------------------------------
-           COMMUNICATE THE (PERMUTED) ROW INDICES AND NUMERICAL VALUES.
-           ------------------------------------------------------------ */
-        MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
-                       recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
-        MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
-                       recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
-                       grid->comm);
+            SUPERLU_FREE (send_ibuf);
+            SUPERLU_FREE (send_dbuf);
+    	} /* end if-else */
 
-        /* ------------------------------------------------------------
-           COPY THE BUFFER INTO B.
-           ------------------------------------------------------------ */
-        for (i = 0, k = 0; i < m_loc; ++i)
-        {
-            irow = recv_ibuf[i];
-            irow -= fst_row;        /* Relative row number */
-            for (int_t j = 0; j < nrhs; ++j)
-            {
-                /* RHS is stored in row major in the buffer. */
-                B[irow + j * ldb] = recv_dbuf[k++];
-            }
-        }
-
-        SUPERLU_FREE (send_ibuf);
-        SUPERLU_FREE (send_dbuf);
-        }   
     }
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit pzReDistribute_X_to_B()");
 #endif
@@ -7176,12 +7179,11 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
     initTRStimer(&xtrsTimer, grid);
     
-
     MPI_Barrier (grid3d->comm);
     double tx = SuperLU_timer_();
     stat->utime[SOLVE] = 0.0;
     double tx_st= SuperLU_timer_();
-
+    
     /* Redistribute B into X on the diagonal processes. */
     pzReDistribute3d_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
                             ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
@@ -7359,14 +7361,18 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     xtrsTimer.t_backwardSolve = SuperLU_timer_() - tx;
     // MPI_Barrier (grid3d->comm);
     tx = SuperLU_timer_();
+    
     ztrs_X_gather3d(x, nrhs, trf3Dpartition, LUstruct, grid3d, &xtrsTimer);
+    
     xtrsTimer.t_gather_x = SuperLU_timer_() - tx;
     tx = SuperLU_timer_();
+    
     pzReDistribute3d_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
                             ScalePermstruct, Glu_persist, grid3d, SOLVEstruct);
 
     xtrsTimer.t_pxReDistribute_X_to_B = SuperLU_timer_() - tx;
     stat->utime[SOLVE] = SuperLU_timer_ () - tx_st;
+
     /**
      * Reduce the Solve flops from all the grids to grid zero
      */

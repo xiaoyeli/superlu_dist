@@ -995,7 +995,7 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
 
 #if ( PRNTlevel>=1 )
     if (get_acc_solve()){
-	iam = grid->iam;
+        iam = grid->iam;
 	if ( !iam) printf(".. GPU trisolve\n");
 	fflush(stdout);
     }
@@ -2120,7 +2120,6 @@ if (get_acc_solve()){  /* GPU trisolve*/
 
 
 if (get_acc_solve()){  /* GPU trisolve*/
-// if (0){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
 // #if 0 /* CPU trisolve*/
 

@@ -419,7 +419,7 @@ typedef struct {
     int_t    *colind;       /* A_big colind,  size nnz_big */
     int_t    *rowptr;       /* A_big rowptr,  size m_big+1 */
     doublecomplex   *b;            /* stacked RHS / solution workspace, m_big*nrhs */
-    doublecomplex   *berr;         /* backward error of the stacked solve, size nrhs */
+    double   *berr;         /* backward error of the stacked solve, size nrhs */
 } zvbatch_ctx_t;
 
 /*==== For 3D code ====*/
@@ -729,6 +729,7 @@ extern void pzgsrfs3d(superlu_dist_options_t *, int_t,
 	        zScalePermstruct_t *, gridinfo3d_t *,
 	        ztrf3Dpartition_t*  , doublecomplex *, int_t, doublecomplex *, int_t, int,
 	        zSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+
 
 /* GMRES inner-solve kernels for iterative refinement (IterRefine==SLU_GMRES).
    Each solves A d = r (r in/out via the X argument; d returned) with the LU

@@ -9,12 +9,14 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
+
 /*! @file
  * \brief GMRES inner-solve kernels used by iterative refinement (pdgsrfs /
  *        pdgsrfs3d) when options->IterRefine == SLU_GMRES.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3) --
  * Lawrence Berkeley National Lab.
  *
  * Classical iterative refinement computes the correction by a single
@@ -66,25 +68,27 @@ at the top-level directory.
 
 /*! \brief x[0:n] *= a */
 static void gm_scal(int_t n, double a, double *x)
-{ int_t i; for (i = 0; i < n; ++i) x[i] *= a; }
+{ int i; for (i = 0; i < n; ++i) x[i] *= a; }
 
 /*! \brief y[0:n] += a * x[0:n] */
 static void gm_axpy(int_t n, double a, const double *x, double *y)
-{ int_t i; for (i = 0; i < n; ++i) y[i] += a * x[i]; }
+{ int i; for (i = 0; i < n; ++i) y[i] += a * x[i]; }
 
 /*! \brief y := alpha*op(V)*x + beta*y.  V is m-by-k, column-major, ld=m.
  *         op='N': y length m, x length k.   op='T': y length k, x length m. */
 static void gm_gemv(char op, int_t m, int k, double alpha, const double *V,
                     const double *x, double beta, double *y)
 {
-    int_t i; int j;
+    int i; int j;
     if (op == 'N') {
         for (i = 0; i < m; ++i) {
             double s = 0.0;
             for (j = 0; j < k; ++j) s += V[i + (size_t)j*m] * x[j];
             y[i] = alpha*s + (beta != 0.0 ? beta*y[i] : 0.0);
-        }
+	}
+
     } else { /* 'T' */
+    
         for (j = 0; j < k; ++j) {
             double s = 0.0;
             for (i = 0; i < m; ++i) s += V[i + (size_t)j*m] * x[i];
@@ -94,9 +98,10 @@ static void gm_gemv(char op, int_t m, int k, double alpha, const double *V,
 }
 
 /*! \brief Solve U*b = b in place; U is k-by-k upper triangular, ld=ldh. */
-static void gm_trsvU(int k, const double *U, int ldh, double *b)
+static void gm_trsvU(int k, double *U, int ldh, double *b)
 {
     int i, j;
+
     for (i = k-1; i >= 0; --i) {
         double s = b[i];
         for (j = i+1; j < k; ++j) s -= U[i + (size_t)j*ldh] * b[j];
@@ -108,9 +113,10 @@ static void gm_trsvU(int k, const double *U, int ldh, double *b)
 static double
 pdgmres_dot(int_t n_loc, const double *x, const double *y, gridinfo_t *grid)
 {
+    int i;
     double local = 0.0, global;
-    int_t i;
     for (i = 0; i < n_loc; ++i) local += x[i] * y[i];
+    
     MPI_Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_SUM, grid->comm);
     return global;
 }
@@ -145,8 +151,10 @@ pdgmres(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         SuperLUStat_t *stat, int *info)
 {
     int     iam = grid->iam, i, k, it, ldh, nrit, conv, total = 0;
-    double  rho, rho0, delta, gamma, tmpd;
+    double gamma, tmpd, scal_factor;
+    double  rho, rho0, delta;;
     double *work, *V, *hess, *givens_c, *givens_s, *bb, *rhs, *z, *Ax;
+    double zero = 0.0, one = 1.0, neg_one = -1.0;
 
     if ( restart <= 0 ) restart = SUPERLU_MIN(50, (int) n);
     if ( restart > maxit && maxit > 0 ) restart = maxit;
@@ -172,7 +180,7 @@ pdgmres(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     Ax       = z + m_loc;                      /* A*d for the restart residual */
 
     for (i = 0; i < m_loc; ++i) rhs[i] = X[i];  /* rhs = r */
-    for (i = 0; i < m_loc; ++i) X[i]   = 0.0;   /* d = 0   */
+    for (i = 0; i < m_loc; ++i) X[i]   = zero;   /* d = 0   */
 
     rho = rho0 = 0.0;
     conv = 0;
@@ -190,9 +198,10 @@ pdgmres(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         if ( rho0 == 0.0 ) rho0 = 1.0;
         if ( rho < atol || rho/rho0 < rtol ) break;
 
-        gm_scal(m_loc, 1.0/rho, V);
         bb[0] = rho;
-        for (i = 1; i <= restart; ++i) bb[i] = 0.0;
+	scal_factor = 1.0/rho;
+        gm_scal(m_loc, scal_factor, V);
+        for (i = 1; i <= restart; ++i) bb[i] = zero;
         nrit = restart - 1;
 
         for (it = 0; it < restart; ++it) {
@@ -209,19 +218,21 @@ pdgmres(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
             pdgsmv(0, A, grid, gsmv_comm, z, w);
 
             if ( gs == 1 ) { /* classical Gram-Schmidt */
-                gm_gemv('T', m_loc, it+1, 1.0, V, w, 0.0, &hess[(size_t)it*ldh]);
+                gm_gemv('T', m_loc, it+1, one, V, w, zero, &hess[(size_t)it*ldh]);
                 MPI_Allreduce(MPI_IN_PLACE, &hess[(size_t)it*ldh], it+1,
                               MPI_DOUBLE, MPI_SUM, grid->comm);
-                gm_gemv('N', m_loc, it+1, -1.0, V, &hess[(size_t)it*ldh], 1.0, w);
+                gm_gemv('N', m_loc, it+1, neg_one, V, &hess[(size_t)it*ldh], one, w);
             } else {         /* modified Gram-Schmidt */
                 for (k = 0; k <= it; ++k) {
                     tmpd = pdgmres_dot(m_loc, &V[(size_t)k*m_loc], w, grid);
                     hess[k + (size_t)it*ldh] = tmpd;
-                    gm_axpy(m_loc, -tmpd, &V[(size_t)k*m_loc], w);
+	   	    tmpd = -tmpd;
+                    gm_axpy(m_loc, tmpd, &V[(size_t)k*m_loc], w);
                 }
             }
             hess[it+1 + (size_t)it*ldh] = pdgmres_norm2(m_loc, w, grid);
-            gm_scal(m_loc, 1.0/hess[it+1 + (size_t)it*ldh], w);
+            scal_factor = 1.0/hess[it+1 + (size_t)it*ldh];
+            gm_scal(m_loc, scal_factor, w);
 
             for (k = 1; k <= it; ++k) {
                 gamma = givens_c[k-1]*hess[k-1 + (size_t)it*ldh]
@@ -241,6 +252,8 @@ pdgmres(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
             bb[it+1] = -givens_s[it]*bb[it];
             bb[it]   =  givens_c[it]*bb[it];
             rho = fabs(bb[it+1]);   /* true residual norm */
+	    
+	    
 #if ( PRNTlevel>=2 )
             if ( !iam )
                 printf("\t.. inner GMRES it. %4d\ttrue.res = %12.6e\n",
@@ -253,11 +266,10 @@ pdgmres(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 
         /* d += M^{-1} ( V(:,0..nrit) * hess^{-1} bb ). */
         gm_trsvU(nrit+1, hess, ldh, bb);
-        gm_gemv('N', m_loc, nrit+1, 1.0, V, bb, 0.0, z);
+        gm_gemv('N', m_loc, nrit+1, one, V, bb, zero, z);
         pdgstrs(options, n, LUstruct, ScalePermstruct, grid, z,
                 m_loc, fst_row, m_loc, 1, SOLVEstruct, stat, info);
         for (i = 0; i < m_loc; ++i) X[i] += z[i];
-
         if ( total >= maxit ) break;
     } /* while !conv */
 
@@ -310,9 +322,11 @@ pdgmres3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     gridinfo_t *grid = &(grid3d->grid2d);
     int     layer0 = (grid3d->zscp.Iam == 0);
     int     iam = grid3d->iam, i, k, it, ldh, nrit, total = 0, done = 0;
-    double  rho, rho0, delta, gamma, tmpd, rbuf[2];
+    double gamma, tmpd, scal_factor;
+    double rho, rho0, delta, rbuf[2];
     double *work = NULL, *V = NULL, *hess = NULL, *givens_c = NULL,
            *givens_s = NULL, *bb = NULL, *rhs = NULL, *Ax = NULL, *pc;
+    double zero = 0.0, one = 1.0, neg_one = -1.0;
 
     if ( restart <= 0 ) restart = SUPERLU_MIN(50, (int) n);
     if ( restart > maxit && maxit > 0 ) restart = maxit;
@@ -338,21 +352,21 @@ pdgmres3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         Ax       = rhs + m_loc;
     }
 
-    if ( layer0 ) for (i = 0; i < m_loc; ++i) rhs[i] = X[i];  /* rhs = r */
-    if ( layer0 ) for (i = 0; i < m_loc; ++i) X[i]   = 0.0;   /* d = 0   */
+    if ( layer0 ) {
+        for (i = 0; i < m_loc; ++i) rhs[i] = X[i];  /* rhs = r */
+        for (i = 0; i < m_loc; ++i) X[i]   = zero;   /* d = 0   */
+    }
 
     rho = rho0 = 0.0;
     while ( !done ) {
         /* True residual V(:,0) = r - A d. */
-        if ( total > 0 ) {
-            if ( layer0 ) {
+	if ( layer0 ) {
+            if ( total > 0 ) {
                 pdgsmv(0, A, grid, gsmv_comm, X, Ax);
                 for (i = 0; i < m_loc; ++i) V[i] = rhs[i] - Ax[i];
+            } else {
+                for (i = 0; i < m_loc; ++i) V[i] = rhs[i];
             }
-        } else {
-            if ( layer0 ) for (i = 0; i < m_loc; ++i) V[i] = rhs[i];
-        }
-        if ( layer0 ) {
             rho = pdgmres_norm2(m_loc, V, grid);
             if ( total == 0 ) rho0 = rho;
             if ( rho0 == 0.0 ) rho0 = 1.0;
@@ -363,9 +377,10 @@ pdgmres3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         if ( rho < atol || rho/rho0 < rtol ) break;
 
         if ( layer0 ) {
-            gm_scal(m_loc, 1.0/rho, V);
             bb[0] = rho;
-            for (i = 1; i <= restart; ++i) bb[i] = 0.0;
+	    scal_factor = 1.0/rho;
+            gm_scal(m_loc, scal_factor, V);
+            for (i = 1; i <= restart; ++i) bb[i] = zero;
         }
         nrit = restart - 1;
 
@@ -380,19 +395,21 @@ pdgmres3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
             if ( layer0 ) for (i = 0; i < m_loc; ++i) pc[i] = vit[i];
             pdgmres3d_prec(options, n, LUstruct, ScalePermstruct, trf3Dpartition,
                            grid3d, pc, m_loc, fst_row, SOLVEstruct, stat, info);
-            if ( layer0 ) pdgsmv(0, A, grid, gsmv_comm, pc, w);
 
             if ( layer0 ) {
-                if ( gs == 1 ) {
-                    gm_gemv('T', m_loc, it+1, 1.0, V, w, 0.0, &hess[(size_t)it*ldh]);
+                pdgsmv(0, A, grid, gsmv_comm, pc, w);
+		
+                if ( gs == 1 ) { /* classical Gram-Schmidt */
+                    gm_gemv('T', m_loc, it+1, one, V, w, zero, &hess[(size_t)it*ldh]);
                     MPI_Allreduce(MPI_IN_PLACE, &hess[(size_t)it*ldh], it+1,
                                   MPI_DOUBLE, MPI_SUM, grid->comm);
-                    gm_gemv('N', m_loc, it+1, -1.0, V, &hess[(size_t)it*ldh], 1.0, w);
-                } else {
+                    gm_gemv('N', m_loc, it+1, neg_one, V, &hess[(size_t)it*ldh], one, w);
+                } else { /* modified Gram-Schmidt */
                     for (k = 0; k <= it; ++k) {
                         tmpd = pdgmres_dot(m_loc, &V[(size_t)k*m_loc], w, grid);
                         hess[k + (size_t)it*ldh] = tmpd;
-                        gm_axpy(m_loc, -tmpd, &V[(size_t)k*m_loc], w);
+			tmpd = -tmpd;
+                        gm_axpy(m_loc, tmpd, &V[(size_t)k*m_loc], w);
                     }
                 }
                 hess[it+1 + (size_t)it*ldh] = pdgmres_norm2(m_loc, w, grid);
@@ -414,23 +431,28 @@ pdgmres3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                   + givens_s[it]*hess[it+1 + (size_t)it*ldh];
                 bb[it+1] = -givens_s[it]*bb[it];
                 bb[it]   =  givens_c[it]*bb[it];
-                rho = fabs(bb[it+1]);
-            }
+                rho = fabs(bb[it+1]); /* true residual norm */
+		
+		
+            } /* end layer0 */
+	    
             MPI_Bcast(&rho, 1, MPI_DOUBLE, 0, grid3d->zscp.comm);
             if ( rho < atol || rho/rho0 < rtol || total >= maxit ) {
                 done = 1;  nrit = it;  break;
             }
-        } /* for it */
+	    
+        } /* end for it */
 
         /* d += M^{-1} ( V(:,0..nrit) * hess^{-1} bb ). */
         if ( layer0 ) {
             gm_trsvU(nrit+1, hess, ldh, bb);
-            gm_gemv('N', m_loc, nrit+1, 1.0, V, bb, 0.0, pc);
+            gm_gemv('N', m_loc, nrit+1, one, V, bb, zero, pc);
         }
         pdgmres3d_prec(options, n, LUstruct, ScalePermstruct, trf3Dpartition,
                        grid3d, pc, m_loc, fst_row, SOLVEstruct, stat, info);
+		       
         if ( layer0 ) for (i = 0; i < m_loc; ++i) X[i] += pc[i];
-
+		       
         if ( total >= maxit ) break;
     } /* while !done */
 
@@ -438,3 +460,4 @@ pdgmres3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     if ( layer0 ) SUPERLU_FREE(work);
     (void)iam;
 } /* PDGMRES3D */
+
