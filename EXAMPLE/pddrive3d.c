@@ -352,7 +352,7 @@ int main (int argc, char *argv[])
 	printf("batchCount %d\n", batchCount);
 	// dcreate_block_diag_3d(&A, batchCount, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &grid);
 	
-	handle_t *F;
+	handle_t *F = NULL; /* NULL = single-shot, no state kept */
 	double **RHSptr;
 	int *ldRHS;
 	double **ReqPtr;

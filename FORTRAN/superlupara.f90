@@ -62,6 +62,7 @@ integer, parameter, public :: &
                       SLU_SINGLE              = 1, &
                       SLU_DOUBLE              = 2, &
                       SLU_EXTRA               = 3, &
+                      SLU_GMRES               = 4, &
                       USUB                    = 0, & ! MemType
                       LSUB                    = 1, &
                       UCOL                    = 2, &

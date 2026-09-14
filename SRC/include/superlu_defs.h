@@ -725,6 +725,9 @@ typedef struct {
     yes_no_t  SymPattern;      /* symmetric factorization          */
     yes_no_t  Use_TensorCore;  /* Use Tensor Core or not  */
     yes_no_t  Algo3d;          /* Python inteface uses this to flag whether to use 3D factorization/solve algorithms */
+    int  UseGMRES;             /* 0 (default): direct triangular solve with the LU factors;
+                                  1: solve A x = b with right-preconditioned GMRES,
+                                     preconditioner = the LU factors (from x0 = 0). */
 } superlu_dist_options_t;
 
 typedef struct {

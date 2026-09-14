@@ -210,7 +210,7 @@ void sPrint_CompCol_triplet(SuperMatrix *A)
 
     for (i = 0; i < A->ncol; ++i) {
 	for (j = colptr[i]; j < colptr[i+1]; ++j) {
-	    printf("%8d %8d\t%f\n", rowind[j], i, dp[j]);
+	    printf("%8lld %8d\t%f\n", (long long) rowind[j], i, dp[j]);
 	}
     }
     printf("\nend triplet matrix\n ");
@@ -235,7 +235,7 @@ void file_sPrint_NCPformat_triplet(FILE *fp, SuperMatrix *A)
     
     for (j = 0; j < A->ncol; ++j) {
 	for (i = colbeg[j]; i < colend[j]; ++i) {
-	    fprintf(fp, "%8d %8d\t%f\n", rowind[i], j, dp[i]);
+	    fprintf(fp, "%8lld %8d\t%f\n", (long long)rowind[i], j, dp[i]);
 	}
     }
     //    printf("\nend triplet matrix\n ");

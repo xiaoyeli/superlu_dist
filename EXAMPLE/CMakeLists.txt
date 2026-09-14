@@ -74,6 +74,11 @@ if(enable_double)
   target_link_libraries(pddrive3d_vbatch ${all_link_libs})
   install(TARGETS pddrive3d_vbatch RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
 
+  set(DEXM3D_VB2 pddrive3d_vbatch2.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d_vbatch2 ${DEXM3D_VB2})
+  target_link_libraries(pddrive3d_vbatch2 ${all_link_libs})
+  install(TARGETS pddrive3d_vbatch2 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
   set(DEXM3D_BD pddrive3d_block_diag.c dcreate_matrix.c dcreate_matrix3d.c)
   add_executable(pddrive3d_block_diag ${DEXM3D_BD})
   target_link_libraries(pddrive3d_block_diag ${all_link_libs})
@@ -173,7 +178,27 @@ if(enable_single)
   set(SEXM3D3 psdrive3d3.c screate_matrix.c screate_matrix3d.c)
   add_executable(psdrive3d3 ${SEXM3D3})
   target_link_libraries(psdrive3d3 ${all_link_libs})
-  install(TARGETS psdrive3d3 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
+  install(TARGETS psdrive3d3 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
+  set(SEXM3D_VB psdrive3d_vbatch.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d_vbatch ${SEXM3D_VB})
+  target_link_libraries(psdrive3d_vbatch ${all_link_libs})
+  install(TARGETS psdrive3d_vbatch RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
+  set(SEXM3D_VB2 psdrive3d_vbatch2.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d_vbatch2 ${SEXM3D_VB2})
+  target_link_libraries(psdrive3d_vbatch2 ${all_link_libs})
+  install(TARGETS psdrive3d_vbatch2 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
+  set(SEXM3D_BD psdrive3d_block_diag.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d_block_diag ${DEXM3D_BD})
+  target_link_libraries(psdrive3d_block_diag ${all_link_libs})
+  install(TARGETS psdrive3d_block_diag RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+  
+  set(SEXM3D_D2 psdrive3d_d2.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d_d2 ${SEXM3D_D2})
+  target_link_libraries(psdrive3d_d2 ${all_link_libs})
+  install(TARGETS psdrive3d_d2 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
 
 endif() #### end enable_single
 
@@ -213,6 +238,20 @@ if(enable_complex16)
   target_link_libraries(pzdrive3d ${all_link_libs})
   install(TARGETS pzdrive3d RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
   
+  set(ZEXM3D_VB pzdrive3d_vbatch.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d_vbatch ${ZEXM3D_VB})
+  target_link_libraries(pzdrive3d_vbatch ${all_link_libs})
+  install(TARGETS pzdrive3d_vbatch RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
+
+  set(ZEXM3D_VB2 pzdrive3d_vbatch2.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d_vbatch2 ${ZEXM3D_VB2})
+  target_link_libraries(pzdrive3d_vbatch2 ${all_link_libs})
+  install(TARGETS pzdrive3d_vbatch2 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
+
+  set(ZEXM3D_BD pzdrive3d_block_diag.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d_block_diag ${ZEXM3D_BD})
+  target_link_libraries(pzdrive3d_block_diag ${all_link_libs})
+  install(TARGETS pzdrive3d_block_diag RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")
   
   set(ZEXM3DQCD pzdrive3d_qcd.cpp )
   add_executable(pzdrive3d_qcd ${ZEXM3DQCD})

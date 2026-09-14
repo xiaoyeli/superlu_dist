@@ -65,20 +65,28 @@ get_perm_c_vbatch(
 
     if ( options->ColPerm == MMD_AT_PLUS_A || options->ColPerm == MMD_ATA ) {
 
-	/* These arrays can be reused by multiple matrices */
-	
+	/* These GENMMD work arrays are allocated once and reused by every
+	   matrix in the batch.  They must therefore be sized to the LARGEST
+	   matrix in the batch (this is a variable-size batch, so each A[d]
+	   may have a different dimension).  Note: the per-matrix n is not set
+	   until inside the loop below, so the size must be computed here from
+	   the batch rather than using n (which is still uninitialized). */
+	int max_n = 0;
+	for (int d = 0; d < batchCount; ++d)
+	    if ( (int) A[d]->ncol > max_n ) max_n = (int) A[d]->ncol;
+
 	delta = 0; /* DELTA is a parameter to allow the choice of nodes
 		      whose degree <= min-degree + DELTA. */
 	maxint = 2147483647; /* 2**31 - 1 */
-	invp = (int *) int32Malloc_dist(n+delta);
+	invp = (int *) int32Malloc_dist(max_n+delta);
 	if ( !invp ) ABORT("SUPERLU_MALLOC fails for invp.");
-	dhead = (int_t *) SUPERLU_MALLOC((n+delta)*sizeof(int_t));
+	dhead = (int_t *) SUPERLU_MALLOC((max_n+delta)*sizeof(int_t));
 	if ( !dhead ) ABORT("SUPERLU_MALLOC fails for dhead.");
-	qsize = (int_t *) SUPERLU_MALLOC((n+delta)*sizeof(int_t));
+	qsize = (int_t *) SUPERLU_MALLOC((max_n+delta)*sizeof(int_t));
 	if ( !qsize ) ABORT("SUPERLU_MALLOC fails for qsize.");
-	llist = (int_t *) SUPERLU_MALLOC(n*sizeof(int_t));
+	llist = (int_t *) SUPERLU_MALLOC(max_n*sizeof(int_t));
 	if ( !llist ) ABORT("SUPERLU_MALLOC fails for llist.");
-	marker = (int_t *) SUPERLU_MALLOC(n*sizeof(int_t));
+	marker = (int_t *) SUPERLU_MALLOC(max_n*sizeof(int_t));
 	if ( !marker ) ABORT("SUPERLU_MALLOC fails for marker.");
     }
 	

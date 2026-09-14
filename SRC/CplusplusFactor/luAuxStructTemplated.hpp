@@ -202,21 +202,24 @@ inline T atomicAddT(T* address, T val);
 
 // Specialization for double
 template<>
+__device__
 inline double atomicAddT<double>(double* address, double val) {
     return atomicAdd(address, val);
 }
 
 // Specialization for float
 template<>
+__device__
 inline float atomicAddT<float>(float* address, float val) {
     return atomicAdd(address, val);
 }
 
 // Specialization for std::complex<double>
 template<>
+__device__
 inline doublecomplex atomicAddT<doublecomplex>(doublecomplex* address, doublecomplex val) {
     // doublecomplex out = *address;
-    
+
     atomicAdd (&address->r, val.r);
     atomicAdd (&address->i, val.i);
     return *address;
@@ -240,6 +243,12 @@ __host__ __device__
 inline doublecomplex operator/(const doublecomplex& a, const doublecomplex& b) {
     double denom = b.r * b.r + b.i * b.i;
     return {(a.r * b.r + a.i * b.i) / denom, (a.i * b.r - a.r * b.i) / denom};
+}
+
+// External Operator Overload for binary '*'
+__host__ __device__
+inline doublecomplex operator*(const doublecomplex& a, const doublecomplex& b) {
+    return {a.r * b.r - a.i * b.i, a.r * b.i + a.i * b.r};
 }
 
 __host__ __device__

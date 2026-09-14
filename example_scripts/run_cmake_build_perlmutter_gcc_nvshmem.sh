@@ -78,9 +78,10 @@ cmake .. \
   -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
   -DMPIEXEC_MAX_NUMPROCS=16
 
-make pddrive -j16
+# make pddrive -j16
 # make pddrive3d -j16
-# make pddrive3d_vbatch -j16
+make pddrive3d_vbatch -j16
+make psdrive3d_vbatch -j16
 # make pddrive3d_vbatch
 # make pzdrive3d -j16
 # make pzdrive

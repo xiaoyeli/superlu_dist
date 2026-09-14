@@ -258,7 +258,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     int_t fnz, i, ib, ijb, ilst, it, iukp, jj, klst,
           ldv, lptr, lptr0, lptrj, luptr, luptr0, luptrj,
           nlb, nub, rel, rukp, il, iu;
-    int jb, ljb, nsupc, knsupc, lb, lib;	
+    int jb, ljb, nsupc, knsupc, lb, lib;
     int Pc, Pr;
     int iam, kcol, krow, yourcol, mycol, myrow, pi, pj;
     int j, k, lk, nsupers;  /* k - current panel to work on */
@@ -791,8 +791,8 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-        printf("\t.. SUPERLU_MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8, options));
-	printf("\t.. SUPERLU_N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7, options));
+        printf("\t.. SUPERLU_MAX_BUFFER_SIZE %lld set for GPU\n", (long long) sp_ienv_dist(8, options));
+	printf("\t.. SUPERLU_N_GEMM %d: minimum N for GEMM worth doing on CPU (1st block always on CPU)\n", (int) sp_ienv_dist(7, options));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
         printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
