@@ -94,7 +94,7 @@ int zcreate_matrix_qcd(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     zallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
 
     if(!iam){
-        printf("matrix size %10d nnz %15d\n",n,nnz);
+        printf("matrix size %10d nnz %15d\n", (int)n, (int)nnz);
         fflush(stdout);
     }
 

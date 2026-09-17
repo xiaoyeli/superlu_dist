@@ -49,8 +49,8 @@ extern "C"
         double tXferGpu2Host = SuperLU_timer_();
         if (LU_v1->superlu_acc_offload)
         {
-#ifdef HAVE_CUDA
-            cudaStreamSynchronize(LU_v1->A_gpu.cuStreams[0]); // in theory I don't need it
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
+            gpuStreamSynchronize(LU_v1->A_gpu.cuStreams[0]); // in theory I don't need it
             LU_v1->copyLUGPUtoHost();
 #endif
         }
@@ -107,8 +107,8 @@ extern "C"
         double tXferGpu2Host = SuperLU_timer_();
         if (LU_v1->superlu_acc_offload)
         {
-#ifdef HAVE_CUDA
-            cudaStreamSynchronize(LU_v1->A_gpu.cuStreams[0]); // in theory I don't need it
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
+            gpuStreamSynchronize(LU_v1->A_gpu.cuStreams[0]); // in theory I don't need it
             LU_v1->copyLUGPUtoHost();
 #endif
         }
@@ -167,8 +167,8 @@ extern "C"
         double tXferGpu2Host = SuperLU_timer_();
         if (LU_v1->superlu_acc_offload)
         {
-#ifdef HAVE_CUDA
-            cudaStreamSynchronize(LU_v1->A_gpu.cuStreams[0]); // in theory I don't need it
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
+            gpuStreamSynchronize(LU_v1->A_gpu.cuStreams[0]); // in theory I don't need it
             LU_v1->copyLUGPUtoHost();
 #endif
         }

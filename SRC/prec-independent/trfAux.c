@@ -2580,7 +2580,8 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
 #if (PRNTlevel >= 1)
     if (!iam)
         printf(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-               sp_ienv_dist(2, options), sp_ienv_dist(3, options), sp_ienv_dist(6, options));
+               (int)sp_ienv_dist(2, options), (int)sp_ienv_dist(3, options),
+	       (int)sp_ienv_dist(6, options));
 #endif
 #if (DEBUGlevel >= 1)
     extern void file_dPrint_NCPformat_triplet(FILE *fp, SuperMatrix *A);

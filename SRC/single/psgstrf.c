@@ -791,8 +791,8 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-        printf("\t.. SUPERLU_MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8, options));
-	printf("\t.. SUPERLU_N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7, options));
+        printf("\t.. SUPERLU_MAX_BUFFER_SIZE %lld set for GPU\n", (long long) sp_ienv_dist(8, options));
+	printf("\t.. SUPERLU_N_GEMM %d: minimum N for GEMM worth doing on CPU (1st block always on CPU)\n", (int) sp_ienv_dist(7, options));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
         printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);

@@ -499,12 +499,24 @@ void zperform_row_permutation(
     LOG_FUNC_ENTER();
     #endif
     int *perm_r = ScalePermstruct->perm_r;
-    /* Get NC format data from SuperMatrix GA */
-    NCformat* GAstore = (NCformat *)GA->Store;
-    int_t* colptr = GAstore->colptr;
-    int_t* rowind = GAstore->rowind;
-    int_t nnz = GAstore->nnz;
-    doublecomplex* a_GA = (doublecomplex *)GAstore->nzval;
+    /* Get NC format data from SuperMatrix GA.
+       GA is only gathered by the caller when Fact != SamePattern_SameRowPerm
+       (see pzgssvx3d.c); on the SamePattern_SameRowPerm path GA is an
+       uninitialized local there, so it must not be dereferenced.  These
+       fields are used only inside the Fact != SamePattern_SameRowPerm
+       branch below. */
+    NCformat* GAstore = NULL;
+    int_t* colptr = NULL;
+    int_t* rowind = NULL;
+    int_t nnz = 0;
+    doublecomplex* a_GA = NULL;
+    if ( Fact != SamePattern_SameRowPerm ) {
+	GAstore = (NCformat *)GA->Store;
+	colptr = GAstore->colptr;
+	rowind = GAstore->rowind;
+	nnz = GAstore->nnz;
+	a_GA = (doublecomplex *)GAstore->nzval;
+    }
 
     int iam = grid->iam;
     /* ------------------------------------------------------------

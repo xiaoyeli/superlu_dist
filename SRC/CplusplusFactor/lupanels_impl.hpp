@@ -4,7 +4,7 @@
 #include <cassert>
 #include "superlu_defs.h"
 #include "luAuxStructTemplated.hpp"
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 #include "lupanels_GPU.cuh"
 #include "xlupanels_GPU.cuh"
 #endif
@@ -45,7 +45,7 @@ int xLUstruct_t<Ftype>::freeDiagFactBufsArr(int_t num_bufs, diagFactBufs_type<Ft
 }
 
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 template <typename Ftype>
 xupanel_t<Ftype> xLUstruct_t<Ftype>::getKUpanel(int_t k, int_t offset)
 {
@@ -278,21 +278,21 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
     dFBufs = initDiagFactBufsArr(numDiagBufs, ldt);
     maxLeafNodes = mxLeafNode;
 
-    
+
     double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
     {
-    #ifdef HAVE_CUDA
+    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
         setLUstruct_GPU();  /* Set up LU structure and buffers on GPU */
-	
-        // TODO: remove it, checking is very slow 
+
+        // TODO: remove it, checking is very slow
         if(0)
-            checkGPU();     
+            checkGPU();
     #endif
     }
-        
+
     tGPU = SuperLU_timer_() -tGPU;
-#if ( PRNTlevel >= 1 )    
+#if ( PRNTlevel >= 1 )
     printf("Time to intialize GPU DS= %g\n",tGPU );
 #endif
 

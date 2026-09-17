@@ -75,8 +75,8 @@ int_t ztrs_B_init3d_newsolve(superlu_dist_options_t *options, int_t nsupers, dou
     int_t myrow = MYROW(iam, grid);
     int_t mycol = MYCOL(iam, grid);
     doublecomplex zero = {0.0, 0.0};
-    int_t Pr = grid->nprow;
-    int_t nlb = CEILING(nsupers, Pr);    /* Number of local block rows. */
+    int Pr = grid->nprow;
+    int nlb = CEILING(nsupers, Pr);    /* Number of local block rows. */
 
     if (grid3d->zscp.Np == 1) return 0;
 
@@ -116,14 +116,14 @@ int_t ztrs_B_init3d_newsolve(superlu_dist_options_t *options, int_t nsupers, dou
     if (!trf3Dpartition->superGridMap)
 	ABORT("Missing superGridMap in ztrs_B_init3d_newsolve().");
 
-    for (int_t lk = 0; lk < nlb; ++lk) {
-	int_t k = lk * grid->nprow + myrow;
+    for (int lk = 0; lk < nlb; ++lk) {
+	int k = lk * grid->nprow + myrow;
 	if (k >= nsupers || mycol != PCOL(k, grid) ||
 	    trf3Dpartition->superGridMap[k] == IN_GRID_AIJ) {
 	    continue;
 	}
 
-	int_t ii = X_BLK(lk);
+	int ii = X_BLK(lk);
 	int_t nvals = SuperSize(k) * (int_t)nrhs;
 	for (int_t i = 0; i < nvals; ++i) x[ii + i] = zero;
     }
@@ -2595,9 +2595,9 @@ int_t zleafForestForwardSolve3d(superlu_dist_options_t *options, int_t treeId, i
 	zLocalLU_t *Llu = LUstruct->Llu;
 	int_t* xsup = Glu_persist->xsup;
 	int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
-	int_t nsupers = Glu_persist->supno[n - 1] + 1;
-	int_t Pr = grid->nprow;
-	int_t nlb = CEILING (nsupers, Pr);
+	int nsupers = Glu_persist->supno[n - 1] + 1;
+	int Pr = grid->nprow;
+	int nlb = CEILING (nsupers, Pr);
 
 	treeTopoInfo_t* treeTopoInfo = &sforest->topoInfo;
 	int_t* eTreeTopLims = treeTopoInfo->eTreeTopLims;
@@ -7016,6 +7016,7 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 	    SUPERLU_FREE (send_dbuf);
 	}
     }
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit pzReDistribute3d_B_to_X()");
 #endif
@@ -7188,6 +7189,7 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
 	    SUPERLU_FREE (send_dbuf);
 	}
     }
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit pzReDistribute_X_to_B()");
 #endif

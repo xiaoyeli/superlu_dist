@@ -235,10 +235,27 @@ pdgsrfs(superlu_dist_options_t *options, int_t n,
 		printf("(%2d) .. Step " IFMT ": berr[j] = %e\n", iam, count, berr[j]);
 #endif
 	    if ( berr[j] > eps && berr[j] * 2 <= lstres && count < ITMAX ) {
-		/* Compute new dx. */
-		pdgstrs(options, n, LUstruct, ScalePermstruct, grid,
-			dx, m_loc, fst_row, m_loc, 1,
-			SOLVEstruct, stat, info);
+		/* Compute new dx: solve A*dx = R for the correction.
+		   SLU_GMRES uses a left-preconditioned GMRES inner solve
+		   (preconditioner = the LU factors); otherwise a single
+		   triangular solve dx = U^{-1}L^{-1} R (classical IR). */
+		if ( options->IterRefine == SLU_GMRES ) {
+		    int gmres_it = 0;
+		    pdgmres(options, n, A, LUstruct, ScalePermstruct, grid,
+			    gsmv_comm, dx, m_loc, fst_row,
+			    50 /*restart*/, 50 /*maxit*/, 1e-8 /*rtol*/,
+			    1e-14 /*atol*/, 0 /*0=MGS,1=CGS*/,
+			    SOLVEstruct, &gmres_it, stat, info);
+#if ( PRNTlevel>=1 )
+		    if ( !iam )
+			printf("(%2d) .. Step " IFMT ": %d inner GMRES iters\n",
+			       iam, count, gmres_it);
+#endif
+		} else {
+		    pdgstrs(options, n, LUstruct, ScalePermstruct, grid,
+			    dx, m_loc, fst_row, m_loc, 1,
+			    SOLVEstruct, stat, info);
+		}
 
 		/* Update solution. */
 		for (i = 0; i < m_loc; ++i) X_col[i] += dx[i];
@@ -479,8 +496,23 @@ if (!grid3d->zscp.Iam){
 		printf("(%2d) .. Step " IFMT ": berr[j] = %e\n", iam, count, berr[j]);
 #endif
 	    if ( berr[j] > eps && berr[j] * 2 <= lstres && count < ITMAX ) {
-		/* Compute new dx. */
-        if (get_new3dsolve()){
+		/* Compute new dx: solve A*dx = R for the correction.
+		   SLU_GMRES uses a left-preconditioned GMRES inner solve
+		   (preconditioner = the LU factors, applied by pdgstrs3d);
+		   otherwise the classical single triangular solve. */
+        if ( options->IterRefine == SLU_GMRES ) {
+            int gmres_it = 0;
+            pdgmres3d (options, n, A, LUstruct, ScalePermstruct, grid3d,
+                       trf3Dpartition, gsmv_comm, dx, m_loc, fst_row,
+                       50 /*restart*/, 50 /*maxit*/, 1e-8 /*rtol*/,
+                       1e-14 /*atol*/, 0 /*0=MGS,1=CGS*/,
+                       SOLVEstruct, &gmres_it, stat, info);
+#if ( PRNTlevel>=1 )
+            if ( !grid3d->iam )
+                printf("(%2d) .. Step " IFMT ": %d inner GMRES iters\n",
+                       iam, count, gmres_it);
+#endif
+        } else if (get_new3dsolve()){
             pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, dx,
             m_loc, fst_row, m_loc, 1,SOLVEstruct, stat, info);
         }else{

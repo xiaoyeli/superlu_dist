@@ -71,8 +71,8 @@ include(CheckLanguage)
 #
 ######################################################################
 if (NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 11)
-  #set(CMAKE_CXX_STANDARD 14)
+  #set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD 17)  # ROCm 6.x (rocprim, hipblas) requires C++14+; use 17 for HIP builds
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -629,6 +629,7 @@ include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
 include_directories(${CMAKE_SOURCE_DIR}/SRC/include)
 include_directories(${CMAKE_SOURCE_DIR}/SRC/cuda)
 include_directories(${CMAKE_SOURCE_DIR}/SRC/hip)
+include_directories(${CMAKE_SOURCE_DIR}/SRC/CplusplusFactor)
 if (TPL_PARMETIS_INCLUDE_DIRS)
   include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
 endif ()

@@ -24,8 +24,8 @@ at the top-level directory.
  *
  * @param[in]      options solver options
  * @param[in]      batchCount number of matrices in the batch
- * @param[in]      m row dimension of the matrices
- * @param[in]      n column dimension of the matrices
+ * @param[in]      m pointer to the row dimensions of the matrices in the batch
+ * @param[in]      n pointer to the column dimensions of the matrices in the batch
  * @param[in, out] SparseMatrix_handles pointers to the matrices in the batch, each pointing to the actual stoage in CSC format
  *     On entry, the original matrices, may be overwritten by A1 <- diag(R)*A*diag(C) from dequil_batch()
  *     On exit, each matrix may be A2 <- Pr*A1
@@ -34,32 +34,35 @@ at the top-level directory.
  * @param[in,out] DiagScale array indicating how each system is equilibrated: {ROW, COL, BOTH}
  * @param[in,out] RpivPtr pointers to row permutation vectors for each matrix, each of size m
  *     On exit, each RpivPtr[] is applied to each matrix
+ * @param[in, out] info pointer to the pivoting success indicator of each system
  *
  * Return value:
  *     0,  success
  *     -1, invalid RowPerm option; an Identity perm_r[] is returned
- *     d, indicates that the d-th matrix is the first one in the batch encountering error
+ *     d, indicates that the d-th matrix is the first one in the batch encountering error, can check info[k]
  * </pre>
  */
 int
 dpivot_vbatch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
     int batchCount, /* number of matrices in the batch */
-    int *m, /* matrix row dimension */
-    int *n, /* matrix column dimension */
+    int *m, /* array of matrix row dimension, of size 'batchCount' */
+    int *n, /* array of matrix column dimension, of size 'batchCount' */
     handle_t  *SparseMatrix_handles, /* array of sparse matrix handles,
 				      * of size 'batchCount', each pointing to the actual storage
 				      */
-    double **ReqPtr, /* array of pointers to diagonal row scaling vectors,
-			each of size M   */
-    double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
-			each of size N    */
+    double **ReqPtr, /* array of pointers to diagonal row scaling vectors, of size 'batchCount',
+			size of the kth one is m[k]   */
+    double **CeqPtr, /* array of pointers to diagonal column scaling vectors, of size 'batchCount',
+			size of the kth one is n[k]    */
     DiagScale_t *DiagScale, /* How equilibration is done for each matrix. */
-    int **RpivPtr /* array of pointers to row permutation vectors , each of size M */
+    int **RpivPtr, /* array of pointers to row permutation vectors, of size 'batchCount',
+			size of the kth one is m[k] */
     //    DeviceContext context /* device context including queues, events, dependencies */
+	int *info /* Pivoting success indicator of each system, of size 'batchCount' */
 		  )
 {
-    int i, j, irow, iinfo, rowequ, colequ, info = 0;
+    int i, j, irow, iinfo, rowequ, colequ, rinfo = 0;
     fact_t Fact = options->Fact;
     int factored = (Fact == FACTORED);
     int Equil = (!factored && options->Equil == YES);
@@ -76,6 +79,7 @@ dpivot_vbatch(
     A = SUPERLU_MALLOC(batchCount * sizeof(SuperMatrix *));
     for (i = 0; i < batchCount; ++i) {
 	A[i] = (SuperMatrix *) SparseMatrix_handles[i];
+	info[i] = 0;
     }
 
     int_t *colptr;
@@ -141,10 +145,11 @@ dpivot_vbatch(
 			/* Finds a row permutation (serial) */
 			iinfo = dldperm_dist(job, m[d], nnz, colptr, rowind, a,
 					     perm_r, R1, C1);
+			info[d] = iinfo;
 
 			if ( iinfo ) { /* Error */
 			    printf(".. Matrix %d: LDPERM ERROR %d\n", d, iinfo);
-			    if ( info==0 ) info = d+1 ;
+			    if ( rinfo==0 ) rinfo = d+1 ;
 			}
 #if (PRNTlevel >= 2)
 			dmin = damch_dist("Overflow");
@@ -228,7 +233,8 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
 #endif
 		    } else {
 			printf(".. LDPERM invalid RowPerm option %d\n", options->RowPerm);
-			info = -1;
+			rinfo = -1;
+			info[d] = -1;
 			for (i = 0; i < m[d]; ++i)	perm_r[i] = i;
 		    } /* end if-else options->RowPerm ... */
 
@@ -269,6 +275,6 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Exit dpivot_batch()");
 #endif
-    return info;
+    return rinfo;
 
 } /* end dpivot_batch */

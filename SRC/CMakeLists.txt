@@ -147,6 +147,7 @@ if(enable_double)
     double/pdgstrs_lsum.c
     double/pdgstrs_Bglobal.c
     double/pdgsrfs.c
+    double/pdgmres.c
     double/pdgsmv.c
     double/pdgsrfs_ABXglobal.c
     double/pdgsmv_AXglobal.c
@@ -243,13 +244,16 @@ if(enable_single)
     single/psgstrs_lsum.c
     single/psgstrs_Bglobal.c
     single/psgsrfs.c
+    single/psgmres.c
     single/psgsrfs_d2.c
     single/psgsmv.c
     single/psgsrfs_ABXglobal.c
     single/psgsmv_AXglobal.c
     single/psGetDiagU.c
     single/psgssvx3d.c     ## 3D code
-    single/sssvx3dAux.c  
+    single/psgssvx3d_d2.c  ## 3D code with double-precision IR
+    single/psgsrfs3d_d2.c  ## double-precision 3D iterative refinement
+    single/sssvx3dAux.c
     single/snrformat_loc3d.c 
     single/psgstrf3d.c 
     single/streeFactorization.c
@@ -268,6 +272,9 @@ if(enable_single)
     single/psgssvx3d_csc_batch.c # batch in CSC format
     single/sequil_batch.c # batch in CSC format
     single/spivot_batch.c
+    single/psgssvx3d_csc_vbatch.c # variable-size batch in CSC format
+    single/sequil_vbatch.c
+    single/spivot_vbatch.c
   )
 if (TPL_ENABLE_CUDALIB)
     list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/psgstrs_perm_cuda.cu cuda/ssuperlu_gpu.cu)
@@ -321,6 +328,7 @@ if(enable_complex16)
       complex16/pzgstrs_lsum.c
       complex16/pzgstrs_Bglobal.c
       complex16/pzgsrfs.c
+      complex16/pzgmres.c
       complex16/pzgsmv.c
       complex16/pzgsrfs_ABXglobal.c
       complex16/pzgsmv_AXglobal.c
@@ -339,9 +347,13 @@ if(enable_complex16)
       complex16/ztrfCommWrapper.c
       complex16/zsuperlu_blas.c
       complex16/pzgssvx3d_csc_batch.c # batch in CSC format
+      complex16/pzgssvx3d_csc_vbatch.c
       complex16/zequil_batch.c # batch in CSC format
+      complex16/zequil_vbatch.c
       complex16/zpivot_batch.c
+      complex16/zpivot_vbatch.c
      )
+     
 if (TPL_ENABLE_CUDALIB)
     list(APPEND sources cuda/pzgstrs_lsum_cuda.cu cuda/pzgstrs_perm_cuda.cu cuda/zsuperlu_gpu.cu)
 endif()
@@ -356,6 +368,9 @@ if (TPL_ENABLE_HIPLIB)
     hip/pdgstrs_lsum_cuda.hip.cpp
     hip/dsuperlu_gpu.hip.cpp
     hip/superlu_gpu_utils.hip.cpp
+    hip/LUgpuCHandle_interface_impl.hip.cpp
+    hip/batch_factorize.hip.cpp
+    hip/batch_block_copy.hip.cpp
   )
   if(enable_single)
     list(APPEND hipsources hip/psgstrs_lsum_cuda.hip.cpp hip/ssuperlu_gpu.hip.cpp)

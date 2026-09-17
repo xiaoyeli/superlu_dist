@@ -2596,9 +2596,9 @@ int_t sleafForestForwardSolve3d(superlu_dist_options_t *options, int_t treeId, i
 	sLocalLU_t *Llu = LUstruct->Llu;
 	int_t* xsup = Glu_persist->xsup;
 	int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
-	int_t nsupers = Glu_persist->supno[n - 1] + 1;
-	int_t Pr = grid->nprow;
-	int_t nlb = CEILING (nsupers, Pr);
+	int nsupers = Glu_persist->supno[n - 1] + 1;
+	int Pr = grid->nprow;
+	int nlb = CEILING (nsupers, Pr);
 
 	treeTopoInfo_t* treeTopoInfo = &sforest->topoInfo;
 	int_t* eTreeTopLims = treeTopoInfo->eTreeTopLims;
@@ -6998,6 +6998,7 @@ psReDistribute3d_B_to_X (float *B, int_t m_loc, int nrhs, int_t ldb,
 	    SUPERLU_FREE (send_dbuf);
 	}
     }
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit psReDistribute3d_B_to_X()");
 #endif
@@ -7170,6 +7171,7 @@ psReDistribute3d_X_to_B (int_t n, float *B, int_t m_loc, int_t ldb,
 	    SUPERLU_FREE (send_dbuf);
 	}
     }
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid->iam, "Exit psReDistribute_X_to_B()");
 #endif
@@ -7751,7 +7753,12 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     xtrsTimer_t xtrsTimer;
 
     initTRStimer(&xtrsTimer, grid);
+    
+    MPI_Barrier (grid3d->comm);
     double tx = SuperLU_timer_();
+    stat->utime[SOLVE] = 0.0;
+    double tx_st= SuperLU_timer_();
+    
     /* Redistribute B into X on the diagonal processes. */
     if (options->GPURES == YES) {
 #ifdef GPU_ACC
