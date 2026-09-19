@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     double   *berr;
     doublecomplex   *b, *xtrue, *d_b;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, gpures;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, gpures, gmres;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp;
@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
     symbfact = -1;
     batch = 0;
     gpures = -1;
+    gmres = 0;  /* -g 1: solve with GMRES (LU-preconditioned) instead of direct */
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -156,6 +157,7 @@ int main(int argc, char *argv[])
                 printf("\t-l <int>: lookahead level    (default %4d)\n", options.num_lookaheads);
                 printf("\t-i <int>: iter. refinement   (default %4d)\n", options.IterRefine);
                 printf("\t-g <int>: gpu-resident solve?   (default %4d)\n", options.GPURES);
+                printf("\t-G <int>: solve with GMRES (LU-preconditioned)? (0 direct, 1 GMRES) (default %4d)\n", gmres);
                 printf("\t-b <int>: use batch mode?    (default %4d)\n", batch);
                 exit(0);
                 break;
@@ -179,6 +181,8 @@ int main(int argc, char *argv[])
                     break;
             case 'g': gpures = atoi(*cpp);
                     break;
+            case 'G': gmres = atoi(*cpp);
+                    break;
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -195,6 +199,7 @@ int main(int argc, char *argv[])
     if (ir != -1) options.IterRefine = ir;
     if (symbfact != -1) options.ParSymbFact = symbfact;
     if (gpures != -1) options.GPURES = gpures;
+    options.UseGMRES = gmres;
 
     int superlu_acc_offload = get_acc_offload(&options);
 

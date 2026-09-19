@@ -619,7 +619,6 @@ extern int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
                                     gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct);
 
 
-
 extern void dundo_equilibration_rhs_wrap(double *B, int_t ldb, int_t m_loc, int nrhs,
     int_t fst_row, int notran,int rowequ, int colequ,
     dScalePermstruct_t *ScalePermstruct);
@@ -804,6 +803,7 @@ extern void pdgsrfs3d(superlu_dist_options_t *, int_t,
 	        dScalePermstruct_t *, gridinfo3d_t *,
 	        dtrf3Dpartition_t*  , double *, int_t, double *, int_t, int,
 	        dSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+
 
 /* GMRES inner-solve kernels for iterative refinement (IterRefine==SLU_GMRES).
    Each solves A d = r (r in/out via the X argument; d returned) with the LU
@@ -1763,7 +1763,6 @@ extern int dpivot_vbatch(
     double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
-
 extern int dwriteLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct);
 extern int dcheckArr(double *A, double *B, int n);
 extern int dcheckLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct);

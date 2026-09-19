@@ -619,7 +619,6 @@ extern int psPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
                                     gridinfo_t *grid, sSOLVEstruct_t *SOLVEstruct);
 
 
-
 extern void sundo_equilibration_rhs_wrap(float *B, int_t ldb, int_t m_loc, int nrhs,
     int_t fst_row, int notran,int rowequ, int colequ,
     sScalePermstruct_t *ScalePermstruct);
@@ -1756,24 +1755,10 @@ extern int psgssvx3d_csc_batch(
 		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
 		//DeviceContext context /* device context including queues, events, dependencies */
 		);
-extern int psgssvx3d_csc_vbatch(
-        superlu_dist_options_t *, int batchCount, int *m, int *n, int *nnz,
-        int nrhs, handle_t *, float **RHSptr, int *ldRHS,
-        float **ReqPtr, float **CeqPtr,
-        int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
-        handle_t *F, float **Xptr, int *ldX, float **Berrs,
-        gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
-        //DeviceContext context /* device context including queues, events, dependencies */
-        );
 extern int sequil_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
     float **ReqPtr, float **CeqPtr, DiagScale_t *
     // DeviceContext context /* device context including queues, events, dependencies */
-    );
-extern int sequil_vbatch(
-    superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
-    float **ReqPtr, float **CeqPtr, DiagScale_t *
-    //    DeviceContext context /* device context including queues, events, dependencies */
     );
 extern int spivot_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
@@ -1801,12 +1786,6 @@ extern int spivot_vbatch(
     float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
-extern int spivot_vbatch(
-    superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
-    float **ReqPtr, float **CeqPtr, DiagScale_t *, int **RpivPtr
-    //    DeviceContext context /* device context including queues, events, dependencies */
-    );
-
 extern int swriteLUtoDisk(int nsupers, int_t *xsup, sLUstruct_t *LUstruct);
 extern int scheckArr(float *A, float *B, int n);
 extern int scheckLUFromDisk(int nsupers, int_t *xsup, sLUstruct_t *LUstruct);

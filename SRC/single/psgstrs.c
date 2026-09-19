@@ -31,8 +31,17 @@ at the top-level directory.
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
 
+#ifdef GPU_ACC
+#include "gpu_api_utils.h"
+#endif
+
+// #ifndef GPUREF
+// #define GPUREF 1
+// #endif
+
+#if 0
 /* ===========================================================================
- * CLUSTER-SPECIFIC WORKAROUND (this machine only) -- not part of the AMD/HIP
+ * CLUSTER-SPECIFIC WORKAROUND (Frank/instinct only) -- not part of the AMD/HIP
  * GPU port.  The OpenBLAS installed on this cluster is a single-target build
  * compiled for Intel skylakex (AVX-512); it ignores OPENBLAS_CORETYPE, so its
  * LAPACK strtri_ dispatches AVX-512 kernels that raise SIGILL (illegal
@@ -103,14 +112,7 @@ static void local_strtri(const char *uplo, const char *diag,
         }
     }
 }
-
-#ifdef GPU_ACC
-#include "gpu_api_utils.h"
 #endif
-
-// #ifndef GPUREF
-// #define GPUREF 1
-// #endif
 
 /*
  * Sketch of the algorithm for L-solve:
@@ -913,13 +915,20 @@ psCompute_Diag_Inv(int_t n, sLUstruct_t *LUstruct,gridinfo_t *grid,
 	              }
  		  }
 
-		  /* Triangular inversion.  CLUSTER-SPECIFIC (this machine only):
+#if 1
+		  /* Triangular inversion */
+		  strtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
+
+		  strtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);
+#else
+		  /* Triangular inversion.  Specific to Frank/instinct AMD cluster.
 		   * local_strtri avoids SIGILL from this cluster's AVX-512-only
 		   * OpenBLAS on the AVX2 EPYC CPU.  On a normal BLAS install, use
 		   * the standard LAPACK strtri_ instead (see note at its definition). */
    		  local_strtri("L","U",&knsupc,Linv,&knsupc,&INFO);
 
 		  local_strtri("U","N",&knsupc,Uinv,&knsupc,&INFO);
+#endif
 
 	      } /* end if(lsub) */
 		} /* end if (mycol === kcol) */

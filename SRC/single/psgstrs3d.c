@@ -76,8 +76,8 @@ int_t strs_B_init3d_newsolve(superlu_dist_options_t *options, int_t nsupers, flo
     int_t myrow = MYROW(iam, grid);
     int_t mycol = MYCOL(iam, grid);
     float zero = 0.0;
-    int_t Pr = grid->nprow;
-    int_t nlb = CEILING(nsupers, Pr);    /* Number of local block rows. */
+    int Pr = grid->nprow;
+    int nlb = CEILING(nsupers, Pr);    /* Number of local block rows. */
 
     if (grid3d->zscp.Np == 1) return 0;
 
@@ -117,14 +117,14 @@ int_t strs_B_init3d_newsolve(superlu_dist_options_t *options, int_t nsupers, flo
     if (!trf3Dpartition->superGridMap)
 	ABORT("Missing superGridMap in strs_B_init3d_newsolve().");
 
-    for (int_t lk = 0; lk < nlb; ++lk) {
-	int_t k = lk * grid->nprow + myrow;
+    for (int lk = 0; lk < nlb; ++lk) {
+	int k = lk * grid->nprow + myrow;
 	if (k >= nsupers || mycol != PCOL(k, grid) ||
 	    trf3Dpartition->superGridMap[k] == IN_GRID_AIJ) {
 	    continue;
 	}
 
-	int_t ii = X_BLK(lk);
+	int ii = X_BLK(lk);
 	int_t nvals = SuperSize(k) * (int_t)nrhs;
 	for (int_t i = 0; i < nvals; ++i) x[ii + i] = zero;
     }
@@ -6862,7 +6862,7 @@ psReDistribute3d_B_to_X (float *B, int_t m_loc, int nrhs, int_t ldb,
     int *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
     int *ptr_to_ibuf, *ptr_to_dbuf;
     int *perm_r, *perm_c;     /* row and column permutation vectors */
-    int_t *send_ibuf, *recv_ibuf;
+    int *send_ibuf, *recv_ibuf;
     float *send_dbuf, *recv_dbuf;
     int_t *xsup, *supno;
     int_t i, ii, irow, gbi, jj, k, knsupc, l, lk;
@@ -6928,7 +6928,7 @@ psReDistribute3d_B_to_X (float *B, int_t m_loc, int nrhs, int_t ldb,
 	       ------------------------------------------------------------ */
 	    k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
 	    l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
-	    if (!(send_ibuf = intMalloc_dist (k + l)))
+	    if (!(send_ibuf = int32Malloc_dist (k + l)))
 		ABORT ("Malloc fails for send_ibuf[].");
 	    recv_ibuf = send_ibuf + k;
 	    if (!(send_dbuf = floatMalloc_dist ((k + l) * (size_t) nrhs)))
@@ -6960,8 +6960,8 @@ psReDistribute3d_B_to_X (float *B, int_t m_loc, int nrhs, int_t ldb,
 	    }
 
 	    /* Communicate the (permuted) row indices. */
-	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
-			   recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
+	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, MPI_INT,
+			   recv_ibuf, RecvCnt, rdispls, MPI_INT, grid->comm);
 
 	    /* Communicate the numerical values. */
 	    MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_FLOAT,
@@ -7032,7 +7032,7 @@ psReDistribute3d_X_to_B (int_t n, float *B, int_t m_loc, int_t ldb,
     int *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
     int *sdispls, *rdispls, *sdispls_nrhs, *rdispls_nrhs;
     int *ptr_to_ibuf, *ptr_to_dbuf;
-    int_t *send_ibuf, *recv_ibuf;
+    int *send_ibuf, *recv_ibuf;
     float *send_dbuf, *recv_dbuf;
     int iam, p, q, pkk, procs, j;
     int_t num_diag_procs, *diag_procs;
@@ -7096,7 +7096,7 @@ psReDistribute3d_X_to_B (int_t n, float *B, int_t m_loc, int_t ldb,
 
 	    k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
 	    l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
-	    if (!(send_ibuf = intMalloc_dist (k + l)))
+	    if (!(send_ibuf = int32Malloc_dist (k + l)))
 		ABORT ("Malloc fails for send_ibuf[].");
 	    recv_ibuf = send_ibuf + k;
 	    if (!(send_dbuf = floatMalloc_dist ((k + l) * nrhs)))
@@ -7147,8 +7147,8 @@ psReDistribute3d_X_to_B (int_t n, float *B, int_t m_loc, int_t ldb,
 	    /* ------------------------------------------------------------
 	       COMMUNICATE THE (PERMUTED) ROW INDICES AND NUMERICAL VALUES.
 	       ------------------------------------------------------------ */
-	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
-			   recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
+	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, MPI_INT,
+			   recv_ibuf, RecvCnt, rdispls, MPI_INT, grid->comm);
 	    MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, MPI_FLOAT,
 			   recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, MPI_FLOAT,
 			   grid->comm);
@@ -7757,7 +7757,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     MPI_Barrier (grid3d->comm);
     double tx = SuperLU_timer_();
     stat->utime[SOLVE] = 0.0;
-    double tx_st= SuperLU_timer_();
+    tx_st= SuperLU_timer_();
     
     /* Redistribute B into X on the diagonal processes. */
     if (options->GPURES == YES) {

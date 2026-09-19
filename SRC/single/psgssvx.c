@@ -1734,7 +1734,7 @@ if ( options->GPURES == YES ){
             /* Deallocate the storage associated with SOLVEstruct1 */
 	    if ( nrhs > 1 ) {
 	        if (get_acc_solve()) psgstrs_delete_device_lsum_x(SOLVEstruct1);
-		pxgstrs_finalize(SOLVEstruct1->gstrs_comm);
+			pxgstrs_finalize(SOLVEstruct1->gstrs_comm);
 	        SUPERLU_FREE(SOLVEstruct1);
 	    }
 

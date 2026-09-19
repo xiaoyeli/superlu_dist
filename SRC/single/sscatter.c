@@ -47,6 +47,7 @@ sscatter_l_1 (int ib,
     int_t rel, i, segsize, jj;
     float *nzval;
     int_t *index = Lrowind_bc_ptr[ljb];
+    if (index == NULL) return; /* ILU no-fill: destination block absent. */
     int_t ldv = index[1];       /* LDA of the dest lusup. */
     int_t lptrj = BC_HEADER;
     int_t luptrj = 0;
@@ -128,6 +129,7 @@ sscatter_l (
     int rel, i, segsize, jj;
     float *nzval;
     int_t *index = Lrowind_bc_ptr[ljb];
+    if (index == NULL) return; /* ILU no-fill: destination block absent. */
     int_t ldv = index[1];       /* LDA of the destination lusup. */
     int_t lptrj = BC_HEADER;
     int_t luptrj = 0;

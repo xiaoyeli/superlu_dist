@@ -2238,6 +2238,9 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
 
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
                 do{
+                    /* Use atomic load to bypass L1 cache on AMD GPUs;
+                     * plain load + __threadfence() does NOT invalidate
+                     * L1 on CDNA/RDNA, causing an infinite spin. */
                     tmp=atomicAdd(&fmod[lib*aln_i], 0);
                     __threadfence();
                 }while(tmp>0);

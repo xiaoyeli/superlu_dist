@@ -616,7 +616,7 @@ void psgssvx3d_d2(superlu_dist_options_t *options, SuperMatrix *A,
        B2d is allocated;
        B is then aliased to B2d for the following 2D solve;
     */
-    sGatherNRformat_loc3d_allgrid(Fact, (NRformat_loc *)A->Store,
+    sGatherNRformat_loc3d_allgrid(options, Fact, (NRformat_loc *)A->Store,
 				     B, ldb, nrhs, grid3d, &A3d);
 
     B = (float *)A3d->B2d; /* B is now pointing to B2d,
@@ -1511,8 +1511,8 @@ void psgssvx3d_d2(superlu_dist_options_t *options, SuperMatrix *A,
 		       the Solve data & communication structures, unless a new
 		       factorization with Fact == DOFACT or SamePattern is asked for. */
 		{
-		    sSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
-					grid, SOLVEstruct);
+		    sSolveInit(options, A, perm_r, perm_c, nrhs, n, LUstruct,
+			       grid, SOLVEstruct, ScalePermstruct);
 		}
 		if (get_new3dsolve()){
 		    psgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
@@ -1685,8 +1685,8 @@ void psgssvx3d_d2(superlu_dist_options_t *options, SuperMatrix *A,
 			the Solve data & communication structures, unless a new
 			factorization with Fact == DOFACT or SamePattern is asked for. */
 		{
-		    sSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
-					grid, SOLVEstruct);
+		    sSolveInit(options, A, perm_r, perm_c, nrhs, n, LUstruct,
+			       grid, SOLVEstruct, ScalePermstruct);
 		}
 		psgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
@@ -1891,7 +1891,7 @@ void psgssvx3d_d2(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Scatter the solution from 2D grid-0 to 3D grid */
 	if (nrhs > 0)
-		sScatter_B3d(A3d, grid3d);
+	    sScatter_B3d(options, A3d, grid3d);
 
 	B = A3d->B3d;		 // B is now assigned back to B3d on return
 	A->Store = Astore3d; // restore Astore to 3D

@@ -6878,7 +6878,7 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
     int *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
     int *ptr_to_ibuf, *ptr_to_dbuf;
     int *perm_r, *perm_c;     /* row and column permutation vectors */
-    int_t *send_ibuf, *recv_ibuf;
+    int *send_ibuf, *recv_ibuf;
     doublecomplex *send_dbuf, *recv_dbuf;
     int_t *xsup, *supno;
     int_t i, ii, irow, gbi, jj, k, knsupc, l, lk;
@@ -6945,7 +6945,7 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 	       ------------------------------------------------------------ */
 	    k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
 	    l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
-	    if (!(send_ibuf = intMalloc_dist (k + l)))
+	    if (!(send_ibuf = int32Malloc_dist (k + l)))
 		ABORT ("Malloc fails for send_ibuf[].");
 	    recv_ibuf = send_ibuf + k;
 	    if (!(send_dbuf = doublecomplexMalloc_dist ((k + l) * (size_t) nrhs)))
@@ -6977,8 +6977,8 @@ pzReDistribute3d_B_to_X (doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 	    }
 
 	    /* Communicate the (permuted) row indices. */
-	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
-			   recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
+	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, MPI_INT,
+			   recv_ibuf, RecvCnt, rdispls, MPI_INT, grid->comm);
 
 	    /* Communicate the numerical values. */
 	    MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
@@ -7050,7 +7050,7 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
     int *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
     int *sdispls, *rdispls, *sdispls_nrhs, *rdispls_nrhs;
     int *ptr_to_ibuf, *ptr_to_dbuf;
-    int_t *send_ibuf, *recv_ibuf;
+    int *send_ibuf, *recv_ibuf;
     doublecomplex *send_dbuf, *recv_dbuf;
     int iam, p, q, pkk, procs, j;
     int_t num_diag_procs, *diag_procs;
@@ -7114,7 +7114,7 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
 
 	    k = sdispls[procs - 1] + SendCnt[procs - 1];    /* Total number of sends */
 	    l = rdispls[procs - 1] + RecvCnt[procs - 1];    /* Total number of receives */
-	    if (!(send_ibuf = intMalloc_dist (k + l)))
+	    if (!(send_ibuf = int32Malloc_dist (k + l)))
 		ABORT ("Malloc fails for send_ibuf[].");
 	    recv_ibuf = send_ibuf + k;
 	    if (!(send_dbuf = doublecomplexMalloc_dist ((k + l) * nrhs)))
@@ -7165,8 +7165,8 @@ pzReDistribute3d_X_to_B (int_t n, doublecomplex *B, int_t m_loc, int_t ldb,
 	    /* ------------------------------------------------------------
 	       COMMUNICATE THE (PERMUTED) ROW INDICES AND NUMERICAL VALUES.
 	       ------------------------------------------------------------ */
-	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, mpi_int_t,
-			   recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
+	    MPI_Alltoallv (send_ibuf, SendCnt, sdispls, MPI_INT,
+			   recv_ibuf, RecvCnt, rdispls, MPI_INT, grid->comm);
 	    MPI_Alltoallv (send_dbuf, SendCnt_nrhs, sdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
 			   recv_dbuf, RecvCnt_nrhs, rdispls_nrhs, SuperLU_MPI_DOUBLE_COMPLEX,
 			   grid->comm);
@@ -7772,7 +7772,12 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     xtrsTimer_t xtrsTimer;
 
     initTRStimer(&xtrsTimer, grid);
+    
+    MPI_Barrier (grid3d->comm);
     double tx = SuperLU_timer_();
+    stat->utime[SOLVE] = 0.0;
+    tx_st= SuperLU_timer_();
+    
     /* Redistribute B into X on the diagonal processes. */
     if (options->GPURES == YES) {
 #ifdef GPU_ACC

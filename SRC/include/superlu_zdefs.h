@@ -619,7 +619,6 @@ extern int pzPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
                                     gridinfo_t *grid, zSOLVEstruct_t *SOLVEstruct);
 
 
-
 extern void zundo_equilibration_rhs_wrap(doublecomplex *B, int_t ldb, int_t m_loc, int nrhs,
     int_t fst_row, int notran,int rowequ, int colequ,
     zScalePermstruct_t *ScalePermstruct);
@@ -1735,24 +1734,10 @@ extern int pzgssvx3d_csc_batch(
 		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
 		//DeviceContext context /* device context including queues, events, dependencies */
 		);
-extern int pzgssvx3d_csc_vbatch(
-        superlu_dist_options_t *, int batchCount, int *m, int *n, int *nnz,
-        int nrhs, handle_t *, doublecomplex **RHSptr, int *ldRHS,
-        double **ReqPtr, double **CeqPtr,
-        int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
-        handle_t *F, doublecomplex **Xptr, int *ldX, double **Berrs,
-        gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
-        //DeviceContext context /* device context including queues, events, dependencies */
-        );
 extern int zequil_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
     double **ReqPtr, double **CeqPtr, DiagScale_t *
     // DeviceContext context /* device context including queues, events, dependencies */
-    );
-extern int zequil_vbatch(
-    superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
-    double **ReqPtr, double **CeqPtr, DiagScale_t *
-    //    DeviceContext context /* device context including queues, events, dependencies */
     );
 extern int zpivot_batch(
     superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
@@ -1780,12 +1765,6 @@ extern int zpivot_vbatch(
     double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
-extern int zpivot_vbatch(
-    superlu_dist_options_t *, int batchCount, int *m, int *n, handle_t *,
-    double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr
-    //    DeviceContext context /* device context including queues, events, dependencies */
-    );
-
 extern int zwriteLUtoDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct);
 extern int zcheckArr(doublecomplex *A, doublecomplex *B, int n);
 extern int zcheckLUFromDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct);
