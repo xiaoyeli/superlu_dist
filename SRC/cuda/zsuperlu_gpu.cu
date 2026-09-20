@@ -268,6 +268,8 @@ void Scatter_GPU_kernel(
 	{
 		int ilst = FstBlockC (ib + 1);
 		int lib =  ib / nprow;   /* local index of row block ib */
+	    int_t ublk_info_base = local_u_blk_infoPtr[lib];
+	    if (ublk_info_base < 0) return; /* ILU no-fill: destination U row absent. */
 		int_t *index = &UrowindVec[UrowindPtr[lib]];
 
 		int num_u_blocks = index[0];
@@ -276,6 +278,8 @@ void Scatter_GPU_kernel(
 
 		/* Each thread is responsible for one block column */
 		__shared__ int ljb_ind;
+	    if (thread_id == 0) ljb_ind = -1;
+	    __syncthreads();
 		/*do a search ljb_ind at local row lib*/
 		int blks_per_threads = CEILING(num_u_blocks, blockDim.x);
 		// printf("blockDim.x =%d \n", blockDim.x);
@@ -291,6 +295,7 @@ void Scatter_GPU_kernel(
 			}
 		}
 		__syncthreads();
+		if (ljb_ind < 0) return; /* ILU no-fill: destination U block absent. */
 
 		int iuip_lib = local_u_blk_infoVec[ local_u_blk_infoPtr[lib] + ljb_ind].iuip;
 		int ruip_lib = local_u_blk_infoVec[ local_u_blk_infoPtr[lib] + ljb_ind].ruip;
@@ -355,6 +360,8 @@ void Scatter_GPU_kernel(
 
 		int rel;
 		doublecomplex *nzval;
+	    int_t lblk_info_base = local_l_blk_infoPtr[ljb];
+	    if (lblk_info_base < 0) return; /* ILU no-fill: destination L column absent. */
 		int_t *index = &LrowindVec[LrowindPtr[ljb]];
 		int num_l_blocks = index[0];
 		int ldv = index[1];
@@ -363,6 +370,8 @@ void Scatter_GPU_kernel(
 		int lib = ib / nprow;
 
 		__shared__ int lib_ind;
+	    if (thread_id == 0) lib_ind = -1;
+	    __syncthreads();
 		/*do a search lib_ind for lib*/
 		int blks_per_threads = CEILING(num_l_blocks, blockDim.x);
 		for (int i = 0; i < blks_per_threads; ++i)
@@ -374,6 +383,7 @@ void Scatter_GPU_kernel(
 			}
 		}
 		__syncthreads();
+		if (lib_ind < 0) return; /* ILU no-fill: destination L block absent. */
 
 		int lptrj = local_l_blk_infoVec[ local_l_blk_infoPtr[ljb] + lib_ind].lptrj;
 		int luptrj = local_l_blk_infoVec[ local_l_blk_infoPtr[ljb] + lib_ind].luptrj;
@@ -770,6 +780,7 @@ int zfree_LUstruct_gpu (
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].bigU_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].usub_IndirectJ3_host));
 
+
 	checkGPU(gpuFreeHost(A_gpu->acc_L_buff));
 	checkGPU(gpuFreeHost(A_gpu->acc_U_buff));
 	checkGPU(gpuFreeHost(A_gpu->scubufs[streamId].lsub_buf));
@@ -796,7 +807,6 @@ int zfree_LUstruct_gpu (
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
 	checkGPU(gpuFree(A_gpu->UnzvalPtr));
 	checkGPU(gpuFree(sluGPU->dA_gpu));
-
 
 	//checkGPU(gpuFree(A_gpu->grid)); // Sherry: this is not used
 
@@ -1091,7 +1101,7 @@ int zreduceGPUlu(
     double tt_end = SuperLU_timer_();
     SCT->AssemblyTimer += tt_end - tt_start;
     return 0;
-} /* end zreduceGPUlu */
+} /* zreduceGPUlu */
 
 
 int zwaitGPUscu(int streamId, zsluGPU_t *sluGPU, SCT_t *SCT)
@@ -1315,7 +1325,7 @@ void zCopyLUToGPU3D (
     local_l_blk_info_t  *local_l_blk_infoVec;
     int_t  * local_l_blk_infoPtr;
     local_l_blk_infoPtr =  (int_t *) malloc( CEILING(nsupers, Pc) * sizeof(int_t ) );
-
+	for (int_t i = 0; i < CEILING(nsupers, Pc); ++i) local_l_blk_infoPtr[i] = -1;
     /* First pass: count total L blocks */
     int_t cum_num_l_blocks = 0;  /* total number of L blocks I own */
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
@@ -1389,6 +1399,7 @@ void zCopyLUToGPU3D (
     local_u_blk_info_t  *local_u_blk_infoVec;
     int_t  * local_u_blk_infoPtr;
     local_u_blk_infoPtr =  (int_t *) malloc( CEILING(nsupers, Pr) * sizeof(int_t ) );
+	for (int_t i = 0; i < CEILING(nsupers, Pr); ++i) local_u_blk_infoPtr[i] = -1;
 
     /* First pass: count total U blocks */
     int_t cum_num_u_blocks = 0;

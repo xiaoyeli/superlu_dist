@@ -219,7 +219,7 @@ FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)
     }
 
     int diags = 0; // count nonzero diagonals
-    
+
     /* Transpose matrix A to T */
     for (j = 0; j < n; ++j)
 	for (i = al_colptr[j]; i < al_colptr[j+1]; ++i) {

@@ -10,6 +10,8 @@ at the top-level directory.
 */
 
 
+
+
 /*
  * <pre>
  * -- Distributed SuperLU routine (version 9.0) --
@@ -108,10 +110,10 @@ int main (int argc, char *argv[])
     dSOLVEstruct_t SOLVEstruct;
     gridinfo3d_t grid;
     double *berr;
-    double *b, *xtrue;
+    double *b, *xtrue, *d_b;
     int_t m, n;
     int nprow, npcol, npdep;
-    int equil, colperm, rowperm, ir, lookahead;
+    int equil, colperm, rowperm, ir, lookahead, gpures;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp;
@@ -136,6 +138,7 @@ int main (int argc, char *argv[])
     rowperm = -1;
     ir = -1;
     lookahead = -1;
+    gpures = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -168,6 +171,7 @@ int main (int argc, char *argv[])
                 printf ("\t-r <int>: process rows    (default %d)\n", nprow);
                 printf ("\t-c <int>: process columns (default %d)\n", npcol);
                 printf ("\t-d <int>: process Z-dimension (default %d)\n", npdep);
+                printf ("\t-g <int>: gpu-resident solve? (default %d)\n", NO);
                 exit (0);
                 break;
             case 'r':
@@ -190,8 +194,10 @@ int main (int argc, char *argv[])
             case 'i': ir = atoi(*cpp);
                       break;
             case 's': nrhs = atoi(*cpp);
-                      break;                      
+                      break;
             case 'l': lookahead = atoi(*cpp);
+                      break;
+            case 'g': gpures = atoi(*cpp);
                       break;
             }
         }
@@ -223,6 +229,8 @@ int main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
+    options.IterRefine = NOREFINE;
+    options.GPURES = NO;
 
 
 // //The following options test ILU
@@ -250,10 +258,11 @@ int main (int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (ir != -1) options.IterRefine = ir;
     if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (gpures != -1) options.GPURES = gpures;
 
     //////* this test SolveOnly*/
     // options.SolveOnly = YES;
-	
+
     //////* this test everything in SolveOnly except ILU_level = 0*/
     // options.Equil = NO;
 	// options.RowPerm = NOROWPERM;
@@ -270,7 +279,7 @@ int main (int argc, char *argv[])
 	print_options_dist(&options);
 	fflush(stdout);
     }
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Enter main()");
 #endif
@@ -316,7 +325,7 @@ int main (int argc, char *argv[])
 	}
         fflush(stdout);
     }
-	
+
     /* Bail out if I do not belong in the grid. */
     if (iam == -1)     goto out;
     if (!iam) {
@@ -364,7 +373,7 @@ int main (int argc, char *argv[])
 	int *ldX;
 	double **xtrues;
 	double **Berrs;
-	
+
 	handle_t *SparseMatrix_handles = SUPERLU_MALLOC( batchCount *  sizeof(handle_t) );
 	RHSptr = (double **) SUPERLU_MALLOC( batchCount *  sizeof(double *) );
 	ldRHS = int32Malloc_dist(batchCount);
@@ -380,7 +389,7 @@ int main (int argc, char *argv[])
 	double *a = Astore->nzval;
 	m = A->nrow;
 	n = A->ncol;
-	
+
 	ReqPtr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
 	CeqPtr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
 	RpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
@@ -398,7 +407,7 @@ int main (int argc, char *argv[])
 
 	/* Initialize the statistics variables. */
 	PStatInit (&stat);
-	
+
 	/* Call batch solver */
 	pdgssvx3d_csc_batch(&options, batchCount,
 			    m, n, Astore->nnz, nrhs, SparseMatrix_handles,
@@ -410,7 +419,7 @@ int main (int argc, char *argv[])
 	    printf("\tSystem %d: Berr = %e\n", d, Berrs[d][0]);
 	    //printf("\t\tDiagScale[%d] %d\n", d, DiagScale[d]);
 	}
-	
+
 	/* Free matrices pointed to by the handles, and ReqPtr[], etc. */
 	for (int d = 0; d < batchCount; ++d) {
 	    if ( DiagScale[d] == ROW || DiagScale[d] == BOTH )
@@ -438,9 +447,9 @@ int main (int argc, char *argv[])
 	SUPERLU_FREE(Berrs);
 
 	goto out;
-	
+
     } else {
-    
+
 #define NRFRMT
 #ifndef NRFRMT
         if ( grid.zscp.Iam == 0 )  // only in process layer 0
@@ -450,6 +459,14 @@ int main (int argc, char *argv[])
         dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
     }
+
+#ifdef GPU_ACC
+    if (options.GPURES == YES) {
+	checkGPU(gpuMalloc((void**)&d_b, sizeof(double) * (size_t)ldb * (size_t)nrhs));
+	checkGPU(gpuMemcpy(d_b, b, sizeof(double) * (size_t)ldb * (size_t)nrhs,
+			   gpuMemcpyHostToDevice));
+    }
+#endif
 
 #if 0  // following code is only for checking *Gather* routine
     NRformat_loc *Astore, *Astore0;
@@ -514,8 +531,20 @@ int main (int argc, char *argv[])
     PStatInit (&stat);
 
     /* Call the linear equation solver. */
-    pdgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-               &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    if (options.GPURES == YES) {
+#ifdef GPU_ACC
+	pdgssvx3d (&options, &A, &ScalePermstruct, d_b, ldb, nrhs, &grid,
+		   &LUstruct, &SOLVEstruct, berr, &stat, &info);
+	checkGPU(gpuMemcpy(b, d_b, sizeof(double) * (size_t)ldb * (size_t)nrhs,
+			   gpuMemcpyDeviceToHost));
+	checkGPU(gpuFree(d_b));
+#else
+	ABORT("GPURES requires GPU_ACC in pddrive3d.");
+#endif
+    } else {
+	pdgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		   &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    }
 
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
@@ -535,8 +564,10 @@ int main (int argc, char *argv[])
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
-    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
+    /* Free solve-side NVSHMEM buffers before dDestroy_LU finalizes NVSHMEM. */
     dSolveFinalize (&options, &SOLVEstruct);
+    if (get_acc_solve()) pdgstrs_delete_device_lsum_x(&SOLVEstruct);
+    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
 
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
@@ -552,7 +583,7 @@ int main (int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
 out:
-#if 0 // the following makes sense only for coarse-grain parallel model 
+#if 0 // the following makes sense only for coarse-grain parallel model
     if ( batchCount ) {
 	result_min[0] = stat.utime[FACT];
 	result_min[1] = stat.utime[SOLVE];

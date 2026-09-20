@@ -46,6 +46,7 @@ zscatter_l_1 (int ib,
     int_t rel, i, segsize, jj;
     doublecomplex *nzval;
     int_t *index = Lrowind_bc_ptr[ljb];
+    if (index == NULL) return; /* ILU no-fill: destination block absent. */
     int_t ldv = index[1];       /* LDA of the dest lusup. */
     int_t lptrj = BC_HEADER;
     int_t luptrj = 0;
@@ -128,6 +129,7 @@ zscatter_l (
     int rel, i, segsize, jj;
     doublecomplex *nzval;
     int_t *index = Lrowind_bc_ptr[ljb];
+    if (index == NULL) return; /* ILU no-fill: destination block absent. */
     int_t ldv = index[1];       /* LDA of the destination lusup. */
     int_t lptrj = BC_HEADER;
     int_t luptrj = 0;
@@ -140,7 +142,7 @@ zscatter_l (
 	//printf("  .. zscatter_l(): num_blocks %d, i %d, ijb %d\n", num_blocks, i, ijb);
 	++i;
 	if ( i == num_blocks ) return; // search exhausted; in ILU, not allow fill-in
-	
+
         luptrj += index[lptrj + 1];
         lptrj += LB_DESCRIPTOR + index[lptrj + 1];
         ijb = index[lptrj];
@@ -290,7 +292,5 @@ zscatter_u (
 #endif
     // TAU_STATIC_TIMER_STOP("SCATTER_UB");
 } /* zscatter_u */
-
-
 
 

@@ -1704,7 +1704,8 @@ int* getBmod3d_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int_t* xsu
 /*global variables for nvshmem, is it safe to be put them here? */
 int* mystatus, *mystatusmod,*d_rownum,*d_rowstart;
 int* mystatus_u, *mystatusmod_u;
-int *d_status, *d_statusmod;
+int *d_status, *d_status_save, *d_status_u_save;
+int *d_statusmod, *d_statusmod_save, *d_statusmod_u_save;
 uint64_t *flag_bc_q, *flag_rd_q ;
 int* my_flag_bc, *my_flag_rd;
 int* d_mynum,*d_mymaskstart,*d_mymasklength;

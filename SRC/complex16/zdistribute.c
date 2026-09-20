@@ -1978,11 +1978,12 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
     } /* else fact != SamePattern_SameRowPerm */
 
+
 	if ( options->Fact != SamePattern_SameRowPerm ) {
 		// /* Flatten L metadata into one buffer. */
 		pzflatten_LDATA(options, n, LUstruct, grid);
 
-		// /* Compute communication structure for trisolve. */ 
+		// /* Compute communication structure for trisolve. */
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;

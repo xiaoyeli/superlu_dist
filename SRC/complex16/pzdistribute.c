@@ -2320,7 +2320,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 		// /* Flatten L metadata into one buffer. */
 		pzflatten_LDATA(options, n, LUstruct, grid);
 
-		// /* Compute communication structure for trisolve. */ 
+		// /* Compute communication structure for trisolve. */
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;
@@ -2328,6 +2328,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 					supernodeMask, grid);
 		SUPERLU_FREE(supernodeMask);
 	}
+
 
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
