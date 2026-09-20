@@ -1,53 +1,24 @@
 #!/bin/bash
 
-# cmake build for SuperLU_dist on NERSC Perlmutter
-#
-# Last update: July 21, 2022
-# Perlmutter is not in production and the software environment changes rapidly.
-# Expect this file to be frequently updated
-#
-# This build script targets Perlmutter Slingshot 11 GPU compute nodes
-#
-# When requesting GPU compute nodes using salloc, will have to add the _ss11 suffix to the QOS
-# For example, if previously requested 1 node using salloc as follows
-# salloc -C gpu -N 1 -G 4 -t 30 -A m3894 -q regular
-# will now need:
-# salloc -C gpu -N 1 -G 4 -t 30 -A m3894 -q regular_ss11
-# will also need to issue the 5 module load commands below and the
-# two "export LD_LIBRARY_PATH" commands below in the shell after
-# receiving node allocation or in scripts that will run on the nodes
-#
-# For sbatch scripts, if previously had
-# #SBATCH -q regular
-# will now need
-# #SBATCH -q regular_ss11
-# will also need to include the 5 module load commands below and the
-# two "export LD_LIBRARY_PATH" commands below in the batch script
-#
-# Note: you may have to specify your own parmetis/metis libraries
-
 # module load cpe/23.03
 module load PrgEnv-gnu
 # module load gcc/11.2.0
 module load cmake
 module load cudatoolkit
-# avoid bug in cray-libsci/21.08.1.2
-# module load cray-libsci/22.11.1.2
-# module load cray-libsci/24.07.0
-# module load cray-libsci/25.09.0
+
 # module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/3.2.5-1
 export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_master
 # avoid bug in cudatoolkit
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.4\/compat:/}
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
-# module load gcc-native/13.2
+
 
 # NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 NVSHMEM_HOME=${NVSHMEM_ROOT}
 cmake .. \
-  -DCMAKE_C_FLAGS="-O2 -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0 -DAdd_" \
-  -DCMAKE_CXX_FLAGS="-O2 -std=c++14" \
+  -DCMAKE_C_FLAGS="-O2 -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
+  -DCMAKE_CXX_FLAGS="-O2 -std=c++17" \
   -DCMAKE_Fortran_FLAGS="-O2" \
   -DCMAKE_CXX_COMPILER=CC \
   -DCMAKE_C_COMPILER=cc \
@@ -59,10 +30,10 @@ cmake .. \
   -DTPL_ENABLE_CUDALIB=ON \
   -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=CC" \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
-  -DCMAKE_CUDA_STANDARD=14 \
+  -DCMAKE_CUDA_STANDARD=17 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_BUILD_TYPE=Release \
   -DTPL_ENABLE_MAGMALIB=ON \
   -DTPL_MAGMA_INCLUDE_DIRS="${MAGMA_ROOT}/include" \
   -DTPL_MAGMA_LIBRARIES="${MAGMA_ROOT}/lib/libmagma.so" \
@@ -78,8 +49,8 @@ cmake .. \
   -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
   -DMPIEXEC_MAX_NUMPROCS=16
 
-# make pddrive -j16
-# make pddrive3d -j16
+make pddrive -j16
+make pddrive3d -j16
 make pddrive3d_vbatch -j16
 make psdrive3d_vbatch -j16
 # make pddrive3d_vbatch
