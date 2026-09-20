@@ -365,7 +365,7 @@ void dbcastPermutedSparseA(SuperMatrix *A,
     }else{
             count=chunk;
     }
-        MPI_Bcast( &(Astore->nzval[idx]),  count*sizeof(double), MPI_BYTE, 0, grid3d->zscp.comm);
+        MPI_Bcast( &(((double*) Astore->nzval)[idx]),  count*sizeof(double), MPI_BYTE, 0, grid3d->zscp.comm);
         MPI_Bcast( &(Astore->colind[idx]), count*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
     }
     MPI_Bcast(Astore->rowptr, (Astore->m_loc+1)*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
