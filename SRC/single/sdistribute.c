@@ -1984,7 +1984,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 		// /* Flatten L metadata into one buffer. */
 		psflatten_LDATA(options, n, LUstruct, grid);
 
-		// /* Compute communication structure for trisolve. */ 
+		// /* Compute communication structure for trisolve. */
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;

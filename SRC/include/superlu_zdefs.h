@@ -9,6 +9,8 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
+
 /*! @file
  * \brief  Distributed SuperLU data types and function prototypes
  *
@@ -79,6 +81,12 @@ typedef struct {
     double *C;
     int  *perm_r;
     int  *perm_c;
+#ifdef GPU_ACC
+    int  *d_perm_r ;
+    int  *d_perm_c ;
+    double *d_R;
+    double *d_C;
+#endif
 } zScalePermstruct_t;
 
 #if 0 // Sherry: move to superlu_defs.h
@@ -297,6 +305,7 @@ typedef struct {
 
     int_t  *d_ilsum ;
     int_t *d_xsup ;
+    int_t *d_supno ;
     C_Tree  *d_LBtree_ptr ;
     C_Tree  *d_LRtree_ptr ;
     C_Tree  *d_UBtree_ptr ;
@@ -328,6 +337,9 @@ typedef struct
     int* supernodeMask;
     zLUValSubBuf_t  *LUvsb;
     SupernodeToGridMap_t* superGridMap;
+#ifdef GPU_ACC
+    SupernodeToGridMap_t *d_superGridMap;
+#endif
     int maxLvl; // YL: store this to avoid the use of grid3d
 
     /* Sherry added the following 3 for variable size batch. 2/17/23 */
@@ -388,6 +400,16 @@ typedef struct {
     doublecomplex *d_x;         /* used for device solution vector*/
     int  *d_fmod_save, *d_fmod;         /* used for device fmod vector*/
     int  *d_bmod_save, *d_bmod;         /* used for device bmod vector*/
+
+    int_t *d_ptr_to_idbuf_X2B, *d_ptr_to_idbuf_X2B_save;
+    int_t *d_ptr_to_idbuf_B2X, *d_ptr_to_idbuf_B2X_save ;
+    int_t *d_inv_perm_c ;
+    int_t *d_ptr_to_idbuf_PermuteC, *d_ptr_to_idbuf_PermuteC_save;
+    int_t *d_row_to_proc;
+    int_t *d_diag_procs;
+    doublecomplex *d_send_idbuf_B2X, *d_send_idbuf_X2B, *d_send_idbuf_PermuteC;
+    doublecomplex *d_recv_idbuf_B2X, *d_recv_idbuf_X2B, *d_recv_idbuf_PermuteC;
+
     #endif
 } zSOLVEstruct_t;
 
@@ -424,7 +446,7 @@ typedef struct {
 
 /*==== For 3D code ====*/
 
-// new structures for pdgstrf_4_8
+// new structures for pzgstrf_4_8
 
 #if 0  // Sherry: moved to superlu_defs.h
 typedef struct
@@ -586,6 +608,55 @@ extern void    pzlaqgs (SuperMatrix *, double *, double *, double,
 extern int     pzPermute_Dense_Matrix(int_t, int_t, int_t [], int perm[],
 				      doublecomplex [], int, doublecomplex [], int, int,
 				      gridinfo_t *);
+extern int pzPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
+                                    int_t m_loc,
+                                    int_t n,
+                                    doublecomplex *d_X,
+                                    int_t ldx,
+                                    doublecomplex *d_B,
+                                    int_t ldb,
+                                    int nrhs,
+                                    gridinfo_t *grid, zSOLVEstruct_t *SOLVEstruct);
+
+
+extern void zundo_equilibration_rhs_wrap(doublecomplex *B, int_t ldb, int_t m_loc, int nrhs,
+    int_t fst_row, int notran,int rowequ, int colequ,
+    zScalePermstruct_t *ScalePermstruct);
+
+extern void zscale_and_copy_rhs_wrap(doublecomplex *B, int_t ldb, doublecomplex *X, int_t ldx, int_t m_loc, int nrhs,
+    int_t fst_row, int notran,int rowequ, int colequ,
+    zScalePermstruct_t *ScalePermstruct);
+
+extern void zdevice_matcopy_wrap(int_t m, int nrhs, doublecomplex *dst, int_t lddst,
+    const doublecomplex *src, int_t ldsrc);
+
+extern void zdevice_add_to_vec_wrap(doublecomplex *dst, const doublecomplex *src, int_t n);
+
+extern void ztrs_B_init3d_zero_inactive_gpu_wrap(doublecomplex *x, int nrhs,
+    int_t nsupers, int_t nlb, const int_t *ilsum, const int_t *xsup,
+    const SupernodeToGridMap_t *superGridMap, int nprow, int npcol,
+    int myrow, int mycol);
+
+extern void ztrs_X_gather3d_pack_gpu_wrap(doublecomplex *packbuf, const doublecomplex *x,
+    const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
+    int_t nblocks);
+
+extern void ztrs_X_gather3d_unpack_gpu_wrap(doublecomplex *x, const doublecomplex *packbuf,
+    const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
+    int_t nblocks);
+
+extern void ztrs_X_gather3d_pack_zero_gpu_wrap(doublecomplex *packbuf, doublecomplex *x,
+    const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
+    int_t nblocks);
+
+extern void ztrs_X_gather3d_unpack_add_gpu_wrap(doublecomplex *x, const doublecomplex *packbuf,
+    const int_t *offsets, const int_t *lengths, const int_t *pack_offsets,
+    int_t nblocks);
+
+extern int zSolveInit_nvshmem_gpures(superlu_dist_options_t *options, int_t fst_row, int_t m_loc,
+    int_t nrhs, int_t n, gridinfo_t *grid,zSOLVEstruct_t *SOLVEstruct);
+
+extern void zFree_nvshmem_gpures(superlu_dist_options_t *options,zSOLVEstruct_t *SOLVEstruct);
 
 extern int     sp_ztrsv_dist (char *, char *, char *, SuperMatrix *,
 			      SuperMatrix *, doublecomplex *, int *);
@@ -620,7 +691,7 @@ extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *,
 extern void  pzCompute_Diag_Inv(int_t, zLUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
 extern int  zSolveInit(superlu_dist_options_t *, SuperMatrix *,
                        int perm_r[], int perm_c[],
-		       int_t, zLUstruct_t *, gridinfo_t *, zSOLVEstruct_t *);
+		       int_t, int_t, zLUstruct_t *, gridinfo_t *, zSOLVEstruct_t *, zScalePermstruct_t *);
 extern void zSolveFinalize(superlu_dist_options_t *, zSOLVEstruct_t *);
 extern void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t pzgstrs_init(int_t, int_t, int_t, int_t,
@@ -716,6 +787,9 @@ extern void zlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int, int, int, int
                                     int*, int*, int*, int*, int*, int*,
                                     int*, int*, int*, int); //int*); //int*, doublecomplex*);
 
+extern void pzReDistribute_B_to_X_gpu_wrap(doublecomplex *, int_t, int_t, int, int_t, int_t, doublecomplex *, zScalePermstruct_t *, zSOLVEstruct_t *, Glu_persist_t *, gridinfo_t *, gridinfo_t *, int_t *, int_t *, int_t *);
+
+extern void pzReDistribute_X_to_B_gpu_wrap(doublecomplex *, int_t, int_t, int, int_t, int_t, int_t, doublecomplex *, zScalePermstruct_t *, zSOLVEstruct_t *, Glu_persist_t *, gridinfo_t *, gridinfo_t *, int_t *, int_t *, int_t *);
 #endif
 
 extern void pzgsrfs(superlu_dist_options_t *, int_t,
@@ -819,7 +893,7 @@ extern int_t zleafForestForwardSolve3d(superlu_dist_options_t *options, int_t tr
 
 extern int ztrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
                            int* supernodeMask, gridinfo_t *grid);
-extern int_t zreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, doublecomplex* x, int nrhs,
+extern int_t zreduceSolvedX_newsolve(superlu_dist_options_t *options, int_t treeId, int_t sender, int_t receiver, doublecomplex* x, int nrhs,
                       ztrf3Dpartition_t*  trf3Dpartition, zLUstruct_t* LUstruct, gridinfo3d_t* grid3d, doublecomplex* recvbuf, xtrsTimer_t *xtrsTimer);
 
 extern void zlsum_fmod_leaf (
@@ -973,9 +1047,9 @@ extern int_t ziBcastXk2Pck(int_t k, doublecomplex* x, int nrhs,
                    zLUstruct_t * LUstruct, gridinfo_t * grid,xtrsTimer_t *xtrsTimer);
 
 extern int_t ztrs_B_init3d(int_t nsupers, doublecomplex* x, int nrhs, zLUstruct_t * LUstruct, gridinfo3d_t *grid3d);
-extern int_t ztrs_X_gather3d(doublecomplex* x, int nrhs, ztrf3Dpartition_t*  trf3Dpartition,
-                     zLUstruct_t* LUstruct,
-                     gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer);
+extern int_t ztrs_X_gather3d(superlu_dist_options_t *options, doublecomplex* x, int nrhs, ztrf3Dpartition_t*  trf3Dpartition,
+	                     zLUstruct_t* LUstruct,
+	                     gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer);
 extern int_t zfsolveReduceLsum3d(int_t treeId, int_t sender, int_t receiver, doublecomplex* lsum, doublecomplex* recvbuf, int nrhs,
                          ztrf3Dpartition_t*  trf3Dpartition, zLUstruct_t* LUstruct,
                           gridinfo3d_t* grid3d,xtrsTimer_t *xtrsTimer);
@@ -1171,10 +1245,12 @@ extern void zbatch_systems_free(handle_t *SparseMatrix_handles, int batchCount,
 extern void zGatherNRformat_loc3d(fact_t Fact, NRformat_loc *A, doublecomplex *B,
 				   int ldb, int nrhs, gridinfo3d_t *grid3d,
 				   NRformat_loc3d **);
-extern void zGatherNRformat_loc3d_allgrid(fact_t Fact, NRformat_loc *A, doublecomplex *B,
+extern void zGatherNRformat_loc3d_allgrid(superlu_dist_options_t *options,
+				   fact_t Fact, NRformat_loc *A, doublecomplex *B,
 				   int ldb, int nrhs, gridinfo3d_t *grid3d,
 				   NRformat_loc3d **);
-extern int zScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
+extern int zScatter_B3d(superlu_dist_options_t *options,
+			NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
 
 extern void pzgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 		       zScalePermstruct_t *, doublecomplex B[], int ldb, int nrhs,
@@ -1313,7 +1389,7 @@ extern int_t zgatherAllFactoredLUFr(int_t* myZeroTrIdxs, sForest_t* sForests,
 				   zLUstruct_t* LUstruct, gridinfo3d_t* grid3d,
 				   SCT_t* SCT );
 
-    /* The following are from pdgstrf2.h */
+    /* The following are from pzgstrf2.h */
 extern int_t zLpanelUpdate(int_t off0, int_t nsupc, doublecomplex* ublk_ptr,
 			  int_t ld_ujrow, doublecomplex* lusup, int_t nsupr, SCT_t*);
 extern void zgstrf2(int_t k, doublecomplex* diagBlk, int_t LDA, doublecomplex* BlockUfactor, int_t LDU,
@@ -1689,7 +1765,6 @@ extern int zpivot_vbatch(
     double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr, int *info
     //    DeviceContext context /* device context including queues, events, dependencies */
     );
-
 extern int zwriteLUtoDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct);
 extern int zcheckArr(doublecomplex *A, doublecomplex *B, int n);
 extern int zcheckLUFromDisk(int nsupers, int_t *xsup, zLUstruct_t *LUstruct);
@@ -1707,5 +1782,4 @@ extern doublecomplex *zready_lsum;
   }
 #endif
 
-#endif /* __SUPERLU_dDEFS */
-
+#endif /* __SUPERLU_zDEFS */

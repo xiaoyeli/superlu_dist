@@ -24,7 +24,11 @@ extern int *mystatus_u;
 extern int *mystatusmod_u;
 extern int *d_msgnum;
 extern int *d_status;
+extern int *d_status_save;
+extern int *d_status_u_save;
 extern int *d_statusmod;
+extern int *d_statusmod_save;
+extern int *d_statusmod_u_save;
 
 /* ************************************************* */
 /*  for block column broadcast                       */
@@ -55,7 +59,6 @@ extern int *d_rowstart;
 
 extern int *d_nfrecvmod;
 extern int *h_nfrecvmod;
-extern int *d_statusmod;
 extern int *d_colnummod;
 extern int *d_mynummod;
 extern int *d_mymaskstartmod;
@@ -112,6 +115,5 @@ do {                                                    \
     }                                                   \
 } while (0)
 #endif
-
 
 
