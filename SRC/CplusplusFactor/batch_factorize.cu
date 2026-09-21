@@ -573,7 +573,16 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
     marshallBatchedLUData<T>(ws, k_st, k_end);
     
     // TODO: This should be replaced by the user defined tolerances
-    float eps = 1e-6;
+    /* magma_*getrf_nopiv_expert_vbatched (dtol_array == NULL) replaces every
+       diagonal pivot with |pivot| < eps by sign(pivot)*eps and counts the
+       replacements in info.  This is an absolute threshold, applied whatever
+       options->ReplaceTinyPivot says.  SLU_BATCH_PIVTOL overrides it for
+       experiments (0 disables replacement); the default is unchanged. */
+    static double eps = -1.0;
+    if ( eps < 0.0 ) {
+        const char *e = getenv("SLU_BATCH_PIVTOL");
+        eps = e ? atof(e) : 1e-6;
+    }
 
     int_t info = magma_getrf_nopiv_vbatched(
         mdata.dev_diag_dim_array, mdata.dev_diag_dim_array, 
