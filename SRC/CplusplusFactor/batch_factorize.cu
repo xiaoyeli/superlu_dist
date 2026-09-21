@@ -383,8 +383,15 @@ inline void scatterGPU_batchDriver_flat(
         dim3 dimGrid(max_ilen, max_jlen, batch_size);
         size_t sharedMemorySize = 3 * maxSuperSize * sizeof(int_t);
 
+        /* The kernel indexes the marshalled GEMM buffers by blockIdx.z, which
+           restarts at 0 in every chunk, so those arrays must be advanced by
+           op_start just as k_st is.  Without this, a tree level wider than
+           op_increment (65535, the gridDim.z limit) scatters the wrong
+           Schur-complement blocks from the second chunk onwards -- silently,
+           since the launch itself is valid. */
         scatterGPU_batch_flat<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
-            k_st + op_start, maxSuperSize, gemmBuff_ptrs, LDgemmBuff_batch, Unzval_br_new_ptr,
+            k_st + op_start, maxSuperSize, gemmBuff_ptrs + op_start,
+            LDgemmBuff_batch + op_start, Unzval_br_new_ptr,
             Ucolind_br_ptr, Lnzval_bc_ptr, Lrowind_bc_ptr, lblock_gid_ptrs, lblock_start_ptrs, 
             dperm_c_supno, xsup
         );
@@ -652,6 +659,18 @@ int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sfores
     int_t maxTopoLevel = treeTopoInfo->numLvl;
     int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
 
+    if (getenv("SLU_DEBUG_LEVELW")) {
+        int_t leafw = eTreeTopLims[1] - eTreeTopLims[0], mx = 0, mxl = -1;
+        for (int_t l = 0; l < maxTopoLevel; ++l) {
+            int_t w = eTreeTopLims[l + 1] - eTreeTopLims[l];
+            if (w > mx) { mx = w; mxl = l; }
+        }
+        printf("[levelw] forest: nodes %lld levels %lld leafWidth %lld widest %lld (level %lld)\n",
+               (long long)nnodes, (long long)maxTopoLevel, (long long)leafw,
+               (long long)mx, (long long)mxl);
+        fflush(stdout);
+    }
+
     for(int_t topoLvl = 0; topoLvl < maxTopoLevel; topoLvl++)
         TFactBatchSolve<T>(ws, eTreeTopLims[topoLvl], eTreeTopLims[topoLvl + 1]);
 
@@ -707,6 +726,10 @@ TBatchFactorizeWorkspace<T>* getBatchFactorizeWorkspaceT(
 
     // Allocate marhsalling workspace
     tic = SuperLU_timer_();
+    if (getenv("SLU_DEBUG_LEVELW")) {
+        printf("[levelw] marshall arrays sized to mxLeafNode = %lld\n",
+               (long long) trf3Dpartition->mxLeafNode); fflush(stdout);
+    }
     ws->marshall_data.setBatchSize(trf3Dpartition->mxLeafNode);
     ws->sc_marshall_data.setBatchSize(trf3Dpartition->mxLeafNode);
 
