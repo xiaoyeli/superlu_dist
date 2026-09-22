@@ -310,8 +310,8 @@ main (int argc, char *argv[])
     if (lookahead != -1) options.num_lookaheads = lookahead;
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
+	print_sp_ienv_dist(&options);
 	fflush(stdout);
     }
 
@@ -449,6 +449,7 @@ main (int argc, char *argv[])
 		    for (int i = 0; i < nd[d]; ++i) {
 			double diff = fabs(xc[i] - xt[i]);
 			double axt  = fabs(xt[i]);
+		    
 			if ( axt > 0.0 && diff/axt > ferr_cw ) ferr_cw = diff/axt;
 			if ( diff > dxmax ) dxmax = diff;
 			if ( axt  > xtmax ) xtmax = axt;

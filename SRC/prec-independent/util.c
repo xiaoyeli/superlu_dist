@@ -276,14 +276,6 @@ void print_options_dist(superlu_dist_options_t *options)
     printf("**    UserDefineSupernode       : %4d\n", options->UserDefineSupernode);
     printf("**    Use_TensorCore            : %4d\n", options->Use_TensorCore);
     //printf("**    Use 3D algorithm          : %4d\n", );
-    printf("** parameters that can be altered by environment variables:\n");
-    printf("**    superlu_relax             : %4d\n", (int) sp_ienv_dist(2, options));
-    printf("**    superlu_maxsup            : %4d\n", (int) sp_ienv_dist(3, options));
-    printf("**    min GEMM m*k*n to use GPU : %d\n", (int) sp_ienv_dist(7, options));
-    printf("**    GPU buffer size           : %4lld\n", (long long) sp_ienv_dist(8, options));
-    printf("**    GPU streams               : %4d\n", (int) sp_ienv_dist(9, options));
-    printf("**    estimated fill ratio      : %4d\n", (int) sp_ienv_dist(6, options));
-    printf("**************************************************\n");
 }
 
 /*! \brief Print the blocking parameters.
@@ -314,13 +306,15 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     int gpu_factor_enabled = get_acc_offload(options);
     
     printf("**************************************************\n");
-    printf(".. blocking parameters from sp_ienv():\n");
-    printf("**    relaxation                 : %d\n", (int) sp_ienv_dist(2, options));
-    printf("**    max supernode              : %d\n", (int) sp_ienv_dist(3, options));
-    printf("**    estimated fill ratio       : %d\n", (int) sp_ienv_dist(6, options));
-    printf("**    min GEMM m*k*n to use GPU  : %d\n", (int) sp_ienv_dist(7, options));
+    printf("** parameters that can be altered by environment variables, and queried via sp_ienv_dist():\n");
+    printf("**    supernode relaxation      : %4d\n", (int) sp_ienv_dist(2, options));
+    printf("**    max supernode size        : %4d\n", (int) sp_ienv_dist(3, options));
+    printf("**    min GEMM m*k*n to use GPU : %d\n", (int) sp_ienv_dist(7, options));
+    printf("**    GPU buffer size           : %4lld\n", (long long) sp_ienv_dist(8, options));
+    printf("**    GPU streams               : %4d\n", (int) sp_ienv_dist(9, options));
+    printf("**    estimated fill ratio      : %d\n", (int) sp_ienv_dist(6, options));
     printf(".. parallel environment:\n");
-    printf("**    OpenMP threads             : %4d\n", num_threads);
+    printf("**    OpenMP threads            : %4d\n", num_threads);
     printf("**    GPU factor?               : %4d\n", gpu_factor_enabled);
     printf("**    GPU trisolve?             : %4d\n", gpu_trisolve_enabled);
     printf("**************************************************\n");

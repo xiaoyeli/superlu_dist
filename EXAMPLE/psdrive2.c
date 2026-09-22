@@ -177,6 +177,7 @@ int main(int argc, char *argv[])
 
     if (!iam) {
 	print_options_dist(&options);
+	print_sp_ienv_dist(&options);
 	fflush(stdout);
     }
 

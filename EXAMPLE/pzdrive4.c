@@ -1,15 +1,15 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief This example illustrates how to divide up the processes into subgroups
  *
  * <pre>
@@ -70,9 +70,9 @@ int main(int argc, char *argv[])
 
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
-    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
 
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
     if ( nprocs < 10 ) {
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     }
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID 1. 
+       INITIALIZE THE SUPERLU PROCESS GRID 1.
        ------------------------------------------------------------*/
     nprow = 2;
     npcol = 3;
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     superlu_gridmap(MPI_COMM_WORLD, nprow, npcol, usermap, ldumap, &grid1);
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID 2. 
+       INITIALIZE THE SUPERLU PROCESS GRID 2.
        ------------------------------------------------------------*/
     nprow = 2;
     npcol = 2;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
     /* Bail out if I do not belong in any of the 2 grids. */
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
     if ( iam == -1 ) goto out;
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
@@ -146,17 +146,17 @@ int main(int argc, char *argv[])
 	iam = grid1.iam;  /* Get the logical number in the new grid. */
 
         /* ------------------------------------------------------------
-           GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+           GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
            ------------------------------------------------------------*/
         zcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid1);
-	
+
 	if ( !(berr = doubleMalloc_dist(nrhs)) )
 	    ABORT("Malloc fails for berr[].");
 
 	/* ------------------------------------------------------------
 	   NOW WE SOLVE THE LINEAR SYSTEM.
 	   ------------------------------------------------------------*/
-	
+
         /* Set the default input options:
             options.Fact = DOFACT;
             options.Equil = YES;
@@ -173,6 +173,8 @@ int main(int argc, char *argv[])
 
         if (!iam) {
     	    print_options_dist(&options);
+	    print_sp_ienv_dist(&options);
+	    fflush(stdout);
         }
 
         m = A.nrow;
@@ -184,7 +186,7 @@ int main(int argc, char *argv[])
 
 	/* Initialize the statistics variables. */
 	PStatInit(&stat);
-	
+
 	/* Call the linear equation solver. */
 	pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid1,
                 &LUstruct, &SOLVEstruct, berr, &stat, &info);
@@ -199,7 +201,7 @@ int main(int argc, char *argv[])
             pzinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
                              nrhs, b, ldb, xtrue, ldx, grid1.comm);
 	}
-    
+
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid1);
 
@@ -222,7 +224,7 @@ int main(int argc, char *argv[])
 	iam = grid2.iam;  /* Get the logical number in the new grid. */
 
         /* ------------------------------------------------------------
-           GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+           GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
            ------------------------------------------------------------*/
         zcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid2);
 
@@ -232,7 +234,7 @@ int main(int argc, char *argv[])
 	/* ------------------------------------------------------------
 	   NOW WE SOLVE THE LINEAR SYSTEM.
 	   ------------------------------------------------------------*/
-	
+
         /* Set the default input options:
             options.Fact = DOFACT;
             options.Equil = YES;
@@ -246,7 +248,7 @@ int main(int argc, char *argv[])
             options.PrintStat = YES;
          */
 	set_default_options_dist(&options);
-	
+
         m = A.nrow;
         n = A.ncol;
 
@@ -256,7 +258,7 @@ int main(int argc, char *argv[])
 
 	/* Initialize the statistics variables. */
 	PStatInit(&stat);
-	
+
 	/* Call the linear equation solver. */
 	pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid2,
                 &LUstruct, &SOLVEstruct, berr, &stat, &info);
@@ -271,7 +273,7 @@ int main(int argc, char *argv[])
             pzinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
                              nrhs, b, ldb, xtrue, ldx, grid2.comm);
         }
-	
+
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid2);
 
