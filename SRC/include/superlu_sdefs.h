@@ -401,10 +401,11 @@ typedef struct {
     int  *d_fmod_save, *d_fmod;         /* used for device fmod vector*/
     int  *d_bmod_save, *d_bmod;         /* used for device bmod vector*/
 
-    int_t *d_ptr_to_idbuf_X2B, *d_ptr_to_idbuf_X2B_save;
-    int_t *d_ptr_to_idbuf_B2X, *d_ptr_to_idbuf_B2X_save ;
-    int_t *d_inv_perm_c ;
-    int_t *d_ptr_to_idbuf_PermuteC, *d_ptr_to_idbuf_PermuteC_save;
+    /* Match the CPU int permutations and MPI communication cursors. */
+    int *d_ptr_to_idbuf_X2B, *d_ptr_to_idbuf_X2B_save;
+    int *d_ptr_to_idbuf_B2X, *d_ptr_to_idbuf_B2X_save ;
+    int *d_inv_perm_c ;
+    int *d_ptr_to_idbuf_PermuteC, *d_ptr_to_idbuf_PermuteC_save;
     int_t *d_row_to_proc;
     int_t *d_diag_procs;
     float *d_send_idbuf_B2X, *d_send_idbuf_X2B, *d_send_idbuf_PermuteC;

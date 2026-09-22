@@ -38,7 +38,7 @@ static __host__ __device__ inline double pxgstrs_type_add(double a, double b) { 
 __global__ void
 pdReDistribute_B_to_X_gpu_proc1(double *B, int_t m_loc, int nrhs, int_t ldb,
                           int_t fst_row, int_t *ilsum, double *x,
-		                    int_t *perm_r, int_t *perm_c,
+		                    int *perm_r, int *perm_c,
                           int_t *xsup, int_t *supno, gridinfo_t *grid, int_t row_per_th)
 {
   int_t  i, irow, j, k, knsupc, l, crow;
@@ -77,7 +77,7 @@ pdReDistribute_B_to_X_gpu_proc1(double *B, int_t m_loc, int nrhs, int_t ldb,
 // This deals with multiple MPIs case
 __global__ void
 pdReDistribute_B_to_X_gpu_send(double *B, int_t m_loc, int nrhs, int_t ldb,
-                          int_t *perm_r, int_t *perm_c,
+                          int *perm_r, int *perm_c,
                           int_t fst_row, int_t *ilsum, double *send_idbuf,
                           int_t *xsup, int_t *supno, gridinfo_t *grid, int *ptr_to_idbuf, int_t row_per_th)
 {
@@ -776,7 +776,7 @@ pdPermute_Dense_Matrix_gpu_recv_kernel(double *B, int_t m_loc, int_t fst_row,
 
 __global__ void
 pdPermute_Dense_Matrix_gpu_proc1(const double *X, int_t m_loc, int_t fst_row,
-                                 const int_t *perm, int_t ldx,
+                                 const int *perm, int_t ldx,
                                  double *B, int_t ldb, int nrhs,
                                  int_t row_per_th)
 {
@@ -819,8 +819,8 @@ int pdPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
 
     int_t *row_to_proc = SOLVEstruct->row_to_proc;
     int_t *d_row_to_proc = SOLVEstruct->d_row_to_proc;
-    int_t *perm = SOLVEstruct->inv_perm_c;
-    int_t *d_perm = SOLVEstruct->d_inv_perm_c;
+    int *perm = SOLVEstruct->inv_perm_c;
+    int *d_perm = SOLVEstruct->d_inv_perm_c;
     int *d_ptr_to_idbuf_PermuteC = SOLVEstruct->d_ptr_to_idbuf_PermuteC;
 
 #if ( DEBUGlevel>=1 )

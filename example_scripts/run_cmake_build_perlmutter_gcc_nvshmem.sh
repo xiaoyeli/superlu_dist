@@ -33,7 +33,7 @@ cmake .. \
   -DCMAKE_CUDA_STANDARD=17 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DTPL_ENABLE_MAGMALIB=ON \
   -DTPL_MAGMA_INCLUDE_DIRS="${MAGMA_ROOT}/include" \
   -DTPL_MAGMA_LIBRARIES="${MAGMA_ROOT}/lib/libmagma.so" \
@@ -42,8 +42,8 @@ cmake .. \
   -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \
   -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.so" \
   -DTPL_ENABLE_COMBBLASLIB=OFF \
-  -DTPL_ENABLE_NVSHMEM=ON \
-  -DTPL_NVSHMEM_LIBRARIES="-L${CUDA_HOME}/lib64/stubs/ -lnvidia-ml -L/usr/lib64 -lgdrapi -lstdc++ -L/opt/cray/libfabric/1.22.0/lib64 -lfabric -L${NVSHMEM_HOME}/lib -lnvshmem" \
+  -DTPL_ENABLE_NVSHMEM=OFF \
+  -DTPL_NVSHMEM_LIBRARIES="-L${CUDA_HOME}/lib64/stubs/ -lnvidia-ml -L/usr/lib64 -lgdrapi -lstdc++ -L/opt/cray/libfabric/2.3.1/lib64 -lfabric -L${NVSHMEM_HOME}/lib -lnvshmem" \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
   -DMPIEXEC_NUMPROC_FLAG=-n \
   -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
