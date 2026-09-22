@@ -561,15 +561,6 @@ struct xLUstruct_t
                 gpuErrchk(cudaStreamDestroy(A_gpu.lookAheadUStream[stream]));
             }
 
-            gpuErrchk(cudaFree(A_gpu.dperm_c_supno));
-
-            for (int stream = 0; stream < A_gpu.numCudaStreams; stream++) {
-                gpuErrchk(cudaStreamDestroy(A_gpu.cuStreams[stream]));
-                gpuErrchk(cudaStreamDestroy(A_gpu.lookAheadLStream[stream]));
-                gpuErrchk(cudaStreamDestroy(A_gpu.lookAheadUStream[stream]));
-            }
-
-
             for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
             {
 #ifdef HAVE_CUDA
