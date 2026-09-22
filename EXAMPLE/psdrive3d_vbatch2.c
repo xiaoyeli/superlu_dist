@@ -310,8 +310,8 @@ main (int argc, char *argv[])
     if (lookahead != -1) options.num_lookaheads = lookahead;
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
+	print_sp_ienv_dist(&options);
 	fflush(stdout);
     }
 

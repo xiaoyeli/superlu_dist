@@ -314,6 +314,7 @@ int main(int argc, char *argv[])
     /* print solver options */
     if (!iam) {
 	print_options_dist(&options);
+	print_sp_ienv_dist(&options);
 	fflush(stdout);
     }
 
