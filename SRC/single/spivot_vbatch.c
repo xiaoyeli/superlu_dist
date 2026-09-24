@@ -12,10 +12,10 @@ at the top-level directory.
 
 
 /*
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab
  * November 5, 2023
- * Last update:
+ * Last update: September 23, 2026, v9.3.0
  */
 #include "superlu_sdefs.h"
 

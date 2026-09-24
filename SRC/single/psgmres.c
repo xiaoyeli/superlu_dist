@@ -16,8 +16,9 @@ at the top-level directory.
  *        psgsrfs3d) when options->IterRefine == SLU_GMRES.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.3) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab.
+ * Last update: September 23, 2026, v9.3.0
  *
  * Classical iterative refinement computes the correction by a single
  * triangular solve with the LU factors,

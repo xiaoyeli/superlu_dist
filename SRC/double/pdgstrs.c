@@ -17,12 +17,13 @@ at the top-level directory.
  * general N-by-N matrix A using the LU factors computed previously.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
  * September 18, 2018  version 6.0
  * February 8, 2019  version 6.1.1
  * July 5, 2022       version 8.1.0  improved GPU U-solve
+ * Last update: September 23, 2026, v9.3.0
  * </pre>
  */
 #include <math.h>
@@ -38,6 +39,7 @@ at the top-level directory.
 // #ifndef GPUREF
 // #define GPUREF 1
 // #endif
+
 
 /*
  * Sketch of the algorithm for L-solve:
@@ -1016,10 +1018,12 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
 	              }
  		  }
 
+#if 1
 		  /* Triangular inversion */
 		  dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
 
 		  dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);
+#endif
 
 	      } /* end if(lsub) */
 		} /* end if (mycol === kcol) */
@@ -1251,7 +1255,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
 
 #if ( PRNTlevel>=1 )
     if (get_acc_solve()){
-        iam = grid->iam;
+	iam = grid->iam;
 	if ( !iam) printf(".. GPU trisolve\n");
 	fflush(stdout);
     }

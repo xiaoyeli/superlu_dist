@@ -17,10 +17,11 @@ at the top-level directory.
  *        - Scatter B (solution) from 2D process layer 0 to 3D grid
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Oak Ridge National Lab.
  * May 12, 2021
  * October 5, 2021
+ * Last update: September 23, 2026, v9.3.0
  */
 
 #include "superlu_sdefs.h"

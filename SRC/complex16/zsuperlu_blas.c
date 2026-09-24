@@ -13,9 +13,10 @@ at the top-level directory.
  * \brief Wrapper functions to call BLAS.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Oak Ridge National Lab
  * December 6, 2020
+ * Last update: September 23, 2026, v9.3.0
  */
 
 #include "superlu_zdefs.h"

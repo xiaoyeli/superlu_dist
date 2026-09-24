@@ -16,11 +16,12 @@ at the top-level directory.
  * \brief Driver program for PSGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * December 6, 2018
- * AUgust 27, 2022  Add batch option
+ * August 27, 2022  Add batch option
+ * Last update: September 23, 2026, v9.3.0
  * </pre>
  */
 

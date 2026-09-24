@@ -577,4 +577,5 @@ May 8, 2024         Version 9.0.0
 November 10, 2024   Version 9.1.0
 October 21, 2025    Version 9.2.0
 December 9, 2025    Version 9.2.1
+September 23, 2026  Version 9.3.0
 ```

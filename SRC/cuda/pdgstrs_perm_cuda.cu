@@ -60,7 +60,7 @@ pdReDistribute_B_to_X_gpu_proc1(double *B, int_t m_loc, int nrhs, int_t ldb,
         irow = perm_c[perm_r[crow+fst_row]];
         k = BlockNum(irow);
         l = X_BLK(k);
-        x[l - XK_H] = k;      /* Block number prepended in the header. */
+        x[l - XK_H] = pxgstrs_type_from_int(k);      /* Block number prepended in the header. */
 
         knsupc = SuperSize(k);
         irow = irow - FstBlockC(k); /* Relative row number in X-block */
@@ -144,7 +144,7 @@ pdReDistribute_B_to_X_gpu_recv(double *x, int nrhs, int_t recvl,
         knsupc = SuperSize(k);
         lk = LBi(k, grid);  /* Local block number. */
         l = X_BLK(lk);
-        x[l - XK_H] = k;      /* Block number prepended in the header. */
+        x[l - XK_H] = pxgstrs_type_from_int(k);      /* Block number prepended in the header. */
         // printf("i = %d, recv_idbuf[i*(nrhs+1)] is %f, irow = %d, and x[%d] is %d.\n", i, recv_idbuf[i*(nrhs+1)], irow, l-XK_H, (int) x[l-XK_H]);
 
         irow = irow - FstBlockC(k); /* Relative row number in X-block */

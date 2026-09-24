@@ -1,4 +1,3 @@
-
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -15,14 +14,14 @@ at the top-level directory.
  * \brief Factorization routines for the subtree using 2D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
  *
- * Last update:
- * December 12, 2021  v7.2.0
- * October 1, 2022    v8.1.1  code cleanup (remove #if 0 ...)
+ * Last update: December 12, 2021  v7.2.0
+ *              October 1, 2022    v8.1.1  code cleanup (remove #if 0 ...)
+ *              September 23, 2026, v9.3.0
  */
 
 #include "superlu_sdefs.h"

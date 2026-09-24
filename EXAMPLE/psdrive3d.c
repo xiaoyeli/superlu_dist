@@ -14,12 +14,13 @@ at the top-level directory.
 
 /*
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
  * August 27, 2022  Add batch option
  * January 15, 2024 Complete the batch interface
+ * Last update: September 23, 2026, v9.3.0
  *
  */
 #include "superlu_sdefs.h"
@@ -275,8 +276,8 @@ int main (int argc, char *argv[])
     iam = grid.iam;
 
     if (!iam) {
-	print_options_dist(&options);
 	print_sp_ienv_dist(&options);
+	print_options_dist(&options);
 	fflush(stdout);
     }
 
