@@ -45,7 +45,7 @@ set(headers
 #    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 #    colamd.h
 if (MSVC)
-  list(APPEND headers wingetopt.h)
+  list(APPEND headers include/wingetopt.h)
 endif ()
 
 # first: precision-independent files
@@ -100,7 +100,7 @@ list(APPEND sources
 # endif()
 
 if (MSVC)
-  list(APPEND sources pred-independent/wingetopt.c)
+  list(APPEND sources prec-independent/wingetopt.c)
 endif ()
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
