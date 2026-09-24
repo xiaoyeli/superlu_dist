@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 9.2.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 9.3.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -12,21 +12,16 @@ SuperLU_DIST is a parallel extension to the serial SuperLU library.
 It is targeted for the distributed memory parallel machines.
 SuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism
 and MPI for off-node communications. Numerical LU factorization and triangular solvers can be performed on multiple GPU nodes
-for Nvidia, AMD, and Intel GPUs.
-<!-- We are actively developing multi-GPU acceleration capabilities.
-<!-- Currently, the LU factorization and triangular solution routines, -->
-<!-- which are the most time-consuming part of the solution process,-->
-<!-- are parallelized. The other routines, such as static pivoting and -->
-<!-- column preordering for sparsity are performed sequentially. -->
-<!-- This "alpha" release contains double-precision real and-->
-<!-- double-precision complex data types.-->
+for NVIDIA (CUDA) and AMD (HIP) GPUs, including a batched interface for
+factorizing/solving many independent systems at once, and optional NVSHMEM/ROCSHMEM
+support for one-sided GPU communication.
 
 The full documentation and publications can be found at this web site:
 https://portal.nersc.gov/project/sparse/superlu/
 
-In paticular, we highly recommend using the the latest 3D code, with example [EXAMPLE/pddrive3d.c](https://github.com/xiaoyeli/superlu_dist/blob/master/EXAMPLE/pddrive3.c),
+In paticular, we highly recommend using the the latest 3D code, with example [EXAMPLE/pddrive3d.c](https://github.com/xiaoyeli/superlu_dist/blob/master/EXAMPLE/pddrive3d.c),
 which significantly outpeforms the earlier 2D code (EXAMPLE/pddrive.c) both on GPUs and for strong scaling, 
-because it contains the novel 3D communication-avoiding algorithms
+because it contains the novel 3D communication-avoiding algorithms and extensive multi-GPU support for both sparse LU factorization and triangular solves.
 This was released since Version 9.0.0. The [Release Note](https://github.com/xiaoyeli/superlu_dist/releases/tag/v9.0.0) and the companion [ACM TOMS paper](https://dl.acm.org/doi/full/10.1145/3577197)
 should serve as the Users' Guide.
 
@@ -35,7 +30,7 @@ should serve as the Users' Guide.
 Table of Contents
 =================
 
-* [SuperLU_DIST (version 9.2.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-920--)
+* [SuperLU_DIST (version 9.3.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-930--)
 * [Directory structure of the source code](#directory-structure-of-the-source-code)
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
@@ -60,30 +55,6 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
-# SuperLU_DIST (version 9.2.0)  <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
-
-[![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)
-[Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
-
-SuperLU_DIST contains a set of subroutines to solve a sparse linear system
-A*X=B. It uses Gaussian elimination with static pivoting (GESP).
-Static pivoting is a technique that combines the numerical stability of
-partial pivoting with the scalability of Cholesky (no pivoting),
-to run accurately and efficiently on large numbers of processors.
-
-SuperLU_DIST is a parallel extension to the serial SuperLU library.
-It is targeted for the distributed memory parallel machines.
-SuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism
-and MPI for off-node communications. We are actively developing GPU
-acceleration capabilities.
-<!-- Currently, the LU factorization and triangular solution routines, -->
-<!-- which are the most time-consuming part of the solution process,-->
-<!-- are parallelized. The other routines, such as static pivoting and -->
-<!-- column preordering for sparsity are performed sequentially. -->
-<!-- This "alpha" release contains double-precision real and-->
-<!-- double-precision complex data types.-->
-
-
 # Directory structure of the source code
 
 ```
@@ -97,20 +68,27 @@ SuperLU_DIST/FORTRAN/  Fortran90 wrapper functions
 SuperLU_DIST/EXAMPLE/  example programs
 SuperLU_DIST/INSTALL/  test machine dependent parameters
 SuperLU_DIST/SRC/      C source code, to be compiled into libsuperlu_dist.a
+	               (single/, double/, complex16/ hold the precision-specific
+	               routines; cuda/ and hip/ hold the GPU kernels;
+	               CplusplusFactor/ holds the C++ GPU batched
+	               factorization/solve code; prec-independent/ holds the
+	               routines shared across all precisions)
 SuperLU_DIST/TEST/     testing code
-SuperLU_DIST/lib/      contains library archive libsuperlu_dist.a
+SuperLU_DIST/PYTHON/   Python interface (mpi4py-based), see PYTHON/README
 SuperLU_DIST/Makefile  top-level Makefile that does installation and testing
 SuperLU_DIST/make.inc  compiler, compiler flags, library definitions and C
 	               preprocessor definitions, included in all Makefiles.
 	               (You may need to edit it to suit your system
 	               before compiling the whole package.)
 SuperLU_DIST/MAKE_INC/ sample machine-specific make.inc files
+SuperLU_DIST/cmake/    CMake find-modules used by the CMake build
 ```
 
 # Installation
 
 There are two ways to install the package. The first method is to use
-CMake automatic build system. The other method requires users to
+the CMake automatic build system. The other method requires users to
+manually edit a makefile include file and invoke `make` directly.
 The procedures are described below.
 
 ## Installation option 1: Using CMake build system.
@@ -233,7 +211,7 @@ to run the examples.
 The parallel execution in ctest is invoked by "mpiexec" command which is
 from MPICH environment. If your MPI is not MPICH/mpiexec based, the test
 execution may fail. You can pass the definition option "-DMPIEXEC_EXECUTABLE"
-to cmake. For example on Cori at NERSC, you will need the following:
+to cmake. For example on Perlmutter at NERSC, you will need the following:
 `-DMPIEXEC_EXECUTABLE=/usr/bin/srun`
 
 Or, you can always go to TEST/ directory to perform testing manually.
@@ -244,13 +222,21 @@ the first choice is the default setting. After running 'cmake' installation,
 a configuration header file is generated in SRC/superlu_dist_config.h, which
 contains the key CPP definitions used throughout the code.
 ```
+    -Denable_single=ON | OFF
+    -Denable_double=ON | OFF
+    -Denable_complex16=ON | OFF
+    -Denable_python=ON | OFF
+
     -TPL_ENABLE_PARMETISLIB=ON | OFF
     -DTPL_ENABLE_INTERNAL_BLASLIB=OFF | ON
     -DTPL_ENABLE_LAPACKLIB=OFF | ON
     -TPL_ENABLE_COMBBLASLIB=OFF | ON
+    -DTPL_ENABLE_COLAMDLIB=OFF | ON
     -DTPL_ENABLE_CUDALIB=OFF | ON
     -DTPL_ENABLE_HIPLIB=OFF | ON
-    -Denable_complex16=OFF | ON
+    -DTPL_ENABLE_NVSHMEM=OFF | ON
+    -DTPL_ENABLE_ROCSHMEM=OFF | ON
+    -DTPL_ENABLE_MAGMALIB=OFF | ON
     -DXSDK_INDEX_SIZE=32 | 64
 
     -DBUILD_SHARED_LIBS= OFF | ON
@@ -384,7 +370,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 
 ### 2.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
 
-In the header file SRC/superlu_FCnames.h, we use macros to determine how
+In the header file SRC/include/superlu_FCnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
 (Some vendor-supplied BLAS libraries do not have C interfaces. So the
 re-naming is needed in order for the SuperLU BLAS calls (in C) to
@@ -419,15 +405,17 @@ completely automatically by simply typing "make" at the top level.
 
 
 # Summary of the environment variables.
-A couple of environment variables affect parallel execution.
+Several environment variables affect parallel execution.
 ```
     export OMP_NUM_THREADS=<...>
     export SUPERLU_ACC_OFFLOAD=1  // this enables use of GPU. Default is 1.
+    export SUPERLU_ACC_SOLVE=1    // this enables GPU-accelerated triangular solve. Default is 0.
 ```
 Several integer blocking parameters may affect performance. Most of them can be
 set by the user through environment variables. Oherwise the default values
 are provided. Various SuperLU routines call an environment inquiry function
-to obtain these parameters. This function is provided in the file SRC/sp_ienv.c.
+to obtain these parameters. This function is provided in the file
+SRC/prec-independent/sp_ienv.c.
 Please consult that file for detailed description of the meanings.
 ```
     export NREL=<...>   // supernode relaxation parameter
@@ -472,8 +460,9 @@ If you wish to test:
 
 # Reading sparse matrix files
 
-The SRC/ directory contains the following routines to read different file
-formats, they all have the similar calling sequence.
+The SRC/double/ directory (and the corresponding single/, complex16/
+directories for the other precisions) contains the following routines to
+read different file formats, they all have the similar calling sequence.
 ```
 $ ls -l dread*.c
 dreadMM.c              : Matrix Market, files with suffix .mtx
