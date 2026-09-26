@@ -689,8 +689,7 @@ if(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})
 else()
   set(pkgconfig_libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 endif()
-# MSVC has no libm; math functions are part of the CRT there, matching
-# the (NOT MSVC) guard around the same "m" library in SRC/CMakeLists.txt.
+# MSVC has no libm, since math functions are already in its CRT.
 if(NOT MSVC)
   set(MATH_LIB_EXPORT -lm)
 endif()
