@@ -689,6 +689,11 @@ if(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})
 else()
   set(pkgconfig_libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 endif()
+# MSVC has no libm; math functions are part of the CRT there, matching
+# the (NOT MSVC) guard around the same "m" library in SRC/CMakeLists.txt.
+if(NOT MSVC)
+  set(MATH_LIB_EXPORT -lm)
+endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
