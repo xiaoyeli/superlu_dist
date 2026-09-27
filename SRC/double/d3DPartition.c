@@ -10,9 +10,11 @@ at the top-level directory.
 */
 
 /*
+ * <pre>
  * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab
  * Last update: September 23, 2026, v9.3.0
+ *  </pre>
  */
 
 

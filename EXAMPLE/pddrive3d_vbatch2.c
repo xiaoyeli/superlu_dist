@@ -18,7 +18,7 @@ at the top-level directory.
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * Last update: September 23, 2026, v9.3.0
- *
+ * </pre>
  */
 #include <math.h>
 #include "superlu_ddefs.h"
