@@ -128,6 +128,14 @@ void dvbatch_free(handle_t *F)
  *       (unpermuted, unscaled) CSC structure; this routine applies the stored
  *       scalings and permutations to them.
  *
+ *   Fact = SamePattern
+ *       A later call on the same sparsity pattern whose values changed
+ *       enough to pivot again.  Reuses only the column permutation of each
+ *       matrix (CpivPtr).  Equilibration and the row permutation (MC64) are
+ *       recomputed from the new values; since the row permutation may change,
+ *       the stacked system, its symbolic factorization and its distributed
+ *       L/U are rebuilt, as on a DOFACT call.
+ *
  * No other Fact value is supported; DOFACT must come first.
  *
  * @param[in]      options solver options; options->Fact selects the mode above
@@ -213,6 +221,7 @@ pdgssvx3d_csc_vbatch(
     int persist = (F != NULL);
     dvbatch_ctx_t *ctx = (persist && F[0]) ? (dvbatch_ctx_t *) F[0] : NULL;
     int reuse = (Fact == SamePattern_SameRowPerm && ctx != NULL);
+    int keep_perm_c = (Fact == SamePattern);   /* CpivPtr[] of the previous call stay */
 
     if (Fact < 0 || Fact > FACTORED)
 	*info = -1;
@@ -240,6 +249,12 @@ pdgssvx3d_csc_vbatch(
 	fprintf(stderr, "pdgssvx3d_csc_vbatch: SamePattern_SameRowPerm asked "
 		"for, but F holds no state; call with Fact = DOFACT and a "
 		"non-NULL F first.\n");
+	*info = -16;
+    }
+    else if (Fact == SamePattern && (ctx == NULL || !ctx->initialized)) {
+	fprintf(stderr, "pdgssvx3d_csc_vbatch: SamePattern asked for, but F "
+		"holds no state; call with Fact = DOFACT and a non-NULL F "
+		"first.\n");
 	*info = -16;
     }
     else if (reuse && (ctx->batchCount != batchCount || ctx->nrhs != nrhs)) {
@@ -342,7 +357,8 @@ pdgssvx3d_csc_vbatch(
 	 */
 	t = SuperLU_timer_();
 
-	get_perm_c_vbatch(options, batchCount, SparseMatrix_handles, CpivPtr);
+	if ( !keep_perm_c )   /* SamePattern: the column permutations of the previous call are reused */
+	    get_perm_c_vbatch(options, batchCount, SparseMatrix_handles, CpivPtr);
 
 	stat->utime[COLPERM] = SuperLU_timer_() - t;
 
@@ -609,7 +625,10 @@ pdgssvx3d_csc_vbatch(
     }
 
     /* Copy the other options; these may legitimately change per call. */
-    ctx->options_big.Fact = Fact;
+    /* The stacked system is rebuilt from scratch unless this is a
+       SamePattern_SameRowPerm call (its own ColPerm is NATURAL: the column
+       permutations are applied per matrix above). */
+    ctx->options_big.Fact = reuse ? Fact : DOFACT;
     ctx->options_big.ReplaceTinyPivot = options->ReplaceTinyPivot;
     ctx->options_big.IterRefine = options->IterRefine;
     ctx->options_big.UseGMRES = options->UseGMRES;
