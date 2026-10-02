@@ -14,6 +14,13 @@
 
 #include "batch_factorize.h"
 #include <cstdio>
+#ifndef gpuMemsetAsync
+#ifdef HAVE_CUDA
+#define gpuMemsetAsync cudaMemsetAsync
+#elif defined(HAVE_HIP)
+#define gpuMemsetAsync hipMemsetAsync
+#endif
+#endif
 #include <vector>
 #include <iostream>
 
@@ -559,6 +566,21 @@ void copyHostLUDataToGPU(TBatchFactorizeWorkspace<T>* ws, LocalLU_type<T>* host_
     computeLBlockData(ws, nsupers);
 }
 
+/* EMT study instrumentation: SLU_BATCH_PROF=1 times every stage of every tree
+   level with a device synchronization on both sides (so it perturbs the run;
+   leave unset for production timings).  Stages: 0 marshal(all four), 1 getrf,
+   2 info reduce, 3 trsm U, 4 trsm L, 5 gemm, 6 scatter. */
+#define SLU_BPROF_NSTAGE 7
+static int slu_bprof = -1;
+static double slu_bprof_tot[SLU_BPROF_NSTAGE];
+static inline int slu_bprof_on()
+{
+    if ( slu_bprof < 0 ) { const char *e = getenv("SLU_BATCH_PROF"); slu_bprof = e ? atoi(e) : 0; }
+    return slu_bprof;
+}
+#define BPROF_TIC()  if (prof) { gpuErrchk(gpuDeviceSynchronize()); t0 = SuperLU_timer_(); }
+#define BPROF_TOC(i) if (prof) { gpuErrchk(gpuDeviceSynchronize()); tp[i] += SuperLU_timer_() - t0; }
+
 template<class T>
 void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
 {
@@ -568,9 +590,15 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
     TBatchSCUMarshallData<T>& sc_mdata = ws->sc_marshall_data;
 
     const T t_one = one<T>(), t_zero = zeroT<T>();
+    const int prof = slu_bprof_on();
+    double tp[SLU_BPROF_NSTAGE] = {0.0}, t0 = 0.0;
 
     // Diagonal block batched LU decomposition   
+    BPROF_TIC();
     marshallBatchedLUData<T>(ws, k_st, k_end);
+    BPROF_TOC(0);
+    long long prof_maxdiag = 0, prof_maxLpanel = 0, prof_maxUpanel = 0;
+    if (prof) prof_maxdiag = thrust::reduce(gpu_thrust_par, mdata.dev_diag_dim_array, mdata.dev_diag_dim_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
     
     // TODO: This should be replaced by the user defined tolerances
     /* magma_*getrf_nopiv_expert_vbatched (dtol_array == NULL) replaces every
@@ -584,19 +612,27 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         eps = e ? atof(e) : 1e-6;
     }
 
+    BPROF_TIC();
     int_t info = magma_getrf_nopiv_vbatched(
         mdata.dev_diag_dim_array, mdata.dev_diag_dim_array, 
         mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
         NULL, eps, mdata.dev_info_array, mdata.batchsize, 
         ws->magma_queue
     );
+    BPROF_TOC(1);
     
+    BPROF_TIC();
     int max_info = thrust::reduce(gpu_thrust_par, mdata.dev_info_array, mdata.dev_info_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
     printf("Factor info = %d max_info = %d\n", info, max_info);
+    BPROF_TOC(2);
 
     // Upper panel batched triangular solves
+    BPROF_TIC();
     marshallBatchedTRSMUData<T>(ws, k_st, k_end);
+    BPROF_TOC(0);
+    if (prof) prof_maxUpanel = thrust::reduce(gpu_thrust_par, mdata.dev_panel_dim_array, mdata.dev_panel_dim_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
 
+    BPROF_TIC();
     magmablas_trsm_vbatched_nocheck(
         MagmaLeft, MagmaLower, MagmaNoTrans, MagmaUnit, 
         mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, t_one, 
@@ -604,10 +640,15 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, 
         mdata.batchsize, ws->magma_queue
     );
+    BPROF_TOC(3);
 
     // Lower panel batched triangular solves
+    BPROF_TIC();
     marshallBatchedTRSMLData<T>(ws, k_st, k_end);
+    BPROF_TOC(0);
+    if (prof) prof_maxLpanel = thrust::reduce(gpu_thrust_par, mdata.dev_panel_dim_array, mdata.dev_panel_dim_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
 
+    BPROF_TIC();
     magmablas_trsm_vbatched_nocheck(
         MagmaRight, MagmaUpper, MagmaNoTrans, MagmaNonUnit, 
         mdata.dev_panel_dim_array, mdata.dev_diag_dim_array, t_one, 
@@ -615,16 +656,21 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, 
         mdata.batchsize, ws->magma_queue
     );
+    BPROF_TOC(4);
 
     // Batched schur complement updates 
+    BPROF_TIC();
     marshallBatchedSCUData<T>(ws, k_st, k_end);
+    BPROF_TOC(0);
     
+    BPROF_TIC();
     magmablas_gemm_vbatched_max_nocheck (
         MagmaNoTrans, MagmaNoTrans, sc_mdata.dev_m_array, sc_mdata.dev_n_array, sc_mdata.dev_k_array,
         t_one, sc_mdata.dev_A_ptrs, sc_mdata.dev_lda_array, sc_mdata.dev_B_ptrs, sc_mdata.dev_ldb_array,
         t_zero, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, sc_mdata.batchsize,
         sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, ws->magma_queue
     );
+    BPROF_TOC(5);
     
     if (getenv("SLU_DEBUG_BATCH_SCU"))
     {
@@ -636,6 +682,7 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         fflush(stdout);
     }
 
+    BPROF_TIC();
     scatterGPU_batchDriver_flat<T>(
         k_st, ws->maxSuperSize, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array,
         d_localLU.Unzval_br_new_ptr, d_localLU.Ucolind_br_ptr, d_localLU.Lnzval_bc_ptr, 
@@ -643,6 +690,17 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         ws->perm_c_supno, ws->xsup, ws->ldt, sc_mdata.max_ilen, sc_mdata.max_jlen, 
         sc_mdata.batchsize, ws->stream
     );
+    BPROF_TOC(6);
+
+    if (prof) {
+        double tl = 0.0;
+        for (int i = 0; i < SLU_BPROF_NSTAGE; ++i) { tl += tp[i]; slu_bprof_tot[i] += tp[i]; }
+        printf("[bprof] level k_st %lld nsup %lld | maxdiag %lld maxLpanel %lld maxUpanel %lld gemm m/n/k %lld/%lld/%lld scatter grid %lldx%lldx%lld x%lld thr | ms: marshal %.3f getrf %.3f info %.3f trsmU %.3f trsmL %.3f gemm %.3f scatter %.3f | level %.3f\n",
+               (long long)k_st, (long long)mdata.batchsize, prof_maxdiag, prof_maxLpanel, prof_maxUpanel,
+               (long long)sc_mdata.max_m, (long long)sc_mdata.max_n, (long long)sc_mdata.max_k,
+               (long long)sc_mdata.max_ilen, (long long)sc_mdata.max_jlen, (long long)sc_mdata.batchsize, (long long)ws->ldt,
+               1e3*tp[0], 1e3*tp[1], 1e3*tp[2], 1e3*tp[3], 1e3*tp[4], 1e3*tp[5], 1e3*tp[6], 1e3*tl);
+    }
 #endif
 }
 
@@ -680,8 +738,24 @@ int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sfores
         fflush(stdout);
     }
 
+    if (slu_bprof_on()) for (int i = 0; i < SLU_BPROF_NSTAGE; ++i) slu_bprof_tot[i] = 0.0;
+    double bprof_t0 = SuperLU_timer_();
+
     for(int_t topoLvl = 0; topoLvl < maxTopoLevel; topoLvl++)
         TFactBatchSolve<T>(ws, eTreeTopLims[topoLvl], eTreeTopLims[topoLvl + 1]);
+
+    /* The last scatter kernel is asynchronous; without this the caller's
+       timer stops before the factorization has finished on the device. */
+    if (getenv("SLU_BATCH_SYNC") || slu_bprof_on()) gpuErrchk(gpuDeviceSynchronize());
+    if (getenv("SLU_BATCH_SYNC") || slu_bprof_on())
+        printf("[bsync] synchronized batch factorization wall %.3f ms\n", 1e3*(SuperLU_timer_() - bprof_t0));
+    if (slu_bprof_on()) {
+        double *t = slu_bprof_tot;
+        printf("[bprof] TOTAL levels %lld nsup %lld | ms: marshal %.3f getrf %.3f info %.3f trsmU %.3f trsmL %.3f gemm %.3f scatter %.3f | sum %.3f\n",
+               (long long)maxTopoLevel, (long long)nnodes, 1e3*t[0], 1e3*t[1], 1e3*t[2], 1e3*t[3], 1e3*t[4], 1e3*t[5], 1e3*t[6],
+               1e3*(t[0]+t[1]+t[2]+t[3]+t[4]+t[5]+t[6]));
+        fflush(stdout);
+    }
 
     return 0;
 }
@@ -689,7 +763,8 @@ int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sfores
 template<class T>
 TBatchFactorizeWorkspace<T>* getBatchFactorizeWorkspaceT(
     int_t nsupers, int_t ldt, trf3dpartitionType<T> *trf3Dpartition, LUStruct_type<T> *LUstruct, 
-    gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info
+    gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info,
+    int convertU = 1
 )
 {
 #ifdef HAVE_MAGMA
@@ -704,9 +779,29 @@ TBatchFactorizeWorkspace<T>* getBatchFactorizeWorkspaceT(
 
     double tic = SuperLU_timer_();
 
-    pconvert_flatten_skyline2UROWDATA(options, grid, LUstruct, stat, n);
+    /* convertU == 0: the caller already holds U in the row-block layout
+       (device-resident reuse builds it once, with the slot map). */
+    if (convertU) pconvert_flatten_skyline2UROWDATA(options, grid, LUstruct, stat, n);
 
     double convert_time = SuperLU_timer_() - tic;
+
+    if (slu_bprof_on()) {
+        /* supernode size / panel size statistics (host data, after the U conversion) */
+        long long hist[10] = {0}, sumc = 0, maxc = 0, sumlr = 0, maxlr = 0, sumuc = 0, maxuc = 0, nnzLU = 0, nL = 0, nU = 0;
+        for (int_t k = 0; k < nsupers; ++k) {
+            long long c = xsup[k + 1] - xsup[k];
+            int b = 0; while ((1LL << b) < c) ++b;   /* bins 1,2,3-4,5-8,... */
+            hist[b > 9 ? 9 : b]++; sumc += c; if (c > maxc) maxc = c;
+            int_t *Lidx = LUstruct->Llu->Lrowind_bc_ptr[k], *Uidx = LUstruct->Llu->Ucolind_br_ptr[k];
+            if (Lidx) { long long r = Lidx[1]; sumlr += r; if (r > maxlr) maxlr = r; nnzLU += r * c; ++nL; }
+            if (Uidx) { long long u = Uidx[1], ur = Uidx[2]; sumuc += u; if (u > maxuc) maxuc = u; nnzLU += u * ur; ++nU; }
+        }
+        printf("[bprof] supernodes %lld  cols avg %.2f max %lld | L rows avg %.2f max %lld | U cols avg %.2f max %lld (in %lld of them) | dense L+U entries %lld | ldt(maxsup) %lld\n",
+               (long long)nsupers, (double)sumc / nsupers, maxc, nL ? (double)sumlr / nL : 0.0, maxlr,
+               nU ? (double)sumuc / nU : 0.0, maxuc, nU, nnzLU, (long long)ldt);
+        printf("[bprof] supernode size histogram  1:%lld 2:%lld 3-4:%lld 5-8:%lld 9-16:%lld 17-32:%lld 33-64:%lld 65-128:%lld 129-256:%lld >256:%lld\n",
+               hist[0], hist[1], hist[2], hist[3], hist[4], hist[5], hist[6], hist[7], hist[8], hist[9]);
+    }
 
     // TODO: determine if ldt is supposed to be the same as maxSuperSize?
     ws->ldt = ws->maxSuperSize = ldt;
@@ -784,9 +879,169 @@ void copyGPULUDataToHostT(
     printf("\tConvert time = %.4f\n", convert_time);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Device-resident reuse: refill the device L/U values straight from A
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<class T>
+__global__ void scatterAvalsKernel(const T* a, const int64_t* map, int_t nnz, int64_t Lcnt, T* L, T* U)
+{
+    int64_t p = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (p >= nnz) return;
+    int64_t m = map[p];
+    if (m < 0) return;
+    if (m < Lcnt) L[m] = a[p];
+    else          U[m - Lcnt] = a[p];
+}
+
+/* One-time setup on the first (DOFACT) call: device copies of the slot map and
+   of A's values, and pinned registration of the three host buffers that cross
+   the bus every step (A values in, L and U values out). */
+template<class T>
+int batchDevResSetupT(TBatchFactorizeWorkspace<T>* ws, LUStruct_type<T> *LUstruct, T *avals, int_t nnz, const int64_t *map_host)
+{
+    LocalLU_type<T>* Llu = LUstruct->Llu;
+    ws->nnz_a = nnz;
+    gpuErrchk(gpuMalloc(&ws->d_avals, sizeof(T) * nnz));
+    gpuErrchk(gpuMalloc(&ws->d_map, sizeof(int64_t) * nnz));
+    gpuErrchk(gpuMemcpy(ws->d_map, map_host, sizeof(int64_t) * nnz, gpuMemcpyHostToDevice));
+#ifdef HAVE_CUDA
+    void  *ptrs[3]  = { avals, Llu->Lnzval_bc_dat, Llu->Unzval_br_new_dat };
+    size_t sizes[3] = { sizeof(T) * (size_t) nnz, sizeof(T) * (size_t) Llu->Lnzval_bc_cnt, sizeof(T) * (size_t) Llu->Unzval_br_new_cnt };
+    for (int i = 0; i < 3; ++i) {
+        if (cudaHostRegister(ptrs[i], sizes[i], cudaHostRegisterDefault) == cudaSuccess) ws->pinned[i] = ptrs[i];
+        else { cudaGetLastError(); printf("[devres] cudaHostRegister of buffer %d failed; using pageable copies\n", i); }
+    }
+#endif
+    return 0;
+}
+
+/* Every call: upload A's values, zero the device factors, scatter. */
+template<class T>
+int batchDevResRefillT(TBatchFactorizeWorkspace<T>* ws, const T *avals, int_t nnz)
+{
+    LocalLU_type<T>& d = ws->d_localLU;
+    if (nnz != ws->nnz_a) { fprintf(stderr, "batchDevResRefill: nnz changed (%lld -> %lld)\n", (long long) ws->nnz_a, (long long) nnz); return -1; }
+    double t0 = SuperLU_timer_();
+    gpuErrchk(gpuMemcpyAsync(ws->d_avals, avals, sizeof(T) * nnz, gpuMemcpyHostToDevice, ws->stream));
+    gpuErrchk(gpuStreamSynchronize(ws->stream));
+    double t1 = SuperLU_timer_();
+    gpuErrchk(gpuMemsetAsync(d.Lnzval_bc_dat, 0, sizeof(T) * d.Lnzval_bc_cnt, ws->stream));
+    gpuErrchk(gpuMemsetAsync(d.Unzval_br_new_dat, 0, sizeof(T) * d.Unzval_br_new_cnt, ws->stream));
+    int nthreads = 256;
+    int64_t nblocks = ((int64_t) nnz + nthreads - 1) / nthreads;
+    scatterAvalsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(ws->d_avals, ws->d_map, nnz, (int64_t) d.Lnzval_bc_cnt, d.Lnzval_bc_dat, d.Unzval_br_new_dat);
+    gpuErrchk(gpuGetLastError());
+    gpuErrchk(gpuStreamSynchronize(ws->stream));
+    double t2 = SuperLU_timer_();
+    printf("\tDevRes refill time = %.4f (A upload %.4f, zero+scatter %.4f)\n", t2 - t0, t1 - t0, t2 - t1);
+    return 0;
+}
+
+template<class T>
+__global__ void gatherUvalsKernel(const T* src, const int64_t* map, int64_t n, T* dst)
+{
+    int64_t j = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (j >= n) return;
+    int64_t m = map[j];
+    dst[j] = (m < 0) ? T(0) : src[m];
+}
+
+/* Inverse of every diagonal block, one thread block per local block column:
+   Linv = inv(unit lower part), Uinv = inv(upper part), both knsupc x knsupc
+   column-major, by column-wise substitution (what pdCompute_Diag_Inv gets
+   from dtrtri).  Thread j owns column j of both inverses. */
+template<class T>
+__global__ void diagInvKernel(int_t nsupers, int npcol, int mycol, const int_t* xsup,
+                              const long int* Lrowind_off, const int_t* Lrowind_dat,
+                              const long int* Lnzval_off, const T* Lnzval,
+                              const long int* Linv_off, T* Linv, const long int* Uinv_off, T* Uinv)
+{
+    int_t lk = blockIdx.x;
+    int_t k = (int_t) lk * npcol + mycol;
+    if (k >= nsupers) return;
+    if (Lrowind_off[lk] < 0 || Linv_off[lk] < 0 || Uinv_off[lk] < 0 || Lnzval_off[lk] < 0) return;
+    int n = (int)(xsup[k + 1] - xsup[k]);
+    int nsupr = (int) Lrowind_dat[Lrowind_off[lk] + 1];
+    const T* L = Lnzval + Lnzval_off[lk];
+    T* Li = Linv + Linv_off[lk];
+    T* Ui = Uinv + Uinv_off[lk];
+    for (int j = threadIdx.x; j < n; j += blockDim.x) {
+        /* column j of inv(L), L unit lower */
+        for (int i = 0; i < j; ++i) Li[j * n + i] = T(0);
+        Li[j * n + j] = T(1);
+        for (int i = j + 1; i < n; ++i) {
+            T s = T(0);
+            for (int l = j; l < i; ++l) s += L[l * nsupr + i] * Li[j * n + l];
+            Li[j * n + i] = -s;
+        }
+        /* column j of inv(U), U upper non-unit */
+        for (int i = j + 1; i < n; ++i) Ui[j * n + i] = T(0);
+        for (int i = j; i >= 0; --i) {
+            T s = (i == j) ? T(1) : T(0);
+            for (int l = i + 1; l <= j; ++l) s -= L[l * nsupr + i] * Ui[j * n + l];
+            Ui[j * n + i] = s / L[i * nsupr + i];
+        }
+    }
+}
+
+template<class T>
+int batchDevResSolveSetupT(TBatchFactorizeWorkspace<T>* ws, const int64_t *umap_host, int64_t ucnt)
+{
+    ws->ucnt = ucnt;
+    gpuErrchk(gpuMalloc(&ws->d_umap, sizeof(int64_t) * ucnt));
+    gpuErrchk(gpuMemcpy(ws->d_umap, umap_host, sizeof(int64_t) * ucnt, gpuMemcpyHostToDevice));
+    return 0;
+}
+
+/* Reuse step: hand the device factors to the GPU triangular solve without
+   touching the host: L values by device copy, U values gathered into the
+   solve's column-wise layout, diagonal inverses computed on the device. */
+template<class T>
+int batchDevResSolveRefreshT(TBatchFactorizeWorkspace<T>* ws, LUStruct_type<T> *LUstruct, int_t nsupers, int npcol, int mycol)
+{
+    LocalLU_type<T>* Llu = LUstruct->Llu;
+    LocalLU_type<T>& d = ws->d_localLU;
+    if (!ws->d_umap) return -1;
+    double t0 = SuperLU_timer_();
+    gpuErrchk(gpuMemcpyAsync(Llu->d_Lnzval_bc_dat, d.Lnzval_bc_dat, sizeof(T) * d.Lnzval_bc_cnt, gpuMemcpyDeviceToDevice, ws->stream));
+    gpuErrchk(gpuStreamSynchronize(ws->stream));
+    double t1 = SuperLU_timer_();
+    {
+        int nthreads = 256;
+        int64_t nblocks = (ws->ucnt + nthreads - 1) / nthreads;
+        gatherUvalsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(d.Unzval_br_new_dat, ws->d_umap, ws->ucnt, Llu->d_Unzval_bc_dat);
+        gpuErrchk(gpuGetLastError());
+        gpuErrchk(gpuStreamSynchronize(ws->stream));
+    }
+    double t2 = SuperLU_timer_();
+    {
+        int_t nsupers_j = (nsupers + npcol - 1) / npcol;
+        diagInvKernel<T><<<(unsigned) nsupers_j, 32, 0, ws->stream>>>(nsupers, npcol, mycol, Llu->d_xsup,
+            Llu->d_Lrowind_bc_offset, Llu->d_Lrowind_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Lnzval_bc_dat,
+            Llu->d_Linv_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Uinv_bc_offset, Llu->d_Uinv_bc_dat);
+        gpuErrchk(gpuGetLastError());
+        gpuErrchk(gpuStreamSynchronize(ws->stream));
+    }
+    double t3 = SuperLU_timer_();
+    printf("\tDevRes solve refresh time = %.4f (L copy %.4f, U gather %.4f, diag inv %.4f)\n", t3 - t0, t1 - t0, t2 - t1, t3 - t2);
+    return 0;
+}
+
+template<class T>
+void batchDevResFreeT(TBatchFactorizeWorkspace<T>* ws)
+{
+#ifdef HAVE_CUDA
+    for (int i = 0; i < 3; ++i) if (ws->pinned[i]) { cudaHostUnregister(ws->pinned[i]); ws->pinned[i] = nullptr; }
+#endif
+    if (ws->d_avals) { gpuErrchk(gpuFree(ws->d_avals)); ws->d_avals = nullptr; }
+    if (ws->d_map)   { gpuErrchk(gpuFree(ws->d_map));   ws->d_map = nullptr; }
+    if (ws->d_umap)  { gpuErrchk(gpuFree(ws->d_umap));  ws->d_umap = nullptr; }
+}
+
 template<class T>
 void freeBatchFactorizeWorkspaceT(TBatchFactorizeWorkspace<T>* ws)
 {
+    batchDevResFreeT<T>(ws);
     gpuErrchk( gpuFree(ws->d_lblock_gid_dat) );
     gpuErrchk( gpuFree(ws->d_lblock_gid_offsets) );
     gpuErrchk( gpuFree(ws->d_lblock_gid_ptrs) );
@@ -882,6 +1137,44 @@ void dcopyGPULUDataToHost(
 void dfreeBatchFactorizeWorkspace(dBatchFactorizeWorkspace* ws)
 { 
     freeBatchFactorizeWorkspaceT<double>(ws); 
+}
+
+dBatchFactorizeWorkspace* dgetBatchFactorizeWorkspaceEx(
+    int_t nsupers, int_t ldt, dtrf3Dpartition_t *trf3Dpartition, dLUstruct_t *LUstruct, 
+    gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info, int convertU
+)
+{ 
+    return getBatchFactorizeWorkspaceT<double>(nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info, convertU); 
+}
+
+int dbatchDevResSetup(dBatchFactorizeWorkspace* ws, dLUstruct_t *LUstruct, double *avals, int_t nnz, const int64_t *map_host)
+{ 
+    return batchDevResSetupT<double>(ws, LUstruct, avals, nnz, map_host); 
+}
+
+int dbatchDevResRefill(dBatchFactorizeWorkspace* ws, const double *avals, int_t nnz)
+{ 
+    return batchDevResRefillT<double>(ws, avals, nnz); 
+}
+
+void dbatchDevResFree(dBatchFactorizeWorkspace* ws)
+{ 
+    freeBatchFactorizeWorkspaceT<double>(ws);   /* unregisters the pinned host buffers first */
+}
+
+int dbatchDevResSolveSetup(dBatchFactorizeWorkspace* ws, const int64_t *umap_host, int64_t ucnt)
+{ 
+    return batchDevResSolveSetupT<double>(ws, umap_host, ucnt); 
+}
+
+int dbatchDevResSolveReady(dBatchFactorizeWorkspace* ws)
+{ 
+    return ws && ws->d_umap != nullptr; 
+}
+
+int dbatchDevResSolveRefresh(dBatchFactorizeWorkspace* ws, dLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol)
+{ 
+    return batchDevResSolveRefreshT<double>(ws, LUstruct, nsupers, npcol, mycol); 
 }
 
 //doublecomplex 

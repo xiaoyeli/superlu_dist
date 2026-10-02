@@ -151,6 +151,21 @@ struct TBatchFactorizeWorkspace {
     int_t *d_lblock_start_dat, **d_lblock_start_ptrs;
     int64_t *d_lblock_gid_offsets, *d_lblock_start_offsets;
     int64_t total_l_blocks, total_start_size;
+
+    // Device-resident reuse: values of A on the device, map from each nonzero
+    // of A to its slot in the flat L (offset < Lnzval_bc_cnt) or U
+    // (Lnzval_bc_cnt + offset) value arrays, and the host buffers pinned for
+    // the per-step transfers.
+    T *d_avals = nullptr;
+    int64_t *d_map = nullptr;
+    int_t nnz_a = 0;
+    void *pinned[3] = {nullptr, nullptr, nullptr};
+
+    // Stage 3: map from each entry of the solve's column-wise U value array
+    // (Unzval_bc_dat) to its source in the factorization's row-wise device U
+    // (Unzval_br_new_dat); -1 for entries with no source.
+    int64_t *d_umap = nullptr;
+    int64_t ucnt = 0;
 };
 
 #endif 

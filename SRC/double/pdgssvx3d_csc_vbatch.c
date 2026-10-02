@@ -32,6 +32,12 @@ static void dvbatch_ctx_release_factors(dvbatch_ctx_t *ctx)
 {
     if ( !ctx->initialized ) return;
 
+#ifdef HAVE_MAGMA
+    if ( ctx->LUstruct.batch_dev ) {   /* unpins the host L/U/A buffers before they are freed */
+	dbatchDevResFree((dBatchFactorize_Handle) ctx->LUstruct.batch_dev);
+	ctx->LUstruct.batch_dev = NULL;
+    }
+#endif
     dDestroy_LU(ctx->n_big, &(ctx->grid.grid2d), &(ctx->LUstruct));
     dSolveFinalize(&(ctx->options_big), &(ctx->SOLVEstruct));
     dScalePermstructFree(&(ctx->ScalePermstruct));

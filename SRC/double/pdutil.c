@@ -418,6 +418,7 @@ void dLUstructInit(const int_t n, dLUstruct_t *LUstruct)
     LUstruct->Llu->inv = 0;
     LUstruct->dt = 'd';
     LUstruct->trf3Dpart = NULL;
+    LUstruct->batch_dev = NULL;
 }
 
 /*! \brief Deallocate LUstruct */

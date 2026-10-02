@@ -343,6 +343,8 @@ typedef struct {
     dLocalLU_t *Llu;
     dtrf3Dpartition_t *trf3Dpart;
     char dt;
+    void *batch_dev;   /* device-resident batch factorization state (see
+                          dbatchDevRes* in batch_factorize.cu); NULL if unused */
 } dLUstruct_t;
 
 

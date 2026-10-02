@@ -133,6 +133,22 @@ typedef struct cLUstruct_t cLUstruct_t;
 
     extern void dfreeBatchFactorizeWorkspace(dBatchFactorize_Handle ws);
 
+    /* Device-resident batch factorization (pattern-reuse steps keep the GPU
+       workspace and refill the device L/U directly from the values of A). */
+    extern dBatchFactorize_Handle dgetBatchFactorizeWorkspaceEx(
+        int_t nsupers, int_t ldt, dtrf3Dpartition_t *trf3Dpartition, dLUstruct_t *LUstruct,
+        gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info,
+        int convertU
+    );
+    extern int dbatchDevResSetup(dBatchFactorize_Handle ws, dLUstruct_t *LUstruct,
+                                 double *avals, int_t nnz, const int64_t *map_host);
+    extern int dbatchDevResRefill(dBatchFactorize_Handle ws, const double *avals, int_t nnz);
+    extern void dbatchDevResFree(dBatchFactorize_Handle ws);
+    /* Stage 3: feed the GPU triangular solve from the device factors. */
+    extern int dbatchDevResSolveSetup(dBatchFactorize_Handle ws, const int64_t *umap_host, int64_t ucnt);
+    extern int dbatchDevResSolveReady(dBatchFactorize_Handle ws);
+    extern int dbatchDevResSolveRefresh(dBatchFactorize_Handle ws, dLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol);
+
     // Double complex
     typedef struct zBatchFactorizeWorkspace* zBatchFactorize_Handle;
 
