@@ -703,7 +703,16 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
        B2d is allocated;
        B is then aliased to B2d for the following 2D solve;
     */
-    dGatherNRformat_loc3d_allgrid(options, Fact, (NRformat_loc *)A->Store,
+    double tph_in = SuperLU_timer_();
+    /* Batched pattern-reuse step whose device L/U the wrapper has already
+       filled from the caller's values: A (the stacked host copy) is stale
+       and must not be read, so only B is gathered (as for a FACTORED call). */
+    int fastA = 0;
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    fastA = (Fact == SamePattern_SameRowPerm && LUstruct->batch_dev != NULL &&
+             dbatchDevResAReady((dBatchFactorize_Handle) LUstruct->batch_dev));
+#endif
+    dGatherNRformat_loc3d_allgrid(options, fastA ? FACTORED : Fact, (NRformat_loc *)A->Store,
 				     B, ldb, nrhs, grid3d, &A3d);
 
     B = (double *)A3d->B2d; /* B is now pointing to B2d,
@@ -739,14 +748,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     /* The following code now works on all grids */
     Astore = (NRformat_loc *)A->Store;
     double tph[8]; for (int ii = 0; ii < 8; ++ii) tph[ii] = 0.0; tph[0] = SuperLU_timer_();
-    /* Batched pattern-reuse step whose device L/U the wrapper has already
-       filled from the caller's values: A (the stacked host copy) is stale
-       and must not be read. */
-    int fastA = 0;
-#if defined(GPU_ACC) && defined(HAVE_MAGMA)
-    fastA = (Fact == SamePattern_SameRowPerm && LUstruct->batch_dev != NULL &&
-             dbatchDevResAReady((dBatchFactorize_Handle) LUstruct->batch_dev));
-#endif
     nnz_loc = Astore->nnz_loc;
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
@@ -1610,8 +1611,15 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (options->GPURES == YES) {
 #ifdef GPU_ACC
 		    ldx = ldb;
-		    checkGPU(gpuMalloc((void**)&X,
-				       sizeof(double) * (size_t)ldx * (size_t)nrhs));
+		    {   /* device X kept across solves */
+			size_t need = (size_t)ldx * (size_t)nrhs;
+			if ( SOLVEstruct->d_Xgpures == NULL || SOLVEstruct->d_Xgpures_len < need ) {
+			    if ( SOLVEstruct->d_Xgpures ) checkGPU(gpuFree(SOLVEstruct->d_Xgpures));
+			    checkGPU(gpuMalloc((void**)&SOLVEstruct->d_Xgpures, sizeof(double) * need));
+			    SOLVEstruct->d_Xgpures_len = need;
+			}
+			X = SOLVEstruct->d_Xgpures;
+		    }
 		    dscale_and_copy_rhs_wrap(B, ldb, X, ldx, m_loc, nrhs,
 					     fst_row, notran, rowequ, colequ,
 					     ScalePermstruct);
@@ -2059,7 +2067,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	if (grid3d->zscp.Iam == 0 || Solve3D) {
 	    if (options->GPURES == YES) {
 #ifdef GPU_ACC
-		checkGPU(gpuFree(X));
+		/* X is SOLVEstruct->d_Xgpures, released with the solve structure */
 #else
 		ABORT("GPURES requires GPU_ACC in pdgssvx3d().");
 #endif
@@ -2125,8 +2133,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	A->Store = Astore3d; // restore Astore to 3D
 
     tph[7] = SuperLU_timer_();
-    printf("[pdgssvx3d] phases ms: entry->colperm %.2f  colind-perm %.2f  dist+factor %.2f  stats-print %.2f  solve-setup %.2f  solve-block %.2f  total %.2f\n",
-           1e3*(tph[1]-tph[0]), 1e3*(tph[2]-tph[1]), 1e3*(tph[3]-tph[2]), 1e3*(tph[5]-tph[4]), 1e3*(tph[6]-tph[5]), 1e3*(tph[7]-tph[6]), 1e3*(tph[7]-tph[0]));
+    printf("[pdgssvx3d] phases ms: gather %.2f  entry->colperm %.2f  colind-perm %.2f  dist+factor %.2f  stats-print %.2f  solve-setup %.2f  solve-block %.2f  total %.2f\n",
+           1e3*(tph[0]-tph_in), 1e3*(tph[1]-tph[0]), 1e3*(tph[2]-tph[1]), 1e3*(tph[3]-tph[2]), 1e3*(tph[5]-tph[4]), 1e3*(tph[6]-tph[5]), 1e3*(tph[7]-tph[6]), 1e3*(tph[7]-tph_in));
 #if (DEBUGlevel >= 1)
 	CHECK_MALLOC(iam, "Exit pdgssvx3d()");
 #endif

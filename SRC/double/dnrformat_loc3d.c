@@ -69,6 +69,7 @@ void dGatherNRformat_loc3d
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+            A3d->B2d = NULL; A3d->B2d_dev_bytes = 0;
 	A3d->num_procs_to_send = SLU_EMPTY; // No X(2d) -> X(3d) comm. schedule yet
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
 
@@ -367,6 +368,7 @@ void dGatherNRformat_loc3d_allgrid
 
         if (Fact == DOFACT) {
             A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+            A3d->B2d = NULL; A3d->B2d_dev_bytes = 0;
             A3d->num_procs_to_send = SLU_EMPTY;
             A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
 
@@ -530,6 +532,7 @@ void dGatherNRformat_loc3d_allgrid
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+            A3d->B2d = NULL; A3d->B2d_dev_bytes = 0;
 	A3d->num_procs_to_send = SLU_EMPTY; // No X(2d) -> X(3d) comm. schedule yet
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
 
@@ -709,8 +712,12 @@ void dGatherNRformat_loc3d_allgrid
 	    /* One process layer: the 2D and 3D row partitions coincide, so
 	       B2d is a device copy of B (no MPI on device memory; the matching
 	       shortcut is in dScatter_B3d). */
-	    checkGPU(gpuMalloc((void**)&A3d->B2d,
-			       sizeof(double) * (size_t)A2d->m_loc * (size_t)nrhs));
+	    size_t bytes = sizeof(double) * (size_t)A2d->m_loc * (size_t)nrhs;
+	    if ( A3d->B2d == NULL || A3d->B2d_dev_bytes < bytes ) {
+		if ( A3d->B2d ) checkGPU(gpuFree(A3d->B2d));
+		checkGPU(gpuMalloc((void**)&A3d->B2d, bytes));
+		A3d->B2d_dev_bytes = bytes;   /* kept across solves, freed with A3d */
+	    }
 	    ddevice_matcopy_wrap(A->m_loc, nrhs, (double*)A3d->B2d, A2d->m_loc, B, ldb);
 #else
 	    ABORT("GPURES requires GPU_ACC in dGatherNRformat_loc3d_allgrid().");
@@ -818,12 +825,13 @@ int dScatter_B3d(superlu_dist_options_t *options,
         ddevice_matcopy_wrap(A3d->m_loc, nrhs,
                                   B, ldb,
                                   B2d, A2d->m_loc);
-        checkGPU(gpuFree(B2d));
-		if ( rankorder == 0 ) { // these are not used, but SUPERLU_FREE() will be called in xFreeNRformat_loc3d()
+        /* B2d stays allocated for the next solve (see the gather) */
+		if ( rankorder == 0 && A3d->num_procs_to_send == SLU_EMPTY ) { // these are not used, but SUPERLU_FREE() will be called in xFreeNRformat_loc3d()
 	     A3d->procs_to_send_list = SUPERLU_MALLOC(1 * sizeof(int));
 	     A3d->send_count_list = SUPERLU_MALLOC(1 * sizeof(int));
 	     A3d->procs_recv_from_list = SUPERLU_MALLOC(1 * sizeof(int));
 	     A3d->recv_count_list = SUPERLU_MALLOC(1 * sizeof(int));
+	     A3d->num_procs_to_send = 0;
 		}
         return 0;
 #else

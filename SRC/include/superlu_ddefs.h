@@ -268,6 +268,9 @@ typedef struct {
     int   *d_levlist;
     int_t *levlims;
     int    nlevels;
+    int   *levwarp;      /* per level: 1 = warp-per-supernode kernel (nrhs == 1) */
+    double acc_solve_flops[2];   /* L/U solve flop counts of this pattern, for the stats */
+    int    acc_solve_flops_nrhs; /* nrhs they were computed for (-1: not yet) */
 
 #ifdef GPU_ACC
     /* The following variables are used in GPU trisolve */
@@ -406,6 +409,8 @@ typedef struct {
     #ifdef GPU_ACC
     double *d_lsum, *d_lsum_save;      /* used for device lsum*/
     double *d_x;         /* used for device solution vector*/
+    double *d_Xgpures;   /* GPURES: scaled RHS / permuted solution, kept across solves */
+    size_t d_Xgpures_len;
     int  *d_fmod_save, *d_fmod;         /* used for device fmod vector*/
     int  *d_bmod_save, *d_bmod;         /* used for device bmod vector*/
 
@@ -799,7 +804,7 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 #ifdef GPU_ACC
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int);
 
-extern void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev);
+extern void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwarp);
 extern void dlsum_fmod_inv_gpu_wrap(int, int, int, int, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *,
 int_t , uint64_t* ,uint64_t* ,double* ,double* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int);
 

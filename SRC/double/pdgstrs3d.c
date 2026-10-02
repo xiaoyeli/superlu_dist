@@ -1340,7 +1340,8 @@ int dtrs_compute_communication_structure(superlu_dist_options_t *options, int_t 
             }
         }
     }
-    Llu->d_levlist = NULL; Llu->levlims = NULL; Llu->nlevels = 0;
+    Llu->d_levlist = NULL; Llu->levlims = NULL; Llu->nlevels = 0; Llu->levwarp = NULL;
+    Llu->acc_solve_flops_nrhs = -1;
     // printf("Llu->nbcol_masked: %10d\n",Llu->nbcol_masked);
     // fflush(stdout);
 
@@ -3361,7 +3362,7 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
 if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
 }
-	int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
+	int  nfrecvx = (procs == 1) ? 0 : getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
 
     if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
@@ -3625,7 +3626,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     }else{
         nblock_loc=k;
     }
-    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0);
+    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0, Llu->levwarp);
 	int nthx, nthy; slu_solve_block_dims(&nthx, &nthy);
 	dlsum_fmod_inv_gpu_wrap(nblock_loc,nlb,nthx,nthy,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked, d_grid,
                          maxrecvsz,
@@ -3641,7 +3642,12 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	if ( !iam) printf(".. Grid %3d: around L kernel time\t%8.4f\n", myGrid, t);
 #endif
 
-	stat_loc[0]->ops[SOLVE] += d_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+	if ( Llu->acc_solve_flops_nrhs != nrhs ) {   /* depends only on the pattern */
+	    Llu->acc_solve_flops[0] = d_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+	    Llu->acc_solve_flops[1] = d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+	    Llu->acc_solve_flops_nrhs = nrhs;
+	}
+	stat_loc[0]->ops[SOLVE] += Llu->acc_solve_flops[0];
     } else
 
 #endif /* match #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) */
@@ -5502,7 +5508,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, xsup, Llu->Ufstnz_br_ptr, grid);
 }
-    nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
+    nbrecvx= (procs == 1) ? 0 : getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
 
 
 		/* Save the count to be altered so it can be used by
@@ -5736,7 +5742,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
     #endif
     }
 
-    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0);
+    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0, Llu->levwarp);
     int nthx, nthy; slu_solve_block_dims(&nthx, &nthy);
     dlsum_bmod_inv_gpu_wrap(options, k,nlb,nthx,nthy,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
                         Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
@@ -5765,7 +5771,12 @@ if (get_acc_solve()){  /* GPU trisolve*/
 #endif
 
 
-	stat_loc[0]->ops[SOLVE] += d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+	if ( Llu->acc_solve_flops_nrhs != nrhs ) {
+	    Llu->acc_solve_flops[0] = d_acc_lsolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+	    Llu->acc_solve_flops[1] = d_acc_usolve_flops(nsupers, nrhs, grid, Glu_persist, Llu);
+	    Llu->acc_solve_flops_nrhs = nrhs;
+	}
+	stat_loc[0]->ops[SOLVE] += Llu->acc_solve_flops[1];
 #endif
 }else{  /* CPU trisolve*/
 
@@ -7686,9 +7697,29 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 	    Llu->levlims = (int_t *) SUPERLU_MALLOC((nlev + 1) * sizeof(int_t));
 	    for (int l = 0; l <= nlev; ++l) Llu->levlims[l] = sf->topoInfo.eTreeTopLims[l];
 	    Llu->nlevels = nlev;
+	    /* A level of many small supernodes is latency-bound: one warp per
+	       supernode (48 registers) keeps 2-8x more supernodes in flight than
+	       one block per supernode (127 registers).  SLU_SOLVE_WARP = minimum
+	       level width for the warp kernel (default 2048; -1 never). */
+	    {
+		const char *e = getenv("SLU_SOLVE_WARP");
+		long minw = e ? atol(e) : 2048;
+		int nwarp = 0;
+		Llu->levwarp = (int *) SUPERLU_MALLOC((nlev > 0 ? nlev : 1) * sizeof(int));
+		for (int l = 0; l < nlev; ++l) {
+		    int_t maxsz = 0;
+		    for (int_t t = Llu->levlims[l]; t < Llu->levlims[l + 1]; ++t) {
+			int_t sz = SuperSize(sf->nodeList[t]);
+			if (sz > maxsz) maxsz = sz;
+		    }
+		    int_t w = Llu->levlims[l + 1] - Llu->levlims[l];
+		    Llu->levwarp[l] = (minw >= 0 && w >= minw && maxsz <= WARP_SIZE);
+		    nwarp += Llu->levwarp[l];
+		}
 #if ( PRNTlevel>=1 )
-	    printf(".. GPU trisolve: level-synchronous launches, %d levels\n", nlev);
+		printf(".. GPU trisolve: level-synchronous launches, %d levels (%d with the warp kernel)\n", nlev, nwarp);
 #endif
+	    }
 	} else {
 	    Llu->nlevels = -1;   /* not applicable; do not try again */
 	}
