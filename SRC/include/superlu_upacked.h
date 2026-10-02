@@ -152,6 +152,7 @@ typedef struct cLUstruct_t cLUstruct_t;
     extern int  dbatchDevResSetupA(dBatchFactorize_Handle ws, int nsys, int_t nnz2, const int64_t *posmap,
                                    const double *scale2, const int *ent_sys, const int *ent_idx, double anorm);
     extern int  dbatchDevResRefillA(dBatchFactorize_Handle ws, int from_device, double **Aptrs, const int *nnzd);
+    extern int  dbatchDevResRescaleA(dBatchFactorize_Handle ws, const double *scale2, int_t nnz2);
     extern int  dbatchDevResAReady(dBatchFactorize_Handle ws);
     extern int  dbatchDevResAPrefilled(dBatchFactorize_Handle ws);   /* returns and clears the flag */
     extern double dbatchDevResAnorm(dBatchFactorize_Handle ws);
@@ -161,6 +162,7 @@ typedef struct cLUstruct_t cLUstruct_t;
     extern int  dvbatch_gpures_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, int nrhs);
     extern int  dvbatch_gpures_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs);
     extern void dvbatch_gpures_free(dvbatch_ctx_t *ctx);
+    extern int  dvbatch_gpures_rescale(dvbatch_ctx_t *ctx, int batchCount, int *m, double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale);
 
     // Double complex
     typedef struct zBatchFactorizeWorkspace* zBatchFactorize_Handle;

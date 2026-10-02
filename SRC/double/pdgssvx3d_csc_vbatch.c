@@ -22,12 +22,167 @@ at the top-level directory.
 #include "superlu_defs.h"
 #include "superlu_upacked.h"
 #include <stdbool.h>
+#include <string.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+/* Threads for the per-system preprocessing loops (equilibration, MC64,
+   scaling refresh), which are independent across systems.  SLU_BATCH_THREADS
+   overrides; the default is the number of cores available to the process,
+   independently of OMP_NUM_THREADS, which governs the solver's own regions. */
+static int dvbatch_prep_threads(void)
+{
+#ifdef _OPENMP
+    static int nt = -1;
+    if (nt < 0) { const char *e = getenv("SLU_BATCH_THREADS"); nt = e ? atoi(e) : omp_get_num_procs(); if (nt < 1) nt = 1; }
+    return nt;
+#else
+    return 1;
+#endif
+}
+
+/* Acceptance of the stored row permutation on a SamePattern call
+   (SLU_BATCH_MC64_TOL, default 0.1): the stored permutation is kept when the
+   product of its diagonal under the new (equilibrated) values is within a
+   factor exp(tol) of the product MC64 finds for them; MC64 is computed
+   either way.  0 requires an identical permutation, which on matrices with
+   many equal entries (MC64 ties) fails for any change of the values: on the
+   IEEE39 EMT matrices a relative change of 1e-6 moves about 40 rows per
+   system while the product changes by 3e-5. */
+static double dvbatch_mc64_tol(void)
+{
+    static double tol = -1.0;
+    if (tol < 0.0) { const char *e = getenv("SLU_BATCH_MC64_TOL"); tol = e ? atof(e) : 0.1; if (tol < 0.0) tol = 0.0; }
+    return tol;
+}
 
 static int dvbatch_devres_on(void)
 {
     static int on = -1;
     if (on < 0) { const char *e = getenv("SLU_BATCH_DEVRES"); on = e ? (atoi(e) != 0) : 1; }
     return on;
+}
+
+/*! \brief Fact = SamePattern on an existing state: recompute the equilibration
+ *  and the row permutation of every matrix from its new values and tell
+ *  whether any row permutation changed.
+ *
+ * Works on scratch copies, in parallel over the batch, so the caller's
+ * matrices are untouched (their values may live on the device).  On return
+ * ReqPtr/CeqPtr/DiagScale hold the new scalings and RpivPtr the new row
+ * permutations, exactly as dequil_vbatch() + dpivot_vbatch() would leave
+ * them.  Returns 1 when every row permutation is the one the state was built
+ * with: the caller can then go on as SamePattern_SameRowPerm and only has to
+ * refresh the scalings.
+ */
+static int dvbatch_sameperm_check(superlu_dist_options_t *options, int batchCount, int *m, int *n,
+				  handle_t *SparseMatrix_handles, double **ReqPtr, double **CeqPtr,
+				  DiagScale_t *DiagScale, int **RpivPtr, int gpures, SuperLUStat_t *stat)
+{
+    int Equil = (options->Equil == YES);
+    int changed = 0, nsys_changed = 0, nrows_changed = 0, nsys_tol = 0;
+    double tol = dvbatch_mc64_tol(), worst_gap = 0.0;
+    double t = SuperLU_timer_();
+    int nthreads = dvbatch_prep_threads();
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 4) num_threads(nthreads) reduction(|:changed) reduction(+:nsys_changed,nrows_changed,nsys_tol) reduction(max:worst_gap)
+#endif
+    for (int d = 0; d < batchCount; ++d) {
+	SuperMatrix *Ad = (SuperMatrix *) SparseMatrix_handles[d];
+	NCformat *Astore = (NCformat *) Ad->Store;
+	int_t nnz = Astore->nnz;
+	int i, j, iinfo;
+
+	/* scratch copy of the values and row indices */
+	double *a = doubleMalloc_dist(nnz);
+	int_t *rowind = intMalloc_dist(nnz);
+	if ( !a || !rowind ) ABORT("Malloc fails for the SamePattern check");
+#ifdef GPU_ACC
+	if ( gpures ) checkGPU(gpuMemcpy(a, Astore->nzval, nnz * sizeof(double), gpuMemcpyDeviceToHost));
+	else
+#endif
+	memcpy(a, Astore->nzval, nnz * sizeof(double));
+	memcpy(rowind, Astore->rowind, nnz * sizeof(int_t));
+	NCformat Sstore = *Astore; Sstore.nzval = a; Sstore.rowind = rowind;
+	SuperMatrix As = *Ad; As.Store = &Sstore;
+
+	/* equilibration, as dequil_vbatch() */
+	double *R = ReqPtr[d], *C = CeqPtr[d];
+	if ( Equil ) {
+	    switch ( DiagScale[d] ) {
+		case NOEQUIL: if ( !R ) R = ReqPtr[d] = doubleMalloc_dist(m[d]); if ( !C ) C = CeqPtr[d] = doubleMalloc_dist(n[d]); break;
+		case ROW:     if ( !C ) C = CeqPtr[d] = doubleMalloc_dist(n[d]); break;
+		case COL:     if ( !R ) R = ReqPtr[d] = doubleMalloc_dist(m[d]); break;
+		default: break;
+	    }
+	    double amax, rowcnd, colcnd; char equed[1];
+	    dgsequ_dist(&As, R, C, &rowcnd, &colcnd, &amax, &iinfo);
+	    if ( iinfo == 0 ) {
+		dlaqgs_dist(&As, R, C, rowcnd, colcnd, amax, equed);
+		DiagScale[d] = (*equed == 'R') ? ROW : (*equed == 'C') ? COL : (*equed == 'B') ? BOTH : NOEQUIL;
+	    }
+	}
+	int rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
+	int colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
+
+	/* row permutation, as dpivot_vbatch() (job 5: MC64 with scaling) */
+	int *perm_r = RpivPtr[d];
+	int *old = int32Malloc_dist(m[d]);
+	memcpy(old, perm_r, m[d] * sizeof(int));
+	if ( options->RowPerm == LargeDiag_MC64 ) {
+	    double *R1 = doubleMalloc_dist(m[d]), *C1 = doubleMalloc_dist(n[d]);
+	    iinfo = dldperm_dist(5, m[d], nnz, Sstore.colptr, rowind, a, perm_r, R1, C1);
+	    if ( iinfo == 0 ) {
+		if ( Equil ) {
+		    for (i = 0; i < m[d]; ++i) R1[i] = exp(R1[i]);
+		    for (i = 0; i < n[d]; ++i) C1[i] = exp(C1[i]);
+		    if ( rowequ ) for (i = 0; i < m[d]; ++i) R[i] *= R1[i]; else for (i = 0; i < m[d]; ++i) R[i] = R1[i];
+		    if ( colequ ) for (i = 0; i < n[d]; ++i) C[i] *= C1[i]; else for (i = 0; i < n[d]; ++i) C[i] = C1[i];
+		    DiagScale[d] = BOTH;
+		}
+	    } else {
+		for (i = 0; i < m[d]; ++i) perm_r[i] = i;
+	    }
+	    SUPERLU_FREE(R1); SUPERLU_FREE(C1);
+	} else if ( options->RowPerm == NOROWPERM ) {
+	    for (i = 0; i < m[d]; ++i) perm_r[i] = i;
+	} /* MY_PERMR: the caller's perm_r stays */
+
+	int ndiff = 0;
+	for (j = 0; j < m[d]; ++j) if ( perm_r[j] != old[j] ) ++ndiff;
+	if ( ndiff ) {
+	    /* MC64 maximizes the product of the diagonal of the equilibrated
+	       matrix (a[] here).  Compare the stored permutation's product with
+	       the new one on the same values; within the tolerance, keep the
+	       stored one (and the new scalings). */
+	    double lnew = 0.0, lold = 0.0;
+	    for (j = 0; j < n[d]; ++j)
+		for (i = Sstore.colptr[j]; i < Sstore.colptr[j + 1]; ++i) {
+		    double v = fabs(a[i]);
+		    if ( perm_r[rowind[i]] == j ) lnew += (v > 0.0) ? log(v) : -700.0;
+		    if ( old[rowind[i]] == j )    lold += (v > 0.0) ? log(v) : -700.0;
+		}
+	    double gap = lnew - lold;   /* >= 0 up to rounding */
+	    if ( gap > worst_gap ) worst_gap = gap;
+	    if ( gap <= tol ) { memcpy(perm_r, old, m[d] * sizeof(int)); ++nsys_tol; }
+	    else { changed |= 1; ++nsys_changed; nrows_changed += ndiff; }
+	}
+	SUPERLU_FREE(old); SUPERLU_FREE(a); SUPERLU_FREE(rowind);
+    }
+
+    stat->utime[EQUIL] = 0.0;
+    stat->utime[ROWPERM] = SuperLU_timer_() - t;
+    stat->utime[COLPERM] = 0.0;
+#if ( PRNTlevel >= 1 )
+    printf("[vbatch] SamePattern: scaling + MC64 of %d systems in %.1f ms (%d threads): row permutations %s"
+	   " (%d systems / %d rows differ beyond tol %g; %d systems kept within tol; largest log-product gap %.3g)\n",
+	   batchCount, 1e3 * stat->utime[ROWPERM], nthreads,
+	   changed ? "CHANGED, rebuilding" : "unchanged, same-pattern path",
+	   nsys_changed, nrows_changed, tol, nsys_tol, worst_gap);
+#endif
+    return !changed;
 }
 
 /*! \brief Drop the factorization but keep the internal process grid, so a new
@@ -132,9 +287,12 @@ void dvbatch_free(handle_t *F)
  *       A later call on the same sparsity pattern whose values changed
  *       enough to pivot again.  Reuses only the column permutation of each
  *       matrix (CpivPtr).  Equilibration and the row permutation (MC64) are
- *       recomputed from the new values; since the row permutation may change,
- *       the stacked system, its symbolic factorization and its distributed
- *       L/U are rebuilt, as on a DOFACT call.
+ *       recomputed from the new values, in parallel over the batch.  When
+ *       every stored row permutation is still as good as the new one within
+ *       SLU_BATCH_MC64_TOL (see dvbatch_mc64_tol), the call proceeds as
+ *       SamePattern_SameRowPerm with the new scalings; otherwise the stacked
+ *       system, its symbolic factorization and its distributed L/U are
+ *       rebuilt, as on a DOFACT call.
  *
  * No other Fact value is supported; DOFACT must come first.
  *
@@ -213,6 +371,8 @@ pdgssvx3d_csc_vbatch(
     *info = 0;
     SuperMatrix *A0 = (SuperMatrix *) SparseMatrix_handles[0];
     fact_t Fact = options->Fact;
+    double t_entry_all = SuperLU_timer_();
+    int sameperm = 0;   /* SamePattern call whose row permutations came out unchanged */
 
     /* F carries the state that repeated same-pattern solves reuse.
        F == NULL          : single-shot, everything is released before return.
@@ -272,6 +432,47 @@ pdgssvx3d_csc_vbatch(
     CHECK_MALLOC(grid3d->iam, "Enter pdgssvx3d_csc_vbatch()");
 #endif
 
+    int gpures = (options->GPURES == YES);   /* RHSptr[], Xptr[] and the nzval of every handle are device pointers */
+
+    /* SamePattern on a state whose device maps are ready: if the new values
+       leave every row permutation unchanged, only the scalings differ from a
+       SamePattern_SameRowPerm call, so take that path with refreshed
+       scalings instead of rebuilding everything. */
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    if ( Fact == SamePattern && ctx->LUstruct.batch_dev &&
+	 dbatchDevResAReady((dBatchFactorize_Handle) ctx->LUstruct.batch_dev) ) {
+	if ( dvbatch_sameperm_check(options, batchCount, m, n, SparseMatrix_handles,
+				    ReqPtr, CeqPtr, DiagScale, RpivPtr, gpures, stat) ) {
+	    /* per-entry scaling of the A-side map: R[row] * C[col] of each entry */
+	    int_t nnz_all = 0;
+	    int *q0 = int32Malloc_dist(batchCount + 1);
+	    for (int d = 0; d < batchCount; ++d) { q0[d] = nnz_all; nnz_all += ((NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store)->nnz; }
+	    q0[batchCount] = nnz_all;
+	    double *scale2 = doubleMalloc_dist(nnz_all);
+	    if ( !scale2 ) ABORT("Malloc fails for the scaling refresh");
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 4) num_threads(dvbatch_prep_threads())
+#endif
+	    for (int d = 0; d < batchCount; ++d) {
+		NCformat *Astore = (NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store;
+		int rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
+		int colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
+		for (int_t jc = 0; jc < n[d]; ++jc)
+		    for (int_t p = Astore->colptr[jc]; p < Astore->colptr[jc + 1]; ++p)
+			scale2[q0[d] + p] = (rowequ ? ReqPtr[d][Astore->rowind[p]] : 1.0) * (colequ ? CeqPtr[d][jc] : 1.0);
+	    }
+	    if ( dbatchDevResRescaleA((dBatchFactorize_Handle) ctx->LUstruct.batch_dev, scale2, nnz_all) )
+		ABORT("SamePattern: the A-side map does not match the batch");
+	    if ( gpures ) dvbatch_gpures_rescale(ctx, batchCount, m, ReqPtr, CeqPtr, DiagScale);
+	    SUPERLU_FREE(scale2); SUPERLU_FREE(q0);
+	    Fact = SamePattern_SameRowPerm;
+	    reuse = 1;
+	    keep_perm_c = 0;
+	    sameperm = 1;
+	}
+    }
+#endif
+
     /* Single-shot solves keep the state on the stack and release it before
        returning; persistent ones own a heap copy addressed by F[0]. */
     dvbatch_ctx_t local_ctx;
@@ -296,9 +497,8 @@ pdgssvx3d_csc_vbatch(
     int d; /* index into each matrix in the batch */
 
     double t = SuperLU_timer_();
-    double tv_entry = t, tv_stack0 = 0.0, tv_solver0 = 0.0, tv_phase[6] = {0,0,0,0,0,0};
+    double tv_entry = t_entry_all, tv_stack0 = 0.0, tv_solver0 = 0.0, tv_phase[6] = {0,0,0,0,0,0};
 
-    int gpures = (options->GPURES == YES);   /* RHSptr[], Xptr[] and the nzval of every handle are device pointers */
     /* fastA: pattern-reuse step with the A-side map ready -- the device L/U
        are filled straight from the caller's values; A is not stacked,
        scaled or permuted on the host, and the caller's matrices are left
@@ -401,7 +601,7 @@ pdgssvx3d_csc_vbatch(
 	}
 
 	stat->utime[EQUIL] = SuperLU_timer_() - t;
-	stat->utime[ROWPERM] = 0.0;
+	if ( !sameperm ) stat->utime[ROWPERM] = 0.0;   /* else: the scaling + MC64 pass of the check */
 	stat->utime[COLPERM] = 0.0;
     }
 

@@ -18,6 +18,15 @@ at the top-level directory.
  * Last update: September 23, 2026, v9.3.0
  */
 #include "superlu_ddefs.h"
+#ifdef _OPENMP
+#include <omp.h>
+static int vbatch_prep_threads(void)
+{
+    static int nt = -1;
+    if (nt < 0) { const char *e = getenv("SLU_BATCH_THREADS"); nt = e ? atoi(e) : omp_get_num_procs(); if (nt < 1) nt = 1; }
+    return nt;
+}
+#endif
 
 /*! \brief Compute row pivotings for each matrix, for numerical stability
  * <pre>
@@ -87,7 +96,10 @@ dpivot_vbatch(
     double *a, *at;
     int_t nnz;
 
-    /* Loop through each matrix in the batch */
+    /* Loop through each matrix in the batch; the matrices are independent */
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 4) num_threads(vbatch_prep_threads()) private(i, j, irow, iinfo, rowequ, colequ, colptr, rowind, a, at, nnz)
+#endif
     for (int d = 0; d < batchCount; ++d) {
 
 	double *R1, *C1;
@@ -149,6 +161,9 @@ dpivot_vbatch(
 
 			if ( iinfo ) { /* Error */
 			    printf(".. Matrix %d: LDPERM ERROR %d\n", d, iinfo);
+#ifdef _OPENMP
+#pragma omp critical
+#endif
 			    if ( rinfo==0 ) rinfo = d+1 ;
 			}
 #if (PRNTlevel >= 2)

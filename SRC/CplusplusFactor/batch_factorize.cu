@@ -1094,6 +1094,16 @@ int batchDevResSetupAT(TBatchFactorizeWorkspace<T>* ws, int nsys, int_t nnz2, co
     return 0;
 }
 
+/* New equilibration on the same pattern and row permutations: only the
+   per-entry scaling of the A-side map changes. */
+template<class T>
+int batchDevResRescaleAT(TBatchFactorizeWorkspace<T>* ws, const double *scale2, int_t nnz2)
+{
+    if (!ws->d_scale2 || nnz2 != ws->nnz2) return -1;
+    gpuErrchk(gpuMemcpy(ws->d_scale2, scale2, sizeof(double) * nnz2, gpuMemcpyHostToDevice));
+    return 0;
+}
+
 template<class T>
 int batchDevResRefillAT(TBatchFactorizeWorkspace<T>* ws, int from_device, T **Aptrs, const int *nnzd)
 {
@@ -1287,6 +1297,27 @@ int dvbatch_gpures_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, in
     return 0;
 }
 
+/* New equilibration, same permutations: refresh the per-row scalings of the
+   RHS and solution gathers. */
+int dvbatch_gpures_rescale(dvbatch_ctx_t *ctx, int batchCount, int *m, double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale)
+{
+    int_t m_big = ctx->m_big;
+    std::vector<double> rscale(m_big), cscale(m_big);
+    int_t off = 0;
+    for (int d = 0; d < batchCount; ++d) {
+        int rowequ = (DiagScale[d] == ROW || DiagScale[d] == BOTH);
+        int colequ = (DiagScale[d] == COL || DiagScale[d] == BOTH);
+        for (int i = 0; i < m[d]; ++i) {
+            rscale[off + i] = rowequ ? ReqPtr[d][i] : 1.0;
+            cscale[off + i] = colequ ? CeqPtr[d][i] : 1.0;
+        }
+        off += m[d];
+    }
+    gpuErrchk(gpuMemcpy(ctx->d_rscale, rscale.data(), sizeof(double) * m_big, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_cscale, cscale.data(), sizeof(double) * m_big, gpuMemcpyHostToDevice));
+    return 0;
+}
+
 void dvbatch_gpures_free(dvbatch_ctx_t *ctx)
 {
     void **p[] = { (void**)&ctx->d_b, (void**)&ctx->d_rowsys, (void**)&ctx->d_rowloc, (void**)&ctx->d_rhsdst, (void**)&ctx->d_xsrc,
@@ -1396,6 +1427,11 @@ int dbatchDevResSetupA(dBatchFactorizeWorkspace* ws, int nsys, int_t nnz2, const
 int dbatchDevResRefillA(dBatchFactorizeWorkspace* ws, int from_device, double **Aptrs, const int *nnzd)
 { 
     return batchDevResRefillAT<double>(ws, from_device, Aptrs, nnzd); 
+}
+
+int dbatchDevResRescaleA(dBatchFactorizeWorkspace* ws, const double *scale2, int_t nnz2)
+{
+    return batchDevResRescaleAT<double>(ws, scale2, nnz2);
 }
 
 int dbatchDevResAReady(dBatchFactorizeWorkspace* ws)
