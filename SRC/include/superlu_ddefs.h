@@ -263,6 +263,11 @@ typedef struct {
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
     int nbcol_masked; /*number of local block columns in my 2D grid*/
+    /* Level-synchronous single-process GPU triangular solve: supernodes in
+       elimination-tree level order (device), level boundaries (host). */
+    int   *d_levlist;
+    int_t *levlims;
+    int    nlevels;
 
 #ifdef GPU_ACC
     /* The following variables are used in GPU trisolve */
@@ -794,6 +799,7 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 #ifdef GPU_ACC
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int);
 
+extern void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev);
 extern void dlsum_fmod_inv_gpu_wrap(int, int, int, int, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *,
 int_t , uint64_t* ,uint64_t* ,double* ,double* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int);
 

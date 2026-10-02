@@ -585,6 +585,8 @@ if (get_acc_solve()){
     checkGPU (gpuFree (Llu->d_Unzval_bc_offset));
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat));
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
+    if (Llu->d_levlist) { checkGPU (gpuFree (Llu->d_levlist)); Llu->d_levlist = NULL; }
+    if (Llu->levlims) { SUPERLU_FREE (Llu->levlims); Llu->levlims = NULL; }
 #ifdef U_BLOCK_PER_ROW_ROWDATA
     checkGPU (gpuFree (Llu->d_Ucolind_br_dat));
     checkGPU (gpuFree (Llu->d_Ucolind_br_offset));

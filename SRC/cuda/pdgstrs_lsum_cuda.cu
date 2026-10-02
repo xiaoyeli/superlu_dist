@@ -62,6 +62,18 @@ at the top-level directory.
 
 #ifdef __cplusplus
 extern "C" {
+
+/* Level-synchronous launches for the single-process solve: when set, the
+   L and U kernels are launched once per elimination-tree level over the
+   supernodes of that level (leaves first for L, roots first for U), so no
+   thread block ever spins on a dependency.  Set by pdgstrs3d_newsolve(). */
+static int   *g_solve_levlist = NULL;
+static int_t *g_solve_levlims = NULL;
+static int    g_solve_nlev = 0;
+void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev)
+{
+    g_solve_levlist = d_levlist; g_solve_levlims = levlims; g_solve_nlev = nlev;
+}
 #endif
 
 
@@ -2232,7 +2244,8 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
  int_t *xsup,
  int *bcols_masked,
  gridinfo_t *grid,
-  int gemmflag
+  int gemmflag,
+  int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 )
 {
     double zero = 0.0, alpha = 1.0, beta = 0.0;
@@ -2327,7 +2340,7 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
             // }
 
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
-                do{
+                if (!nowait) do{
                     /* Use atomic load to bypass L1 cache on AMD GPUs;
                      * plain load + __threadfence() does NOT invalidate
                      * L1 on CDNA/RDNA, causing an infinite spin. */
@@ -2955,7 +2968,15 @@ void dlsum_fmod_inv_gpu_wrap
         if(1){
     #endif
             dim3 dimBlock(nthread_x, nthread_y);
-            dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, gemmflag);
+            if (g_solve_nlev > 0) {
+                /* leaves first; each launch depends only on the previous ones */
+                for (int lvl = 0; lvl < g_solve_nlev; ++lvl) {
+                    int w = (int)(g_solve_levlims[lvl + 1] - g_solve_levlims[lvl]);
+                    if (w <= 0) continue;
+                    dlsum_fmod_inv_gpu_mrhs<<< w, dimBlock >>>(w,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,g_solve_levlist + g_solve_levlims[lvl], grid, gemmflag, 1);
+                }
+            } else
+            dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, gemmflag, 0);
         }else{
             dim3 dimBlock(nthread_x, nthread_y,1);
             dlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
@@ -3079,7 +3100,9 @@ int_t *Uindval_loc_bc_dat,
 long int *Uindval_loc_bc_offset,
 int_t *xsup,
 gridinfo_t *grid,
-int gemmflag
+int gemmflag,
+int *bcols_list   /* optional: block -> local block column (level-synchronous launches) */,
+int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 )
 {
     double zero = 0.0, alpha = 1.0, beta = 0.0;
@@ -3102,7 +3125,7 @@ int gemmflag
 	double rC[THR_N][THR_M];
 	// __shared__ double x_share[DIM_X*DIM_Y];
 
-	bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
+	bid = bcols_list ? (blockIdx_x < nbcol_loc ? bcols_list[blockIdx_x] : nbcol_loc) : nbcol_loc-blockIdx_x-1;  // reversed order: higher block IDs are checked first in spin wait
 	int idx = threadIdx_x;  // thread's m dimension
 	int idy = threadIdx_y;  // thread's n dimension
 	int ni,mi;
@@ -3120,7 +3143,7 @@ int gemmflag
 
 
 	// the first nbcol_loc handles all computations and broadcast communication
-	if(bid<nbcol_loc){
+	if(bcols_list ? (blockIdx_x < nbcol_loc) : (bid<nbcol_loc)){
 		if(Uinv_bc_offset[bid]==-1 && Ucolind_bc_offset[bid]==-1){
 		return;
 		}
@@ -3150,7 +3173,7 @@ int gemmflag
 
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 			    // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
-				do{
+				if (!nowait) do{
 					tmp=atomicAdd(&bmod[lib*aln_i], 0);
 					__threadfence();
 				}while(tmp>0);
@@ -4612,7 +4635,15 @@ if(procs==1){
     if(1){
 #endif
         dim3 dimBlock(nthread_x, nthread_y);
-        dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag);
+        if (g_solve_nlev > 0) {
+            /* roots first; each launch depends only on the previous ones */
+            for (int lvl = g_solve_nlev - 1; lvl >= 0; --lvl) {
+                int w = (int)(g_solve_levlims[lvl + 1] - g_solve_levlims[lvl]);
+                if (w <= 0) continue;
+                dlsum_bmod_inv_gpu_mrhs<<< w, dimBlock >>>(w,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag,g_solve_levlist + g_solve_levlims[lvl], 1);
+            }
+        } else
+        dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag,NULL, 0);
     }else{
         dim3 dimBlock(nthread_x, nthread_y,1);
         // dlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
