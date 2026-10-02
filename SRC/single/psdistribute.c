@@ -2317,12 +2317,11 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     SUPERLU_FREE(xa);
 	LUstruct->trf3Dpart=NULL;
 
-
 	if ( options->Fact != SamePattern_SameRowPerm ) {
 		// /* Flatten L metadata into one buffer. */
 		psflatten_LDATA(options, n, LUstruct, grid);
 
-		// /* Compute communication structure for trisolve. */ 
+		// /* Compute communication structure for trisolve. */
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;
@@ -2330,7 +2329,6 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 					supernodeMask, grid);
 		SUPERLU_FREE(supernodeMask);
 	}
-
 
 
 #if ( DEBUGlevel>=1 )
@@ -3994,4 +3992,4 @@ psdistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperM
     return (mem_use);
 
 } /* PSDISTRIBUTE_ALLGRID_INDEX_ONLY */
-#endif 
+#endif

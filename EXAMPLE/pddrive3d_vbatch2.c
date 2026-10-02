@@ -14,9 +14,10 @@ at the top-level directory.
  * \brief Example program for PDGSSVX3D_CSC_VBATCH
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.3) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
+ * Last update: September 23, 2026, v9.3.0
  *
  */
 #include <math.h>
@@ -449,6 +450,7 @@ main (int argc, char *argv[])
 		    for (int i = 0; i < nd[d]; ++i) {
 			double diff = fabs(xc[i] - xt[i]);
 			double axt  = fabs(xt[i]);
+		    
 			if ( axt > 0.0 && diff/axt > ferr_cw ) ferr_cw = diff/axt;
 			if ( diff > dxmax ) dxmax = diff;
 			if ( axt  > xtmax ) xtmax = axt;

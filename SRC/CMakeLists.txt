@@ -45,7 +45,7 @@ set(headers
 #    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 #    colamd.h
 if (MSVC)
-  list(APPEND headers wingetopt.h)
+  list(APPEND headers include/wingetopt.h)
 endif ()
 
 # first: precision-independent files
@@ -100,7 +100,7 @@ list(APPEND sources
 # endif()
 
 if (MSVC)
-  list(APPEND sources pred-independent/wingetopt.c)
+  list(APPEND sources prec-independent/wingetopt.c)
 endif ()
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
@@ -175,7 +175,7 @@ if(enable_double)
   
 if (TPL_ENABLE_CUDALIB)
   list(APPEND sources
-       cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
+       cuda/pdgstrs_lsum_cuda.cu cuda/pdgstrs_perm_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
 ##       CplusplusFactor/schurCompUpdate.cu 
 #       CplusplusFactor/pdgstrf3d_upacked.cpp
 #       CplusplusFactor/dsparseTreeFactor_upacked.cpp
@@ -277,7 +277,7 @@ if(enable_single)
     single/spivot_vbatch.c
   )
 if (TPL_ENABLE_CUDALIB)
-    list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/ssuperlu_gpu.cu)
+    list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/psgstrs_perm_cuda.cu cuda/ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
        list(APPEND sources single/s_c2cpp_GetHWPM.cpp single/sHWPM_CombBLAS.hpp)
@@ -355,7 +355,7 @@ if(enable_complex16)
      )
      
 if (TPL_ENABLE_CUDALIB)
-    list(APPEND sources cuda/pzgstrs_lsum_cuda.cu cuda/zsuperlu_gpu.cu)
+    list(APPEND sources cuda/pzgstrs_lsum_cuda.cu cuda/pzgstrs_perm_cuda.cu cuda/zsuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
     list(APPEND sources

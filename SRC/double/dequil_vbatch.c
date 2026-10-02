@@ -12,10 +12,10 @@ at the top-level directory.
 
 
 /*
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab
  * November 5, 2023
- * Last update:
+ * Last update: September 23, 2026, v9.3.0
  */
 #include "superlu_ddefs.h"
 
@@ -66,7 +66,7 @@ dequil_vbatch(
     int factored = (Fact == FACTORED);
     int Equil = (!factored && options->Equil == YES);
     int notran = (options->Trans == NOTRANS);
-    
+
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Enter dequil_batch()");
 #endif
@@ -79,12 +79,12 @@ dequil_vbatch(
 
     /* Loop through each matrix in the batch */
     for (int k = 0; k < batchCount; ++k) {
-	
+
 	NCformat *Astore = (NCformat *) A[k]->Store;
 	double *a = (double *) Astore->nzval;
 	int_t *colptr = Astore->colptr;
 	int_t *rowind = Astore->rowind;
-	
+
 	/* Assuming each matrix is in CSC format
 	 * Otherwise, convert to CSC first -- use the code in dvpivot_batch.c
 	 * ...
@@ -93,7 +93,7 @@ dequil_vbatch(
 	/* The following arrays are replicated on all processes. */
 	double *R = ReqPtr[k];
 	double *C = CeqPtr[k];
-	
+
 	/* Allocate stoage if not factored & ask for equilibration */
 	if (Equil && Fact != SamePattern_SameRowPerm) {
 	    /* Allocate storage if not done so before. */
@@ -153,18 +153,18 @@ dequil_vbatch(
 			}
 			break;
 		} /* end switch DiagScale[k] ... */
-		
+
 	    } else { /* Compute R[] & C[] from scratch */
-		
+
 		int iinfo;
 		char equed[1];
 		double amax, anorm, colcnd, rowcnd;
-		
+
 		/* Compute the row and column scalings. */
 
 		dgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
 		info[k] = iinfo;
-		
+
 		if (iinfo > 0) {
 		    if (iinfo <= m[k]) {
 #if (PRNTlevel >= 1)
@@ -203,7 +203,7 @@ dequil_vbatch(
 	    } /* end if-else Fact ... */
 
 	} /* end if Equil ... LAPACK style, not involving MC64 */
-	
+
     } /* end for k ... batchCount */
 
 #if (DEBUGlevel >= 1)

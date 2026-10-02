@@ -13,10 +13,11 @@ at the top-level directory.
  * \brief Several matrix utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * October 5, 2021
+ * Last update: September 23, 2026, v9.3.0
  */
 
 #include <math.h>
@@ -224,14 +225,14 @@ void file_zPrint_NCPformat_triplet(FILE *fp, SuperMatrix *A)
 
     int n = A->nrow;
     int_t nnz = Astore->nnz;
-    
+
     //    printf("\nTriplet matrix:\n");
     //    printf("nrow %d, ncol %lld, nnz %lld\n", n, (long long) A->ncol, nnz);
     dp = (doublecomplex *) Astore->nzval;
     colbeg = Astore->colbeg;
     colend = Astore->colend;
     rowind = Astore->rowind;
-    
+
     for (j = 0; j < A->ncol; ++j) {
 	for (i = colbeg[j]; i < colend[j]; ++i) {
 	    fprintf(fp, "%8lld %8d\t%f\t%f\n", (long long)rowind[i], j, dp[i].r, dp[i].i);
@@ -492,6 +493,16 @@ void zScalePermstructInit(const int_t m, const int_t n,
         ABORT("Malloc fails for perm_r[].");
     if ( !(ScalePermstruct->perm_c = int32Malloc_dist(n)) )
         ABORT("Malloc fails for perm_c[].");
+
+#ifdef GPU_ACC
+    ScalePermstruct->d_R = NULL;
+    ScalePermstruct->d_C = NULL;
+    if (get_acc_solve()){
+        checkGPU(gpuMalloc((void**)&ScalePermstruct->d_perm_r, sizeof(int) * (size_t)m));
+        checkGPU(gpuMalloc((void**)&ScalePermstruct->d_perm_c, sizeof(int) * (size_t)n));
+    }
+#endif
+
 }
 
 /*! \brief Deallocate ScalePermstruct */
@@ -499,16 +510,38 @@ void zScalePermstructFree(zScalePermstruct_t *ScalePermstruct)
 {
     SUPERLU_FREE(ScalePermstruct->perm_r);
     SUPERLU_FREE(ScalePermstruct->perm_c);
+#ifdef GPU_ACC
+    if (get_acc_solve()){
+        checkGPU (gpuFree (ScalePermstruct->d_perm_c));
+        checkGPU (gpuFree (ScalePermstruct->d_perm_r));
+    }
+#endif
     switch ( ScalePermstruct->DiagScale ) {
       case ROW:
         SUPERLU_FREE(ScalePermstruct->R);
+#ifdef GPU_ACC
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_R));
+        }
+#endif
         break;
       case COL:
         SUPERLU_FREE(ScalePermstruct->C);
+#ifdef GPU_ACC
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_C));
+        }
+#endif
         break;
       case BOTH:
         SUPERLU_FREE(ScalePermstruct->R);
         SUPERLU_FREE(ScalePermstruct->C);
+#ifdef GPU_ACC
+        if (get_acc_solve()){
+            checkGPU (gpuFree (ScalePermstruct->d_R));
+            checkGPU (gpuFree (ScalePermstruct->d_C));
+        }
+#endif
         break;
       default: break;
     }
@@ -1269,5 +1302,4 @@ void zDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
  	fclose(fp);
 
 } /* end zDumpLblocks3D */
-
 

@@ -100,6 +100,7 @@ ifeq ($(HAVE_CUDA),TRUE)
 ALLAUX += superlu_gpu_utils.o 
 SPLUSRC += ssuperlu_gpu.o
 DPLUSRC += dsuperlu_gpu.o pdgstrs_lsum_cuda.o
+DPLUSRC += pdgstrs_perm_cuda.o
 ZPLUSRC += zsuperlu_gpu.o
 endif
 

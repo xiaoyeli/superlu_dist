@@ -425,12 +425,15 @@ pdgssvx3d_csc_batch(
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
-    dDestroy_LU (n_big, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	    PStatPrint (options, stat, &(grid3d->grid2d)); /* Print 2D statistics.*/
     }
 
+    /* Release GPU solve workspaces before LU teardown finalizes NVSHMEM. */
+    if ( options_big.SolveInitialized && get_acc_solve() )
+        pdgstrs_delete_device_lsum_x(&SOLVEstruct);
     dSolveFinalize (&options_big, &SOLVEstruct);
+    dDestroy_LU (n_big, &(grid.grid2d), &LUstruct);
 
     Destroy_CompRowLoc_Matrix_dist (&A_big);
     dScalePermstructFree (&ScalePermstruct);

@@ -12,10 +12,10 @@ at the top-level directory.
 
 
 /*
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab
  * November 5, 2023
- * Last update:
+ * Last update: September 23, 2026, v9.3.0
  */
 #include "superlu_ddefs.h"
 
@@ -68,7 +68,7 @@ dpivot_vbatch(
     int Equil = (!factored && options->Equil == YES);
     int notran = (options->Trans == NOTRANS);
     int job = 5;
-    
+
 
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Enter dpivot_batch()");
@@ -270,7 +270,7 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
 
     /* Deallocate storage */
     SUPERLU_FREE(A);
-    
+
 
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Exit dpivot_batch()");

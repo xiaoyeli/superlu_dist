@@ -14,11 +14,11 @@ at the top-level directory.
  * \brief Distribute the matrix onto the 2D process mesh.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
- *
  * January 9, 2023
+ * Last update: September 23, 2026, v9.3.0
  * </pre>
  */
 #include "superlu_sdefs.h"
@@ -1984,7 +1984,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 		// /* Flatten L metadata into one buffer. */
 		psflatten_LDATA(options, n, LUstruct, grid);
 
-		// /* Compute communication structure for trisolve. */ 
+		// /* Compute communication structure for trisolve. */
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;

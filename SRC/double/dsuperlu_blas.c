@@ -14,9 +14,10 @@ at the top-level directory.
  * \brief Wrapper functions to call BLAS.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Oak Ridge National Lab
  * December 6, 2020
+ * Last update: September 23, 2026, v9.3.0
  */
 
 #include "superlu_ddefs.h"
@@ -101,7 +102,7 @@ int superlu_dgemv(const char *trans, const int m,
 #else
     dgemv_(trans, &m, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy);
 #endif
-    
+
     return 0;
 }
 
@@ -110,14 +111,14 @@ int superlu_dtrsv(char *uplo, char *trans, char *diag,
 {
 #ifdef _CRAY
     // _fcd ftcs = _cptofcd("N", strlen("N"));
-    STRSV(_cptofcd(uplo, strlen(uplo)), _cptofcd(trans, strlen(trans)), _cptofcd(diag, strlen(diag)), 
+    STRSV(_cptofcd(uplo, strlen(uplo)), _cptofcd(trans, strlen(trans)), _cptofcd(diag, strlen(diag)),
          &n, a, &lda, x, &incx);
 #elif defined (USE_VENDOR_BLAS)
     dtrsv_(uplo, trans, diag, &n, a, &lda, x, &incx, 1, 1, 1);
 #else
     dtrsv_(uplo, trans, diag, &n, a, &lda, x, &incx);
 #endif
-    
+
     return 0;
 }
 

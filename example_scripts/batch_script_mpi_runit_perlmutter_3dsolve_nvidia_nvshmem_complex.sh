@@ -20,6 +20,7 @@ module load cmake
 # ulimit -s unlimited
 #MPI settings:
 export MPICH_GPU_SUPPORT_ENABLED=1
+# export MPICH_GPU_IPC_ENABLED=0 # unset this will cause "cuIpcOpenMemHandle: invalid argument, CUDA_ERROR_INVALID_VALUE, line no 369"
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
@@ -44,8 +45,8 @@ export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 
 
 # ##NVSHMEM settings:
-# module load nvshmem/2.11.0
-NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+# NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/common/software/nersc9/nvshmem/3.2.5-1-25.03/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
@@ -53,7 +54,7 @@ export NVSHMEM_LIBFABRIC_SUPPORT=1
 export LIBFABRIC_HOME=/opt/cray/libfabric/1.20.1
 export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
 export NVSHMEM_DISABLE_CUDA_VMM=1
-export FI_CXI_OPTIMIZED_MRS=false
+export FI_CXI_OPTIMIZED_MRS=0
 export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
 export NVSHMEM_BOOTSTRAP=MPI
 export NVSHMEM_REMOTE_TRANSPORT=libfabric

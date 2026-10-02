@@ -244,11 +244,11 @@ dstatic_schedule(superlu_dist_options_t * options, int m, int n,
 
         /* process fifo queue, and compute the ordering */
         i = 0;
+
         while (nnodes > 0) {
             ptr = head;
             j = ptr->id;
             head = ptr->next;
-
             perm_c_supno[i] = j;
             SUPERLU_FREE (ptr);
             i++;
