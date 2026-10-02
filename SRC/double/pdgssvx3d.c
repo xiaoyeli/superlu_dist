@@ -738,6 +738,15 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
     /* The following code now works on all grids */
     Astore = (NRformat_loc *)A->Store;
+    double tph[8]; for (int ii = 0; ii < 8; ++ii) tph[ii] = 0.0; tph[0] = SuperLU_timer_();
+    /* Batched pattern-reuse step whose device L/U the wrapper has already
+       filled from the caller's values: A (the stacked host copy) is stale
+       and must not be read. */
+    int fastA = 0;
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    fastA = (Fact == SamePattern_SameRowPerm && LUstruct->batch_dev != NULL &&
+             dbatchDevResAReady((dBatchFactorize_Handle) LUstruct->batch_dev));
+#endif
     nnz_loc = Astore->nnz_loc;
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
@@ -827,6 +836,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end if (!factored) */
 
 	/* Compute norm(A), which will be used to adjust small diagonal. */
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+	if (fastA)
+	    anorm = dbatchDevResAnorm((dBatchFactorize_Handle) LUstruct->batch_dev);
+	else
+#endif
 	if (!factored || options->IterRefine)
 	    anorm = dcomputeA_Norm(notran, A, grid);
 
@@ -983,8 +997,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	if (!factored)
 	{
 	    /* Apply column permutation to the original distributed A */
+	    tph[1] = SuperLU_timer_();
+	    if (!fastA)
 	    for (j = 0; j < nnz_loc; ++j)
 		colind[j] = perm_c[colind[j]];
+	    tph[2] = SuperLU_timer_();
 	    // free quauntities used in Parmetis
 	    if (sizes)
 		SUPERLU_FREE(sizes);
@@ -1138,8 +1155,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			    dbatchDevResSetup(batch_ws, LUstruct, a, nnz_loc, map);
 			    SUPERLU_FREE(map);
 			    LUstruct->batch_dev = (void *) batch_ws;
+			    LUstruct->batch_anorm = anorm;   /* for the wrapper's A-side setup */
 			}
-			if ( devres ) dbatchDevResRefill(batch_ws, a, nnz_loc);
+			if ( devres && !dbatchDevResAPrefilled(batch_ws) ) dbatchDevResRefill(batch_ws, a, nnz_loc);
 
 			double setup_time = SuperLU_timer_() - tic;
 
@@ -1193,6 +1211,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    }
 
 	    stat->utime[FACT] = SuperLU_timer_() - t;
+	    tph[3] = SuperLU_timer_();
 
 	    /*factorize in grid 1*/
 	    // if(grid3d->zscp.Iam)
@@ -1250,6 +1269,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
         } /* end if not Factored ... factor on all process layers */
 
+	tph[4] = SuperLU_timer_();
 	if (grid3d->zscp.Iam == 0 ) { // only process layer 0 ... print Factor stats
             if (!factored)
 	    {
@@ -1338,6 +1358,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    } /* end if !factored */
         } /* end if grid-0 ... print Factor stats */
+	tph[5] = SuperLU_timer_();
 
 	if(Solve3D){
 
@@ -1370,10 +1391,14 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #if defined(GPU_ACC)
 #if defined(HAVE_MAGMA)
 		    if ( devres_solve && !dbatchDevResSolveReady(devres_ws) ) {
+#ifdef U_BLOCK_PER_ROW_ROWDATA
+			dbatchDevResSolveSetup(devres_ws, NULL, 0);   /* row-data U: device copy, no map */
+#else
 			int64_t ucnt = 0;
 			int64_t *umap = dbatch_build_umap(options, n, LUstruct, grid, stat, &ucnt);
 			dbatchDevResSolveSetup(devres_ws, umap, ucnt);
 			SUPERLU_FREE(umap);
+#endif
 		    }
 #endif
 
@@ -1555,6 +1580,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	/* ------------------------------------------------------------
 	   Compute the solution matrix X.
 	   ------------------------------------------------------------ */
+	tph[6] = SuperLU_timer_();
 	if ((nrhs > 0) && (*info == 0))
 	{
 	    if (options->GPURES == YES &&
@@ -2098,6 +2124,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	B = A3d->B3d;		 // B is now assigned back to B3d on return
 	A->Store = Astore3d; // restore Astore to 3D
 
+    tph[7] = SuperLU_timer_();
+    printf("[pdgssvx3d] phases ms: entry->colperm %.2f  colind-perm %.2f  dist+factor %.2f  stats-print %.2f  solve-setup %.2f  solve-block %.2f  total %.2f\n",
+           1e3*(tph[1]-tph[0]), 1e3*(tph[2]-tph[1]), 1e3*(tph[3]-tph[2]), 1e3*(tph[5]-tph[4]), 1e3*(tph[6]-tph[5]), 1e3*(tph[7]-tph[6]), 1e3*(tph[7]-tph[0]));
 #if (DEBUGlevel >= 1)
 	CHECK_MALLOC(iam, "Exit pdgssvx3d()");
 #endif

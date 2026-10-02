@@ -704,7 +704,18 @@ void dGatherNRformat_loc3d_allgrid
 	b_counts_int   = A3d->b_counts_int;
 	b_disp         = A3d->b_disp;;
 
-	if (options && options->GPURES == YES) {
+	if (options && options->GPURES == YES && grid3d->npdep == 1) {
+#ifdef GPU_ACC
+	    /* One process layer: the 2D and 3D row partitions coincide, so
+	       B2d is a device copy of B (no MPI on device memory; the matching
+	       shortcut is in dScatter_B3d). */
+	    checkGPU(gpuMalloc((void**)&A3d->B2d,
+			       sizeof(double) * (size_t)A2d->m_loc * (size_t)nrhs));
+	    ddevice_matcopy_wrap(A->m_loc, nrhs, (double*)A3d->B2d, A2d->m_loc, B, ldb);
+#else
+	    ABORT("GPURES requires GPU_ACC in dGatherNRformat_loc3d_allgrid().");
+#endif
+	} else if (options && options->GPURES == YES) {
 #ifdef GPU_ACC
 	    /* Btmp <- compact(B), compacting device B */
 	    double *Btmp, *B1;

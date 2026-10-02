@@ -904,6 +904,8 @@ int batchDevResSetupT(TBatchFactorizeWorkspace<T>* ws, LUStruct_type<T> *LUstruc
     gpuErrchk(gpuMalloc(&ws->d_avals, sizeof(T) * nnz));
     gpuErrchk(gpuMalloc(&ws->d_map, sizeof(int64_t) * nnz));
     gpuErrchk(gpuMemcpy(ws->d_map, map_host, sizeof(int64_t) * nnz, gpuMemcpyHostToDevice));
+    ws->h_map = (int64_t *) malloc(sizeof(int64_t) * nnz);
+    memcpy(ws->h_map, map_host, sizeof(int64_t) * nnz);
 #ifdef HAVE_CUDA
     void  *ptrs[3]  = { avals, Llu->Lnzval_bc_dat, Llu->Unzval_br_new_dat };
     size_t sizes[3] = { sizeof(T) * (size_t) nnz, sizeof(T) * (size_t) Llu->Lnzval_bc_cnt, sizeof(T) * (size_t) Llu->Unzval_br_new_cnt };
@@ -988,8 +990,11 @@ template<class T>
 int batchDevResSolveSetupT(TBatchFactorizeWorkspace<T>* ws, const int64_t *umap_host, int64_t ucnt)
 {
     ws->ucnt = ucnt;
-    gpuErrchk(gpuMalloc(&ws->d_umap, sizeof(int64_t) * ucnt));
-    gpuErrchk(gpuMemcpy(ws->d_umap, umap_host, sizeof(int64_t) * ucnt, gpuMemcpyHostToDevice));
+    if (umap_host && ucnt > 0) {   /* column-wise U solve: gather map */
+        gpuErrchk(gpuMalloc(&ws->d_umap, sizeof(int64_t) * ucnt));
+        gpuErrchk(gpuMemcpy(ws->d_umap, umap_host, sizeof(int64_t) * ucnt, gpuMemcpyHostToDevice));
+    }                              /* else: row-data U solve, same layout as the factorization's U */
+    ws->solve_ready = 1;
     return 0;
 }
 
@@ -1001,16 +1006,21 @@ int batchDevResSolveRefreshT(TBatchFactorizeWorkspace<T>* ws, LUStruct_type<T> *
 {
     LocalLU_type<T>* Llu = LUstruct->Llu;
     LocalLU_type<T>& d = ws->d_localLU;
-    if (!ws->d_umap) return -1;
+    if (!ws->solve_ready) return -1;
     double t0 = SuperLU_timer_();
     gpuErrchk(gpuMemcpyAsync(Llu->d_Lnzval_bc_dat, d.Lnzval_bc_dat, sizeof(T) * d.Lnzval_bc_cnt, gpuMemcpyDeviceToDevice, ws->stream));
     gpuErrchk(gpuStreamSynchronize(ws->stream));
     double t1 = SuperLU_timer_();
-    {
+    if (ws->d_umap) {
         int nthreads = 256;
         int64_t nblocks = (ws->ucnt + nthreads - 1) / nthreads;
         gatherUvalsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(d.Unzval_br_new_dat, ws->d_umap, ws->ucnt, Llu->d_Unzval_bc_dat);
         gpuErrchk(gpuGetLastError());
+        gpuErrchk(gpuStreamSynchronize(ws->stream));
+    } else {
+        /* row-data U solve reads the same layout the factorization produced */
+        if (Llu->d_Unzval_br_new_dat == NULL) { fprintf(stderr, "solve refresh: d_Unzval_br_new_dat not allocated\n"); return -1; }
+        gpuErrchk(gpuMemcpyAsync(Llu->d_Unzval_br_new_dat, d.Unzval_br_new_dat, sizeof(T) * (size_t) d.Unzval_br_new_cnt, gpuMemcpyDeviceToDevice, ws->stream));
         gpuErrchk(gpuStreamSynchronize(ws->stream));
     }
     double t2 = SuperLU_timer_();
@@ -1027,9 +1037,110 @@ int batchDevResSolveRefreshT(TBatchFactorizeWorkspace<T>* ws, LUStruct_type<T> *
     return 0;
 }
 
+/* Stage 4 kernels: device L/U slot <- R[i]*C[j] * (caller's value), either
+   from one contiguous staging array or through the per-system pointers. */
+template<class T>
+__global__ void scatterSysValsKernel(const T* vals, const int64_t* map2, const double* scale2, int_t nnz, int64_t Lcnt, T* L, T* U)
+{
+    int64_t q = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (q >= nnz) return;
+    int64_t m = map2[q];
+    if (m < 0) return;
+    T v = scale2[q] * vals[q];
+    if (m < Lcnt) L[m] = v; else U[m - Lcnt] = v;
+}
+template<class T>
+__global__ void scatterSysPtrsKernel(T* const* Aptrs, const int* ent_sys, const int* ent_idx, const int64_t* map2, const double* scale2,
+                                     int_t nnz, int64_t Lcnt, T* L, T* U)
+{
+    int64_t q = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (q >= nnz) return;
+    int64_t m = map2[q];
+    if (m < 0) return;
+    T v = scale2[q] * Aptrs[ent_sys[q]][ent_idx[q]];
+    if (m < Lcnt) L[m] = v; else U[m - Lcnt] = v;
+}
+
+template<class T>
+int batchDevResSetupAT(TBatchFactorizeWorkspace<T>* ws, int nsys, int_t nnz2, const int64_t *posmap,
+                       const double *scale2, const int *ent_sys, const int *ent_idx, double anorm)
+{
+    if (!ws->h_map) return -1;
+    std::vector<int64_t> map2(nnz2);
+    int64_t nmiss = 0;
+    for (int_t q = 0; q < nnz2; ++q) {
+        int64_t pos = posmap[q];
+        map2[q] = (pos >= 0 && pos < ws->nnz_a) ? ws->h_map[pos] : -1;
+        if (map2[q] < 0) ++nmiss;
+    }
+    ws->nnz2 = nnz2; ws->nsys = nsys; ws->anorm_cache = anorm;
+    gpuErrchk(gpuMalloc(&ws->d_map2, sizeof(int64_t) * nnz2));
+    gpuErrchk(gpuMalloc(&ws->d_scale2, sizeof(double) * nnz2));
+    gpuErrchk(gpuMalloc(&ws->d_ent_sys, sizeof(int) * nnz2));
+    gpuErrchk(gpuMalloc(&ws->d_ent_idx, sizeof(int) * nnz2));
+    gpuErrchk(gpuMalloc(&ws->d_Aptrs, sizeof(double*) * nsys));
+    gpuErrchk(gpuMemcpy(ws->d_map2, map2.data(), sizeof(int64_t) * nnz2, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ws->d_scale2, scale2, sizeof(double) * nnz2, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ws->d_ent_sys, ent_sys, sizeof(int) * nnz2, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ws->d_ent_idx, ent_idx, sizeof(int) * nnz2, gpuMemcpyHostToDevice));
+#ifdef HAVE_CUDA
+    if (cudaHostAlloc((void**)&ws->h_avals_cat, sizeof(T) * (size_t) nnz2, cudaHostAllocDefault) != cudaSuccess) {
+        cudaGetLastError(); ws->h_avals_cat = (T*) malloc(sizeof(T) * (size_t) nnz2);
+    }
+#else
+    ws->h_avals_cat = (T*) malloc(sizeof(T) * (size_t) nnz2);
+#endif
+    printf("[devres] A map: %lld entries from %d systems, unmapped %lld\n", (long long) nnz2, nsys, (long long) nmiss);
+    return 0;
+}
+
+template<class T>
+int batchDevResRefillAT(TBatchFactorizeWorkspace<T>* ws, int from_device, T **Aptrs, const int *nnzd)
+{
+    LocalLU_type<T>& d = ws->d_localLU;
+    if (!ws->d_map2) return -1;
+    double t0 = SuperLU_timer_(), t1;
+    gpuErrchk(gpuMemsetAsync(d.Lnzval_bc_dat, 0, sizeof(T) * d.Lnzval_bc_cnt, ws->stream));
+    gpuErrchk(gpuMemsetAsync(d.Unzval_br_new_dat, 0, sizeof(T) * d.Unzval_br_new_cnt, ws->stream));
+    int nthreads = 256;
+    int64_t nblocks = ((int64_t) ws->nnz2 + nthreads - 1) / nthreads;
+    if (from_device) {
+        gpuErrchk(gpuMemcpyAsync(ws->d_Aptrs, Aptrs, sizeof(T*) * ws->nsys, gpuMemcpyHostToDevice, ws->stream));
+        t1 = SuperLU_timer_();
+        scatterSysPtrsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(ws->d_Aptrs, ws->d_ent_sys, ws->d_ent_idx, ws->d_map2, ws->d_scale2,
+                                                                                  ws->nnz2, (int64_t) d.Lnzval_bc_cnt, d.Lnzval_bc_dat, d.Unzval_br_new_dat);
+    } else {
+        size_t off = 0;
+        for (int s = 0; s < ws->nsys; ++s) { memcpy(ws->h_avals_cat + off, Aptrs[s], sizeof(T) * (size_t) nnzd[s]); off += nnzd[s]; }
+        if ((int_t) off != ws->nnz2) { fprintf(stderr, "batchDevResRefillA: nnz changed (%lld -> %lld)\n", (long long) ws->nnz2, (long long) off); return -1; }
+        gpuErrchk(gpuMemcpyAsync(ws->d_avals, ws->h_avals_cat, sizeof(T) * (size_t) ws->nnz2, gpuMemcpyHostToDevice, ws->stream));
+        gpuErrchk(gpuStreamSynchronize(ws->stream));
+        t1 = SuperLU_timer_();
+        scatterSysValsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(ws->d_avals, ws->d_map2, ws->d_scale2,
+                                                                                  ws->nnz2, (int64_t) d.Lnzval_bc_cnt, d.Lnzval_bc_dat, d.Unzval_br_new_dat);
+    }
+    gpuErrchk(gpuGetLastError());
+    gpuErrchk(gpuStreamSynchronize(ws->stream));
+    double t2 = SuperLU_timer_();
+    ws->a_prefilled = 1;
+    printf("\tDevRes A refill time = %.4f (%s %.4f, zero+scatter %.4f)\n", t2 - t0, from_device ? "pointers" : "gather+upload", t1 - t0, t2 - t1);
+    return 0;
+}
+
 template<class T>
 void batchDevResFreeT(TBatchFactorizeWorkspace<T>* ws)
 {
+    if (ws->h_map) { free(ws->h_map); ws->h_map = nullptr; }
+    if (ws->d_map2)    { gpuErrchk(gpuFree(ws->d_map2));    ws->d_map2 = nullptr; }
+    if (ws->d_scale2)  { gpuErrchk(gpuFree(ws->d_scale2));  ws->d_scale2 = nullptr; }
+    if (ws->d_ent_sys) { gpuErrchk(gpuFree(ws->d_ent_sys)); ws->d_ent_sys = nullptr; }
+    if (ws->d_ent_idx) { gpuErrchk(gpuFree(ws->d_ent_idx)); ws->d_ent_idx = nullptr; }
+    if (ws->d_Aptrs)   { gpuErrchk(gpuFree(ws->d_Aptrs));   ws->d_Aptrs = nullptr; }
+#ifdef HAVE_CUDA
+    if (ws->h_avals_cat) { if (cudaFreeHost(ws->h_avals_cat) != cudaSuccess) { cudaGetLastError(); free(ws->h_avals_cat); } ws->h_avals_cat = nullptr; }
+#else
+    if (ws->h_avals_cat) { free(ws->h_avals_cat); ws->h_avals_cat = nullptr; }
+#endif
 #ifdef HAVE_CUDA
     for (int i = 0; i < 3; ++i) if (ws->pinned[i]) { cudaHostUnregister(ws->pinned[i]); ws->pinned[i] = nullptr; }
 #endif
@@ -1076,6 +1187,115 @@ void freeBatchFactorizeWorkspaceT(TBatchFactorizeWorkspace<T>* ws)
     ws->marshall_data.DeleteTBatchLUMarshallData();
     ws->sc_marshall_data.DeleteTBatchSCUMarshallData();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// GPU-resident RHS / solution for the batched interface
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+__global__ void vbatchStackRhsKernel(int_t m_big, int nrhs, const int_t* rowsys, const int_t* rowloc, const int_t* rhsdst,
+                                     const double* rscale, double* const* RHSptrs, const int* ldRHS, double* b)
+{
+    int_t g = (int_t)((int64_t)blockIdx.x * blockDim.x + threadIdx.x);
+    if (g >= m_big) return;
+    int_t d = rowsys[g], i = rowloc[g];
+    const double* rhs = RHSptrs[d];
+    for (int k = 0; k < nrhs; ++k)
+        b[(int64_t)k * m_big + rhsdst[g]] = rscale[g] * rhs[(int64_t)k * ldRHS[d] + i];
+}
+
+__global__ void vbatchUnstackXKernel(int_t m_big, int nrhs, const int_t* rowsys, const int_t* rowloc, const int_t* xsrc,
+                                     const double* cscale, double* const* Xptrs, const int* ldX, const double* b)
+{
+    int_t g = (int_t)((int64_t)blockIdx.x * blockDim.x + threadIdx.x);
+    if (g >= m_big) return;
+    int_t d = rowsys[g], i = rowloc[g];
+    double* x = Xptrs[d];
+    for (int k = 0; k < nrhs; ++k)
+        x[(int64_t)k * ldX[d] + i] = cscale[g] * b[(int64_t)k * m_big + xsrc[g]];
+}
+
+extern "C" {
+
+/* Build (once, on the DOFACT call) the row maps that fold the per-system
+   equilibration and permutations of the RHS and solution into two gathers. */
+int dvbatch_gpures_setup(dvbatch_ctx_t *ctx, int batchCount, int *m, int **RpivPtr, int **CpivPtr,
+                         double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale)
+{
+    int_t m_big = ctx->m_big;
+    std::vector<int_t> rowsys(m_big), rowloc(m_big), rhsdst(m_big), xsrc(m_big);
+    std::vector<double> rscale(m_big), cscale(m_big);
+    int_t off = 0;
+    for (int d = 0; d < batchCount; ++d) {
+        int rowequ = (DiagScale[d] == ROW || DiagScale[d] == BOTH);
+        int colequ = (DiagScale[d] == COL || DiagScale[d] == BOTH);
+        for (int i = 0; i < m[d]; ++i) {
+            int_t g = off + i;
+            rowsys[g] = d; rowloc[g] = i;
+            rhsdst[g] = off + CpivPtr[d][RpivPtr[d][i]];
+            xsrc[g]   = off + CpivPtr[d][i];
+            rscale[g] = rowequ ? ReqPtr[d][i] : 1.0;
+            cscale[g] = colequ ? CeqPtr[d][i] : 1.0;
+        }
+        off += m[d];
+    }
+    gpuErrchk(gpuMalloc(&ctx->d_b, sizeof(double) * (size_t) m_big * ctx->nrhs));
+    gpuErrchk(gpuMalloc(&ctx->d_rowsys, sizeof(int_t) * m_big));
+    gpuErrchk(gpuMalloc(&ctx->d_rowloc, sizeof(int_t) * m_big));
+    gpuErrchk(gpuMalloc(&ctx->d_rhsdst, sizeof(int_t) * m_big));
+    gpuErrchk(gpuMalloc(&ctx->d_xsrc,   sizeof(int_t) * m_big));
+    gpuErrchk(gpuMalloc(&ctx->d_rscale, sizeof(double) * m_big));
+    gpuErrchk(gpuMalloc(&ctx->d_cscale, sizeof(double) * m_big));
+    gpuErrchk(gpuMalloc(&ctx->d_RHSptrs, sizeof(double*) * batchCount));
+    gpuErrchk(gpuMalloc(&ctx->d_Xptrs,   sizeof(double*) * batchCount));
+    gpuErrchk(gpuMalloc(&ctx->d_ldRHS, sizeof(int) * batchCount));
+    gpuErrchk(gpuMalloc(&ctx->d_ldX,   sizeof(int) * batchCount));
+    gpuErrchk(gpuMemcpy(ctx->d_rowsys, rowsys.data(), sizeof(int_t) * m_big, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_rowloc, rowloc.data(), sizeof(int_t) * m_big, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_rhsdst, rhsdst.data(), sizeof(int_t) * m_big, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_xsrc,   xsrc.data(),   sizeof(int_t) * m_big, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_rscale, rscale.data(), sizeof(double) * m_big, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_cscale, cscale.data(), sizeof(double) * m_big, gpuMemcpyHostToDevice));
+    return 0;
+}
+
+int dvbatch_gpures_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, int nrhs)
+{
+    double t0 = SuperLU_timer_();
+    gpuErrchk(gpuMemcpy(ctx->d_RHSptrs, RHSptr, sizeof(double*) * batchCount, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_ldRHS, ldRHS, sizeof(int) * batchCount, gpuMemcpyHostToDevice));
+    int nthreads = 256;
+    int64_t nblocks = ((int64_t) ctx->m_big + nthreads - 1) / nthreads;
+    vbatchStackRhsKernel<<<(unsigned) nblocks, nthreads>>>(ctx->m_big, nrhs, ctx->d_rowsys, ctx->d_rowloc, ctx->d_rhsdst,
+                                                          ctx->d_rscale, ctx->d_RHSptrs, ctx->d_ldRHS, ctx->d_b);
+    gpuErrchk(gpuGetLastError());
+    gpuErrchk(gpuDeviceSynchronize());
+    printf("\tGPURES stack RHS time = %.4f\n", SuperLU_timer_() - t0);
+    return 0;
+}
+
+int dvbatch_gpures_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs)
+{
+    double t0 = SuperLU_timer_();
+    gpuErrchk(gpuMemcpy(ctx->d_Xptrs, Xptr, sizeof(double*) * batchCount, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_ldX, ldX, sizeof(int) * batchCount, gpuMemcpyHostToDevice));
+    int nthreads = 256;
+    int64_t nblocks = ((int64_t) ctx->m_big + nthreads - 1) / nthreads;
+    vbatchUnstackXKernel<<<(unsigned) nblocks, nthreads>>>(ctx->m_big, nrhs, ctx->d_rowsys, ctx->d_rowloc, ctx->d_xsrc,
+                                                          ctx->d_cscale, ctx->d_Xptrs, ctx->d_ldX, ctx->d_b);
+    gpuErrchk(gpuGetLastError());
+    gpuErrchk(gpuDeviceSynchronize());
+    printf("\tGPURES unstack X time = %.4f\n", SuperLU_timer_() - t0);
+    return 0;
+}
+
+void dvbatch_gpures_free(dvbatch_ctx_t *ctx)
+{
+    void **p[] = { (void**)&ctx->d_b, (void**)&ctx->d_rowsys, (void**)&ctx->d_rowloc, (void**)&ctx->d_rhsdst, (void**)&ctx->d_xsrc,
+                   (void**)&ctx->d_rscale, (void**)&ctx->d_cscale, (void**)&ctx->d_RHSptrs, (void**)&ctx->d_Xptrs,
+                   (void**)&ctx->d_ldRHS, (void**)&ctx->d_ldX };
+    for (size_t i = 0; i < sizeof(p) / sizeof(p[0]); ++i) if (*p[i]) { gpuErrchk(gpuFree(*p[i])); *p[i] = NULL; }
+}
+
+} /* extern "C" */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // C interface
@@ -1167,9 +1387,37 @@ int dbatchDevResSolveSetup(dBatchFactorizeWorkspace* ws, const int64_t *umap_hos
     return batchDevResSolveSetupT<double>(ws, umap_host, ucnt); 
 }
 
+int dbatchDevResSetupA(dBatchFactorizeWorkspace* ws, int nsys, int_t nnz2, const int64_t *posmap,
+                       const double *scale2, const int *ent_sys, const int *ent_idx, double anorm)
+{ 
+    return batchDevResSetupAT<double>(ws, nsys, nnz2, posmap, scale2, ent_sys, ent_idx, anorm); 
+}
+
+int dbatchDevResRefillA(dBatchFactorizeWorkspace* ws, int from_device, double **Aptrs, const int *nnzd)
+{ 
+    return batchDevResRefillAT<double>(ws, from_device, Aptrs, nnzd); 
+}
+
+int dbatchDevResAReady(dBatchFactorizeWorkspace* ws)
+{ 
+    return ws && ws->d_map2 != nullptr; 
+}
+
+int dbatchDevResAPrefilled(dBatchFactorizeWorkspace* ws)
+{ 
+    int f = ws ? ws->a_prefilled : 0;
+    if (ws) ws->a_prefilled = 0;
+    return f;
+}
+
+double dbatchDevResAnorm(dBatchFactorizeWorkspace* ws)
+{ 
+    return ws ? ws->anorm_cache : 0.0; 
+}
+
 int dbatchDevResSolveReady(dBatchFactorizeWorkspace* ws)
 { 
-    return ws && ws->d_umap != nullptr; 
+    return ws && ws->solve_ready; 
 }
 
 int dbatchDevResSolveRefresh(dBatchFactorizeWorkspace* ws, dLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol)

@@ -357,6 +357,7 @@ typedef struct {
     char dt;
     void *batch_dev;   /* device-resident batch factorization state (see
                           dbatchDevRes* in batch_factorize.cu); NULL if unused */
+    double batch_anorm; /* norm(A) of the first factorization, reused on fast steps */
 } dLUstruct_t;
 
 
@@ -445,6 +446,19 @@ typedef struct {
     int_t    *rowptr;       /* A_big rowptr,  size m_big+1 */
     double   *b;            /* stacked RHS / solution workspace, m_big*nrhs */
     double   *berr;         /* backward error of the stacked solve, size nrhs */
+    /* GPU-resident RHS/solution (options->GPURES == YES: RHSptr[] and Xptr[]
+       are device pointers).  Per stacked row g = (system d, local row i). */
+    double   *d_b;          /* stacked device RHS / solution, m_big*nrhs */
+    int_t    *d_rowsys;     /* d */
+    int_t    *d_rowloc;     /* i */
+    int_t    *d_rhsdst;     /* offset_m[d] + perm_c[perm_r[i]]: where b_big takes row i */
+    int_t    *d_xsrc;       /* offset_m[d] + perm_c[i]: where x_d[i] is read from */
+    double   *d_rscale;     /* R[i] or 1 */
+    double   *d_cscale;     /* C[i] or 1 */
+    double  **d_RHSptrs;    /* device copies of the per-system pointer arrays */
+    double  **d_Xptrs;
+    int      *d_ldRHS;
+    int      *d_ldX;
 } dvbatch_ctx_t;
 
 /*==== For 3D code ====*/

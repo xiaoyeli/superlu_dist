@@ -166,6 +166,23 @@ struct TBatchFactorizeWorkspace {
     // (Unzval_br_new_dat); -1 for entries with no source.
     int64_t *d_umap = nullptr;
     int64_t ucnt = 0;
+    int solve_ready = 0;             // stage 3 set up (map or row-data copy)
+
+    // Stage 4 (A side): map from each entry of the caller's per-system CSC
+    // values, concatenated in system order, to the device L/U slot, with the
+    // fixed equilibration R[i]*C[j] folded in.  Built once on the DOFACT call;
+    // afterwards a reuse step never touches A on the host.
+    int64_t *h_map = nullptr;        // host copy of d_map (stacked position -> slot)
+    int64_t *d_map2 = nullptr;       // entry q -> slot, -1 if none
+    double  *d_scale2 = nullptr;     // entry q -> R[i]*C[j]
+    int     *d_ent_sys = nullptr;    // entry q -> system d
+    int     *d_ent_idx = nullptr;    // entry q -> position in that system's nzval
+    double **d_Aptrs = nullptr;      // device copy of the per-system value pointers
+    double  *h_avals_cat = nullptr;  // pinned staging for host-side values
+    int_t    nnz2 = 0;
+    int      nsys = 0;
+    int      a_prefilled = 0;        // 1: the wrapper already refilled the device L/U
+    double   anorm_cache = 0.0;
 };
 
 #endif 

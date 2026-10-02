@@ -148,6 +148,19 @@ typedef struct cLUstruct_t cLUstruct_t;
     extern int dbatchDevResSolveSetup(dBatchFactorize_Handle ws, const int64_t *umap_host, int64_t ucnt);
     extern int dbatchDevResSolveReady(dBatchFactorize_Handle ws);
     extern int dbatchDevResSolveRefresh(dBatchFactorize_Handle ws, dLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol);
+    /* Stage 4: refill the device L/U straight from the caller's per-system values. */
+    extern int  dbatchDevResSetupA(dBatchFactorize_Handle ws, int nsys, int_t nnz2, const int64_t *posmap,
+                                   const double *scale2, const int *ent_sys, const int *ent_idx, double anorm);
+    extern int  dbatchDevResRefillA(dBatchFactorize_Handle ws, int from_device, double **Aptrs, const int *nnzd);
+    extern int  dbatchDevResAReady(dBatchFactorize_Handle ws);
+    extern int  dbatchDevResAPrefilled(dBatchFactorize_Handle ws);   /* returns and clears the flag */
+    extern double dbatchDevResAnorm(dBatchFactorize_Handle ws);
+    /* GPU-resident RHS/solution for the batched interface (options->GPURES). */
+    extern int  dvbatch_gpures_setup(dvbatch_ctx_t *ctx, int batchCount, int *m, int **RpivPtr, int **CpivPtr,
+                                     double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale);
+    extern int  dvbatch_gpures_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, int nrhs);
+    extern int  dvbatch_gpures_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs);
+    extern void dvbatch_gpures_free(dvbatch_ctx_t *ctx);
 
     // Double complex
     typedef struct zBatchFactorizeWorkspace* zBatchFactorize_Handle;
