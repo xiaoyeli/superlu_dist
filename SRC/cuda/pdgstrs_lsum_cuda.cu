@@ -2995,8 +2995,11 @@ void dlsum_fmod_inv_gpu_wrap
                         SOLVE_PROF_LEVEL("L", lvl, w, "block")
                     }
                 }
-            } else
-            dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, gemmflag, 0);
+            } else {
+                SOLVE_PROF_BEGIN("L")
+                dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, gemmflag, 0);
+                SOLVE_PROF_LEVEL("L", -1, nbcol_loc, "spin-wait")
+            }
         }else{
             dim3 dimBlock(nthread_x, nthread_y,1);
             dlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, 0);
@@ -4675,8 +4678,11 @@ if(procs==1){
                     SOLVE_PROF_LEVEL("U", lvl, w, "block")
                 }
             }
-        } else
-        dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag,NULL, 0);
+        } else {
+            SOLVE_PROF_BEGIN("U")
+            dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag,NULL, 0);
+            SOLVE_PROF_LEVEL("U", -1, nbcol_loc, "spin-wait")
+        }
     }else{
         dim3 dimBlock(nthread_x, nthread_y,1);
         // dlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,NULL,0);

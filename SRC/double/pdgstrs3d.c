@@ -3626,7 +3626,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     }else{
         nblock_loc=k;
     }
-    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0, Llu->levwarp);
+    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, (Llu->nlevels > 0 && get_solve_levels()) ? Llu->nlevels : 0, Llu->levwarp);
 	int nthx, nthy; slu_solve_block_dims(&nthx, &nthy);
 	dlsum_fmod_inv_gpu_wrap(nblock_loc,nlb,nthx,nthy,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked, d_grid,
                          maxrecvsz,
@@ -5742,7 +5742,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
     #endif
     }
 
-    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0, Llu->levwarp);
+    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, (Llu->nlevels > 0 && get_solve_levels()) ? Llu->nlevels : 0, Llu->levwarp);
     int nthx, nthy; slu_solve_block_dims(&nthx, &nthy);
     dlsum_bmod_inv_gpu_wrap(options, k,nlb,nthx,nthy,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
                         Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
@@ -7682,10 +7682,10 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
     {
     dLocalLU_t *Llu = LUstruct->Llu;
     /* Level-synchronous launches (single process): supernodes in the
-       elimination-tree level order of the factorization forest.  Built once;
-       SLU_SOLVE_LEVELS=0 disables it. */
-    if ( (grid3d->grid2d.nprow * grid3d->grid2d.npcol) == 1 && Llu->nlevels == 0 && Llu->d_levlist == NULL && trf3Dpartition &&
-	 !(getenv("SLU_SOLVE_LEVELS") && atoi(getenv("SLU_SOLVE_LEVELS")) == 0) ) {
+       elimination-tree level order of the factorization forest.  Built once
+       per pattern; whether a solve uses it is get_solve_levels()
+       (SLU_SOLVE_LEVELS, read at every solve). */
+    if ( (grid3d->grid2d.nprow * grid3d->grid2d.npcol) == 1 && Llu->nlevels == 0 && Llu->d_levlist == NULL && trf3Dpartition ) {
 	sForest_t *sf = trf3Dpartition->sForests[trf3Dpartition->myTreeIdxs[0]];
 	if ( sf && sf->nNodes == nsupers && Llu->nbcol_masked == nsupers ) {
 	    int nlev = (int) sf->topoInfo.numLvl;
@@ -7717,7 +7717,10 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 		    nwarp += Llu->levwarp[l];
 		}
 #if ( PRNTlevel>=1 )
-		printf(".. GPU trisolve: level-synchronous launches, %d levels (%d with the warp kernel)\n", nlev, nwarp);
+		if ( get_solve_levels() )
+		    printf(".. GPU trisolve: level-synchronous launches, %d levels (%d with the warp kernel)\n", nlev, nwarp);
+		else
+		    printf(".. GPU trisolve: single launch with spin-wait (SLU_SOLVE_LEVELS=0), %d tree levels\n", nlev);
 #endif
 	    }
 	} else {
