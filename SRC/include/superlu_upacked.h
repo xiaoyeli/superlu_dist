@@ -166,8 +166,17 @@ typedef struct cLUstruct_t cLUstruct_t;
     extern int  dvbatch_gpures_rescale(dvbatch_ctx_t *ctx, int batchCount, int *m, double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale);
     extern int  dvbatch_fast_setup(dvbatch_ctx_t *ctx, int batchCount, int *m, int **RpivPtr, int **CpivPtr, int nrhs,
                                    const int_t *fast_in, const int_t *fast_out, int_t xlen);
-    extern int  dvbatch_fast_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, int nrhs, double *d_x);
-    extern int  dvbatch_fast_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs, const double *d_x);
+    extern int  dvbatch_fast_send_ptrs(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, double **Xptr, int *ldX);
+    extern int  dvbatch_fast_stack(dvbatch_ctx_t *ctx, double *d_x, void *stream);
+    extern int  dvbatch_fast_unstack(dvbatch_ctx_t *ctx, int nrhs, const double *d_x, void *stream);
+    extern int  dvbatch_graph_begin(void *stream);
+    extern int  dvbatch_graph_end(void *stream, void **exec);
+    extern int  dvbatch_graph_launch(void *exec, void *stream);
+    extern void dvbatch_graph_free(void **exec);
+    extern void *dbatchDevResStream(dBatchFactorize_Handle ws);
+    extern void dbatchDevResSetFlags(dBatchFactorize_Handle ws, int defer_info, int capturing);
+    extern int  dbatchDevResInfoMax(dBatchFactorize_Handle ws);
+    extern int  dbatchDevResSendAptrs(dBatchFactorize_Handle ws, double **Aptrs);
 
     // Double complex
     typedef struct zBatchFactorizeWorkspace* zBatchFactorize_Handle;

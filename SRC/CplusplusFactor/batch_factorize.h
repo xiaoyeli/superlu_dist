@@ -209,6 +209,14 @@ struct TBatchFactorizeWorkspace {
     int      nsys = 0;
     int      a_prefilled = 0;        // 1: the wrapper already refilled the device L/U
     double   anorm_cache = 0.0;
+
+    // Pivot-replacement count of the last factorization (device maximum,
+    // pinned host copy), printed after a synchronization: by the
+    // factorization itself, or by the caller after its own (defer_info).
+    BatchDim_t *d_info_max = nullptr, *h_info_max = nullptr;
+    int      defer_info = 0;
+    int      capturing = 0;          // 1: a graph is being captured: no host syncs, no prints
+    T      **h_Aptrs = nullptr;      // last per-system value pointers sent to d_Aptrs
 };
 
 #endif 

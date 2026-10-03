@@ -208,6 +208,98 @@ static int dvbatch_sameperm_check(superlu_dist_options_t *options, int batchCoun
  * GPU build that churns the CUDA device binding and fails with
  * "cudaErrorInvalidDevice: invalid device ordinal".
  */
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+/* SLU_BATCH_GRAPH (default 1): capture the device work of a fast reuse call
+   in a CUDA graph and replay it afterwards.  Off under the per-kernel
+   profiling switches, which synchronize inside the call. */
+static int dvbatch_graph_on(void)
+{
+    static int on = -1;
+    if ( on < 0 ) {
+	const char *s = getenv("SLU_BATCH_GRAPH");
+	on = s ? (atoi(s) != 0) : 1;
+	if ( on && (getenv("SLU_BATCH_PROF") || getenv("SLU_SOLVE_PROF")) ) on = 0;
+    }
+    return on;
+}
+
+/* The device work of a fast reuse call, in order: refill of the factors from
+   the caller's device values, factorization and solve refresh inside
+   pdgssvx3d (nrhs = 0), then the gather in, the triangular solves and the
+   gather out, all on the workspace stream.  Run eagerly, with one
+   synchronization at the end, or under stream capture, where nothing
+   executes until the graph is launched. */
+static void dvbatch_reuse_run(dvbatch_ctx_t *ctx, dBatchFactorize_Handle devws, int fastA, double **Aptrs, const int *nnz,
+			      int nrhs, SuperLUStat_t *stat, int *info, void *stream, int capturing, double *t_solve)
+{
+    if ( fastA ) dbatchDevResRefillA(devws, 1, Aptrs, nnz);
+    pdgssvx3d(&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct), ctx->d_b, ctx->m_big, 0, &(ctx->grid),
+	      &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr, stat, info);
+    if ( *info ) return;
+    double t0 = SuperLU_timer_();
+    dvbatch_fast_stack(ctx, ctx->SOLVEstruct.d_x, stream);
+    pdgstrs3d_gpu_fast_solve(&(ctx->options_big), ctx->n_big, &(ctx->LUstruct), &(ctx->SOLVEstruct), &(ctx->grid), nrhs, stream);
+    dvbatch_fast_unstack(ctx, nrhs, ctx->SOLVEstruct.d_x, stream);
+    if ( !capturing ) checkGPU(gpuStreamSynchronize((gpuStream_t) stream));   /* the one synchronization of the call */
+    *t_solve = SuperLU_timer_() - t0;
+}
+
+/* Right after an eager run: record the same sequence, replay it and keep the
+   graph if the replay reproduces the eager solution. */
+static void dvbatch_graph_capture(dvbatch_ctx_t *ctx, dBatchFactorize_Handle devws, int fastA, double **Aptrs, const int *nnz,
+				  int batchCount, double **Xptr, int *ldX, int *m, int nrhs, SuperLUStat_t *stat, void *stream)
+{
+    int d, i, k, info2 = 0, ok;
+    double tdummy, t0 = SuperLU_timer_(), t1 = 0.0, t2 = 0.0;
+    double **xref = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+    for (d = 0; d < batchCount; ++d) {
+	size_t len = (size_t) ldX[d] * nrhs;
+	xref[d] = doubleMalloc_dist(len);
+	checkGPU(gpuMemcpy(xref[d], Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
+    }
+    dbatchDevResSetFlags(devws, 1, 1);
+    ok = (dvbatch_graph_begin(stream) == 0);
+    if ( ok ) {
+	dvbatch_reuse_run(ctx, devws, fastA, Aptrs, nnz, nrhs, stat, &info2, stream, 1, &tdummy);
+	ok = (dvbatch_graph_end(stream, &ctx->graph_exec) == 0) && info2 == 0;
+    }
+    dbatchDevResSetFlags(devws, 1, 0);
+    if ( ok ) {
+	double maxdiff = 0.0, maxabs = 0.0;
+	t1 = SuperLU_timer_();
+	dvbatch_graph_launch(ctx->graph_exec, stream);
+	t2 = SuperLU_timer_();
+	for (d = 0; d < batchCount; ++d) {
+	    size_t len = (size_t) ldX[d] * nrhs;
+	    double *xg = doubleMalloc_dist(len);
+	    checkGPU(gpuMemcpy(xg, Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
+	    for (k = 0; k < nrhs; ++k)
+		for (i = 0; i < m[d]; ++i) {
+		    double r = xref[d][(size_t) k * ldX[d] + i], df = fabs(xg[(size_t) k * ldX[d] + i] - r);
+		    if ( !(df <= maxdiff) ) maxdiff = df;      /* NaN counts as a mismatch */
+		    if ( fabs(r) > maxabs ) maxabs = fabs(r);
+		}
+	    SUPERLU_FREE(xg);
+	}
+	if ( maxdiff <= 1e-4 * maxabs ) {   /* same kernels, atomics order only: see the fast-solve check */
+	    ctx->graph_state = 1; ctx->graph_nrhs = nrhs; ctx->graph_batch = batchCount;
+	    printf("[graph] enabled: replay matches the eager run to %.3e (max |x| %.3e); replay %.3f ms, capture %.1f ms\n",
+		   maxdiff, maxabs, 1e3 * (t2 - t1), 1e3 * (t1 - t0));
+	} else {
+	    printf("[graph] replay differs from the eager run (max |diff| %.3e, max |x| %.3e): graph disabled\n", maxdiff, maxabs);
+	    ok = 0;
+	}
+    }
+    if ( !ok ) {
+	dvbatch_graph_free(&ctx->graph_exec); ctx->graph_state = -1;
+	for (d = 0; d < batchCount; ++d)   /* the eager result goes back */
+	    checkGPU(gpuMemcpy(Xptr[d], xref[d], sizeof(double) * (size_t) ldX[d] * nrhs, gpuMemcpyHostToDevice));
+    }
+    for (d = 0; d < batchCount; ++d) SUPERLU_FREE(xref[d]);
+    SUPERLU_FREE(xref);
+}
+#endif
+
 static void dvbatch_ctx_release_factors(dvbatch_ctx_t *ctx)
 {
     if ( !ctx->initialized ) return;
@@ -787,13 +879,14 @@ pdgssvx3d_csc_vbatch(
 
     if ( !fastA ) rowptr[row] = nnz_big;  /* +1 as an end marker */
 #ifdef HAVE_MAGMA
+    double **Aptrs = NULL;
     if ( fastA ) {
-	/* Device L/U straight from the caller's values (device or host). */
-	double **Aptrs = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+	/* Device L/U straight from the caller's values (device or host); on
+	   the fast path this is part of the device sequence further down. */
+	Aptrs = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
 	for (d = 0; d < batchCount; ++d)
 	    Aptrs[d] = (double *) ((NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store)->nzval;
-	dbatchDevResRefillA(devws, gpures, Aptrs, nnz);
-	SUPERLU_FREE(Aptrs);
+	if ( !fast ) { dbatchDevResRefillA(devws, gpures, Aptrs, nnz); SUPERLU_FREE(Aptrs); Aptrs = NULL; }
     }
 #endif
 
@@ -875,23 +968,40 @@ pdgssvx3d_csc_vbatch(
 #endif
     ctx->options_big.GPURES = gpures ? YES : NO;
     tv_solver0 = SuperLU_timer_(); tv_phase[1] = tv_solver0 - tv_stack0;
-    pdgssvx3d (&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct),
-	       gpures ? ctx->d_b : b, m_big, fast ? 0 : nrhs, &(ctx->grid),
-	       &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr, stat, info);
 #if defined(GPU_ACC) && defined(HAVE_MAGMA)
-    if ( fast && *info == 0 ) {
-	/* factors and diagonal inverses are on the device (stream-ordered):
-	   gather the RHS into the solver's x, solve, gather the solution out.
-	   The time includes whatever of the factorization is still running
-	   unless SLU_BATCH_SYNC synchronized it. */
-	double tv_fast0 = SuperLU_timer_();
-	dvbatch_fast_stack(ctx, batchCount, RHSptr, ldRHS, nrhs, ctx->SOLVEstruct.d_x);
-	pdgstrs3d_gpu_fast_solve(&(ctx->options_big), ctx->n_big, &(ctx->LUstruct), &(ctx->SOLVEstruct), &(ctx->grid), nrhs);
-	dvbatch_fast_unstack(ctx, batchCount, Xptr, ldX, nrhs, ctx->SOLVEstruct.d_x);
-	checkGPU(gpuDeviceSynchronize());   /* the one synchronization of the call */
-	tv_phase[5] = SuperLU_timer_() - tv_fast0;
-    }
+    if ( fast ) {
+	/* Fast path: the device sequence of dvbatch_reuse_run, replayed from
+	   a CUDA graph once one has been captured and checked.  The fast-solve
+	   time below includes whatever of the factorization is still running
+	   (the call synchronizes once, at its end). */
+	void *stream = dbatchDevResStream(devws);
+	int graph_on = fastA && dvbatch_graph_on();
+	if ( ctx->graph_state == 1 && (!graph_on || ctx->graph_nrhs != nrhs || ctx->graph_batch != batchCount) ) {
+	    dvbatch_graph_free(&ctx->graph_exec); ctx->graph_state = 0;
+	}
+	/* the per-system pointer arrays: synchronous copies when they changed,
+	   before any capture or replay */
+	dvbatch_fast_send_ptrs(ctx, batchCount, RHSptr, ldRHS, Xptr, ldX);
+	if ( fastA ) dbatchDevResSendAptrs(devws, Aptrs);
+	dbatchDevResSetFlags(devws, 1, 0);   /* the pivot count is printed after the synchronization */
+	if ( ctx->graph_state == 1 ) {
+	    double tg0 = SuperLU_timer_();
+	    dvbatch_graph_launch(ctx->graph_exec, stream);
+	    *info = 0;
+	    tv_phase[5] = SuperLU_timer_() - tg0;
+	} else {
+	    dvbatch_reuse_run(ctx, devws, fastA, Aptrs, nnz, nrhs, stat, info, stream, 0, &tv_phase[5]);
+	    if ( graph_on && ctx->graph_state == 0 && *info == 0 )
+		dvbatch_graph_capture(ctx, devws, fastA, Aptrs, nnz, batchCount, Xptr, ldX, m, nrhs, stat, stream);
+	}
+	printf("Factor info = 0 max_info = %d\n", dbatchDevResInfoMax(devws));
+	dbatchDevResSetFlags(devws, 0, 0);
+	if ( Aptrs ) { SUPERLU_FREE(Aptrs); Aptrs = NULL; }
+    } else
 #endif
+    pdgssvx3d (&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct),
+	       gpures ? ctx->d_b : b, m_big, nrhs, &(ctx->grid),
+	       &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr, stat, info);
     tv_phase[2] = SuperLU_timer_() - tv_solver0;
 #ifdef HAVE_MAGMA
     if ( buildA && ctx->LUstruct.batch_dev ) {
@@ -960,9 +1070,11 @@ pdgssvx3d_csc_vbatch(
 		xref[d] = doubleMalloc_dist(len);
 		checkGPU(gpuMemcpy(xref[d], Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
 	    }
-	    dvbatch_fast_stack(ctx, batchCount, RHSptr, ldRHS, nrhs, ctx->SOLVEstruct.d_x);
-	    pdgstrs3d_gpu_fast_solve(&(ctx->options_big), ctx->n_big, &(ctx->LUstruct), &(ctx->SOLVEstruct), &(ctx->grid), nrhs);
-	    dvbatch_fast_unstack(ctx, batchCount, Xptr, ldX, nrhs, ctx->SOLVEstruct.d_x);
+	    void *stream = dbatchDevResStream((dBatchFactorize_Handle) ctx->LUstruct.batch_dev);
+	    dvbatch_fast_send_ptrs(ctx, batchCount, RHSptr, ldRHS, Xptr, ldX);
+	    dvbatch_fast_stack(ctx, ctx->SOLVEstruct.d_x, stream);
+	    pdgstrs3d_gpu_fast_solve(&(ctx->options_big), ctx->n_big, &(ctx->LUstruct), &(ctx->SOLVEstruct), &(ctx->grid), nrhs, stream);
+	    dvbatch_fast_unstack(ctx, nrhs, ctx->SOLVEstruct.d_x, stream);
 	    checkGPU(gpuDeviceSynchronize());
 	    for (d = 0; d < batchCount; ++d) {
 		size_t len = (size_t) ldX[d] * nrhs;
@@ -978,8 +1090,9 @@ pdgssvx3d_csc_vbatch(
 		SUPERLU_FREE(xf);
 	    }
 	    /* both paths run the same kernels; they differ only in the order of
-	       the atomic accumulations, which the conditioning amplifies */
-	    if ( !(maxdiff <= 1e-6 * maxabs) ) {
+	       the atomic accumulations, which the conditioning amplifies (two
+	       solves of pwtk differ by 1e-6 relative; a wrong map gives O(1)) */
+	    if ( !(maxdiff <= 1e-4 * maxabs) ) {
 		printf("[fast solve] mismatch against the regular path (max |diff| %.3e, max |x| %.3e): fast path disabled\n", maxdiff, maxabs);
 		ctx->fast_xlen = 0;
 		for (d = 0; d < batchCount; ++d)   /* the regular result goes back */

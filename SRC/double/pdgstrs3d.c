@@ -7618,11 +7618,12 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
  *  already on the device, x already loaded in the solver's layout by the
  *  caller's gather).  None of the regular solve's host work: no allocations,
  *  no supernode loops, no counter resets (the per-level launches never read
- *  the counters), one asynchronous memset of lsum before each sweep.  No synchronization: the
- *  caller orders what follows on the same stream.
+ *  the counters), one asynchronous memset of lsum before each sweep, everything
+ *  on the caller's stream.  No synchronization: the caller orders what
+ *  follows on that stream, or captures the whole call in a graph.
  */
 void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
-                              dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d, int nrhs)
+                              dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d, int nrhs, void *stream)
 {
     gridinfo_t *grid = &(grid3d->grid2d);
     dLocalLU_t *Llu = LUstruct->Llu;
@@ -7638,7 +7639,8 @@ void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *options, int_t n, dLUstruc
     gridinfo_t *d_grid = Llu->d_grid;
     int nthx, nthy;
 
-    checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(double), 0));
+    checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(double), (gpuStream_t) stream));
+    dlsum_set_solve_stream(stream);
     dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0, Llu->levwarp);
     slu_solve_block_dims(&nthx, &nthy);
     dlsum_fmod_inv_gpu_wrap(Llu->nbcol_masked, nlb, nthx, nthy, d_lsum, d_x, nrhs, knsupc, nsupers, SOLVEstruct->d_fmod,
@@ -7650,7 +7652,7 @@ void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *options, int_t n, dLUstruc
         d_mynummod, d_mymaskstartmod, d_mymasklengthmod, d_recv_cnt, d_msgnum, d_flag_mod, procs);
     /* the forward solve leaves its partial sums in lsum; the backward solve
        accumulates into the same array (the regular path recopies the zeros) */
-    checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(double), 0));
+    checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(double), (gpuStream_t) stream));
     dlsum_bmod_inv_gpu_wrap(options, k, nlb, nthx, nthy, d_lsum, d_x, nrhs, knsupc, nsupers, SOLVEstruct->d_bmod,
         Llu->d_UBtree_ptr, Llu->d_URtree_ptr, Llu->d_ilsum, Llu->d_Ucolind_bc_dat, Llu->d_Ucolind_bc_offset,
         Llu->d_Ucolind_br_dat, Llu->d_Ucolind_br_offset, Llu->d_Uind_br_dat, Llu->d_Uind_br_offset,
@@ -7660,6 +7662,7 @@ void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *options, int_t n, dLUstruc
         d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u, d_mymasklength_u,
         d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
         d_recv_cnt_u, d_msgnum, d_flag_mod_u, procs);
+    dlsum_set_solve_stream(NULL);
 }
 #endif
 

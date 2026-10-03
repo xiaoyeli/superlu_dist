@@ -75,6 +75,14 @@ void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwa
 {
     g_solve_levlist = d_levlist; g_solve_levlims = levlims; g_solve_nlev = nlev; g_solve_levwarp = levwarp;
 }
+/* Stream of the level launches (0: the legacy default stream).  The batched
+   interface's fast solve sets it so that the whole reuse call is ordered on
+   one stream and can be captured in a graph. */
+static cudaStream_t g_solve_stream = 0;
+void dlsum_set_solve_stream(void *stream)
+{
+    g_solve_stream = (cudaStream_t) stream;
+}
 /* SLU_SOLVE_PROF=1: synchronize after every level launch and print its time */
 static int solve_prof_on(void)
 { static int on = -1; if (on < 0) { const char *e = getenv("SLU_SOLVE_PROF"); on = e ? atoi(e) : 0; } return on; }
@@ -2988,10 +2996,10 @@ void dlsum_fmod_inv_gpu_wrap
                     if (w <= 0) continue;
                     int *list = g_solve_levlist + g_solve_levlims[lvl];
                     if (nrhs == 1 && g_solve_levwarp && g_solve_levwarp[lvl]) {
-                        dlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(w, nwarp_blk), dimBlock >>>(w,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,list, grid, 1);
+                        dlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(w, nwarp_blk), dimBlock, 0, g_solve_stream >>>(w,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,list, grid, 1);
                         SOLVE_PROF_LEVEL("L", lvl, w, "warp")
                     } else {
-                        dlsum_fmod_inv_gpu_mrhs<<< w, dimBlock >>>(w,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,list, grid, gemmflag, 1);
+                        dlsum_fmod_inv_gpu_mrhs<<< w, dimBlock, 0, g_solve_stream >>>(w,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,list, grid, gemmflag, 1);
                         SOLVE_PROF_LEVEL("L", lvl, w, "block")
                     }
                 }
@@ -4671,10 +4679,10 @@ if(procs==1){
                 if (w <= 0) continue;
                 int *list = g_solve_levlist + g_solve_levlims[lvl];
                 if (nrhs == 1 && g_solve_levwarp && g_solve_levwarp[lvl]) {
-                    dlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(w, nwarp_blk), dimBlock >>>(w,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,list, 1);
+                    dlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(w, nwarp_blk), dimBlock, 0, g_solve_stream >>>(w,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,list, 1);
                     SOLVE_PROF_LEVEL("U", lvl, w, "warp")
                 } else {
-                    dlsum_bmod_inv_gpu_mrhs<<< w, dimBlock >>>(w,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag,list, 1);
+                    dlsum_bmod_inv_gpu_mrhs<<< w, dimBlock, 0, g_solve_stream >>>(w,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag,list, 1);
                     SOLVE_PROF_LEVEL("U", lvl, w, "block")
                 }
             }

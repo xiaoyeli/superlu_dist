@@ -485,6 +485,11 @@ typedef struct {
     double  **h_RHSptrs;    /* last pointer arrays sent to the device (skip the copy when unchanged) */
     double  **h_Xptrs;
     int      *h_ldRHS, *h_ldX;
+    /* CUDA graph of the device work of a fast reuse call: captured on the
+       first such call after a check against the eager run, replayed after */
+    void     *graph_exec;
+    int       graph_state;  /* 0 none yet, 1 ready, -1 off (capture failed or replay differed) */
+    int       graph_nrhs, graph_batch;
 } dvbatch_ctx_t;
 
 /*==== For 3D code ====*/
@@ -821,7 +826,8 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int);
 
 extern void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwarp);
-extern void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *, int_t, dLUstruct_t *, dSOLVEstruct_t *, gridinfo3d_t *, int);
+extern void dlsum_set_solve_stream(void *stream);
+extern void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *, int_t, dLUstruct_t *, dSOLVEstruct_t *, gridinfo3d_t *, int, void *stream);
 extern void dlsum_fmod_inv_gpu_wrap(int, int, int, int, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *,
 int_t , uint64_t* ,uint64_t* ,double* ,double* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int);
 

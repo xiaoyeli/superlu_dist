@@ -674,6 +674,17 @@ void buildLevelCacheT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sforest)
         c.scu_ilen[l] = sc.max_ilen; c.scu_jlen[l] = sc.max_jlen;
     }
     gpuErrchk(gpuDeviceSynchronize());
+    if (!ws->d_info_max) {
+        gpuErrchk(gpuMalloc(&ws->d_info_max, sizeof(BatchDim_t)));
+#ifdef HAVE_CUDA
+        if (cudaHostAlloc((void**)&ws->h_info_max, sizeof(BatchDim_t), cudaHostAllocDefault) != cudaSuccess) {
+            cudaGetLastError(); ws->h_info_max = (BatchDim_t *) malloc(sizeof(BatchDim_t));
+        }
+#else
+        ws->h_info_max = (BatchDim_t *) malloc(sizeof(BatchDim_t));
+#endif
+        *ws->h_info_max = 0;
+    }
     c.valid = 1;
     printf("\tBatch level cache: %lld levels, %lld supernodes, built in %.4f s\n", (long long) nlev, (long long) nnodes, SuperLU_timer_() - t0);
 }
@@ -780,6 +791,21 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t lvl)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* Maximum of the per-supernode pivot-replacement counts, one block. */
+__global__ void maxInfoKernel(const BatchDim_t* info, int_t n, BatchDim_t* out)
+{
+    __shared__ BatchDim_t sh[256];
+    BatchDim_t m = 0;
+    for (int_t i = threadIdx.x; i < n; i += blockDim.x) if (info[i] > m) m = info[i];
+    sh[threadIdx.x] = m;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s && sh[threadIdx.x + s] > sh[threadIdx.x]) sh[threadIdx.x] = sh[threadIdx.x + s];
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) *out = sh[0];
+}
+
 template<class T>
 int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sforest)
 {
@@ -816,18 +842,24 @@ int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sfores
     for(int_t topoLvl = 0; topoLvl < maxTopoLevel; topoLvl++)
         TFactBatchSolve<T>(ws, topoLvl);
 
-    /* pivot replacements: one reduction over all levels instead of one per level */
-    {
-        int max_info = thrust::reduce(gpu_thrust_par, ws->lcache.info, ws->lcache.info + nnodes, 0, thrust::maximum<BatchDim_t>());
-        printf("Factor info = 0 max_info = %d\n", max_info);
+    /* pivot replacements: one reduction over all levels, stream-ordered into
+       pinned host memory; printed here after a synchronization, or by the
+       caller after its own (defer_info: the fast path's one sync per call) */
+    maxInfoKernel<<<1, 256, 0, ws->stream>>>(ws->lcache.info, nnodes, ws->d_info_max);
+    gpuErrchk(gpuGetLastError());
+    gpuErrchk(gpuMemcpyAsync(ws->h_info_max, ws->d_info_max, sizeof(BatchDim_t), gpuMemcpyDeviceToHost, ws->stream));
+    if (!ws->defer_info && !ws->capturing) {
+        gpuErrchk(gpuStreamSynchronize(ws->stream));
+        printf("Factor info = 0 max_info = %d\n", (int) *ws->h_info_max);
     }
 
     /* The last scatter kernel is asynchronous; without this the caller's
        timer stops before the factorization has finished on the device. */
-    if (getenv("SLU_BATCH_SYNC") || slu_bprof_on()) gpuErrchk(gpuDeviceSynchronize());
-    if (getenv("SLU_BATCH_SYNC") || slu_bprof_on())
+    const int want_sync = !ws->capturing && (getenv("SLU_BATCH_SYNC") || slu_bprof_on());
+    if (want_sync) gpuErrchk(gpuDeviceSynchronize());
+    if (want_sync)
         printf("[bsync] synchronized batch factorization wall %.3f ms\n", 1e3*(SuperLU_timer_() - bprof_t0));
-    if (slu_bprof_on()) {
+    if (slu_bprof_on() && !ws->capturing) {
         double *t = slu_bprof_tot;
         printf("[bprof] TOTAL levels %lld nsup %lld | ms: marshal %.3f getrf %.3f info %.3f trsmU %.3f trsmL %.3f gemm %.3f scatter %.3f | sum %.3f\n",
                (long long)maxTopoLevel, (long long)nnodes, 1e3*t[0], 1e3*t[1], 1e3*t[2], 1e3*t[3], 1e3*t[4], 1e3*t[5], 1e3*t[6],
@@ -1179,6 +1211,20 @@ int batchDevResSetupAT(TBatchFactorizeWorkspace<T>* ws, int nsys, int_t nnz2, co
    device and come across the bus in one copy; host values the caller copies
    into the returned buffer itself.  The buffer is scratch: the next refill
    overwrites it. */
+/* The per-system value pointers go to the device only when they changed
+   (a synchronous copy of pageable memory): never while a graph is captured,
+   so the caller sends them before the capture. */
+template<class T>
+int batchDevResSendAptrsT(TBatchFactorizeWorkspace<T>* ws, T **Aptrs)
+{
+    if (!ws->d_Aptrs) return -1;
+    if (ws->h_Aptrs && memcmp(ws->h_Aptrs, Aptrs, sizeof(T*) * ws->nsys) == 0) return 0;
+    if (!ws->h_Aptrs) ws->h_Aptrs = (T **) malloc(sizeof(T*) * ws->nsys);
+    memcpy(ws->h_Aptrs, Aptrs, sizeof(T*) * ws->nsys);
+    gpuErrchk(gpuMemcpy(ws->d_Aptrs, Aptrs, sizeof(T*) * ws->nsys, gpuMemcpyHostToDevice));
+    return 1;
+}
+
 template<class T>
 __global__ void gatherSysPtrsKernel(T* const* Aptrs, const int* ent_sys, const int* ent_idx, int_t nnz, T* out)
 {
@@ -1195,7 +1241,7 @@ int batchDevResGatherAT(TBatchFactorizeWorkspace<T>* ws, int from_device, T **Ap
     if (!from_device) return 0;
     int nthreads = 256;
     int64_t nblocks = ((int64_t) ws->nnz2 + nthreads - 1) / nthreads;
-    gpuErrchk(gpuMemcpyAsync(ws->d_Aptrs, Aptrs, sizeof(T*) * ws->nsys, gpuMemcpyHostToDevice, ws->stream));
+    if (!ws->capturing) batchDevResSendAptrsT<T>(ws, Aptrs);
     gatherSysPtrsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(ws->d_Aptrs, ws->d_ent_sys, ws->d_ent_idx, ws->nnz2, ws->d_avals);
     gpuErrchk(gpuGetLastError());
     gpuErrchk(gpuMemcpyAsync(ws->h_avals_cat, ws->d_avals, sizeof(T) * (size_t) ws->nnz2, gpuMemcpyDeviceToHost, ws->stream));
@@ -1224,7 +1270,7 @@ int batchDevResRefillAT(TBatchFactorizeWorkspace<T>* ws, int from_device, T **Ap
     int nthreads = 256;
     int64_t nblocks = ((int64_t) ws->nnz2 + nthreads - 1) / nthreads;
     if (from_device) {
-        gpuErrchk(gpuMemcpyAsync(ws->d_Aptrs, Aptrs, sizeof(T*) * ws->nsys, gpuMemcpyHostToDevice, ws->stream));
+        if (!ws->capturing) batchDevResSendAptrsT<T>(ws, Aptrs);
         t1 = SuperLU_timer_();
         scatterSysPtrsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(ws->d_Aptrs, ws->d_ent_sys, ws->d_ent_idx, ws->d_map2, ws->d_scale2,
                                                                                   ws->nnz2, (int64_t) d.Lnzval_bc_cnt, d.Lnzval_bc_dat, d.Unzval_br_new_dat);
@@ -1252,6 +1298,7 @@ template<class T>
 void batchDevResFreeT(TBatchFactorizeWorkspace<T>* ws)
 {
     if (ws->h_map) { free(ws->h_map); ws->h_map = nullptr; }
+    if (ws->h_Aptrs) { free(ws->h_Aptrs); ws->h_Aptrs = nullptr; }
     if (ws->d_map2)    { gpuErrchk(gpuFree(ws->d_map2));    ws->d_map2 = nullptr; }
     if (ws->d_scale2)  { gpuErrchk(gpuFree(ws->d_scale2));  ws->d_scale2 = nullptr; }
     if (ws->d_ent_sys) { gpuErrchk(gpuFree(ws->d_ent_sys)); ws->d_ent_sys = nullptr; }
@@ -1305,6 +1352,15 @@ void freeBatchFactorizeWorkspaceT(TBatchFactorizeWorkspace<T>* ws)
     gpublasDestroy( ws->cuhandle );
     gpuErrchk( gpuStreamDestroy(ws->stream) );
     freeLevelCacheT<T>(ws);
+    if (ws->d_info_max) { gpuErrchk(gpuFree(ws->d_info_max)); ws->d_info_max = nullptr; }
+    if (ws->h_info_max) {
+#ifdef HAVE_CUDA
+        if (cudaFreeHost(ws->h_info_max) != cudaSuccess) { cudaGetLastError(); free(ws->h_info_max); }
+#else
+        free(ws->h_info_max);
+#endif
+        ws->h_info_max = nullptr;
+    }
     //YL: not sure why the destructor TBatchLUMarshallData and TBatchSCUMarshallData are not called. Calling them explicitly here. 
     ws->marshall_data.DeleteTBatchLUMarshallData();
     ws->sc_marshall_data.DeleteTBatchSCUMarshallData();
@@ -1379,11 +1435,22 @@ int dvbatch_gpures_setup(dvbatch_ctx_t *ctx, int batchCount, int *m, int **RpivP
     return 0;
 }
 
+/* The per-system pointer arrays only go to the device when they changed
+   since the last call (a synchronous copy of pageable memory otherwise). */
+static int vbatch_send_ptrs(double **d_ptrs, int *d_ld, double ***h_ptrs, int **h_ld, double **ptrs, int *ld, int n)
+{
+    if (*h_ptrs && memcmp(*h_ptrs, ptrs, sizeof(double*) * n) == 0 && memcmp(*h_ld, ld, sizeof(int) * n) == 0) return 0;
+    if (!*h_ptrs) { *h_ptrs = (double **) malloc(sizeof(double*) * n); *h_ld = (int *) malloc(sizeof(int) * n); }
+    memcpy(*h_ptrs, ptrs, sizeof(double*) * n); memcpy(*h_ld, ld, sizeof(int) * n);
+    gpuErrchk(gpuMemcpy(d_ptrs, ptrs, sizeof(double*) * n, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(d_ld, ld, sizeof(int) * n, gpuMemcpyHostToDevice));
+    return 1;
+}
+
 int dvbatch_gpures_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, int nrhs)
 {
     double t0 = SuperLU_timer_();
-    gpuErrchk(gpuMemcpy(ctx->d_RHSptrs, RHSptr, sizeof(double*) * batchCount, gpuMemcpyHostToDevice));
-    gpuErrchk(gpuMemcpy(ctx->d_ldRHS, ldRHS, sizeof(int) * batchCount, gpuMemcpyHostToDevice));
+    vbatch_send_ptrs(ctx->d_RHSptrs, ctx->d_ldRHS, &ctx->h_RHSptrs, &ctx->h_ldRHS, RHSptr, ldRHS, batchCount);
     int nthreads = 256;
     int64_t nblocks = ((int64_t) ctx->m_big + nthreads - 1) / nthreads;
     vbatchStackRhsKernel<<<(unsigned) nblocks, nthreads>>>(ctx->m_big, nrhs, ctx->d_rowsys, ctx->d_rowloc, ctx->d_rhsdst,
@@ -1396,8 +1463,7 @@ int dvbatch_gpures_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, in
 int dvbatch_gpures_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs)
 {
     double t0 = SuperLU_timer_();
-    gpuErrchk(gpuMemcpy(ctx->d_Xptrs, Xptr, sizeof(double*) * batchCount, gpuMemcpyHostToDevice));
-    gpuErrchk(gpuMemcpy(ctx->d_ldX, ldX, sizeof(int) * batchCount, gpuMemcpyHostToDevice));
+    vbatch_send_ptrs(ctx->d_Xptrs, ctx->d_ldX, &ctx->h_Xptrs, &ctx->h_ldX, Xptr, ldX, batchCount);
     int nthreads = 256;
     int64_t nblocks = ((int64_t) ctx->m_big + nthreads - 1) / nthreads;
     vbatchUnstackXKernel<<<(unsigned) nblocks, nthreads>>>(ctx->m_big, nrhs, ctx->d_rowsys, ctx->d_rowloc, ctx->d_xsrc,
@@ -1455,18 +1521,6 @@ __global__ void vbatchFastUnstackKernel(int_t m_big, int nrhs, const int_t* fout
     Xptrs[d][(int64_t) j * ldX[d] + i] = cscale[g] * x[fout_s[q]];
 }
 
-/* The per-system pointer arrays only go to the device when they changed
-   since the last call (a synchronous copy of pageable memory otherwise). */
-static int vbatch_send_ptrs(double **d_ptrs, int *d_ld, double ***h_ptrs, int **h_ld, double **ptrs, int *ld, int n)
-{
-    if (*h_ptrs && memcmp(*h_ptrs, ptrs, sizeof(double*) * n) == 0 && memcmp(*h_ld, ld, sizeof(int) * n) == 0) return 0;
-    if (!*h_ptrs) { *h_ptrs = (double **) malloc(sizeof(double*) * n); *h_ld = (int *) malloc(sizeof(int) * n); }
-    memcpy(*h_ptrs, ptrs, sizeof(double*) * n); memcpy(*h_ld, ld, sizeof(int) * n);
-    gpuErrchk(gpuMemcpy(d_ptrs, ptrs, sizeof(double*) * n, gpuMemcpyHostToDevice));
-    gpuErrchk(gpuMemcpy(d_ld, ld, sizeof(int) * n, gpuMemcpyHostToDevice));
-    return 1;
-}
-
 int dvbatch_fast_setup(dvbatch_ctx_t *ctx, int batchCount, int *m, int **RpivPtr, int **CpivPtr, int nrhs,
                        const int_t *fast_in, const int_t *fast_out, int_t xlen)
 {
@@ -1504,26 +1558,87 @@ int dvbatch_fast_setup(dvbatch_ctx_t *ctx, int batchCount, int *m, int **RpivPtr
     return 0;
 }
 
-int dvbatch_fast_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, int nrhs, double *d_x)
+int dvbatch_fast_send_ptrs(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, double **Xptr, int *ldX)
 {
     vbatch_send_ptrs(ctx->d_RHSptrs, ctx->d_ldRHS, &ctx->h_RHSptrs, &ctx->h_ldRHS, RHSptr, ldRHS, batchCount);
+    vbatch_send_ptrs(ctx->d_Xptrs, ctx->d_ldX, &ctx->h_Xptrs, &ctx->h_ldX, Xptr, ldX, batchCount);
+    return 0;
+}
+
+int dvbatch_fast_stack(dvbatch_ctx_t *ctx, double *d_x, void *stream)
+{
     int nthreads = 256;
     int64_t nblocks = ((int64_t) ctx->fast_xlen + nthreads - 1) / nthreads;
-    vbatchFastStackKernel<<<(unsigned) nblocks, nthreads>>>(ctx->fast_xlen, ctx->d_fin_g, ctx->d_fin_j, ctx->d_rowsys, ctx->d_rowloc,
-                                                           ctx->d_rscale, ctx->d_RHSptrs, ctx->d_ldRHS, d_x);
+    vbatchFastStackKernel<<<(unsigned) nblocks, nthreads, 0, (gpuStream_t) stream>>>(ctx->fast_xlen, ctx->d_fin_g, ctx->d_fin_j, ctx->d_rowsys, ctx->d_rowloc,
+                                                                                    ctx->d_rscale, ctx->d_RHSptrs, ctx->d_ldRHS, d_x);
     gpuErrchk(gpuGetLastError());
     return 0;
 }
 
-int dvbatch_fast_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs, const double *d_x)
+int dvbatch_fast_unstack(dvbatch_ctx_t *ctx, int nrhs, const double *d_x, void *stream)
 {
-    vbatch_send_ptrs(ctx->d_Xptrs, ctx->d_ldX, &ctx->h_Xptrs, &ctx->h_ldX, Xptr, ldX, batchCount);
     int nthreads = 256;
     int64_t nblocks = ((int64_t) ctx->m_big * nrhs + nthreads - 1) / nthreads;
-    vbatchFastUnstackKernel<<<(unsigned) nblocks, nthreads>>>(ctx->m_big, nrhs, ctx->d_fout_s, ctx->d_rowsys, ctx->d_rowloc,
-                                                             ctx->d_cscale, ctx->d_Xptrs, ctx->d_ldX, d_x);
+    vbatchFastUnstackKernel<<<(unsigned) nblocks, nthreads, 0, (gpuStream_t) stream>>>(ctx->m_big, nrhs, ctx->d_fout_s, ctx->d_rowsys, ctx->d_rowloc,
+                                                                                      ctx->d_cscale, ctx->d_Xptrs, ctx->d_ldX, d_x);
     gpuErrchk(gpuGetLastError());
     return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CUDA graph of a whole reuse call: everything issued on the stream between begin and end is recorded, not run; the
+// instantiated graph replays it with one launch.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int dvbatch_graph_begin(void *stream)
+{
+#ifdef HAVE_CUDA
+    cudaError_t e = cudaStreamBeginCapture((cudaStream_t) stream, cudaStreamCaptureModeRelaxed);
+    if (e != cudaSuccess) { printf("[graph] begin capture failed: %s\n", cudaGetErrorString(e)); (void) cudaGetLastError(); return -1; }
+    return 0;
+#else
+    return -1;
+#endif
+}
+
+int dvbatch_graph_end(void *stream, void **exec)
+{
+#ifdef HAVE_CUDA
+    cudaGraph_t g = NULL; cudaGraphExec_t x = NULL;
+    cudaError_t e = cudaStreamEndCapture((cudaStream_t) stream, &g);
+    if (e != cudaSuccess || g == NULL) { printf("[graph] end capture failed: %s\n", cudaGetErrorString(e)); (void) cudaGetLastError(); return -1; }
+    size_t nnodes = 0;
+    cudaGraphGetNodes(g, NULL, &nnodes);
+#if CUDART_VERSION >= 12000
+    e = cudaGraphInstantiate(&x, g, 0);
+#else
+    e = cudaGraphInstantiate(&x, g, NULL, NULL, 0);
+#endif
+    cudaGraphDestroy(g);
+    if (e != cudaSuccess) { printf("[graph] instantiate failed: %s\n", cudaGetErrorString(e)); (void) cudaGetLastError(); return -1; }
+    *exec = (void *) x;
+    printf("[graph] captured the reuse call: %zu nodes\n", nnodes);
+    return 0;
+#else
+    return -1;
+#endif
+}
+
+int dvbatch_graph_launch(void *exec, void *stream)
+{
+#ifdef HAVE_CUDA
+    gpuErrchk(cudaGraphLaunch((cudaGraphExec_t) exec, (cudaStream_t) stream));
+    gpuErrchk(cudaStreamSynchronize((cudaStream_t) stream));
+    return 0;
+#else
+    return -1;
+#endif
+}
+
+void dvbatch_graph_free(void **exec)
+{
+#ifdef HAVE_CUDA
+    if (*exec) { cudaGraphExecDestroy((cudaGraphExec_t) *exec); *exec = NULL; }
+#endif
 }
 
 void dvbatch_gpures_free(dvbatch_ctx_t *ctx)
@@ -1535,6 +1650,7 @@ void dvbatch_gpures_free(dvbatch_ctx_t *ctx)
     void **h[] = { (void**)&ctx->h_RHSptrs, (void**)&ctx->h_Xptrs, (void**)&ctx->h_ldRHS, (void**)&ctx->h_ldX };
     for (size_t i = 0; i < sizeof(h) / sizeof(h[0]); ++i) if (*h[i]) { free(*h[i]); *h[i] = NULL; }
     ctx->fast_xlen = 0;
+    dvbatch_graph_free(&ctx->graph_exec); ctx->graph_state = 0;
 }
 
 } /* extern "C" */
@@ -1675,6 +1791,26 @@ int dbatchDevResSolveReady(dBatchFactorizeWorkspace* ws)
 int dbatchDevResSolveRefresh(dBatchFactorizeWorkspace* ws, dLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol)
 { 
     return batchDevResSolveRefreshT<double>(ws, LUstruct, nsupers, npcol, mycol); 
+}
+
+void *dbatchDevResStream(dBatchFactorizeWorkspace* ws)
+{
+    return ws ? (void *) ws->stream : NULL;
+}
+
+void dbatchDevResSetFlags(dBatchFactorizeWorkspace* ws, int defer_info, int capturing)
+{
+    if (ws) { ws->defer_info = defer_info; ws->capturing = capturing; }
+}
+
+int dbatchDevResInfoMax(dBatchFactorizeWorkspace* ws)
+{
+    return (ws && ws->h_info_max) ? (int) *ws->h_info_max : 0;
+}
+
+int dbatchDevResSendAptrs(dBatchFactorizeWorkspace* ws, double **Aptrs)
+{
+    return batchDevResSendAptrsT<double>(ws, Aptrs);
 }
 
 //doublecomplex 
