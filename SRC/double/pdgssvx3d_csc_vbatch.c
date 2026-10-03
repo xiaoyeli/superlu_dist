@@ -22,6 +22,184 @@ at the top-level directory.
 #include "superlu_defs.h"
 #include "superlu_upacked.h"
 #include <stdbool.h>
+#include <string.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+/* Threads for the per-system preprocessing loops (equilibration, MC64,
+   scaling refresh), which are independent across systems.  SLU_BATCH_THREADS
+   overrides; the default is the number of cores available to the process,
+   independently of OMP_NUM_THREADS, which governs the solver's own regions. */
+static int dvbatch_prep_threads(void)
+{
+#ifdef _OPENMP
+    static int nt = -1;
+    if (nt < 0) { const char *e = getenv("SLU_BATCH_THREADS"); nt = e ? atoi(e) : omp_get_num_procs(); if (nt < 1) nt = 1; }
+    return nt;
+#else
+    return 1;
+#endif
+}
+
+/* Acceptance of the stored row permutation on a SamePattern call
+   (SLU_BATCH_MC64_TOL, default 0.1): the stored permutation is kept when the
+   product of its diagonal under the new (equilibrated) values is within a
+   factor exp(tol) of the product MC64 finds for them; MC64 is computed
+   either way.  0 requires an identical permutation, which on matrices with
+   many equal entries (MC64 ties) fails for any change of the values: on the
+   IEEE39 EMT matrices a relative change of 1e-6 moves about 40 rows per
+   system while the product changes by 3e-5. */
+static double dvbatch_mc64_tol(void)
+{
+    static double tol = -1.0;
+    if (tol < 0.0) { const char *e = getenv("SLU_BATCH_MC64_TOL"); tol = e ? atof(e) : 0.1; if (tol < 0.0) tol = 0.0; }
+    return tol;
+}
+
+static int dvbatch_devres_on(void)
+{
+    static int on = -1;
+    if (on < 0) { const char *e = getenv("SLU_BATCH_DEVRES"); on = e ? (atoi(e) != 0) : 1; }
+    return on;
+}
+
+/*! \brief Fact = SamePattern on an existing state: recompute the equilibration
+ *  and the row permutation of every matrix from its new values and tell
+ *  whether any row permutation changed.
+ *
+ * Works on scratch copies, in parallel over the batch, so the caller's
+ * matrices are untouched (their values may live on the device).  On return
+ * ReqPtr/CeqPtr/DiagScale hold the new scalings and RpivPtr the new row
+ * permutations, exactly as dequil_vbatch() + dpivot_vbatch() would leave
+ * them.  Returns 1 when every row permutation is the one the state was built
+ * with: the caller can then go on as SamePattern_SameRowPerm and only has to
+ * refresh the scalings.
+ */
+static int dvbatch_sameperm_check(superlu_dist_options_t *options, int batchCount, int *m, int *n,
+				  handle_t *SparseMatrix_handles, double **ReqPtr, double **CeqPtr,
+				  DiagScale_t *DiagScale, int **RpivPtr, int gpures, void *devws,
+				  SuperLUStat_t *stat)
+{
+    int Equil = (options->Equil == YES);
+    int changed = 0, nsys_changed = 0, nrows_changed = 0, nsys_tol = 0;
+    double tol = dvbatch_mc64_tol(), worst_gap = 0.0;
+    double t = SuperLU_timer_();
+    int nthreads = dvbatch_prep_threads();
+
+    /* All values in one pinned host buffer (scratch): device values come
+       across in one gather + one copy instead of one copy per system. */
+    int_t *q0 = (int_t *) SUPERLU_MALLOC((batchCount + 1) * sizeof(int_t));
+    double **Aptrs = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+    q0[0] = 0;
+    for (int d = 0; d < batchCount; ++d) {
+	NCformat *Astore = (NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store;
+	Aptrs[d] = (double *) Astore->nzval;
+	q0[d + 1] = q0[d] + Astore->nnz;
+    }
+    double *acat = NULL;
+    if ( dbatchDevResGatherA((dBatchFactorize_Handle) devws, gpures, Aptrs, &acat) || !acat )
+	ABORT("SamePattern: the A-side map does not match the batch");
+    double t_gather = SuperLU_timer_() - t;
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 4) num_threads(nthreads) reduction(|:changed) reduction(+:nsys_changed,nrows_changed,nsys_tol) reduction(max:worst_gap)
+#endif
+    for (int d = 0; d < batchCount; ++d) {
+	SuperMatrix *Ad = (SuperMatrix *) SparseMatrix_handles[d];
+	NCformat *Astore = (NCformat *) Ad->Store;
+	int_t nnz = Astore->nnz;
+	int i, j, iinfo;
+
+	/* scratch: the values (this system's segment of the gathered buffer)
+	   and copies of the index arrays, which MC64 shifts in place */
+	double *a = acat + q0[d];
+	if ( !gpures ) memcpy(a, Astore->nzval, nnz * sizeof(double));
+	int_t *rowind = intMalloc_dist(nnz);
+	int_t *colptr = intMalloc_dist(n[d] + 1);
+	if ( !rowind || !colptr ) ABORT("Malloc fails for the SamePattern check");
+	memcpy(rowind, Astore->rowind, nnz * sizeof(int_t));
+	memcpy(colptr, Astore->colptr, (n[d] + 1) * sizeof(int_t));
+	NCformat Sstore = *Astore; Sstore.nzval = a; Sstore.rowind = rowind; Sstore.colptr = colptr;
+	SuperMatrix As = *Ad; As.Store = &Sstore;
+
+	/* equilibration, as dequil_vbatch() */
+	double *R = ReqPtr[d], *C = CeqPtr[d];
+	if ( Equil ) {
+	    switch ( DiagScale[d] ) {
+		case NOEQUIL: if ( !R ) R = ReqPtr[d] = doubleMalloc_dist(m[d]); if ( !C ) C = CeqPtr[d] = doubleMalloc_dist(n[d]); break;
+		case ROW:     if ( !C ) C = CeqPtr[d] = doubleMalloc_dist(n[d]); break;
+		case COL:     if ( !R ) R = ReqPtr[d] = doubleMalloc_dist(m[d]); break;
+		default: break;
+	    }
+	    double amax, rowcnd, colcnd; char equed[1];
+	    dgsequ_dist(&As, R, C, &rowcnd, &colcnd, &amax, &iinfo);
+	    if ( iinfo == 0 ) {
+		dlaqgs_dist(&As, R, C, rowcnd, colcnd, amax, equed);
+		DiagScale[d] = (*equed == 'R') ? ROW : (*equed == 'C') ? COL : (*equed == 'B') ? BOTH : NOEQUIL;
+	    }
+	}
+	int rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
+	int colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
+
+	/* row permutation, as dpivot_vbatch() (job 5: MC64 with scaling) */
+	int *perm_r = RpivPtr[d];
+	int *old = int32Malloc_dist(m[d]);
+	memcpy(old, perm_r, m[d] * sizeof(int));
+	if ( options->RowPerm == LargeDiag_MC64 ) {
+	    double *R1 = doubleMalloc_dist(m[d]), *C1 = doubleMalloc_dist(n[d]);
+	    iinfo = dldperm_dist(5, m[d], nnz, Sstore.colptr, rowind, a, perm_r, R1, C1);
+	    if ( iinfo == 0 ) {
+		if ( Equil ) {
+		    for (i = 0; i < m[d]; ++i) R1[i] = exp(R1[i]);
+		    for (i = 0; i < n[d]; ++i) C1[i] = exp(C1[i]);
+		    if ( rowequ ) for (i = 0; i < m[d]; ++i) R[i] *= R1[i]; else for (i = 0; i < m[d]; ++i) R[i] = R1[i];
+		    if ( colequ ) for (i = 0; i < n[d]; ++i) C[i] *= C1[i]; else for (i = 0; i < n[d]; ++i) C[i] = C1[i];
+		    DiagScale[d] = BOTH;
+		}
+	    } else {
+		for (i = 0; i < m[d]; ++i) perm_r[i] = i;
+	    }
+	    SUPERLU_FREE(R1); SUPERLU_FREE(C1);
+	} else if ( options->RowPerm == NOROWPERM ) {
+	    for (i = 0; i < m[d]; ++i) perm_r[i] = i;
+	} /* MY_PERMR: the caller's perm_r stays */
+
+	int ndiff = 0;
+	for (j = 0; j < m[d]; ++j) if ( perm_r[j] != old[j] ) ++ndiff;
+	if ( ndiff ) {
+	    /* MC64 maximizes the product of the diagonal of the equilibrated
+	       matrix (a[] here).  Compare the stored permutation's product with
+	       the new one on the same values; within the tolerance, keep the
+	       stored one (and the new scalings). */
+	    double lnew = 0.0, lold = 0.0;
+	    for (j = 0; j < n[d]; ++j)
+		for (i = Sstore.colptr[j]; i < Sstore.colptr[j + 1]; ++i) {
+		    double v = fabs(a[i]);
+		    if ( perm_r[rowind[i]] == j ) lnew += (v > 0.0) ? log(v) : -700.0;
+		    if ( old[rowind[i]] == j )    lold += (v > 0.0) ? log(v) : -700.0;
+		}
+	    double gap = lnew - lold;   /* >= 0 up to rounding */
+	    if ( gap > worst_gap ) worst_gap = gap;
+	    if ( gap <= tol ) { memcpy(perm_r, old, m[d] * sizeof(int)); ++nsys_tol; }
+	    else { changed |= 1; ++nsys_changed; nrows_changed += ndiff; }
+	}
+	SUPERLU_FREE(old); SUPERLU_FREE(rowind); SUPERLU_FREE(colptr);
+    }
+    SUPERLU_FREE(q0); SUPERLU_FREE(Aptrs);
+
+    stat->utime[EQUIL] = 0.0;
+    stat->utime[ROWPERM] = SuperLU_timer_() - t;
+    stat->utime[COLPERM] = 0.0;
+#if ( PRNTlevel >= 1 )
+    printf("[vbatch] SamePattern: scaling + MC64 of %d systems in %.1f ms (gather %.1f; %d threads): row permutations %s"
+	   " (%d systems / %d rows differ beyond tol %g; %d systems kept within tol; largest log-product gap %.3g)\n",
+	   batchCount, 1e3 * stat->utime[ROWPERM], 1e3 * t_gather, nthreads,
+	   changed ? "CHANGED, rebuilding" : "unchanged, same-pattern path",
+	   nsys_changed, nrows_changed, tol, nsys_tol, worst_gap);
+#endif
+    return !changed;
+}
 
 /*! \brief Drop the factorization but keep the internal process grid, so a new
  *  Fact = DOFACT call can rebuild on top of it.
@@ -30,10 +208,109 @@ at the top-level directory.
  * GPU build that churns the CUDA device binding and fails with
  * "cudaErrorInvalidDevice: invalid device ordinal".
  */
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+/* SLU_BATCH_GRAPH (default 1): capture the device work of a fast reuse call
+   in a CUDA graph and replay it afterwards.  Off under the per-kernel
+   profiling switches, which synchronize inside the call. */
+static int dvbatch_graph_on(void)
+{
+    static int on = -1;
+    if ( on < 0 ) {
+	const char *s = getenv("SLU_BATCH_GRAPH");
+	on = s ? (atoi(s) != 0) : 1;
+	if ( on && (getenv("SLU_BATCH_PROF") || getenv("SLU_SOLVE_PROF")) ) on = 0;
+    }
+    return on;
+}
+
+/* The device work of a fast reuse call, in order: refill of the factors from
+   the caller's device values, factorization and solve refresh inside
+   pdgssvx3d (nrhs = 0), then the gather in, the triangular solves and the
+   gather out, all on the workspace stream.  Run eagerly, with one
+   synchronization at the end, or under stream capture, where nothing
+   executes until the graph is launched. */
+static void dvbatch_reuse_run(dvbatch_ctx_t *ctx, dBatchFactorize_Handle devws, int fastA, double **Aptrs, const int *nnz,
+			      int nrhs, SuperLUStat_t *stat, int *info, void *stream, int capturing, double *t_solve)
+{
+    if ( fastA ) dbatchDevResRefillA(devws, 1, Aptrs, nnz);
+    pdgssvx3d(&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct), ctx->d_b, ctx->m_big, 0, &(ctx->grid),
+	      &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr, stat, info);
+    if ( *info ) return;
+    double t0 = SuperLU_timer_();
+    dvbatch_fast_stack(ctx, ctx->SOLVEstruct.d_x, stream);
+    pdgstrs3d_gpu_fast_solve(&(ctx->options_big), ctx->n_big, &(ctx->LUstruct), &(ctx->SOLVEstruct), &(ctx->grid), nrhs, stream);
+    dvbatch_fast_unstack(ctx, nrhs, ctx->SOLVEstruct.d_x, stream);
+    if ( !capturing ) checkGPU(gpuStreamSynchronize((gpuStream_t) stream));   /* the one synchronization of the call */
+    *t_solve = SuperLU_timer_() - t0;
+}
+
+/* Right after an eager run: record the same sequence, replay it and keep the
+   graph if the replay reproduces the eager solution. */
+static void dvbatch_graph_capture(dvbatch_ctx_t *ctx, dBatchFactorize_Handle devws, int fastA, double **Aptrs, const int *nnz,
+				  int batchCount, double **Xptr, int *ldX, int *m, int nrhs, SuperLUStat_t *stat, void *stream)
+{
+    int d, i, k, info2 = 0, ok;
+    double tdummy, t0 = SuperLU_timer_(), t1 = 0.0, t2 = 0.0;
+    double **xref = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+    for (d = 0; d < batchCount; ++d) {
+	size_t len = (size_t) ldX[d] * nrhs;
+	xref[d] = doubleMalloc_dist(len);
+	checkGPU(gpuMemcpy(xref[d], Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
+    }
+    dbatchDevResSetFlags(devws, 1, 1);
+    ok = (dvbatch_graph_begin(stream) == 0);
+    if ( ok ) {
+	dvbatch_reuse_run(ctx, devws, fastA, Aptrs, nnz, nrhs, stat, &info2, stream, 1, &tdummy);
+	ok = (dvbatch_graph_end(stream, &ctx->graph_exec) == 0) && info2 == 0;
+    }
+    dbatchDevResSetFlags(devws, 1, 0);
+    if ( ok ) {
+	double maxdiff = 0.0, maxabs = 0.0;
+	t1 = SuperLU_timer_();
+	dvbatch_graph_launch(ctx->graph_exec, stream);
+	t2 = SuperLU_timer_();
+	for (d = 0; d < batchCount; ++d) {
+	    size_t len = (size_t) ldX[d] * nrhs;
+	    double *xg = doubleMalloc_dist(len);
+	    checkGPU(gpuMemcpy(xg, Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
+	    for (k = 0; k < nrhs; ++k)
+		for (i = 0; i < m[d]; ++i) {
+		    double r = xref[d][(size_t) k * ldX[d] + i], df = fabs(xg[(size_t) k * ldX[d] + i] - r);
+		    if ( !(df <= maxdiff) ) maxdiff = df;      /* NaN counts as a mismatch */
+		    if ( fabs(r) > maxabs ) maxabs = fabs(r);
+		}
+	    SUPERLU_FREE(xg);
+	}
+	if ( maxdiff <= 1e-4 * maxabs ) {   /* same kernels, atomics order only: see the fast-solve check */
+	    ctx->graph_state = 1; ctx->graph_nrhs = nrhs; ctx->graph_batch = batchCount;
+	    printf("[graph] enabled: replay matches the eager run to %.3e (max |x| %.3e); replay %.3f ms, capture %.1f ms\n",
+		   maxdiff, maxabs, 1e3 * (t2 - t1), 1e3 * (t1 - t0));
+	} else {
+	    printf("[graph] replay differs from the eager run (max |diff| %.3e, max |x| %.3e): graph disabled\n", maxdiff, maxabs);
+	    ok = 0;
+	}
+    }
+    if ( !ok ) {
+	dvbatch_graph_free(&ctx->graph_exec); ctx->graph_state = -1;
+	for (d = 0; d < batchCount; ++d)   /* the eager result goes back */
+	    checkGPU(gpuMemcpy(Xptr[d], xref[d], sizeof(double) * (size_t) ldX[d] * nrhs, gpuMemcpyHostToDevice));
+    }
+    for (d = 0; d < batchCount; ++d) SUPERLU_FREE(xref[d]);
+    SUPERLU_FREE(xref);
+}
+#endif
+
 static void dvbatch_ctx_release_factors(dvbatch_ctx_t *ctx)
 {
     if ( !ctx->initialized ) return;
 
+#ifdef HAVE_MAGMA
+    if ( ctx->LUstruct.batch_dev ) {   /* unpins the host L/U/A buffers before they are freed */
+	dbatchDevResFree((dBatchFactorize_Handle) ctx->LUstruct.batch_dev);
+	ctx->LUstruct.batch_dev = NULL;
+    }
+    dvbatch_gpures_free(ctx);
+#endif
     dDestroy_LU(ctx->n_big, &(ctx->grid.grid2d), &(ctx->LUstruct));
     dSolveFinalize(&(ctx->options_big), &(ctx->SOLVEstruct));
     dScalePermstructFree(&(ctx->ScalePermstruct));
@@ -114,6 +391,17 @@ void dvbatch_free(handle_t *F)
  *       (unpermuted, unscaled) CSC structure; this routine applies the stored
  *       scalings and permutations to them.
  *
+ *   Fact = SamePattern
+ *       A later call on the same sparsity pattern whose values changed
+ *       enough to pivot again.  Reuses only the column permutation of each
+ *       matrix (CpivPtr).  Equilibration and the row permutation (MC64) are
+ *       recomputed from the new values, in parallel over the batch.  When
+ *       every stored row permutation is still as good as the new one within
+ *       SLU_BATCH_MC64_TOL (see dvbatch_mc64_tol), the call proceeds as
+ *       SamePattern_SameRowPerm with the new scalings; otherwise the stacked
+ *       system, its symbolic factorization and its distributed L/U are
+ *       rebuilt, as on a DOFACT call.
+ *
  * No other Fact value is supported; DOFACT must come first.
  *
  * @param[in]      options solver options; options->Fact selects the mode above
@@ -191,6 +479,8 @@ pdgssvx3d_csc_vbatch(
     *info = 0;
     SuperMatrix *A0 = (SuperMatrix *) SparseMatrix_handles[0];
     fact_t Fact = options->Fact;
+    double t_entry_all = SuperLU_timer_();
+    int sameperm = 0;   /* SamePattern call whose row permutations came out unchanged */
 
     /* F carries the state that repeated same-pattern solves reuse.
        F == NULL          : single-shot, everything is released before return.
@@ -199,6 +489,7 @@ pdgssvx3d_csc_vbatch(
     int persist = (F != NULL);
     dvbatch_ctx_t *ctx = (persist && F[0]) ? (dvbatch_ctx_t *) F[0] : NULL;
     int reuse = (Fact == SamePattern_SameRowPerm && ctx != NULL);
+    int keep_perm_c = (Fact == SamePattern);   /* CpivPtr[] of the previous call stay */
 
     if (Fact < 0 || Fact > FACTORED)
 	*info = -1;
@@ -228,6 +519,12 @@ pdgssvx3d_csc_vbatch(
 		"non-NULL F first.\n");
 	*info = -16;
     }
+    else if (Fact == SamePattern && (ctx == NULL || !ctx->initialized)) {
+	fprintf(stderr, "pdgssvx3d_csc_vbatch: SamePattern asked for, but F "
+		"holds no state; call with Fact = DOFACT and a non-NULL F "
+		"first.\n");
+	*info = -16;
+    }
     else if (reuse && (ctx->batchCount != batchCount || ctx->nrhs != nrhs)) {
 	fprintf(stderr, "pdgssvx3d_csc_vbatch: batchCount/nrhs (%d/%d) differ "
 		"from the ones the state in F was built with (%d/%d).\n",
@@ -241,6 +538,50 @@ pdgssvx3d_csc_vbatch(
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid3d->iam, "Enter pdgssvx3d_csc_vbatch()");
+#endif
+
+    int gpures = (options->GPURES == YES);   /* RHSptr[], Xptr[] and the nzval of every handle are device pointers */
+
+    /* SamePattern on a state whose device maps are ready: if the new values
+       leave every row permutation unchanged, only the scalings differ from a
+       SamePattern_SameRowPerm call, so take that path with refreshed
+       scalings instead of rebuilding everything. */
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    if ( Fact == SamePattern && ctx->LUstruct.batch_dev &&
+	 dbatchDevResAReady((dBatchFactorize_Handle) ctx->LUstruct.batch_dev) ) {
+	if ( dvbatch_sameperm_check(options, batchCount, m, n, SparseMatrix_handles,
+				    ReqPtr, CeqPtr, DiagScale, RpivPtr, gpures, ctx->LUstruct.batch_dev, stat) ) {
+	    /* per-entry scaling of the A-side map: R[row] * C[col] of each entry,
+	       built in the pinned value buffer the check has finished with, so
+	       the upload runs at bus speed */
+	    int_t nnz_all = 0;
+	    int *q0 = int32Malloc_dist(batchCount + 1);
+	    for (int d = 0; d < batchCount; ++d) { q0[d] = nnz_all; nnz_all += ((NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store)->nnz; }
+	    q0[batchCount] = nnz_all;
+	    double *scale2 = NULL;
+	    if ( dbatchDevResGatherA((dBatchFactorize_Handle) ctx->LUstruct.batch_dev, 0, NULL, &scale2) || !scale2 )
+		ABORT("SamePattern: no pinned buffer for the scaling refresh");
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 4) num_threads(dvbatch_prep_threads())
+#endif
+	    for (int d = 0; d < batchCount; ++d) {
+		NCformat *Astore = (NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store;
+		int rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
+		int colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
+		for (int_t jc = 0; jc < n[d]; ++jc)
+		    for (int_t p = Astore->colptr[jc]; p < Astore->colptr[jc + 1]; ++p)
+			scale2[q0[d] + p] = (rowequ ? ReqPtr[d][Astore->rowind[p]] : 1.0) * (colequ ? CeqPtr[d][jc] : 1.0);
+	    }
+	    if ( dbatchDevResRescaleA((dBatchFactorize_Handle) ctx->LUstruct.batch_dev, scale2, nnz_all) )
+		ABORT("SamePattern: the A-side map does not match the batch");
+	    if ( gpures ) dvbatch_gpures_rescale(ctx, batchCount, m, ReqPtr, CeqPtr, DiagScale);
+	    SUPERLU_FREE(q0);
+	    Fact = SamePattern_SameRowPerm;
+	    reuse = 1;
+	    keep_perm_c = 0;
+	    sameperm = 1;
+	}
+    }
 #endif
 
     /* Single-shot solves keep the state on the stack and release it before
@@ -267,6 +608,41 @@ pdgssvx3d_csc_vbatch(
     int d; /* index into each matrix in the batch */
 
     double t = SuperLU_timer_();
+    double tv_entry = t_entry_all, tv_stack0 = 0.0, tv_solver0 = 0.0, tv_phase[6] = {0,0,0,0,0,0};
+
+    /* fastA: pattern-reuse step with the A-side map ready -- the device L/U
+       are filled straight from the caller's values; A is not stacked,
+       scaled or permuted on the host, and the caller's matrices are left
+       untouched. */
+    int fastA = 0;
+#ifdef HAVE_MAGMA
+    dBatchFactorize_Handle devws = (reuse && ctx) ? (dBatchFactorize_Handle) ctx->LUstruct.batch_dev : NULL;
+    fastA = (devws != NULL && dbatchDevResAReady(devws));
+#endif
+    int buildA = (!reuse && dvbatch_devres_on());   /* DOFACT call: record the entry -> stacked-position map */
+    /* Fast GPU-resident solve: a reuse call with device RHS/solution, the
+       maps built on the DOFACT call, and per-level solve launches
+       (SLU_SOLVE_LEVELS); the regular path otherwise. */
+    int fast = 0;
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    fast = (reuse && gpures && ctx->fast_xlen > 0 && options->IterRefine == NOREFINE &&
+	    get_solve_levels() && ctx->LUstruct.Llu != NULL && ctx->LUstruct.Llu->nlevels > 0);
+#endif
+    int64_t *posmap = NULL; double *scale2 = NULL; int *ent_sys = NULL, *ent_idx = NULL;
+    double **user_nzval = NULL;   /* GPURES: the caller's device value pointers, swapped out for host copies on the DOFACT call */
+
+#ifdef GPU_ACC
+    if ( gpures && !reuse ) {
+	user_nzval = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+	for (d = 0; d < batchCount; ++d) {
+	    NCformat *Astore = (NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store;
+	    user_nzval[d] = (double *) Astore->nzval;
+	    double *h = doubleMalloc_dist(Astore->nnz);
+	    checkGPU(gpuMemcpy(h, user_nzval[d], Astore->nnz * sizeof(double), gpuMemcpyDeviceToHost));
+	    Astore->nzval = h;
+	}
+    }
+#endif
 
     if ( !reuse ) {
 	int *ainfo = SUPERLU_MALLOC(batchCount * sizeof(int));
@@ -300,7 +676,8 @@ pdgssvx3d_csc_vbatch(
 	 */
 	t = SuperLU_timer_();
 
-	get_perm_c_vbatch(options, batchCount, SparseMatrix_handles, CpivPtr);
+	if ( !keep_perm_c )   /* SamePattern: the column permutations of the previous call are reused */
+	    get_perm_c_vbatch(options, batchCount, SparseMatrix_handles, CpivPtr);
 
 	stat->utime[COLPERM] = SuperLU_timer_() - t;
 
@@ -313,7 +690,7 @@ pdgssvx3d_csc_vbatch(
 	 * perm_r.  Both are O(nnz); the reordering (get_perm_c_vbatch) is
 	 * skipped altogether, since the pattern of Pr*A has not changed.
 	 */
-	for (d = 0; d < batchCount; ++d) {
+	for (d = 0; d < (fastA ? 0 : batchCount); ++d) {
 	    SuperMatrix *Ad = (SuperMatrix *) SparseMatrix_handles[d];
 	    NCformat *Astore = (NCformat *) Ad->Store;
 	    double *a = (double *) Astore->nzval;
@@ -343,10 +720,11 @@ pdgssvx3d_csc_vbatch(
 	}
 
 	stat->utime[EQUIL] = SuperLU_timer_() - t;
-	stat->utime[ROWPERM] = 0.0;
+	if ( !sameperm ) stat->utime[ROWPERM] = 0.0;   /* else: the scaling + MC64 pass of the check */
 	stat->utime[COLPERM] = 0.0;
     }
 
+    tv_stack0 = SuperLU_timer_();
 #if (PRNTlevel >= 1)
     printf("<---- END PREPROCESSING ----\n");
 #endif
@@ -396,6 +774,14 @@ pdgssvx3d_csc_vbatch(
 	b = ctx->b;
     }
 
+    if ( buildA ) {
+	posmap  = (int64_t *) SUPERLU_MALLOC(nnz_big * sizeof(int64_t));
+	scale2  = (double *)  SUPERLU_MALLOC(nnz_big * sizeof(double));
+	ent_sys = (int *)     SUPERLU_MALLOC(nnz_big * sizeof(int));
+	ent_idx = (int *)     SUPERLU_MALLOC(nnz_big * sizeof(int));
+	if ( !posmap || !scale2 || !ent_sys || !ent_idx ) ABORT("Malloc fails for the A-side map");
+    }
+    int_t q0 = 0;   /* running entry offset over the systems */
     double *nzval_d; /* each diagonal block */
     int_t *colind_d;
     int_t *rowptr_d;
@@ -416,6 +802,28 @@ pdgssvx3d_csc_vbatch(
 	perm_r = RpivPtr[d];
 	perm_c = CpivPtr[d];
 
+	double *idxval = NULL, *nzidx_d = NULL; int_t *rowptr_i = NULL, *colind_i = NULL;
+	if ( buildA ) {
+	    /* Original row of each entry (rows carry perm_r at this point) and
+	       the equilibration factors that the reuse path would apply. */
+	    int *inv_perm_r = int32Malloc_dist(m[d]);
+	    for (i = 0; i < m[d]; ++i) inv_perm_r[perm_r[i]] = i;
+	    rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
+	    colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
+	    R = ReqPtr[d]; C = CeqPtr[d];
+	    for (int_t jc = 0; jc < n[d]; ++jc)
+		for (int_t p = Astore->colptr[jc]; p < Astore->colptr[jc+1]; ++p) {
+		    int io = inv_perm_r[Astore->rowind[p]];
+		    scale2[q0 + p]  = (rowequ ? R[io] : 1.0) * (colequ ? C[jc] : 1.0);
+		    ent_sys[q0 + p] = d;
+		    ent_idx[q0 + p] = (int) p;
+		}
+	    SUPERLU_FREE(inv_perm_r);
+	    idxval = doubleMalloc_dist(nnz_d);
+	    for (i = 0; i < nnz_d; ++i) idxval[i] = (double) (i + 1);
+	}
+
+	if ( !fastA ) {
 	/* Apply perm_c[] to row of A to preserve diagonal: A <= Pc*A */
 	for (i = 0; i < nnz_d; ++i)
 	    Astore->rowind[i] = perm_c[Astore->rowind[i]];
@@ -423,6 +831,9 @@ pdgssvx3d_csc_vbatch(
 	/* Convert to CSR format. */
 	dCompCol_to_CompRow_dist(m[d], n[d], Astore->nnz, Astore->nzval, Astore->colptr,
 				 Astore->rowind, &nzval_d, &rowptr_d, &colind_d);
+	if ( buildA )   /* same conversion on the entry indices: nzidx_d[k] = source entry + 1 */
+	    dCompCol_to_CompRow_dist(m[d], n[d], Astore->nnz, idxval, Astore->colptr,
+				     Astore->rowind, &nzidx_d, &rowptr_i, &colind_i);
 
 	/* Copy this CSR matrix to a diagonal block of A_big.
 	   Apply each perm_c[] to each matrix by column.
@@ -435,6 +846,7 @@ pdgssvx3d_csc_vbatch(
 	    for (k = rowptr_d[i]; k < rowptr_d[i+1]; ++k) {
 		colind[j] = perm_c[colind_d[k]] + col;  // add the *col* shift
 		a_big[j] = nzval_d[k];
+		if ( buildA ) posmap[q0 + (int_t) (nzidx_d[k] + 0.5) - 1] = j;
 		++j;
 	    }
 	}
@@ -445,31 +857,38 @@ pdgssvx3d_csc_vbatch(
 	SUPERLU_FREE(nzval_d);  /* TODO: remove repeated malloc/free */
 	SUPERLU_FREE(colind_d);
 	SUPERLU_FREE(rowptr_d);
+	if ( buildA ) { SUPERLU_FREE(nzidx_d); SUPERLU_FREE(rowptr_i); SUPERLU_FREE(colind_i); SUPERLU_FREE(idxval); }
+	} /* end if !fastA */
+	q0 += nnz_d;
 
 	/* Transform the right-hand side: RHS overwritten by B <= R*B */
 	double *rhs;
 
 	rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
-	if ( rowequ ) { /* Scale RHS by R[] */
-	    R = ReqPtr[d];
-	    rhs = RHSptr[d]; // first RHS
-	    for (k = 0; k < nrhs; ++k) {
-		for (i = 0; i < m[d]; ++i) rhs[i] *= R[i];
-		rhs += ldRHS[d]; /* move to next RHS */
-	    }
-	}
-
+	if ( gpures ) { offset_m += m[d]; continue; }   /* RHS is on the device: stacked below */
+	R = ReqPtr[d];
 	rhs = RHSptr[d]; // first RHS
 	for (k = 0; k < nrhs; ++k) {
-	    for (i = 0; i < m[d]; ++i) /* permute RHS by Pc*Pr (out-of-place) */
-		b[k * m_big + offset_m + perm_c[perm_r[i]]] = rhs[i];
+	    for (i = 0; i < m[d]; ++i) /* scale by R and permute by Pc*Pr (out-of-place) */
+		b[k * m_big + offset_m + perm_c[perm_r[i]]] = (rowequ ? R[i] : 1.0) * rhs[i];
 	    rhs += ldRHS[d]; /* move to next RHS */
 	}
 	offset_m += m[d];
 
     } /* end for d ... batchCount */
 
-    rowptr[row] = nnz_big;  /* +1 as an end marker */
+    if ( !fastA ) rowptr[row] = nnz_big;  /* +1 as an end marker */
+#ifdef HAVE_MAGMA
+    double **Aptrs = NULL;
+    if ( fastA ) {
+	/* Device L/U straight from the caller's values (device or host); on
+	   the fast path this is part of the device sequence further down. */
+	Aptrs = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+	for (d = 0; d < batchCount; ++d)
+	    Aptrs[d] = (double *) ((NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store)->nzval;
+	if ( !fast ) { dbatchDevResRefillA(devws, gpures, Aptrs, nnz); SUPERLU_FREE(Aptrs); Aptrs = NULL; }
+    }
+#endif
 
     /**** By now:  each A transformed to Pc*Pr*R*A*C
      ****          each B transformed to R*B
@@ -520,10 +939,16 @@ pdgssvx3d_csc_vbatch(
 	ctx->rowptr = rowptr;
 	ctx->b = b;
 	ctx->initialized = 1;
+#ifdef HAVE_MAGMA
+	if ( gpures ) dvbatch_gpures_setup(ctx, batchCount, m, RpivPtr, CpivPtr, ReqPtr, CeqPtr, DiagScale);
+#endif
     }
 
     /* Copy the other options; these may legitimately change per call. */
-    ctx->options_big.Fact = Fact;
+    /* The stacked system is rebuilt from scratch unless this is a
+       SamePattern_SameRowPerm call (its own ColPerm is NATURAL: the column
+       permutations are applied per matrix above). */
+    ctx->options_big.Fact = reuse ? Fact : DOFACT;
     ctx->options_big.ReplaceTinyPivot = options->ReplaceTinyPivot;
     ctx->options_big.IterRefine = options->IterRefine;
     ctx->options_big.UseGMRES = options->UseGMRES;
@@ -538,9 +963,63 @@ pdgssvx3d_csc_vbatch(
      * since b[] is transormed back to the solution of the original BIG system,
      * we do not need to consider perm_c_big outside pdgssvx3d().
      */
+#ifdef HAVE_MAGMA
+    if ( gpures && !fast ) dvbatch_gpures_stack(ctx, batchCount, RHSptr, ldRHS, nrhs);
+#endif
+    ctx->options_big.GPURES = gpures ? YES : NO;
+    tv_solver0 = SuperLU_timer_(); tv_phase[1] = tv_solver0 - tv_stack0;
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    if ( fast ) {
+	/* Fast path: the device sequence of dvbatch_reuse_run, replayed from
+	   a CUDA graph once one has been captured and checked.  The fast-solve
+	   time below includes whatever of the factorization is still running
+	   (the call synchronizes once, at its end). */
+	void *stream = dbatchDevResStream(devws);
+	int graph_on = fastA && dvbatch_graph_on();
+	if ( ctx->graph_state == 1 && (!graph_on || ctx->graph_nrhs != nrhs || ctx->graph_batch != batchCount) ) {
+	    dvbatch_graph_free(&ctx->graph_exec); ctx->graph_state = 0;
+	}
+	/* the per-system pointer arrays: synchronous copies when they changed,
+	   before any capture or replay */
+	dvbatch_fast_send_ptrs(ctx, batchCount, RHSptr, ldRHS, Xptr, ldX);
+	if ( fastA ) dbatchDevResSendAptrs(devws, Aptrs);
+	dbatchDevResSetFlags(devws, 1, 0);   /* the pivot count is printed after the synchronization */
+	if ( ctx->graph_state == 1 ) {
+	    double tg0 = SuperLU_timer_();
+	    dvbatch_graph_launch(ctx->graph_exec, stream);
+	    *info = 0;
+	    tv_phase[5] = SuperLU_timer_() - tg0;
+	} else {
+	    dvbatch_reuse_run(ctx, devws, fastA, Aptrs, nnz, nrhs, stat, info, stream, 0, &tv_phase[5]);
+	    if ( graph_on && ctx->graph_state == 0 && *info == 0 )
+		dvbatch_graph_capture(ctx, devws, fastA, Aptrs, nnz, batchCount, Xptr, ldX, m, nrhs, stat, stream);
+	}
+	printf("Factor info = 0 max_info = %d\n", dbatchDevResInfoMax(devws));
+	dbatchDevResSetFlags(devws, 0, 0);
+	if ( Aptrs ) { SUPERLU_FREE(Aptrs); Aptrs = NULL; }
+    } else
+#endif
     pdgssvx3d (&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct),
-	       b, m_big, nrhs, &(ctx->grid),
+	       gpures ? ctx->d_b : b, m_big, nrhs, &(ctx->grid),
 	       &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr, stat, info);
+    tv_phase[2] = SuperLU_timer_() - tv_solver0;
+#ifdef HAVE_MAGMA
+    if ( buildA && ctx->LUstruct.batch_dev ) {
+	dbatchDevResSetupA((dBatchFactorize_Handle) ctx->LUstruct.batch_dev, batchCount, nnz_big,
+			   posmap, scale2, ent_sys, ent_idx, ctx->LUstruct.batch_anorm);
+    }
+#endif
+    if ( buildA ) { SUPERLU_FREE(posmap); SUPERLU_FREE(scale2); SUPERLU_FREE(ent_sys); SUPERLU_FREE(ent_idx); }
+#ifdef GPU_ACC
+    if ( user_nzval ) {   /* hand the caller's device values back */
+	for (d = 0; d < batchCount; ++d) {
+	    NCformat *Astore = (NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store;
+	    SUPERLU_FREE(Astore->nzval);
+	    Astore->nzval = user_nzval[d];
+	}
+	SUPERLU_FREE(user_nzval);
+    }
+#endif
 
 #if (PRNTlevel >= 1)
     printf("\tBIG system: berr[0] %e\n", ctx->berr[0]);
@@ -555,7 +1034,7 @@ pdgssvx3d_csc_vbatch(
     }
 
     if ( options->PrintStat == YES && ctx->grid.zscp.Iam == 0 ) { // process layer 0
-	PStatPrint (options, stat, &(grid3d->grid2d)); /* Print 2D statistics.*/
+	{ double tpp = SuperLU_timer_(); PStatPrint (options, stat, &(grid3d->grid2d)); tv_phase[3] = SuperLU_timer_() - tpp; }
     }
 
     /* NOTE: unlike pdgssvx3d_csc_vbatch(), the L/U factors, the stacked matrix
@@ -563,11 +1042,74 @@ pdgssvx3d_csc_vbatch(
        what the next SamePattern_SameRowPerm call reuses.  dvbatch_free(F)
        releases them. */
 
+    double tv_post0 = SuperLU_timer_();
     /* Copy the big solution into individual ones, and compute B'errs */
     double bn, rn;  // inf-norm of B and R
     double *x;
     offset_m = 0;
-    for (d = 0; d < batchCount; ++d) {
+#ifdef HAVE_MAGMA
+    if ( gpures ) {
+	/* Solution straight to the device Xptr[]; the residual check needs A
+	   on the host and is not done in this mode. */
+	if ( !fast ) dvbatch_gpures_unstack(ctx, batchCount, Xptr, ldX, nrhs);
+	for (d = 0; d < batchCount; ++d)
+	    for (k = 0; k < nrhs; ++k) Berrs[d][k] = -1.0;
+    }
+#if defined(GPU_ACC)
+    if ( gpures && !reuse && ctx->SOLVEstruct.fast_xlen > 0 && get_solve_levels() && *info == 0 ) {
+	/* DOFACT call: compose the fast-solve maps with the per-system ones,
+	   then check the fast path against the solution the regular path just
+	   produced; on any mismatch the regular path stays in use. */
+	int_t xlen = ctx->SOLVEstruct.fast_xlen;
+	if ( dvbatch_fast_setup(ctx, batchCount, m, RpivPtr, CpivPtr, nrhs,
+				ctx->SOLVEstruct.fast_in, ctx->SOLVEstruct.fast_out, xlen) == 0 ) {
+	    double maxdiff = 0.0, maxabs = 0.0;
+	    double **xref = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+	    for (d = 0; d < batchCount; ++d) {
+		size_t len = (size_t) ldX[d] * nrhs;
+		xref[d] = doubleMalloc_dist(len);
+		checkGPU(gpuMemcpy(xref[d], Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
+	    }
+	    void *stream = dbatchDevResStream((dBatchFactorize_Handle) ctx->LUstruct.batch_dev);
+	    dvbatch_fast_send_ptrs(ctx, batchCount, RHSptr, ldRHS, Xptr, ldX);
+	    dvbatch_fast_stack(ctx, ctx->SOLVEstruct.d_x, stream);
+	    pdgstrs3d_gpu_fast_solve(&(ctx->options_big), ctx->n_big, &(ctx->LUstruct), &(ctx->SOLVEstruct), &(ctx->grid), nrhs, stream);
+	    dvbatch_fast_unstack(ctx, nrhs, ctx->SOLVEstruct.d_x, stream);
+	    checkGPU(gpuDeviceSynchronize());
+	    for (d = 0; d < batchCount; ++d) {
+		size_t len = (size_t) ldX[d] * nrhs;
+		double *xf = doubleMalloc_dist(len);
+		checkGPU(gpuMemcpy(xf, Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
+		for (k = 0; k < nrhs; ++k)
+		    for (i = 0; i < m[d]; ++i) {
+			double r = xref[d][(size_t) k * ldX[d] + i], f = xf[(size_t) k * ldX[d] + i];
+			double df = fabs(f - r);
+			if ( !(df <= maxdiff) ) maxdiff = df;      /* NaN counts as a mismatch */
+			if ( fabs(r) > maxabs ) maxabs = fabs(r);
+		    }
+		SUPERLU_FREE(xf);
+	    }
+	    /* both paths run the same kernels; they differ only in the order of
+	       the atomic accumulations, which the conditioning amplifies (two
+	       solves of pwtk differ by 1e-6 relative; a wrong map gives O(1)) */
+	    if ( !(maxdiff <= 1e-4 * maxabs) ) {
+		printf("[fast solve] mismatch against the regular path (max |diff| %.3e, max |x| %.3e): fast path disabled\n", maxdiff, maxabs);
+		ctx->fast_xlen = 0;
+		for (d = 0; d < batchCount; ++d)   /* the regular result goes back */
+		    checkGPU(gpuMemcpy(Xptr[d], xref[d], sizeof(double) * (size_t) ldX[d] * nrhs, gpuMemcpyHostToDevice));
+	    } else {
+		printf("[fast solve] enabled: matches the regular path to %.3e (max |x| %.3e)\n", maxdiff, maxabs);
+	    }
+	    for (d = 0; d < batchCount; ++d) SUPERLU_FREE(xref[d]);
+	    SUPERLU_FREE(xref);
+	} else {
+	    printf("[fast solve] map composition failed: regular path kept\n");
+	    ctx->fast_xlen = 0;
+	}
+    }
+#endif
+#endif
+    for (d = 0; d < (gpures ? 0 : batchCount); ++d) {
 
 	A = (SuperMatrix *) SparseMatrix_handles[d];
 	perm_c = CpivPtr[d];
@@ -581,6 +1123,31 @@ pdgssvx3d_csc_vbatch(
 	    x += ldX[d]; /* move to next x */
 	}
 
+	colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
+	rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
+	C = CeqPtr[d]; R = ReqPtr[d];
+
+	if ( fastA ) {
+	    /* The handle holds the caller's original A: finish x (x <= C*z)
+	       and take the residual of the original system directly. */
+	    x = Xptr[d];
+	    for (k = 0; k < nrhs; ++k) {
+		bn = 0.; rn = 0.;
+		if ( colequ ) for (i = 0; i < n[d]; ++i) x[i] *= C[i];
+		for (i = 0; i < m[d]; ++i) {
+		    double bi = RHSptr[d][k*ldRHS[d] + i];
+		    bn = SUPERLU_MAX( bn, fabs(bi) );
+		    b[k*m_big + offset_m + i] = bi;
+		}
+		sp_dgemv_dist("N", alpha, A, x, 1, beta, &b[k*m_big + offset_m], 1);
+		for (i = 0; i < m[d]; ++i) { double v = fabs(b[k*m_big + offset_m + i]); if ( !(v <= rn) ) rn = v; }   /* NaN propagates */
+		Berrs[d][k] = rn / bn;
+		x += ldX[d];
+	    }
+	    offset_m += m[d];
+	    continue;
+	}
+
 	/* Compute residual: Pc*Pr*(R*b) - (Pc*Pr*R*A*C)*z
 	 * Now x = Pc'*y, where y is computed from pdgssvx3d()
 	 */
@@ -589,15 +1156,16 @@ pdgssvx3d_csc_vbatch(
 	    bn = 0.; // norm of B
 	    rn = 0.; // norm of R
 	    for (i = 0; i < m[d]; ++i) {
-		bn = SUPERLU_MAX( bn, fabs(RHSptr[d][k*m[d] + i]) );
+		double bi = (rowequ ? R[i] : 1.0) * RHSptr[d][k*ldRHS[d] + i];   /* R*b, the RHS the factors saw */
+		bn = SUPERLU_MAX( bn, fabs(bi) );
 
 		/* permute RHS by Pc*Pr, use b[] as temporary storage */
-		b[k*m_big + offset_m + perm_c[perm_r[i]]] = RHSptr[d][k*ldRHS[d] + i];
+		b[k*m_big + offset_m + perm_c[perm_r[i]]] = bi;
 	    }
 
 	    sp_dgemv_dist("N", alpha, A, x, 1, beta, &b[k*m_big + offset_m], 1);
 
-	    for (i = 0; i < m[d]; ++i) rn = SUPERLU_MAX( rn, fabs(b[k*m_big + offset_m + i]) );
+	    for (i = 0; i < m[d]; ++i) { double v = fabs(b[k*m_big + offset_m + i]); if ( !(v <= rn) ) rn = v; }   /* NaN propagates */
 	    Berrs[d][k] = rn / bn;
 	    x += ldX[d]; /* move to next x */
 	} /* end for k ... */
@@ -606,9 +1174,7 @@ pdgssvx3d_csc_vbatch(
 	/* Transform the solution matrix X to the solution of the
 	 * original system before equilibration: x <= C*z
 	 */
-	colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
 	if ( colequ ) {
-	    C = CeqPtr[d];
 	    x = Xptr[d];
 	    for (k = 0; k < nrhs; ++k) {
 		for (i = 0; i < n[d]; ++i) x[i] *= C[i];
@@ -618,6 +1184,10 @@ pdgssvx3d_csc_vbatch(
 
     } /* end for d ... batchCount */
 
+    tv_phase[4] = SuperLU_timer_() - tv_post0;
+    tv_phase[0] = tv_stack0 - tv_entry;
+    printf("[vbatch] phases ms: scale/perm %.2f  stack %.2f  pdgssvx3d %.2f  PStatPrint %.2f  post(x,berr) %.2f  fast-solve %.2f  total %.2f\n",
+           1e3*tv_phase[0], 1e3*tv_phase[1], 1e3*tv_phase[2], 1e3*tv_phase[3], 1e3*tv_phase[4], 1e3*tv_phase[5], 1e3*(SuperLU_timer_() - tv_entry));
     if ( !persist ) dvbatch_ctx_destroy(ctx); /* single-shot: nothing survives */
 
 #if ( DEBUGlevel>=1 )

@@ -34,6 +34,190 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 //#include "TRF3dV100/superlu_summit.h"
 #include "superlu_upacked.h"
+
+/* Device-resident batch factorization for pattern-reuse steps.  On by
+   default for batchCount > 0; SLU_BATCH_DEVRES=0 restores the single-shot
+   path (host redistribution + full L/U round trip every call). */
+static int dbatch_devres_enabled(void)
+{
+    static int on = -1;
+    if (on < 0) { const char *e = getenv("SLU_BATCH_DEVRES"); on = e ? (atoi(e) != 0) : 1; }
+    return on;
+}
+
+/* Map every nonzero of the (permuted) A to its slot in the flat L or U value
+   arrays, by one host redistribution with marker values: entry p is scattered
+   as the value p+1, and the slots are read back.  Call it after the DOFACT
+   distribution; it leaves A's values untouched and the host U in the
+   row-block layout (allocated by pdconvert_flatten_skyline2UROWDATA). */
+static int64_t *dbatch_build_slot_map(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+                                      dScalePermstruct_t *ScalePermstruct, dLUstruct_t *LUstruct,
+                                      gridinfo3d_t *grid3d, SuperLUStat_t *stat)
+{
+    NRformat_loc *Astore = (NRformat_loc *) A->Store;
+    int_t nnz = Astore->nnz_loc;
+    double *a = (double *) Astore->nzval;
+    double *save = doubleMalloc_dist(nnz);
+    int64_t *map = (int64_t *) SUPERLU_MALLOC(nnz * sizeof(int64_t));
+    if ( !save || !map ) ABORT("Malloc fails for the batch slot map");
+    memcpy(save, a, nnz * sizeof(double));
+    for (int_t p = 0; p < nnz; ++p) a[p] = (double) (p + 1);
+
+    superlu_dist_options_t opt = *options;
+    opt.Fact = SamePattern_SameRowPerm;
+    pddistribute3d(&opt, n, A, ScalePermstruct, NULL, LUstruct, grid3d);
+    pdconvert_flatten_skyline2UROWDATA(&opt, &(grid3d->grid2d), LUstruct, stat, n);
+
+    dLocalLU_t *Llu = LUstruct->Llu;
+    int64_t Lcnt = Llu->Lnzval_bc_cnt, Ucnt = Llu->Unzval_br_new_cnt, nmiss = 0;
+    for (int_t p = 0; p < nnz; ++p) map[p] = -1;
+    for (int64_t i = 0; i < Lcnt; ++i) {
+        int64_t m = (int64_t) (Llu->Lnzval_bc_dat[i] + 0.5);
+        if (m > 0 && m <= nnz) map[m - 1] = i;
+    }
+    for (int64_t j = 0; j < Ucnt; ++j) {
+        int64_t m = (int64_t) (Llu->Unzval_br_new_dat[j] + 0.5);
+        if (m > 0 && m <= nnz) map[m - 1] = Lcnt + j;
+    }
+    for (int_t p = 0; p < nnz; ++p) if (map[p] < 0) ++nmiss;
+    memcpy(a, save, nnz * sizeof(double));
+    SUPERLU_FREE(save);
+    printf("[devres] slot map: nnz(A) %lld -> L slots %lld, U slots %lld, unmapped %lld\n",
+           (long long) nnz, (long long) Lcnt, (long long) Ucnt, (long long) nmiss);
+    return map;
+}
+
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+/* Map every entry of the solve's column-wise U values (Unzval_bc_dat, which
+   pdconvertU rebuilds from the skyline U and uploads) to its source in the
+   row-wise U the batch factorization works on (Unzval_br_new_dat).  One
+   marker pass: the row-wise values are replaced by their index+1, converted
+   to skyline, run through pdconvertU, and read back from the device.  The
+   caller runs the real pdconvertU afterwards.  Returns the map and its length. */
+static int64_t *dbatch_build_umap(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
+                                  gridinfo_t *grid, SuperLUStat_t *stat, int64_t *ucnt_out)
+{
+    dLocalLU_t *Llu = LUstruct->Llu;
+    int64_t bcnt = Llu->Unzval_br_new_cnt;
+    double *save = doubleMalloc_dist(bcnt);
+    if ( !save ) ABORT("Malloc fails for the U map pass");
+    memcpy(save, Llu->Unzval_br_new_dat, bcnt * sizeof(double));
+    for (int64_t j = 0; j < bcnt; ++j) Llu->Unzval_br_new_dat[j] = (double) (j + 1);
+    pdconvertUROWDATA2skyline(options, grid, LUstruct, stat, n);
+    pdconvertU(options, grid, LUstruct, stat, n);       /* markers now in d_Unzval_bc_dat */
+
+    int64_t ucnt = Llu->Unzval_bc_cnt, nmiss = 0;
+    double *mk = doubleMalloc_dist(ucnt);
+    int64_t *umap = (int64_t *) SUPERLU_MALLOC(ucnt * sizeof(int64_t));
+    if ( !mk || !umap ) ABORT("Malloc fails for the U map");
+    checkGPU(gpuMemcpy(mk, Llu->d_Unzval_bc_dat, ucnt * sizeof(double), gpuMemcpyDeviceToHost));
+    for (int64_t j = 0; j < ucnt; ++j) {
+        int64_t m = (int64_t) (mk[j] + 0.5);
+        umap[j] = (m > 0 && m <= bcnt) ? m - 1 : -1;
+        if (umap[j] < 0 && mk[j] != 0.0) ++nmiss;
+    }
+    SUPERLU_FREE(mk);
+
+    /* pdconvertU re-created the row-wise host arrays; restore the true values
+       into whichever array Llu points to now, and rebuild the skyline. */
+    if ( Llu->Unzval_br_new_cnt != bcnt ) ABORT("U row-wise layout changed in the map pass");
+    memcpy(Llu->Unzval_br_new_dat, save, bcnt * sizeof(double));
+    SUPERLU_FREE(save);
+    pdconvertUROWDATA2skyline(options, grid, LUstruct, stat, n);
+    printf("[devres] U map: %lld column-wise entries from %lld row-wise, unexpected %lld\n",
+           (long long) ucnt, (long long) bcnt, (long long) nmiss);
+    *ucnt_out = ucnt;
+    return umap;
+}
+
+/* Fast GPU-resident solve for the batched interface: with one process and
+   per-level launches, the solve needs no host work at all, and the chain
+   stacked b -> copy -> scale -> permute into the solver's layout -> solve ->
+   permute back -> unscale -> copy -> unstacked x collapses into one gather
+   before the solve kernels and one after.  The two maps are found by a
+   marker pass through the regular routines, so whatever permutation they
+   apply is reproduced exactly.  Done once per pattern, after the first
+   solve; only for an unequilibrated stacked system (the batched interface
+   scales per system). */
+static void dbatch_build_fast_solve_maps(superlu_dist_options_t *options, int_t n, int_t m_loc, int_t fst_row,
+                                         int nrhs, dLUstruct_t *LUstruct, dScalePermstruct_t *ScalePermstruct,
+                                         dSOLVEstruct_t *SOLVEstruct, gridinfo_t *grid, double *X, int_t ldx)
+{
+    dLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t nsupers = Glu_persist->supno[n - 1] + 1;
+    int_t nlb = CEILING(nsupers, grid->nprow);
+    int_t xlen = Llu->ldalsum * nrhs + nlb * XK_H;
+    int_t mr = m_loc * nrhs;
+    double *hb = doubleMalloc_dist(mr), *hx = doubleMalloc_dist(xlen), *dB = NULL;
+    if ( !hb || !hx ) ABORT("Malloc fails for the fast-solve maps");
+    checkGPU(gpuMalloc((void**)&dB, mr * sizeof(double)));
+    if ( SOLVEstruct->fast_in ) SUPERLU_FREE(SOLVEstruct->fast_in);
+    if ( SOLVEstruct->fast_out ) SUPERLU_FREE(SOLVEstruct->fast_out);
+    SOLVEstruct->fast_in = intMalloc_dist(xlen);
+    SOLVEstruct->fast_out = intMalloc_dist(mr);
+    SOLVEstruct->fast_xlen = 0;
+
+    /* in: stacked entry q = row + rhs*m -> solver position */
+    for (int_t q = 0; q < mr; ++q) hb[q] = (double) (q + 1);
+    checkGPU(gpuMemcpy(dB, hb, mr * sizeof(double), gpuMemcpyHostToDevice));
+    dscale_and_copy_rhs_wrap(dB, m_loc, X, ldx, m_loc, nrhs, fst_row, 1, 0, 0, ScalePermstruct);
+    checkGPU(gpuMemset(SOLVEstruct->d_x, 0, xlen * sizeof(double)));
+    pdReDistribute_B_to_X_gpu_wrap(X, m_loc, n, nrhs, ldx, fst_row, SOLVEstruct->d_x, ScalePermstruct, SOLVEstruct,
+                                   Glu_persist, grid, Llu->d_grid, Llu->d_ilsum, Llu->d_xsup, Llu->d_supno);
+    checkGPU(gpuMemcpy(hx, SOLVEstruct->d_x, xlen * sizeof(double), gpuMemcpyDeviceToHost));
+    /* decode only the value slots of the x blocks: each block lk starts with
+       XK_H header words (the block number, which looks like a marker) and
+       the arrays may hold padding beyond the last block */
+    int_t *ilsum = Llu->ilsum, *xsup = Glu_persist->xsup;
+    int_t nin = 0, ndup = 0;
+    char *seen = (char *) SUPERLU_MALLOC(mr);
+    if ( !seen ) ABORT("Malloc fails for the fast-solve maps");
+    memset(seen, 0, mr);
+    for (int_t s = 0; s < xlen; ++s) SOLVEstruct->fast_in[s] = -1;
+    for (int_t lk = 0; lk < nlb; ++lk) {
+	int_t k = lk * grid->nprow + grid->iam / grid->npcol;   /* one process: k = lk */
+	if ( k >= nsupers ) break;
+	int_t knsupc = SuperSize(k), base = X_BLK(lk);
+	for (int j = 0; j < nrhs; ++j)
+	    for (int_t i = 0; i < knsupc; ++i) {
+		int_t s = base + i + j * knsupc;
+		int_t v = (int_t) (hx[s] + 0.5);
+		if ( v > 0 && v <= mr ) {
+		    SOLVEstruct->fast_in[s] = v - 1; ++nin;
+		    if ( seen[v - 1] ) ++ndup; seen[v - 1] = 1;
+		}
+	    }
+    }
+    SUPERLU_FREE(seen);
+
+    /* out: solver position -> stacked entry */
+    for (int_t s = 0; s < xlen; ++s) hx[s] = (double) (s + 1);
+    checkGPU(gpuMemcpy(SOLVEstruct->d_x, hx, xlen * sizeof(double), gpuMemcpyHostToDevice));
+    pdReDistribute_X_to_B_gpu_wrap(X, m_loc, n, nrhs, ldx, fst_row, nsupers, SOLVEstruct->d_x, ScalePermstruct, SOLVEstruct,
+                                   Glu_persist, grid, Llu->d_grid, Llu->d_ilsum, Llu->d_xsup, Llu->d_supno);
+    pdPermute_Dense_Matrix_gpu_wrap(fst_row, m_loc, n, X, ldx, dB, m_loc, nrhs, grid, SOLVEstruct);
+    checkGPU(gpuMemcpy(hb, dB, mr * sizeof(double), gpuMemcpyDeviceToHost));
+    int_t nbad = 0;
+    for (int_t q = 0; q < mr; ++q) {
+	int_t v = (int_t) (hb[q] + 0.5);
+	SOLVEstruct->fast_out[q] = (v > 0 && v <= xlen) ? v - 1 : -1;
+	if ( !(v > 0 && v <= xlen) ) ++nbad;
+    }
+    checkGPU(gpuFree(dB)); SUPERLU_FREE(hb); SUPERLU_FREE(hx);
+
+    if ( nin != mr || ndup || nbad ) {
+	printf("[fast solve] maps not usable (%lld of %lld rhs entries placed, %lld twice, %lld outputs unmapped): regular solve path kept\n",
+	       (long long) nin, (long long) mr, (long long) ndup, (long long) nbad);
+	SUPERLU_FREE(SOLVEstruct->fast_in); SUPERLU_FREE(SOLVEstruct->fast_out);
+	SOLVEstruct->fast_in = SOLVEstruct->fast_out = NULL;
+	SOLVEstruct->fast_xlen = -1;   /* tried; do not repeat the marker pass on every call */
+	return;
+    }
+    SOLVEstruct->fast_xlen = xlen; SOLVEstruct->fast_m = m_loc; SOLVEstruct->fast_nrhs = nrhs;
+    printf("[fast solve] maps built: %lld solver positions, %lld rhs entries\n", (long long) xlen, (long long) mr);
+}
+#endif
 // #include "pddistribute3d.h"
 
 // #include "dssvx3dAux.c"
@@ -607,7 +791,16 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
        B2d is allocated;
        B is then aliased to B2d for the following 2D solve;
     */
-    dGatherNRformat_loc3d_allgrid(options, Fact, (NRformat_loc *)A->Store,
+    double tph_in = SuperLU_timer_();
+    /* Batched pattern-reuse step whose device L/U the wrapper has already
+       filled from the caller's values: A (the stacked host copy) is stale
+       and must not be read, so only B is gathered (as for a FACTORED call). */
+    int fastA = 0;
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    fastA = (Fact == SamePattern_SameRowPerm && LUstruct->batch_dev != NULL &&
+             dbatchDevResAReady((dBatchFactorize_Handle) LUstruct->batch_dev));
+#endif
+    dGatherNRformat_loc3d_allgrid(options, fastA ? FACTORED : Fact, (NRformat_loc *)A->Store,
 				     B, ldb, nrhs, grid3d, &A3d);
 
     B = (double *)A3d->B2d; /* B is now pointing to B2d,
@@ -642,6 +835,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
     /* The following code now works on all grids */
     Astore = (NRformat_loc *)A->Store;
+    double tph[8]; for (int ii = 0; ii < 8; ++ii) tph[ii] = 0.0; tph[0] = SuperLU_timer_();
     nnz_loc = Astore->nnz_loc;
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
@@ -731,6 +925,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end if (!factored) */
 
 	/* Compute norm(A), which will be used to adjust small diagonal. */
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+	if (fastA)
+	    anorm = dbatchDevResAnorm((dBatchFactorize_Handle) LUstruct->batch_dev);
+	else
+#endif
 	if (!factored || options->IterRefine)
 	    anorm = dcomputeA_Norm(notran, A, grid);
 
@@ -887,8 +1086,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	if (!factored)
 	{
 	    /* Apply column permutation to the original distributed A */
+	    tph[1] = SuperLU_timer_();
+	    if (!fastA)
 	    for (j = 0; j < nnz_loc; ++j)
 		colind[j] = perm_c[colind[j]];
+	    tph[2] = SuperLU_timer_();
 	    // free quauntities used in Parmetis
 	    if (sizes)
 		SUPERLU_FREE(sizes);
@@ -914,6 +1116,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		         distribution routine. */
 		t = SuperLU_timer_();
 
+		if ( Fact == SamePattern_SameRowPerm && LUstruct->batch_dev != NULL ) {
+		    /* Device-resident batch reuse: the GPU is refilled straight
+		       from A, so the host L/U need not be refreshed here. */
+		    dist_mem_use = 0;
+		} else
 		dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
 					    Glu_freeable, LUstruct, grid3d);
 		stat->utime[DIST] = SuperLU_timer_() - t;
@@ -1024,8 +1231,22 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 #ifdef HAVE_MAGMA
 			double tic = SuperLU_timer_();
-			dBatchFactorize_Handle batch_ws = dgetBatchFactorizeWorkspace(
-			    nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info);
+			int devres = dbatch_devres_enabled();
+			dBatchFactorize_Handle batch_ws = (dBatchFactorize_Handle) LUstruct->batch_dev;
+			if ( !devres ) {
+			    batch_ws = dgetBatchFactorizeWorkspace(
+				nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info);
+			} else if ( batch_ws == NULL ) {
+			    /* First call: slot map + persistent workspace. */
+			    int64_t *map = dbatch_build_slot_map(options, n, A, ScalePermstruct, LUstruct, grid3d, stat);
+			    batch_ws = dgetBatchFactorizeWorkspaceEx(
+				nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info, 0);
+			    dbatchDevResSetup(batch_ws, LUstruct, a, nnz_loc, map);
+			    SUPERLU_FREE(map);
+			    LUstruct->batch_dev = (void *) batch_ws;
+			    LUstruct->batch_anorm = anorm;   /* for the wrapper's A-side setup */
+			}
+			if ( devres && !dbatchDevResAPrefilled(batch_ws) ) dbatchDevResRefill(batch_ws, a, nnz_loc);
 
 			double setup_time = SuperLU_timer_() - tic;
 
@@ -1042,8 +1263,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			double factor_time = SuperLU_timer_() - tic;
 
 			tic = SuperLU_timer_();
-			dcopyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
-			dfreeBatchFactorizeWorkspace(batch_ws);
+			if ( !(devres && Fact == SamePattern_SameRowPerm && dbatchDevResSolveReady(batch_ws)) )
+			    dcopyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
+			if ( !devres ) dfreeBatchFactorizeWorkspace(batch_ws);
 			double transfer_time = SuperLU_timer_() - tic;
 			double total_time = transfer_time + factor_time + setup_time;
 #if ( PRNTlevel >= 1 )
@@ -1078,6 +1300,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    }
 
 	    stat->utime[FACT] = SuperLU_timer_() - t;
+	    tph[3] = SuperLU_timer_();
 
 	    /*factorize in grid 1*/
 	    // if(grid3d->zscp.Iam)
@@ -1135,6 +1358,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
         } /* end if not Factored ... factor on all process layers */
 
+	tph[4] = SuperLU_timer_();
 	if (grid3d->zscp.Iam == 0 ) { // only process layer 0 ... print Factor stats
             if (!factored)
 	    {
@@ -1223,6 +1447,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    } /* end if !factored */
         } /* end if grid-0 ... print Factor stats */
+	tph[5] = SuperLU_timer_();
 
 	if(Solve3D){
 
@@ -1239,11 +1464,32 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		if (options->DiagInv == YES && (Fact != FACTORED))
 		{
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+		    dBatchFactorize_Handle devres_ws = (dBatchFactorize_Handle) LUstruct->batch_dev;
+		    int devres_solve = (devres_ws != NULL && get_acc_solve());
+		    if ( devres_solve && Fact == SamePattern_SameRowPerm && dbatchDevResSolveReady(devres_ws) ) {
+			/* Reuse step: factors are already on the device. */
+			dbatchDevResSolveRefresh(devres_ws, LUstruct, getNsupers(n, LUstruct->Glu_persist),
+						 grid->npcol, MYCOL(grid->iam, grid));
+		    } else {
+#endif
  		    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
 
 		    // The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d.
 		    int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 #if defined(GPU_ACC)
+#if defined(HAVE_MAGMA)
+		    if ( devres_solve && !dbatchDevResSolveReady(devres_ws) ) {
+#ifdef U_BLOCK_PER_ROW_ROWDATA
+			dbatchDevResSolveSetup(devres_ws, NULL, 0);   /* row-data U: device copy, no map */
+#else
+			int64_t ucnt = 0;
+			int64_t *umap = dbatch_build_umap(options, n, LUstruct, grid, stat, &ucnt);
+			dbatchDevResSolveSetup(devres_ws, umap, ucnt);
+			SUPERLU_FREE(umap);
+#endif
+		    }
+#endif
 
 		    pdconvertU(options, grid, LUstruct, stat, n);
 
@@ -1311,6 +1557,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 #endif
                    }
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+		    } /* end else: host path */
+#endif
 		}
 	    } /* end if (get_new3dsolve()) */
 	} else { /* else if(Solve3D) */
@@ -1420,6 +1669,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	/* ------------------------------------------------------------
 	   Compute the solution matrix X.
 	   ------------------------------------------------------------ */
+	tph[6] = SuperLU_timer_();
 	if ((nrhs > 0) && (*info == 0))
 	{
 	    if (options->GPURES == YES &&
@@ -1449,8 +1699,15 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (options->GPURES == YES) {
 #ifdef GPU_ACC
 		    ldx = ldb;
-		    checkGPU(gpuMalloc((void**)&X,
-				       sizeof(double) * (size_t)ldx * (size_t)nrhs));
+		    {   /* device X kept across solves */
+			size_t need = (size_t)ldx * (size_t)nrhs;
+			if ( SOLVEstruct->d_Xgpures == NULL || SOLVEstruct->d_Xgpures_len < need ) {
+			    if ( SOLVEstruct->d_Xgpures ) checkGPU(gpuFree(SOLVEstruct->d_Xgpures));
+			    checkGPU(gpuMalloc((void**)&SOLVEstruct->d_Xgpures, sizeof(double) * need));
+			    SOLVEstruct->d_Xgpures_len = need;
+			}
+			X = SOLVEstruct->d_Xgpures;
+		    }
 		    dscale_and_copy_rhs_wrap(B, ldb, X, ldx, m_loc, nrhs,
 					     fst_row, notran, rowequ, colequ,
 					     ScalePermstruct);
@@ -1898,7 +2155,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	if (grid3d->zscp.Iam == 0 || Solve3D) {
 	    if (options->GPURES == YES) {
 #ifdef GPU_ACC
-		checkGPU(gpuFree(X));
+		/* X is SOLVEstruct->d_Xgpures, released with the solve structure */
 #else
 		ABORT("GPURES requires GPU_ACC in pdgssvx3d().");
 #endif
@@ -1960,9 +2217,24 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	if (nrhs > 0)
 		dScatter_B3d(options, A3d, grid3d);
 
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+	/* batched interface, GPU-resident, one process, per-level launches: the
+	   maps of the fast solve path (built once per pattern, after the first
+	   solve; X and the solver's x are free to be clobbered here) */
+	if ( nrhs > 0 && *info == 0 && options->GPURES == YES && LUstruct->batch_dev != NULL &&
+	     SOLVEstruct->fast_xlen == 0 && options->IterRefine == NOREFINE &&
+	     grid3d->npdep == 1 && grid->nprow * grid->npcol == 1 && Solve3D &&
+	     get_new3dsolve() && get_acc_solve() && get_solve_levels() && LUstruct->Llu->nlevels > 0 &&
+	     ScalePermstruct->DiagScale == NOEQUIL )
+	    dbatch_build_fast_solve_maps(options, n, m_loc, fst_row, nrhs, LUstruct, ScalePermstruct, SOLVEstruct, grid, X, ldx);
+#endif
+
 	B = A3d->B3d;		 // B is now assigned back to B3d on return
 	A->Store = Astore3d; // restore Astore to 3D
 
+    tph[7] = SuperLU_timer_();
+    printf("[pdgssvx3d] phases ms: gather %.2f  entry->colperm %.2f  colind-perm %.2f  dist+factor %.2f  stats-print %.2f  solve-setup %.2f  solve-block %.2f  total %.2f\n",
+           1e3*(tph[0]-tph_in), 1e3*(tph[1]-tph[0]), 1e3*(tph[2]-tph[1]), 1e3*(tph[3]-tph[2]), 1e3*(tph[5]-tph[4]), 1e3*(tph[6]-tph[5]), 1e3*(tph[7]-tph[6]), 1e3*(tph[7]-tph_in));
 #if (DEBUGlevel >= 1)
 	CHECK_MALLOC(iam, "Exit pdgssvx3d()");
 #endif

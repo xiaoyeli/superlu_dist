@@ -2363,6 +2363,8 @@ if (get_acc_solve()){
 	SUPERLU_FREE (Llu->Ucolind_br_offset);
 	SUPERLU_FREE (Llu->Unzval_br_new_dat);
 	SUPERLU_FREE (Llu->Unzval_br_new_offset);
+	Llu->Ucolind_br_dat = NULL; Llu->Ucolind_br_offset = NULL;
+	Llu->Unzval_br_new_dat = NULL; Llu->Unzval_br_new_offset = NULL;
 #endif
 
 	SUPERLU_FREE (Llu->Uind_br_ptr);

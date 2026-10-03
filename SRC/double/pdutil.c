@@ -418,6 +418,8 @@ void dLUstructInit(const int_t n, dLUstruct_t *LUstruct)
     LUstruct->Llu->inv = 0;
     LUstruct->dt = 'd';
     LUstruct->trf3Dpart = NULL;
+    LUstruct->batch_dev = NULL;
+    LUstruct->batch_anorm = 0.0;
 }
 
 /*! \brief Deallocate LUstruct */
@@ -583,6 +585,9 @@ if (get_acc_solve()){
     checkGPU (gpuFree (Llu->d_Unzval_bc_offset));
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat));
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
+    if (Llu->d_levlist) { checkGPU (gpuFree (Llu->d_levlist)); Llu->d_levlist = NULL; }
+    if (Llu->levlims) { SUPERLU_FREE (Llu->levlims); Llu->levlims = NULL; }
+    if (Llu->levwarp) { SUPERLU_FREE (Llu->levwarp); Llu->levwarp = NULL; }
 #ifdef U_BLOCK_PER_ROW_ROWDATA
     checkGPU (gpuFree (Llu->d_Ucolind_br_dat));
     checkGPU (gpuFree (Llu->d_Ucolind_br_offset));
@@ -816,6 +821,8 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_x), (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
     checkGPU(gpuMemset( SOLVEstruct->d_lsum, 0, sizelsum * sizeof(double)));
     checkGPU(gpuMemset( SOLVEstruct->d_x, 0, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+    SOLVEstruct->d_Xgpures = NULL; SOLVEstruct->d_Xgpures_len = 0;   /* allocated on first use */
+    SOLVEstruct->fast_xlen = 0; SOLVEstruct->fast_in = NULL; SOLVEstruct->fast_out = NULL;
 
     double* lsum = (double*)SUPERLU_MALLOC(sizelsum * sizeof(double));
     for (int_t ii=0; ii < sizelsum; ii++ )
@@ -1084,6 +1091,10 @@ pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
 {
 #if ( defined(GPU_ACC) )
     checkGPU (gpuFree (SOLVEstruct->d_x));
+    if ( SOLVEstruct->d_Xgpures ) { checkGPU (gpuFree (SOLVEstruct->d_Xgpures)); SOLVEstruct->d_Xgpures = NULL; SOLVEstruct->d_Xgpures_len = 0; }
+    if ( SOLVEstruct->fast_in ) { SUPERLU_FREE (SOLVEstruct->fast_in); SOLVEstruct->fast_in = NULL; }
+    if ( SOLVEstruct->fast_out ) { SUPERLU_FREE (SOLVEstruct->fast_out); SOLVEstruct->fast_out = NULL; }
+    SOLVEstruct->fast_xlen = 0;
     checkGPU (gpuFree (SOLVEstruct->d_lsum));
     checkGPU (gpuFree (SOLVEstruct->d_lsum_save));
     checkGPU (gpuFree (SOLVEstruct->d_fmod));
@@ -1370,6 +1381,9 @@ void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
     SUPERLU_FREE(A3d->nnz_disp);
     SUPERLU_FREE(A3d->b_counts_int);
     SUPERLU_FREE(A3d->b_disp);
+#ifdef GPU_ACC
+    if ( A3d->B2d_dev_bytes > 0 && A3d->B2d ) checkGPU(gpuFree(A3d->B2d));
+#endif
     int rankorder = grid3d->rankorder;
     if ( rankorder == 0 ) { /* Z-major in 3D grid */
         SUPERLU_FREE(A3d->procs_to_send_list);

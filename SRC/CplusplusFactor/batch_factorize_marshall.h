@@ -243,6 +243,14 @@ struct TMarshallSCUFunc {
             A_ptrs[i] = B_ptrs[i] = C_ptrs[i] = NULL;
             lda_array[i] = ldb_array[i] = ldc_array[i] = 1;
             m_array[i] = n_array[i] = k_array[i] = 0;
+            /* No Schur-complement update for this supernode.  The scatter
+               launch is sized by max(iend - ist) and max(jend - jst) over the
+               level, so these must be set: left untouched they are
+               uninitialized device memory, which is zero in a fresh process
+               but stale once a workspace has been freed and rebuilt (a second
+               factorization from scratch), giving an illegal or enormous
+               scatter launch. */
+            ist[i] = iend[i] = jst[i] = jend[i] = 0;
         }
     }
 };

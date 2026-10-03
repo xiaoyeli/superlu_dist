@@ -319,6 +319,8 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**    OpenMP threads            : %4d\n", num_threads);
     printf("**    GPU factor?               : %4d\n", gpu_factor_enabled);
     printf("**    GPU trisolve?             : %4d\n", gpu_trisolve_enabled);
+    if ( gpu_trisolve_enabled )
+        printf("**    GPU trisolve by level?    : %4d\n", get_solve_levels());
     printf("**************************************************\n");
 }
 
