@@ -129,6 +129,94 @@ static int64_t *dbatch_build_umap(superlu_dist_options_t *options, int_t n, dLUs
     *ucnt_out = ucnt;
     return umap;
 }
+
+/* Fast GPU-resident solve for the batched interface: with one process and
+   per-level launches, the solve needs no host work at all, and the chain
+   stacked b -> copy -> scale -> permute into the solver's layout -> solve ->
+   permute back -> unscale -> copy -> unstacked x collapses into one gather
+   before the solve kernels and one after.  The two maps are found by a
+   marker pass through the regular routines, so whatever permutation they
+   apply is reproduced exactly.  Done once per pattern, after the first
+   solve; only for an unequilibrated stacked system (the batched interface
+   scales per system). */
+static void dbatch_build_fast_solve_maps(superlu_dist_options_t *options, int_t n, int_t m_loc, int_t fst_row,
+                                         int nrhs, dLUstruct_t *LUstruct, dScalePermstruct_t *ScalePermstruct,
+                                         dSOLVEstruct_t *SOLVEstruct, gridinfo_t *grid, double *X, int_t ldx)
+{
+    dLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t nsupers = Glu_persist->supno[n - 1] + 1;
+    int_t nlb = CEILING(nsupers, grid->nprow);
+    int_t xlen = Llu->ldalsum * nrhs + nlb * XK_H;
+    int_t mr = m_loc * nrhs;
+    double *hb = doubleMalloc_dist(mr), *hx = doubleMalloc_dist(xlen), *dB = NULL;
+    if ( !hb || !hx ) ABORT("Malloc fails for the fast-solve maps");
+    checkGPU(gpuMalloc((void**)&dB, mr * sizeof(double)));
+    if ( SOLVEstruct->fast_in ) SUPERLU_FREE(SOLVEstruct->fast_in);
+    if ( SOLVEstruct->fast_out ) SUPERLU_FREE(SOLVEstruct->fast_out);
+    SOLVEstruct->fast_in = intMalloc_dist(xlen);
+    SOLVEstruct->fast_out = intMalloc_dist(mr);
+    SOLVEstruct->fast_xlen = 0;
+
+    /* in: stacked entry q = row + rhs*m -> solver position */
+    for (int_t q = 0; q < mr; ++q) hb[q] = (double) (q + 1);
+    checkGPU(gpuMemcpy(dB, hb, mr * sizeof(double), gpuMemcpyHostToDevice));
+    dscale_and_copy_rhs_wrap(dB, m_loc, X, ldx, m_loc, nrhs, fst_row, 1, 0, 0, ScalePermstruct);
+    checkGPU(gpuMemset(SOLVEstruct->d_x, 0, xlen * sizeof(double)));
+    pdReDistribute_B_to_X_gpu_wrap(X, m_loc, n, nrhs, ldx, fst_row, SOLVEstruct->d_x, ScalePermstruct, SOLVEstruct,
+                                   Glu_persist, grid, Llu->d_grid, Llu->d_ilsum, Llu->d_xsup, Llu->d_supno);
+    checkGPU(gpuMemcpy(hx, SOLVEstruct->d_x, xlen * sizeof(double), gpuMemcpyDeviceToHost));
+    /* decode only the value slots of the x blocks: each block lk starts with
+       XK_H header words (the block number, which looks like a marker) and
+       the arrays may hold padding beyond the last block */
+    int_t *ilsum = Llu->ilsum, *xsup = Glu_persist->xsup;
+    int_t nin = 0, ndup = 0;
+    char *seen = (char *) SUPERLU_MALLOC(mr);
+    if ( !seen ) ABORT("Malloc fails for the fast-solve maps");
+    memset(seen, 0, mr);
+    for (int_t s = 0; s < xlen; ++s) SOLVEstruct->fast_in[s] = -1;
+    for (int_t lk = 0; lk < nlb; ++lk) {
+	int_t k = lk * grid->nprow + grid->iam / grid->npcol;   /* one process: k = lk */
+	if ( k >= nsupers ) break;
+	int_t knsupc = SuperSize(k), base = X_BLK(lk);
+	for (int j = 0; j < nrhs; ++j)
+	    for (int_t i = 0; i < knsupc; ++i) {
+		int_t s = base + i + j * knsupc;
+		int_t v = (int_t) (hx[s] + 0.5);
+		if ( v > 0 && v <= mr ) {
+		    SOLVEstruct->fast_in[s] = v - 1; ++nin;
+		    if ( seen[v - 1] ) ++ndup; seen[v - 1] = 1;
+		}
+	    }
+    }
+    SUPERLU_FREE(seen);
+
+    /* out: solver position -> stacked entry */
+    for (int_t s = 0; s < xlen; ++s) hx[s] = (double) (s + 1);
+    checkGPU(gpuMemcpy(SOLVEstruct->d_x, hx, xlen * sizeof(double), gpuMemcpyHostToDevice));
+    pdReDistribute_X_to_B_gpu_wrap(X, m_loc, n, nrhs, ldx, fst_row, nsupers, SOLVEstruct->d_x, ScalePermstruct, SOLVEstruct,
+                                   Glu_persist, grid, Llu->d_grid, Llu->d_ilsum, Llu->d_xsup, Llu->d_supno);
+    pdPermute_Dense_Matrix_gpu_wrap(fst_row, m_loc, n, X, ldx, dB, m_loc, nrhs, grid, SOLVEstruct);
+    checkGPU(gpuMemcpy(hb, dB, mr * sizeof(double), gpuMemcpyDeviceToHost));
+    int_t nbad = 0;
+    for (int_t q = 0; q < mr; ++q) {
+	int_t v = (int_t) (hb[q] + 0.5);
+	SOLVEstruct->fast_out[q] = (v > 0 && v <= xlen) ? v - 1 : -1;
+	if ( !(v > 0 && v <= xlen) ) ++nbad;
+    }
+    checkGPU(gpuFree(dB)); SUPERLU_FREE(hb); SUPERLU_FREE(hx);
+
+    if ( nin != mr || ndup || nbad ) {
+	printf("[fast solve] maps not usable (%lld of %lld rhs entries placed, %lld twice, %lld outputs unmapped): regular solve path kept\n",
+	       (long long) nin, (long long) mr, (long long) ndup, (long long) nbad);
+	SUPERLU_FREE(SOLVEstruct->fast_in); SUPERLU_FREE(SOLVEstruct->fast_out);
+	SOLVEstruct->fast_in = SOLVEstruct->fast_out = NULL;
+	SOLVEstruct->fast_xlen = -1;   /* tried; do not repeat the marker pass on every call */
+	return;
+    }
+    SOLVEstruct->fast_xlen = xlen; SOLVEstruct->fast_m = m_loc; SOLVEstruct->fast_nrhs = nrhs;
+    printf("[fast solve] maps built: %lld solver positions, %lld rhs entries\n", (long long) xlen, (long long) mr);
+}
 #endif
 // #include "pddistribute3d.h"
 
@@ -2128,6 +2216,18 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	/* Scatter the solution from 2D grid-0 to 3D grid */
 	if (nrhs > 0)
 		dScatter_B3d(options, A3d, grid3d);
+
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+	/* batched interface, GPU-resident, one process, per-level launches: the
+	   maps of the fast solve path (built once per pattern, after the first
+	   solve; X and the solver's x are free to be clobbered here) */
+	if ( nrhs > 0 && *info == 0 && options->GPURES == YES && LUstruct->batch_dev != NULL &&
+	     SOLVEstruct->fast_xlen == 0 && options->IterRefine == NOREFINE &&
+	     grid3d->npdep == 1 && grid->nprow * grid->npcol == 1 && Solve3D &&
+	     get_new3dsolve() && get_acc_solve() && get_solve_levels() && LUstruct->Llu->nlevels > 0 &&
+	     ScalePermstruct->DiagScale == NOEQUIL )
+	    dbatch_build_fast_solve_maps(options, n, m_loc, fst_row, nrhs, LUstruct, ScalePermstruct, SOLVEstruct, grid, X, ldx);
+#endif
 
 	B = A3d->B3d;		 // B is now assigned back to B3d on return
 	A->Store = Astore3d; // restore Astore to 3D

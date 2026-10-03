@@ -7612,6 +7612,57 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
 
 
 
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
+/*! \brief Triangular solves on the device only: the batched interface's
+ *  fast path (one process, per-level launches, factors and diagonal inverses
+ *  already on the device, x already loaded in the solver's layout by the
+ *  caller's gather).  None of the regular solve's host work: no allocations,
+ *  no supernode loops, no counter resets (the per-level launches never read
+ *  the counters), one asynchronous memset of lsum before each sweep.  No synchronization: the
+ *  caller orders what follows on the same stream.
+ */
+void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
+                              dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d, int nrhs)
+{
+    gridinfo_t *grid = &(grid3d->grid2d);
+    dLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t nsupers = Glu_persist->supno[n - 1] + 1;
+    int_t nlb = CEILING(nsupers, grid->nprow);
+    int_t k = CEILING(nsupers, grid->npcol);
+    int_t sizelsum = ((size_t) Llu->ldalsum) * nrhs + nlb * LSUM_H;
+    int knsupc = sp_ienv_dist(3, options);
+    int_t maxrecvsz = knsupc * nrhs + SUPERLU_MAX(XK_H, LSUM_H);
+    int procs = grid->nprow * grid->npcol;
+    double *d_lsum = SOLVEstruct->d_lsum, *d_x = SOLVEstruct->d_x;
+    gridinfo_t *d_grid = Llu->d_grid;
+    int nthx, nthy;
+
+    checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(double), 0));
+    dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0, Llu->levwarp);
+    slu_solve_block_dims(&nthx, &nthy);
+    dlsum_fmod_inv_gpu_wrap(Llu->nbcol_masked, nlb, nthx, nthy, d_lsum, d_x, nrhs, knsupc, nsupers, SOLVEstruct->d_fmod,
+        Llu->d_LBtree_ptr, Llu->d_LRtree_ptr, Llu->d_ilsum, Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset,
+        Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset,
+        Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset, Llu->d_xsup, Llu->d_bcols_masked, d_grid,
+        maxrecvsz, flag_bc_q, flag_rd_q, dready_x, dready_lsum, my_flag_bc, my_flag_rd, d_nfrecv, h_nfrecv,
+        d_status, d_colnum, d_mynum, d_mymaskstart, d_mymasklength, d_nfrecvmod, d_statusmod, d_colnummod,
+        d_mynummod, d_mymaskstartmod, d_mymasklengthmod, d_recv_cnt, d_msgnum, d_flag_mod, procs);
+    /* the forward solve leaves its partial sums in lsum; the backward solve
+       accumulates into the same array (the regular path recopies the zeros) */
+    checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(double), 0));
+    dlsum_bmod_inv_gpu_wrap(options, k, nlb, nthx, nthy, d_lsum, d_x, nrhs, knsupc, nsupers, SOLVEstruct->d_bmod,
+        Llu->d_UBtree_ptr, Llu->d_URtree_ptr, Llu->d_ilsum, Llu->d_Ucolind_bc_dat, Llu->d_Ucolind_bc_offset,
+        Llu->d_Ucolind_br_dat, Llu->d_Ucolind_br_offset, Llu->d_Uind_br_dat, Llu->d_Uind_br_offset,
+        Llu->d_Unzval_bc_dat, Llu->d_Unzval_bc_offset, Llu->d_Unzval_br_new_dat, Llu->d_Unzval_br_new_offset,
+        Llu->d_Uinv_bc_dat, Llu->d_Uinv_bc_offset, Llu->d_Uindval_loc_bc_dat, Llu->d_Uindval_loc_bc_offset,
+        Llu->d_xsup, d_grid, maxrecvsz, flag_bc_q, flag_rd_q, dready_x, dready_lsum, my_flag_bc, my_flag_rd,
+        d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u, d_mymasklength_u,
+        d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
+        d_recv_cnt_u, d_msgnum, d_flag_mod_u, procs);
+}
+#endif
+
 void
 pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
            dScalePermstruct_t * ScalePermstruct,

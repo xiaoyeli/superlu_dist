@@ -164,6 +164,10 @@ typedef struct cLUstruct_t cLUstruct_t;
     extern int  dvbatch_gpures_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs);
     extern void dvbatch_gpures_free(dvbatch_ctx_t *ctx);
     extern int  dvbatch_gpures_rescale(dvbatch_ctx_t *ctx, int batchCount, int *m, double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale);
+    extern int  dvbatch_fast_setup(dvbatch_ctx_t *ctx, int batchCount, int *m, int **RpivPtr, int **CpivPtr, int nrhs,
+                                   const int_t *fast_in, const int_t *fast_out, int_t xlen);
+    extern int  dvbatch_fast_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, int nrhs, double *d_x);
+    extern int  dvbatch_fast_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs, const double *d_x);
 
     // Double complex
     typedef struct zBatchFactorizeWorkspace* zBatchFactorize_Handle;

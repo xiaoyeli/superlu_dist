@@ -411,6 +411,14 @@ typedef struct {
     double *d_x;         /* used for device solution vector*/
     double *d_Xgpures;   /* GPURES: scaled RHS / permuted solution, kept across solves */
     size_t d_Xgpures_len;
+    /* Fast GPU-resident solve of the batched interface (one process,
+       per-level launches): maps built once per pattern by a marker pass
+       through the regular path.  fast_in[s]: for position s of the solver's
+       x vector, the stacked entry (row + rhs*m) it is loaded from, or -1;
+       fast_out[row + rhs*m]: the position s holding that entry's solution.
+       fast_xlen == 0: not available. */
+    int_t fast_xlen, fast_m, fast_nrhs;
+    int_t *fast_in, *fast_out;
     int  *d_fmod_save, *d_fmod;         /* used for device fmod vector*/
     int  *d_bmod_save, *d_bmod;         /* used for device bmod vector*/
 
@@ -469,6 +477,14 @@ typedef struct {
     double  **d_Xptrs;
     int      *d_ldRHS;
     int      *d_ldX;
+    /* fast solve (dSOLVEstruct_t.fast_*, composed with the per-system maps) */
+    int_t    *d_fin_g;      /* solver position s -> stacked row g (system/row via d_rowsys/d_rowloc), -1 */
+    int      *d_fin_j;      /* solver position s -> rhs index */
+    int_t    *d_fout_s;     /* g + j*m_big -> solver position s */
+    int_t     fast_xlen;    /* 0: not available */
+    double  **h_RHSptrs;    /* last pointer arrays sent to the device (skip the copy when unchanged) */
+    double  **h_Xptrs;
+    int      *h_ldRHS, *h_ldX;
 } dvbatch_ctx_t;
 
 /*==== For 3D code ====*/
@@ -805,6 +821,7 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int);
 
 extern void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwarp);
+extern void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *, int_t, dLUstruct_t *, dSOLVEstruct_t *, gridinfo3d_t *, int);
 extern void dlsum_fmod_inv_gpu_wrap(int, int, int, int, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *,
 int_t , uint64_t* ,uint64_t* ,double* ,double* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int);
 

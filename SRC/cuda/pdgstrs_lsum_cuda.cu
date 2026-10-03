@@ -4692,9 +4692,8 @@ if(procs==1){
         dlsum_bmod_inv_gpu_1rhs_new<<< nbrow_loc, dimBlock >>>(nbrow_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Uind_br_dat,Uind_br_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
 #endif
     }
-
-
-    gpuDeviceSynchronize();
+    /* no synchronization here: what follows is ordered on the stream (the
+       host-RHS path copies x back with a synchronous memcpy anyway) */
 }else{
     #ifdef HAVE_NVSHMEM
     int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256

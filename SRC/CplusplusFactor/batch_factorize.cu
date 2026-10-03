@@ -22,6 +22,7 @@
 #endif
 #endif
 #include <vector>
+#include <cstring>
 #include <iostream>
 
 
@@ -1084,22 +1085,22 @@ int batchDevResSolveRefreshT(TBatchFactorizeWorkspace<T>* ws, LUStruct_type<T> *
     LocalLU_type<T>* Llu = LUstruct->Llu;
     LocalLU_type<T>& d = ws->d_localLU;
     if (!ws->solve_ready) return -1;
+    const int prof = slu_bprof_on();   /* syncs only for the timing print; the work is stream-ordered */
     double t0 = SuperLU_timer_();
     gpuErrchk(gpuMemcpyAsync(Llu->d_Lnzval_bc_dat, d.Lnzval_bc_dat, sizeof(T) * d.Lnzval_bc_cnt, gpuMemcpyDeviceToDevice, ws->stream));
-    gpuErrchk(gpuStreamSynchronize(ws->stream));
+    if (prof) gpuErrchk(gpuStreamSynchronize(ws->stream));
     double t1 = SuperLU_timer_();
     if (ws->d_umap) {
         int nthreads = 256;
         int64_t nblocks = (ws->ucnt + nthreads - 1) / nthreads;
         gatherUvalsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(d.Unzval_br_new_dat, ws->d_umap, ws->ucnt, Llu->d_Unzval_bc_dat);
         gpuErrchk(gpuGetLastError());
-        gpuErrchk(gpuStreamSynchronize(ws->stream));
     } else {
         /* row-data U solve reads the same layout the factorization produced */
         if (Llu->d_Unzval_br_new_dat == NULL) { fprintf(stderr, "solve refresh: d_Unzval_br_new_dat not allocated\n"); return -1; }
         gpuErrchk(gpuMemcpyAsync(Llu->d_Unzval_br_new_dat, d.Unzval_br_new_dat, sizeof(T) * (size_t) d.Unzval_br_new_cnt, gpuMemcpyDeviceToDevice, ws->stream));
-        gpuErrchk(gpuStreamSynchronize(ws->stream));
     }
+    if (prof) gpuErrchk(gpuStreamSynchronize(ws->stream));
     double t2 = SuperLU_timer_();
     {
         int_t nsupers_j = (nsupers + npcol - 1) / npcol;
@@ -1107,10 +1108,12 @@ int batchDevResSolveRefreshT(TBatchFactorizeWorkspace<T>* ws, LUStruct_type<T> *
             Llu->d_Lrowind_bc_offset, Llu->d_Lrowind_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Lnzval_bc_dat,
             Llu->d_Linv_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Uinv_bc_offset, Llu->d_Uinv_bc_dat);
         gpuErrchk(gpuGetLastError());
-        gpuErrchk(gpuStreamSynchronize(ws->stream));
     }
-    double t3 = SuperLU_timer_();
-    printf("\tDevRes solve refresh time = %.4f (L copy %.4f, U gather %.4f, diag inv %.4f)\n", t3 - t0, t1 - t0, t2 - t1, t3 - t2);
+    if (prof) {
+        gpuErrchk(gpuStreamSynchronize(ws->stream));
+        double t3 = SuperLU_timer_();
+        printf("\tDevRes solve refresh time = %.4f (L copy %.4f, U gather %.4f, diag inv %.4f)\n", t3 - t0, t1 - t0, t2 - t1, t3 - t2);
+    }
     return 0;
 }
 
@@ -1236,10 +1239,12 @@ int batchDevResRefillAT(TBatchFactorizeWorkspace<T>* ws, int from_device, T **Ap
                                                                                   ws->nnz2, (int64_t) d.Lnzval_bc_cnt, d.Lnzval_bc_dat, d.Unzval_br_new_dat);
     }
     gpuErrchk(gpuGetLastError());
-    gpuErrchk(gpuStreamSynchronize(ws->stream));
-    double t2 = SuperLU_timer_();
     ws->a_prefilled = 1;
-    printf("\tDevRes A refill time = %.4f (%s %.4f, zero+scatter %.4f)\n", t2 - t0, from_device ? "pointers" : "gather+upload", t1 - t0, t2 - t1);
+    if (slu_bprof_on()) {
+        gpuErrchk(gpuStreamSynchronize(ws->stream));
+        double t2 = SuperLU_timer_();
+        printf("\tDevRes A refill time = %.4f (%s %.4f, zero+scatter %.4f)\n", t2 - t0, from_device ? "pointers" : "gather+upload", t1 - t0, t2 - t1);
+    }
     return 0;
 }
 
@@ -1384,8 +1389,7 @@ int dvbatch_gpures_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, in
     vbatchStackRhsKernel<<<(unsigned) nblocks, nthreads>>>(ctx->m_big, nrhs, ctx->d_rowsys, ctx->d_rowloc, ctx->d_rhsdst,
                                                           ctx->d_rscale, ctx->d_RHSptrs, ctx->d_ldRHS, ctx->d_b);
     gpuErrchk(gpuGetLastError());
-    gpuErrchk(gpuDeviceSynchronize());
-    printf("\tGPURES stack RHS time = %.4f\n", SuperLU_timer_() - t0);
+    if (slu_bprof_on()) { gpuErrchk(gpuDeviceSynchronize()); printf("\tGPURES stack RHS time = %.4f\n", SuperLU_timer_() - t0); }
     return 0;
 }
 
@@ -1399,8 +1403,8 @@ int dvbatch_gpures_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, in
     vbatchUnstackXKernel<<<(unsigned) nblocks, nthreads>>>(ctx->m_big, nrhs, ctx->d_rowsys, ctx->d_rowloc, ctx->d_xsrc,
                                                           ctx->d_cscale, ctx->d_Xptrs, ctx->d_ldX, ctx->d_b);
     gpuErrchk(gpuGetLastError());
-    gpuErrchk(gpuDeviceSynchronize());
-    printf("\tGPURES unstack X time = %.4f\n", SuperLU_timer_() - t0);
+    gpuErrchk(gpuDeviceSynchronize());   /* end of the call: the caller's X is ready */
+    if (slu_bprof_on()) printf("\tGPURES unstack X time = %.4f\n", SuperLU_timer_() - t0);
     return 0;
 }
 
@@ -1425,12 +1429,112 @@ int dvbatch_gpures_rescale(dvbatch_ctx_t *ctx, int batchCount, int *m, double **
     return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Fast solve path: the caller's RHS straight into the solver's x vector, and the solver's x straight into the
+// caller's solution, through maps that fold the stacking, the per-system scalings and permutations, and the
+// stacked system's own permutation into one gather each (see dSOLVEstruct_t.fast_*).
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+__global__ void vbatchFastStackKernel(int_t xlen, const int_t* fin_g, const int* fin_j, const int_t* rowsys, const int_t* rowloc,
+                                      const double* rscale, double* const* RHSptrs, const int* ldRHS, double* x)
+{
+    int_t s = (int_t)((int64_t)blockIdx.x * blockDim.x + threadIdx.x);
+    if (s >= xlen) return;
+    int_t g = fin_g[s];
+    if (g < 0) { x[s] = 0.0; return; }
+    int_t d = rowsys[g], i = rowloc[g];
+    x[s] = rscale[g] * RHSptrs[d][(int64_t) fin_j[s] * ldRHS[d] + i];
+}
+
+__global__ void vbatchFastUnstackKernel(int_t m_big, int nrhs, const int_t* fout_s, const int_t* rowsys, const int_t* rowloc,
+                                        const double* cscale, double* const* Xptrs, const int* ldX, const double* x)
+{
+    int64_t q = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (q >= (int64_t) m_big * nrhs) return;
+    int_t g = (int_t)(q % m_big); int j = (int)(q / m_big);
+    int_t d = rowsys[g], i = rowloc[g];
+    Xptrs[d][(int64_t) j * ldX[d] + i] = cscale[g] * x[fout_s[q]];
+}
+
+/* The per-system pointer arrays only go to the device when they changed
+   since the last call (a synchronous copy of pageable memory otherwise). */
+static int vbatch_send_ptrs(double **d_ptrs, int *d_ld, double ***h_ptrs, int **h_ld, double **ptrs, int *ld, int n)
+{
+    if (*h_ptrs && memcmp(*h_ptrs, ptrs, sizeof(double*) * n) == 0 && memcmp(*h_ld, ld, sizeof(int) * n) == 0) return 0;
+    if (!*h_ptrs) { *h_ptrs = (double **) malloc(sizeof(double*) * n); *h_ld = (int *) malloc(sizeof(int) * n); }
+    memcpy(*h_ptrs, ptrs, sizeof(double*) * n); memcpy(*h_ld, ld, sizeof(int) * n);
+    gpuErrchk(gpuMemcpy(d_ptrs, ptrs, sizeof(double*) * n, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(d_ld, ld, sizeof(int) * n, gpuMemcpyHostToDevice));
+    return 1;
+}
+
+int dvbatch_fast_setup(dvbatch_ctx_t *ctx, int batchCount, int *m, int **RpivPtr, int **CpivPtr, int nrhs,
+                       const int_t *fast_in, const int_t *fast_out, int_t xlen)
+{
+    int_t m_big = ctx->m_big;
+    std::vector<int_t> inv(m_big, -1), xsrc(m_big);
+    int_t off = 0;
+    for (int d = 0; d < batchCount; ++d) {
+        for (int i = 0; i < m[d]; ++i) { inv[off + CpivPtr[d][RpivPtr[d][i]]] = off + i; xsrc[off + i] = off + CpivPtr[d][i]; }
+        off += m[d];
+    }
+    std::vector<int_t> fin_g(xlen), fout_s((size_t) m_big * nrhs);
+    std::vector<int> fin_j(xlen);
+    for (int_t s = 0; s < xlen; ++s) {
+        int_t v = fast_in[s];
+        if (v < 0) { fin_g[s] = -1; fin_j[s] = 0; continue; }
+        fin_g[s] = inv[v % m_big]; fin_j[s] = (int)(v / m_big);
+        if (fin_g[s] < 0) return -1;
+    }
+    for (int j = 0; j < nrhs; ++j)
+        for (int_t g = 0; g < m_big; ++g) {
+            int_t s = fast_out[xsrc[g] + (int_t) j * m_big];
+            if (s < 0 || s >= xlen) return -1;
+            fout_s[g + (int_t) j * m_big] = s;
+        }
+    if (ctx->d_fin_g) gpuErrchk(gpuFree(ctx->d_fin_g));
+    if (ctx->d_fin_j) gpuErrchk(gpuFree(ctx->d_fin_j));
+    if (ctx->d_fout_s) gpuErrchk(gpuFree(ctx->d_fout_s));
+    gpuErrchk(gpuMalloc(&ctx->d_fin_g, sizeof(int_t) * xlen));
+    gpuErrchk(gpuMalloc(&ctx->d_fin_j, sizeof(int) * xlen));
+    gpuErrchk(gpuMalloc(&ctx->d_fout_s, sizeof(int_t) * (size_t) m_big * nrhs));
+    gpuErrchk(gpuMemcpy(ctx->d_fin_g, fin_g.data(), sizeof(int_t) * xlen, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_fin_j, fin_j.data(), sizeof(int) * xlen, gpuMemcpyHostToDevice));
+    gpuErrchk(gpuMemcpy(ctx->d_fout_s, fout_s.data(), sizeof(int_t) * (size_t) m_big * nrhs, gpuMemcpyHostToDevice));
+    ctx->fast_xlen = xlen;
+    return 0;
+}
+
+int dvbatch_fast_stack(dvbatch_ctx_t *ctx, int batchCount, double **RHSptr, int *ldRHS, int nrhs, double *d_x)
+{
+    vbatch_send_ptrs(ctx->d_RHSptrs, ctx->d_ldRHS, &ctx->h_RHSptrs, &ctx->h_ldRHS, RHSptr, ldRHS, batchCount);
+    int nthreads = 256;
+    int64_t nblocks = ((int64_t) ctx->fast_xlen + nthreads - 1) / nthreads;
+    vbatchFastStackKernel<<<(unsigned) nblocks, nthreads>>>(ctx->fast_xlen, ctx->d_fin_g, ctx->d_fin_j, ctx->d_rowsys, ctx->d_rowloc,
+                                                           ctx->d_rscale, ctx->d_RHSptrs, ctx->d_ldRHS, d_x);
+    gpuErrchk(gpuGetLastError());
+    return 0;
+}
+
+int dvbatch_fast_unstack(dvbatch_ctx_t *ctx, int batchCount, double **Xptr, int *ldX, int nrhs, const double *d_x)
+{
+    vbatch_send_ptrs(ctx->d_Xptrs, ctx->d_ldX, &ctx->h_Xptrs, &ctx->h_ldX, Xptr, ldX, batchCount);
+    int nthreads = 256;
+    int64_t nblocks = ((int64_t) ctx->m_big * nrhs + nthreads - 1) / nthreads;
+    vbatchFastUnstackKernel<<<(unsigned) nblocks, nthreads>>>(ctx->m_big, nrhs, ctx->d_fout_s, ctx->d_rowsys, ctx->d_rowloc,
+                                                             ctx->d_cscale, ctx->d_Xptrs, ctx->d_ldX, d_x);
+    gpuErrchk(gpuGetLastError());
+    return 0;
+}
+
 void dvbatch_gpures_free(dvbatch_ctx_t *ctx)
 {
     void **p[] = { (void**)&ctx->d_b, (void**)&ctx->d_rowsys, (void**)&ctx->d_rowloc, (void**)&ctx->d_rhsdst, (void**)&ctx->d_xsrc,
                    (void**)&ctx->d_rscale, (void**)&ctx->d_cscale, (void**)&ctx->d_RHSptrs, (void**)&ctx->d_Xptrs,
-                   (void**)&ctx->d_ldRHS, (void**)&ctx->d_ldX };
+                   (void**)&ctx->d_ldRHS, (void**)&ctx->d_ldX, (void**)&ctx->d_fin_g, (void**)&ctx->d_fin_j, (void**)&ctx->d_fout_s };
     for (size_t i = 0; i < sizeof(p) / sizeof(p[0]); ++i) if (*p[i]) { gpuErrchk(gpuFree(*p[i])); *p[i] = NULL; }
+    void **h[] = { (void**)&ctx->h_RHSptrs, (void**)&ctx->h_Xptrs, (void**)&ctx->h_ldRHS, (void**)&ctx->h_ldX };
+    for (size_t i = 0; i < sizeof(h) / sizeof(h[0]); ++i) if (*h[i]) { free(*h[i]); *h[i] = NULL; }
+    ctx->fast_xlen = 0;
 }
 
 } /* extern "C" */

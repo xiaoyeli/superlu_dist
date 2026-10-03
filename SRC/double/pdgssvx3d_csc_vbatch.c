@@ -528,6 +528,14 @@ pdgssvx3d_csc_vbatch(
     fastA = (devws != NULL && dbatchDevResAReady(devws));
 #endif
     int buildA = (!reuse && dvbatch_devres_on());   /* DOFACT call: record the entry -> stacked-position map */
+    /* Fast GPU-resident solve: a reuse call with device RHS/solution, the
+       maps built on the DOFACT call, and per-level solve launches
+       (SLU_SOLVE_LEVELS); the regular path otherwise. */
+    int fast = 0;
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    fast = (reuse && gpures && ctx->fast_xlen > 0 && options->IterRefine == NOREFINE &&
+	    get_solve_levels() && ctx->LUstruct.Llu != NULL && ctx->LUstruct.Llu->nlevels > 0);
+#endif
     int64_t *posmap = NULL; double *scale2 = NULL; int *ent_sys = NULL, *ent_idx = NULL;
     double **user_nzval = NULL;   /* GPURES: the caller's device value pointers, swapped out for host copies on the DOFACT call */
 
@@ -863,13 +871,27 @@ pdgssvx3d_csc_vbatch(
      * we do not need to consider perm_c_big outside pdgssvx3d().
      */
 #ifdef HAVE_MAGMA
-    if ( gpures ) dvbatch_gpures_stack(ctx, batchCount, RHSptr, ldRHS, nrhs);
+    if ( gpures && !fast ) dvbatch_gpures_stack(ctx, batchCount, RHSptr, ldRHS, nrhs);
 #endif
     ctx->options_big.GPURES = gpures ? YES : NO;
     tv_solver0 = SuperLU_timer_(); tv_phase[1] = tv_solver0 - tv_stack0;
     pdgssvx3d (&(ctx->options_big), &(ctx->A_big), &(ctx->ScalePermstruct),
-	       gpures ? ctx->d_b : b, m_big, nrhs, &(ctx->grid),
+	       gpures ? ctx->d_b : b, m_big, fast ? 0 : nrhs, &(ctx->grid),
 	       &(ctx->LUstruct), &(ctx->SOLVEstruct), ctx->berr, stat, info);
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
+    if ( fast && *info == 0 ) {
+	/* factors and diagonal inverses are on the device (stream-ordered):
+	   gather the RHS into the solver's x, solve, gather the solution out.
+	   The time includes whatever of the factorization is still running
+	   unless SLU_BATCH_SYNC synchronized it. */
+	double tv_fast0 = SuperLU_timer_();
+	dvbatch_fast_stack(ctx, batchCount, RHSptr, ldRHS, nrhs, ctx->SOLVEstruct.d_x);
+	pdgstrs3d_gpu_fast_solve(&(ctx->options_big), ctx->n_big, &(ctx->LUstruct), &(ctx->SOLVEstruct), &(ctx->grid), nrhs);
+	dvbatch_fast_unstack(ctx, batchCount, Xptr, ldX, nrhs, ctx->SOLVEstruct.d_x);
+	checkGPU(gpuDeviceSynchronize());   /* the one synchronization of the call */
+	tv_phase[5] = SuperLU_timer_() - tv_fast0;
+    }
+#endif
     tv_phase[2] = SuperLU_timer_() - tv_solver0;
 #ifdef HAVE_MAGMA
     if ( buildA && ctx->LUstruct.batch_dev ) {
@@ -919,10 +941,60 @@ pdgssvx3d_csc_vbatch(
     if ( gpures ) {
 	/* Solution straight to the device Xptr[]; the residual check needs A
 	   on the host and is not done in this mode. */
-	dvbatch_gpures_unstack(ctx, batchCount, Xptr, ldX, nrhs);
+	if ( !fast ) dvbatch_gpures_unstack(ctx, batchCount, Xptr, ldX, nrhs);
 	for (d = 0; d < batchCount; ++d)
 	    for (k = 0; k < nrhs; ++k) Berrs[d][k] = -1.0;
     }
+#if defined(GPU_ACC)
+    if ( gpures && !reuse && ctx->SOLVEstruct.fast_xlen > 0 && get_solve_levels() && *info == 0 ) {
+	/* DOFACT call: compose the fast-solve maps with the per-system ones,
+	   then check the fast path against the solution the regular path just
+	   produced; on any mismatch the regular path stays in use. */
+	int_t xlen = ctx->SOLVEstruct.fast_xlen;
+	if ( dvbatch_fast_setup(ctx, batchCount, m, RpivPtr, CpivPtr, nrhs,
+				ctx->SOLVEstruct.fast_in, ctx->SOLVEstruct.fast_out, xlen) == 0 ) {
+	    double maxdiff = 0.0, maxabs = 0.0;
+	    double **xref = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+	    for (d = 0; d < batchCount; ++d) {
+		size_t len = (size_t) ldX[d] * nrhs;
+		xref[d] = doubleMalloc_dist(len);
+		checkGPU(gpuMemcpy(xref[d], Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
+	    }
+	    dvbatch_fast_stack(ctx, batchCount, RHSptr, ldRHS, nrhs, ctx->SOLVEstruct.d_x);
+	    pdgstrs3d_gpu_fast_solve(&(ctx->options_big), ctx->n_big, &(ctx->LUstruct), &(ctx->SOLVEstruct), &(ctx->grid), nrhs);
+	    dvbatch_fast_unstack(ctx, batchCount, Xptr, ldX, nrhs, ctx->SOLVEstruct.d_x);
+	    checkGPU(gpuDeviceSynchronize());
+	    for (d = 0; d < batchCount; ++d) {
+		size_t len = (size_t) ldX[d] * nrhs;
+		double *xf = doubleMalloc_dist(len);
+		checkGPU(gpuMemcpy(xf, Xptr[d], len * sizeof(double), gpuMemcpyDeviceToHost));
+		for (k = 0; k < nrhs; ++k)
+		    for (i = 0; i < m[d]; ++i) {
+			double r = xref[d][(size_t) k * ldX[d] + i], f = xf[(size_t) k * ldX[d] + i];
+			double df = fabs(f - r);
+			if ( !(df <= maxdiff) ) maxdiff = df;      /* NaN counts as a mismatch */
+			if ( fabs(r) > maxabs ) maxabs = fabs(r);
+		    }
+		SUPERLU_FREE(xf);
+	    }
+	    /* both paths run the same kernels; they differ only in the order of
+	       the atomic accumulations, which the conditioning amplifies */
+	    if ( !(maxdiff <= 1e-6 * maxabs) ) {
+		printf("[fast solve] mismatch against the regular path (max |diff| %.3e, max |x| %.3e): fast path disabled\n", maxdiff, maxabs);
+		ctx->fast_xlen = 0;
+		for (d = 0; d < batchCount; ++d)   /* the regular result goes back */
+		    checkGPU(gpuMemcpy(Xptr[d], xref[d], sizeof(double) * (size_t) ldX[d] * nrhs, gpuMemcpyHostToDevice));
+	    } else {
+		printf("[fast solve] enabled: matches the regular path to %.3e (max |x| %.3e)\n", maxdiff, maxabs);
+	    }
+	    for (d = 0; d < batchCount; ++d) SUPERLU_FREE(xref[d]);
+	    SUPERLU_FREE(xref);
+	} else {
+	    printf("[fast solve] map composition failed: regular path kept\n");
+	    ctx->fast_xlen = 0;
+	}
+    }
+#endif
 #endif
     for (d = 0; d < (gpures ? 0 : batchCount); ++d) {
 
@@ -1001,8 +1073,8 @@ pdgssvx3d_csc_vbatch(
 
     tv_phase[4] = SuperLU_timer_() - tv_post0;
     tv_phase[0] = tv_stack0 - tv_entry;
-    printf("[vbatch] phases ms: scale/perm %.2f  stack %.2f  pdgssvx3d %.2f  PStatPrint %.2f  post(x,berr) %.2f  total %.2f\n",
-           1e3*tv_phase[0], 1e3*tv_phase[1], 1e3*tv_phase[2], 1e3*tv_phase[3], 1e3*tv_phase[4], 1e3*(SuperLU_timer_() - tv_entry));
+    printf("[vbatch] phases ms: scale/perm %.2f  stack %.2f  pdgssvx3d %.2f  PStatPrint %.2f  post(x,berr) %.2f  fast-solve %.2f  total %.2f\n",
+           1e3*tv_phase[0], 1e3*tv_phase[1], 1e3*tv_phase[2], 1e3*tv_phase[3], 1e3*tv_phase[4], 1e3*tv_phase[5], 1e3*(SuperLU_timer_() - tv_entry));
     if ( !persist ) dvbatch_ctx_destroy(ctx); /* single-shot: nothing survives */
 
 #if ( DEBUGlevel>=1 )
