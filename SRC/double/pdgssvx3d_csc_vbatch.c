@@ -78,13 +78,29 @@ static int dvbatch_devres_on(void)
  */
 static int dvbatch_sameperm_check(superlu_dist_options_t *options, int batchCount, int *m, int *n,
 				  handle_t *SparseMatrix_handles, double **ReqPtr, double **CeqPtr,
-				  DiagScale_t *DiagScale, int **RpivPtr, int gpures, SuperLUStat_t *stat)
+				  DiagScale_t *DiagScale, int **RpivPtr, int gpures, void *devws,
+				  SuperLUStat_t *stat)
 {
     int Equil = (options->Equil == YES);
     int changed = 0, nsys_changed = 0, nrows_changed = 0, nsys_tol = 0;
     double tol = dvbatch_mc64_tol(), worst_gap = 0.0;
     double t = SuperLU_timer_();
     int nthreads = dvbatch_prep_threads();
+
+    /* All values in one pinned host buffer (scratch): device values come
+       across in one gather + one copy instead of one copy per system. */
+    int_t *q0 = (int_t *) SUPERLU_MALLOC((batchCount + 1) * sizeof(int_t));
+    double **Aptrs = (double **) SUPERLU_MALLOC(batchCount * sizeof(double *));
+    q0[0] = 0;
+    for (int d = 0; d < batchCount; ++d) {
+	NCformat *Astore = (NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store;
+	Aptrs[d] = (double *) Astore->nzval;
+	q0[d + 1] = q0[d] + Astore->nnz;
+    }
+    double *acat = NULL;
+    if ( dbatchDevResGatherA((dBatchFactorize_Handle) devws, gpures, Aptrs, &acat) || !acat )
+	ABORT("SamePattern: the A-side map does not match the batch");
+    double t_gather = SuperLU_timer_() - t;
 
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic, 4) num_threads(nthreads) reduction(|:changed) reduction(+:nsys_changed,nrows_changed,nsys_tol) reduction(max:worst_gap)
@@ -95,17 +111,16 @@ static int dvbatch_sameperm_check(superlu_dist_options_t *options, int batchCoun
 	int_t nnz = Astore->nnz;
 	int i, j, iinfo;
 
-	/* scratch copy of the values and row indices */
-	double *a = doubleMalloc_dist(nnz);
+	/* scratch: the values (this system's segment of the gathered buffer)
+	   and copies of the index arrays, which MC64 shifts in place */
+	double *a = acat + q0[d];
+	if ( !gpures ) memcpy(a, Astore->nzval, nnz * sizeof(double));
 	int_t *rowind = intMalloc_dist(nnz);
-	if ( !a || !rowind ) ABORT("Malloc fails for the SamePattern check");
-#ifdef GPU_ACC
-	if ( gpures ) checkGPU(gpuMemcpy(a, Astore->nzval, nnz * sizeof(double), gpuMemcpyDeviceToHost));
-	else
-#endif
-	memcpy(a, Astore->nzval, nnz * sizeof(double));
+	int_t *colptr = intMalloc_dist(n[d] + 1);
+	if ( !rowind || !colptr ) ABORT("Malloc fails for the SamePattern check");
 	memcpy(rowind, Astore->rowind, nnz * sizeof(int_t));
-	NCformat Sstore = *Astore; Sstore.nzval = a; Sstore.rowind = rowind;
+	memcpy(colptr, Astore->colptr, (n[d] + 1) * sizeof(int_t));
+	NCformat Sstore = *Astore; Sstore.nzval = a; Sstore.rowind = rowind; Sstore.colptr = colptr;
 	SuperMatrix As = *Ad; As.Store = &Sstore;
 
 	/* equilibration, as dequil_vbatch() */
@@ -169,16 +184,17 @@ static int dvbatch_sameperm_check(superlu_dist_options_t *options, int batchCoun
 	    if ( gap <= tol ) { memcpy(perm_r, old, m[d] * sizeof(int)); ++nsys_tol; }
 	    else { changed |= 1; ++nsys_changed; nrows_changed += ndiff; }
 	}
-	SUPERLU_FREE(old); SUPERLU_FREE(a); SUPERLU_FREE(rowind);
+	SUPERLU_FREE(old); SUPERLU_FREE(rowind); SUPERLU_FREE(colptr);
     }
+    SUPERLU_FREE(q0); SUPERLU_FREE(Aptrs);
 
     stat->utime[EQUIL] = 0.0;
     stat->utime[ROWPERM] = SuperLU_timer_() - t;
     stat->utime[COLPERM] = 0.0;
 #if ( PRNTlevel >= 1 )
-    printf("[vbatch] SamePattern: scaling + MC64 of %d systems in %.1f ms (%d threads): row permutations %s"
+    printf("[vbatch] SamePattern: scaling + MC64 of %d systems in %.1f ms (gather %.1f; %d threads): row permutations %s"
 	   " (%d systems / %d rows differ beyond tol %g; %d systems kept within tol; largest log-product gap %.3g)\n",
-	   batchCount, 1e3 * stat->utime[ROWPERM], nthreads,
+	   batchCount, 1e3 * stat->utime[ROWPERM], 1e3 * t_gather, nthreads,
 	   changed ? "CHANGED, rebuilding" : "unchanged, same-pattern path",
 	   nsys_changed, nrows_changed, tol, nsys_tol, worst_gap);
 #endif
@@ -442,14 +458,17 @@ pdgssvx3d_csc_vbatch(
     if ( Fact == SamePattern && ctx->LUstruct.batch_dev &&
 	 dbatchDevResAReady((dBatchFactorize_Handle) ctx->LUstruct.batch_dev) ) {
 	if ( dvbatch_sameperm_check(options, batchCount, m, n, SparseMatrix_handles,
-				    ReqPtr, CeqPtr, DiagScale, RpivPtr, gpures, stat) ) {
-	    /* per-entry scaling of the A-side map: R[row] * C[col] of each entry */
+				    ReqPtr, CeqPtr, DiagScale, RpivPtr, gpures, ctx->LUstruct.batch_dev, stat) ) {
+	    /* per-entry scaling of the A-side map: R[row] * C[col] of each entry,
+	       built in the pinned value buffer the check has finished with, so
+	       the upload runs at bus speed */
 	    int_t nnz_all = 0;
 	    int *q0 = int32Malloc_dist(batchCount + 1);
 	    for (int d = 0; d < batchCount; ++d) { q0[d] = nnz_all; nnz_all += ((NCformat *) ((SuperMatrix *) SparseMatrix_handles[d])->Store)->nnz; }
 	    q0[batchCount] = nnz_all;
-	    double *scale2 = doubleMalloc_dist(nnz_all);
-	    if ( !scale2 ) ABORT("Malloc fails for the scaling refresh");
+	    double *scale2 = NULL;
+	    if ( dbatchDevResGatherA((dBatchFactorize_Handle) ctx->LUstruct.batch_dev, 0, NULL, &scale2) || !scale2 )
+		ABORT("SamePattern: no pinned buffer for the scaling refresh");
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic, 4) num_threads(dvbatch_prep_threads())
 #endif
@@ -464,7 +483,7 @@ pdgssvx3d_csc_vbatch(
 	    if ( dbatchDevResRescaleA((dBatchFactorize_Handle) ctx->LUstruct.batch_dev, scale2, nnz_all) )
 		ABORT("SamePattern: the A-side map does not match the batch");
 	    if ( gpures ) dvbatch_gpures_rescale(ctx, batchCount, m, ReqPtr, CeqPtr, DiagScale);
-	    SUPERLU_FREE(scale2); SUPERLU_FREE(q0);
+	    SUPERLU_FREE(q0);
 	    Fact = SamePattern_SameRowPerm;
 	    reuse = 1;
 	    keep_perm_c = 0;

@@ -153,6 +153,7 @@ typedef struct cLUstruct_t cLUstruct_t;
                                    const double *scale2, const int *ent_sys, const int *ent_idx, double anorm);
     extern int  dbatchDevResRefillA(dBatchFactorize_Handle ws, int from_device, double **Aptrs, const int *nnzd);
     extern int  dbatchDevResRescaleA(dBatchFactorize_Handle ws, const double *scale2, int_t nnz2);
+    extern int  dbatchDevResGatherA(dBatchFactorize_Handle ws, int from_device, double **Aptrs, double **host_cat);
     extern int  dbatchDevResAReady(dBatchFactorize_Handle ws);
     extern int  dbatchDevResAPrefilled(dBatchFactorize_Handle ws);   /* returns and clears the flag */
     extern double dbatchDevResAnorm(dBatchFactorize_Handle ws);

@@ -1094,6 +1094,35 @@ int batchDevResSetupAT(TBatchFactorizeWorkspace<T>* ws, int nsys, int_t nnz2, co
     return 0;
 }
 
+/* The values of all systems, concatenated in a pinned host buffer, for host
+   work on them (the SamePattern check).  Device values are gathered on the
+   device and come across the bus in one copy; host values the caller copies
+   into the returned buffer itself.  The buffer is scratch: the next refill
+   overwrites it. */
+template<class T>
+__global__ void gatherSysPtrsKernel(T* const* Aptrs, const int* ent_sys, const int* ent_idx, int_t nnz, T* out)
+{
+    int64_t q = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (q >= nnz) return;
+    out[q] = Aptrs[ent_sys[q]][ent_idx[q]];
+}
+
+template<class T>
+int batchDevResGatherAT(TBatchFactorizeWorkspace<T>* ws, int from_device, T **Aptrs, T **host_cat)
+{
+    if (!ws->d_map2 || !ws->h_avals_cat) return -1;
+    *host_cat = ws->h_avals_cat;
+    if (!from_device) return 0;
+    int nthreads = 256;
+    int64_t nblocks = ((int64_t) ws->nnz2 + nthreads - 1) / nthreads;
+    gpuErrchk(gpuMemcpyAsync(ws->d_Aptrs, Aptrs, sizeof(T*) * ws->nsys, gpuMemcpyHostToDevice, ws->stream));
+    gatherSysPtrsKernel<T><<<(unsigned) nblocks, nthreads, 0, ws->stream>>>(ws->d_Aptrs, ws->d_ent_sys, ws->d_ent_idx, ws->nnz2, ws->d_avals);
+    gpuErrchk(gpuGetLastError());
+    gpuErrchk(gpuMemcpyAsync(ws->h_avals_cat, ws->d_avals, sizeof(T) * (size_t) ws->nnz2, gpuMemcpyDeviceToHost, ws->stream));
+    gpuErrchk(gpuStreamSynchronize(ws->stream));
+    return 0;
+}
+
 /* New equilibration on the same pattern and row permutations: only the
    per-entry scaling of the A-side map changes. */
 template<class T>
@@ -1432,6 +1461,11 @@ int dbatchDevResRefillA(dBatchFactorizeWorkspace* ws, int from_device, double **
 int dbatchDevResRescaleA(dBatchFactorizeWorkspace* ws, const double *scale2, int_t nnz2)
 {
     return batchDevResRescaleAT<double>(ws, scale2, nnz2);
+}
+
+int dbatchDevResGatherA(dBatchFactorizeWorkspace* ws, int from_device, double **Aptrs, double **host_cat)
+{
+    return batchDevResGatherAT<double>(ws, from_device, Aptrs, host_cat);
 }
 
 int dbatchDevResAReady(dBatchFactorizeWorkspace* ws)
