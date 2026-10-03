@@ -84,6 +84,53 @@ inline void magmablas_trsm_vbatched_nocheck(
     ); 
 }
 
+/* _max_nocheck entry points: the caller supplies the per-batch maxima, so
+   MAGMA does no device reduction, no host synchronization and no workspace
+   allocation of its own (the plain entry points do all three on every call). */
+inline void magmablas_trsm_vbatched_max_nocheck(
+    magma_side_t side, magma_uplo_t uplo, magma_trans_t transA, magma_diag_t diag,
+    magma_int_t max_m, magma_int_t max_n, magma_int_t* m, magma_int_t* n,
+    float alpha, float** dA_array, magma_int_t* ldda, float** dB_array, magma_int_t* lddb,
+    magma_int_t batchCount, magma_queue_t queue)
+{ magmablas_strsm_vbatched_max_nocheck(side, uplo, transA, diag, max_m, max_n, m, n, alpha, dA_array, ldda, dB_array, lddb, batchCount, queue); }
+
+inline void magmablas_trsm_vbatched_max_nocheck(
+    magma_side_t side, magma_uplo_t uplo, magma_trans_t transA, magma_diag_t diag,
+    magma_int_t max_m, magma_int_t max_n, magma_int_t* m, magma_int_t* n,
+    double alpha, double** dA_array, magma_int_t* ldda, double** dB_array, magma_int_t* lddb,
+    magma_int_t batchCount, magma_queue_t queue)
+{ magmablas_dtrsm_vbatched_max_nocheck(side, uplo, transA, diag, max_m, max_n, m, n, alpha, dA_array, ldda, dB_array, lddb, batchCount, queue); }
+
+inline void magmablas_trsm_vbatched_max_nocheck(
+    magma_side_t side, magma_uplo_t uplo, magma_trans_t transA, magma_diag_t diag,
+    magma_int_t max_m, magma_int_t max_n, magma_int_t* m, magma_int_t* n,
+    doublecomplex alpha, doublecomplex** dA_array, magma_int_t* ldda, doublecomplex** dB_array, magma_int_t* lddb,
+    magma_int_t batchCount, magma_queue_t queue)
+{
+    magmaDoubleComplex magma_alpha;
+    convertType(magma_alpha, alpha);
+    magmablas_ztrsm_vbatched_max_nocheck(side, uplo, transA, diag, max_m, max_n, m, n, magma_alpha,
+        (magmaDoubleComplex**)dA_array, ldda, (magmaDoubleComplex**)dB_array, lddb, batchCount, queue);
+}
+
+inline magma_int_t magma_getrf_nopiv_vbatched_max_nocheck(
+    magma_int_t* m, magma_int_t* n, magma_int_t* minmn,
+    magma_int_t max_m, magma_int_t max_n, magma_int_t max_minmn, magma_int_t max_mxn, magma_int_t nb, magma_int_t recnb,
+    float **dA_array, magma_int_t *ldda, double eps, magma_int_t *info_array, magma_int_t batchCount, magma_queue_t queue)
+{ return magma_sgetrf_nopiv_vbatched_max_nocheck(m, n, minmn, max_m, max_n, max_minmn, max_mxn, nb, recnb, dA_array, ldda, NULL, (float) eps, info_array, batchCount, queue); }
+
+inline magma_int_t magma_getrf_nopiv_vbatched_max_nocheck(
+    magma_int_t* m, magma_int_t* n, magma_int_t* minmn,
+    magma_int_t max_m, magma_int_t max_n, magma_int_t max_minmn, magma_int_t max_mxn, magma_int_t nb, magma_int_t recnb,
+    double **dA_array, magma_int_t *ldda, double eps, magma_int_t *info_array, magma_int_t batchCount, magma_queue_t queue)
+{ return magma_dgetrf_nopiv_vbatched_max_nocheck(m, n, minmn, max_m, max_n, max_minmn, max_mxn, nb, recnb, dA_array, ldda, NULL, eps, info_array, batchCount, queue); }
+
+inline magma_int_t magma_getrf_nopiv_vbatched_max_nocheck(
+    magma_int_t* m, magma_int_t* n, magma_int_t* minmn,
+    magma_int_t max_m, magma_int_t max_n, magma_int_t max_minmn, magma_int_t max_mxn, magma_int_t nb, magma_int_t recnb,
+    doublecomplex **dA_array, magma_int_t *ldda, double eps, magma_int_t *info_array, magma_int_t batchCount, magma_queue_t queue)
+{ return magma_zgetrf_nopiv_vbatched_max_nocheck(m, n, minmn, max_m, max_n, max_minmn, max_mxn, nb, recnb, (magmaDoubleComplex **)dA_array, ldda, NULL, eps, info_array, batchCount, queue); }
+
 ////////////////////////////////////////////////////////////////////////////////////
 // MAGMA GETRF wrappers
 ////////////////////////////////////////////////////////////////////////////////////

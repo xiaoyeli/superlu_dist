@@ -582,26 +582,119 @@ static inline int slu_bprof_on()
 #define BPROF_TOC(i) if (prof) { gpuErrchk(gpuDeviceSynchronize()); tp[i] += SuperLU_timer_() - t0; }
 
 template<class T>
-void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
+void freeLevelCacheT(TBatchFactorizeWorkspace<T>* ws)
+{
+    TBatchLevelCache<T>& c = ws->lcache;
+    void **ptrs[] = { (void**)&c.diag_ptrs, (void**)&c.diagU_ptrs, (void**)&c.panelU_ptrs, (void**)&c.panelL_ptrs,
+                      (void**)&c.A_ptrs, (void**)&c.B_ptrs, (void**)&c.C_ptrs,
+                      (void**)&c.diag_ld, (void**)&c.diag_dim, (void**)&c.info,
+                      (void**)&c.diagU_ld, (void**)&c.diagU_dim, (void**)&c.panelU_ld, (void**)&c.panelU_dim,
+                      (void**)&c.panelL_ld, (void**)&c.panelL_dim,
+                      (void**)&c.lda, (void**)&c.ldb, (void**)&c.ldc, (void**)&c.m, (void**)&c.n, (void**)&c.k };
+    for (size_t i = 0; i < sizeof(ptrs) / sizeof(ptrs[0]); ++i)
+        if (*ptrs[i]) { gpuErrchk(gpuFree(*ptrs[i])); *ptrs[i] = nullptr; }
+    c.valid = 0; c.forest = nullptr; c.nnodes = 0; c.nlev = 0;
+}
+
+/* Marshal every level of the forest once, into the per-level cache. */
+template<class T>
+void buildLevelCacheT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sforest)
+{
+    freeLevelCacheT<T>(ws);
+    TBatchLevelCache<T>& c = ws->lcache;
+    TBatchLUMarshallData<T>& mdata = ws->marshall_data;
+    TBatchSCUMarshallData<T>& sc = ws->sc_marshall_data;
+    int_t nnodes = sforest->nNodes;
+    int_t nlev = sforest->topoInfo.numLvl;
+    int_t *lims = sforest->topoInfo.eTreeTopLims;
+    double t0 = SuperLU_timer_();
+
+    c.forest = sforest; c.nnodes = nnodes; c.nlev = nlev;
+    c.k_st.assign(nlev, 0); c.k_end.assign(nlev, 0);
+    c.maxdiag.assign(nlev, 0); c.maxUdiag.assign(nlev, 0); c.maxUpanel.assign(nlev, 0); c.maxLpanel.assign(nlev, 0);
+    c.scu_m.assign(nlev, 0); c.scu_n.assign(nlev, 0); c.scu_k.assign(nlev, 0); c.scu_ilen.assign(nlev, 0); c.scu_jlen.assign(nlev, 0);
+
+    T ***parr[] = { &c.diag_ptrs, &c.diagU_ptrs, &c.panelU_ptrs, &c.panelL_ptrs, &c.A_ptrs, &c.B_ptrs, &c.C_ptrs };
+    for (size_t i = 0; i < sizeof(parr) / sizeof(parr[0]); ++i) gpuErrchk(gpuMalloc(parr[i], sizeof(T*) * (nnodes + 1)));
+    BatchDim_t **iarr[] = { &c.diag_ld, &c.diag_dim, &c.info, &c.diagU_ld, &c.diagU_dim, &c.panelU_ld, &c.panelU_dim,
+                            &c.panelL_ld, &c.panelL_dim, &c.lda, &c.ldb, &c.ldc, &c.m, &c.n, &c.k };
+    for (size_t i = 0; i < sizeof(iarr) / sizeof(iarr[0]); ++i) {
+        gpuErrchk(gpuMalloc(iarr[i], sizeof(BatchDim_t) * (nnodes + 1)));
+        gpuErrchk(gpuMemset(*iarr[i], 0, sizeof(BatchDim_t) * (nnodes + 1)));
+    }
+
+    // Host list of nodes in the order of factorization, copied to the GPU once
+    gpuErrchk(gpuMemcpy(ws->perm_c_supno, sforest->nodeList, sizeof(int_t) * nnodes, gpuMemcpyHostToDevice));
+
+    auto maxof = [](BatchDim_t *a, BatchDim_t n) -> BatchDim_t {
+        return n > 0 ? thrust::reduce(gpu_thrust_par, a, a + n, (BatchDim_t) 0, thrust::maximum<BatchDim_t>()) : 0;
+    };
+    for (int_t l = 0; l < nlev; ++l) {
+        int_t k_st = lims[l], k_end = lims[l + 1];
+        BatchDim_t bs = (BatchDim_t) (k_end - k_st);
+        c.k_st[l] = k_st; c.k_end[l] = k_end;
+        if (bs <= 0) continue;
+        size_t pb = sizeof(T*) * bs, ib = sizeof(BatchDim_t) * bs;
+
+        marshallBatchedLUData<T>(ws, k_st, k_end);
+        gpuErrchk(gpuMemcpy(c.diag_ptrs + k_st, mdata.dev_diag_ptrs, pb, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.diag_ld + k_st, mdata.dev_diag_ld_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.diag_dim + k_st, mdata.dev_diag_dim_array, ib, gpuMemcpyDeviceToDevice));
+        c.maxdiag[l] = maxof(mdata.dev_diag_dim_array, bs);
+
+        marshallBatchedTRSMUData<T>(ws, k_st, k_end);
+        gpuErrchk(gpuMemcpy(c.diagU_ptrs + k_st, mdata.dev_diag_ptrs, pb, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.diagU_ld + k_st, mdata.dev_diag_ld_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.diagU_dim + k_st, mdata.dev_diag_dim_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.panelU_ptrs + k_st, mdata.dev_panel_ptrs, pb, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.panelU_ld + k_st, mdata.dev_panel_ld_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.panelU_dim + k_st, mdata.dev_panel_dim_array, ib, gpuMemcpyDeviceToDevice));
+        c.maxUdiag[l] = maxof(mdata.dev_diag_dim_array, bs);
+        c.maxUpanel[l] = maxof(mdata.dev_panel_dim_array, bs);
+
+        /* the TRSML diagonal arrays equal the LU ones (same pointer, ld, dim, same mask) */
+        marshallBatchedTRSMLData<T>(ws, k_st, k_end);
+        gpuErrchk(gpuMemcpy(c.panelL_ptrs + k_st, mdata.dev_panel_ptrs, pb, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.panelL_ld + k_st, mdata.dev_panel_ld_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.panelL_dim + k_st, mdata.dev_panel_dim_array, ib, gpuMemcpyDeviceToDevice));
+        c.maxLpanel[l] = maxof(mdata.dev_panel_dim_array, bs);
+
+        marshallBatchedSCUData<T>(ws, k_st, k_end);
+        gpuErrchk(gpuMemcpy(c.A_ptrs + k_st, sc.dev_A_ptrs, pb, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.B_ptrs + k_st, sc.dev_B_ptrs, pb, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.C_ptrs + k_st, sc.dev_C_ptrs, pb, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.lda + k_st, sc.dev_lda_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.ldb + k_st, sc.dev_ldb_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.ldc + k_st, sc.dev_ldc_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.m + k_st, sc.dev_m_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.n + k_st, sc.dev_n_array, ib, gpuMemcpyDeviceToDevice));
+        gpuErrchk(gpuMemcpy(c.k + k_st, sc.dev_k_array, ib, gpuMemcpyDeviceToDevice));
+        c.scu_m[l] = sc.max_m; c.scu_n[l] = sc.max_n; c.scu_k[l] = sc.max_k;
+        c.scu_ilen[l] = sc.max_ilen; c.scu_jlen[l] = sc.max_jlen;
+    }
+    gpuErrchk(gpuDeviceSynchronize());
+    c.valid = 1;
+    printf("\tBatch level cache: %lld levels, %lld supernodes, built in %.4f s\n", (long long) nlev, (long long) nnodes, SuperLU_timer_() - t0);
+}
+
+/* One tree level, from the cache: four MAGMA calls and the scatter, no
+   marshalling, no reductions, no host synchronization. */
+template<class T>
+void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t lvl)
 {
 #ifdef HAVE_MAGMA
     LocalLU_type<T>& d_localLU = ws->d_localLU;
-    TBatchLUMarshallData<T>& mdata = ws->marshall_data;
-    TBatchSCUMarshallData<T>& sc_mdata = ws->sc_marshall_data;
+    TBatchLevelCache<T>& c = ws->lcache;
+    int_t k_st = c.k_st[lvl];
+    BatchDim_t bs = (BatchDim_t) (c.k_end[lvl] - k_st);
+    if (bs <= 0) return;
 
     const T t_one = one<T>(), t_zero = zeroT<T>();
     const int prof = slu_bprof_on();
     double tp[SLU_BPROF_NSTAGE] = {0.0}, t0 = 0.0;
 
-    // Diagonal block batched LU decomposition   
-    BPROF_TIC();
-    marshallBatchedLUData<T>(ws, k_st, k_end);
-    BPROF_TOC(0);
-    long long prof_maxdiag = 0, prof_maxLpanel = 0, prof_maxUpanel = 0;
-    if (prof) prof_maxdiag = thrust::reduce(gpu_thrust_par, mdata.dev_diag_dim_array, mdata.dev_diag_dim_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
-    
     // TODO: This should be replaced by the user defined tolerances
-    /* magma_*getrf_nopiv_expert_vbatched (dtol_array == NULL) replaces every
+    /* magma_*getrf_nopiv_vbatched (dtol_array == NULL) replaces every
        diagonal pivot with |pivot| < eps by sign(pivot)*eps and counts the
        replacements in info.  This is an absolute threshold, applied whatever
        options->ReplaceTinyPivot says.  SLU_BATCH_PIVTOL overrides it for
@@ -612,83 +705,64 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         eps = e ? atof(e) : 1e-6;
     }
 
+    // Diagonal block batched LU decomposition (square blocks: minmn = m = n)
+    BatchDim_t md = c.maxdiag[lvl];
+    BatchDim_t nb = (md <= 192) ? 32 : (md <= 384) ? 64 : 128, recnb = 32;   /* magma_get_?getrf_vbatched_nbparam */
     BPROF_TIC();
-    int_t info = magma_getrf_nopiv_vbatched(
-        mdata.dev_diag_dim_array, mdata.dev_diag_dim_array, 
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
-        NULL, eps, mdata.dev_info_array, mdata.batchsize, 
-        ws->magma_queue
-    );
+    if (md > 0)
+        magma_getrf_nopiv_vbatched_max_nocheck(
+            c.diag_dim + k_st, c.diag_dim + k_st, c.diag_dim + k_st,
+            md, md, md, md * md, nb, recnb,
+            c.diag_ptrs + k_st, c.diag_ld + k_st, eps, c.info + k_st, bs, ws->magma_queue);
     BPROF_TOC(1);
-    
-    BPROF_TIC();
-    int max_info = thrust::reduce(gpu_thrust_par, mdata.dev_info_array, mdata.dev_info_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
-    printf("Factor info = %d max_info = %d\n", info, max_info);
-    BPROF_TOC(2);
 
     // Upper panel batched triangular solves
     BPROF_TIC();
-    marshallBatchedTRSMUData<T>(ws, k_st, k_end);
-    BPROF_TOC(0);
-    if (prof) prof_maxUpanel = thrust::reduce(gpu_thrust_par, mdata.dev_panel_dim_array, mdata.dev_panel_dim_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
-
-    BPROF_TIC();
-    magmablas_trsm_vbatched_nocheck(
-        MagmaLeft, MagmaLower, MagmaNoTrans, MagmaUnit, 
-        mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, t_one, 
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
-        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, 
-        mdata.batchsize, ws->magma_queue
-    );
+    if (c.maxUdiag[lvl] > 0 && c.maxUpanel[lvl] > 0)
+        magmablas_trsm_vbatched_max_nocheck(
+            MagmaLeft, MagmaLower, MagmaNoTrans, MagmaUnit,
+            c.maxUdiag[lvl], c.maxUpanel[lvl], c.diagU_dim + k_st, c.panelU_dim + k_st, t_one,
+            c.diagU_ptrs + k_st, c.diagU_ld + k_st, c.panelU_ptrs + k_st, c.panelU_ld + k_st,
+            bs, ws->magma_queue);
     BPROF_TOC(3);
 
     // Lower panel batched triangular solves
     BPROF_TIC();
-    marshallBatchedTRSMLData<T>(ws, k_st, k_end);
-    BPROF_TOC(0);
-    if (prof) prof_maxLpanel = thrust::reduce(gpu_thrust_par, mdata.dev_panel_dim_array, mdata.dev_panel_dim_array + mdata.batchsize, 0, thrust::maximum<BatchDim_t>());
-
-    BPROF_TIC();
-    magmablas_trsm_vbatched_nocheck(
-        MagmaRight, MagmaUpper, MagmaNoTrans, MagmaNonUnit, 
-        mdata.dev_panel_dim_array, mdata.dev_diag_dim_array, t_one, 
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
-        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, 
-        mdata.batchsize, ws->magma_queue
-    );
+    if (c.maxLpanel[lvl] > 0 && md > 0)
+        magmablas_trsm_vbatched_max_nocheck(
+            MagmaRight, MagmaUpper, MagmaNoTrans, MagmaNonUnit,
+            c.maxLpanel[lvl], md, c.panelL_dim + k_st, c.diag_dim + k_st, t_one,
+            c.diag_ptrs + k_st, c.diag_ld + k_st, c.panelL_ptrs + k_st, c.panelL_ld + k_st,
+            bs, ws->magma_queue);
     BPROF_TOC(4);
 
-    // Batched schur complement updates 
+    // Batched schur complement updates
     BPROF_TIC();
-    marshallBatchedSCUData<T>(ws, k_st, k_end);
-    BPROF_TOC(0);
-    
-    BPROF_TIC();
-    magmablas_gemm_vbatched_max_nocheck (
-        MagmaNoTrans, MagmaNoTrans, sc_mdata.dev_m_array, sc_mdata.dev_n_array, sc_mdata.dev_k_array,
-        t_one, sc_mdata.dev_A_ptrs, sc_mdata.dev_lda_array, sc_mdata.dev_B_ptrs, sc_mdata.dev_ldb_array,
-        t_zero, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, sc_mdata.batchsize,
-        sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, ws->magma_queue
-    );
+    if (c.scu_m[lvl] > 0 && c.scu_n[lvl] > 0 && c.scu_k[lvl] > 0)
+        magmablas_gemm_vbatched_max_nocheck(
+            MagmaNoTrans, MagmaNoTrans, c.m + k_st, c.n + k_st, c.k + k_st,
+            t_one, c.A_ptrs + k_st, c.lda + k_st, c.B_ptrs + k_st, c.ldb + k_st,
+            t_zero, c.C_ptrs + k_st, c.ldc + k_st, bs,
+            c.scu_m[lvl], c.scu_n[lvl], c.scu_k[lvl], ws->magma_queue);
     BPROF_TOC(5);
-    
+
     if (getenv("SLU_DEBUG_BATCH_SCU"))
     {
         printf("[scu] k_st %lld batchsize %lld  max_m %lld max_n %lld max_k %lld  max_ilen %lld max_jlen %lld%s\n",
-               (long long)k_st, (long long)sc_mdata.batchsize,
-               (long long)sc_mdata.max_m, (long long)sc_mdata.max_n, (long long)sc_mdata.max_k,
-               (long long)sc_mdata.max_ilen, (long long)sc_mdata.max_jlen,
-               (sc_mdata.max_ilen == 0 || sc_mdata.max_jlen == 0) ? "   <-- ZERO GRID DIM (skipped)" : "");
+               (long long)k_st, (long long)bs,
+               (long long)c.scu_m[lvl], (long long)c.scu_n[lvl], (long long)c.scu_k[lvl],
+               (long long)c.scu_ilen[lvl], (long long)c.scu_jlen[lvl],
+               (c.scu_ilen[lvl] == 0 || c.scu_jlen[lvl] == 0) ? "   <-- ZERO GRID DIM (skipped)" : "");
         fflush(stdout);
     }
 
     BPROF_TIC();
     scatterGPU_batchDriver_flat<T>(
-        k_st, ws->maxSuperSize, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array,
-        d_localLU.Unzval_br_new_ptr, d_localLU.Ucolind_br_ptr, d_localLU.Lnzval_bc_ptr, 
-        d_localLU.Lrowind_bc_ptr, ws->d_lblock_gid_ptrs, ws->d_lblock_start_ptrs, 
-        ws->perm_c_supno, ws->xsup, ws->ldt, sc_mdata.max_ilen, sc_mdata.max_jlen, 
-        sc_mdata.batchsize, ws->stream
+        k_st, ws->maxSuperSize, c.C_ptrs + k_st, c.ldc + k_st,
+        d_localLU.Unzval_br_new_ptr, d_localLU.Ucolind_br_ptr, d_localLU.Lnzval_bc_ptr,
+        d_localLU.Lrowind_bc_ptr, ws->d_lblock_gid_ptrs, ws->d_lblock_start_ptrs,
+        ws->perm_c_supno, ws->xsup, ws->ldt, c.scu_ilen[lvl], c.scu_jlen[lvl],
+        bs, ws->stream
     );
     BPROF_TOC(6);
 
@@ -696,18 +770,14 @@ void TFactBatchSolve(TBatchFactorizeWorkspace<T>* ws, int_t k_st, int_t k_end)
         double tl = 0.0;
         for (int i = 0; i < SLU_BPROF_NSTAGE; ++i) { tl += tp[i]; slu_bprof_tot[i] += tp[i]; }
         printf("[bprof] level k_st %lld nsup %lld | maxdiag %lld maxLpanel %lld maxUpanel %lld gemm m/n/k %lld/%lld/%lld scatter grid %lldx%lldx%lld x%lld thr | ms: marshal %.3f getrf %.3f info %.3f trsmU %.3f trsmL %.3f gemm %.3f scatter %.3f | level %.3f\n",
-               (long long)k_st, (long long)mdata.batchsize, prof_maxdiag, prof_maxLpanel, prof_maxUpanel,
-               (long long)sc_mdata.max_m, (long long)sc_mdata.max_n, (long long)sc_mdata.max_k,
-               (long long)sc_mdata.max_ilen, (long long)sc_mdata.max_jlen, (long long)sc_mdata.batchsize, (long long)ws->ldt,
+               (long long)k_st, (long long)bs, (long long)md, (long long)c.maxLpanel[lvl], (long long)c.maxUpanel[lvl],
+               (long long)c.scu_m[lvl], (long long)c.scu_n[lvl], (long long)c.scu_k[lvl],
+               (long long)c.scu_ilen[lvl], (long long)c.scu_jlen[lvl], (long long)bs, (long long)ws->ldt,
                1e3*tp[0], 1e3*tp[1], 1e3*tp[2], 1e3*tp[3], 1e3*tp[4], 1e3*tp[5], 1e3*tp[6], 1e3*tl);
     }
 #endif
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Main factorization routiunes
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
 int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sforest)
@@ -717,14 +787,15 @@ int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sfores
     if(nnodes < 1)
         return 1;
     
-    // Host list of nodes in the order of factorization copied to the GPU 
-    int_t *perm_c_supno = sforest->nodeList; 
-    gpuErrchk(gpuMemcpy(ws->perm_c_supno, perm_c_supno, sizeof(int_t) * nnodes, gpuMemcpyHostToDevice));
-
     // Tree containing the supernode limits per level 
     treeTopoInfo_t *treeTopoInfo = &sforest->topoInfo;
     int_t maxTopoLevel = treeTopoInfo->numLvl;
     int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
+
+    /* Structure-only data of this forest (node list on the device, marshalled
+       pointer/size arrays and per-level maxima): built once per workspace. */
+    if (!ws->lcache.valid || ws->lcache.forest != (void *) sforest || ws->lcache.nnodes != nnodes)
+        buildLevelCacheT<T>(ws, sforest);
 
     if (getenv("SLU_DEBUG_LEVELW")) {
         int_t leafw = eTreeTopLims[1] - eTreeTopLims[0], mx = 0, mxl = -1;
@@ -742,7 +813,13 @@ int sparseTreeFactorBatchGPUT(TBatchFactorizeWorkspace<T>* ws, sForest_t *sfores
     double bprof_t0 = SuperLU_timer_();
 
     for(int_t topoLvl = 0; topoLvl < maxTopoLevel; topoLvl++)
-        TFactBatchSolve<T>(ws, eTreeTopLims[topoLvl], eTreeTopLims[topoLvl + 1]);
+        TFactBatchSolve<T>(ws, topoLvl);
+
+    /* pivot replacements: one reduction over all levels instead of one per level */
+    {
+        int max_info = thrust::reduce(gpu_thrust_par, ws->lcache.info, ws->lcache.info + nnodes, 0, thrust::maximum<BatchDim_t>());
+        printf("Factor info = 0 max_info = %d\n", max_info);
+    }
 
     /* The last scatter kernel is asynchronous; without this the caller's
        timer stops before the factorization has finished on the device. */
@@ -1222,6 +1299,7 @@ void freeBatchFactorizeWorkspaceT(TBatchFactorizeWorkspace<T>* ws)
 #endif
     gpublasDestroy( ws->cuhandle );
     gpuErrchk( gpuStreamDestroy(ws->stream) );
+    freeLevelCacheT<T>(ws);
     //YL: not sure why the destructor TBatchLUMarshallData and TBatchSCUMarshallData are not called. Calling them explicitly here. 
     ws->marshall_data.DeleteTBatchLUMarshallData();
     ws->sc_marshall_data.DeleteTBatchSCUMarshallData();

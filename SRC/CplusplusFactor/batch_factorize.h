@@ -5,6 +5,31 @@
 #include "gpuCommon.hpp"
 #include "batch_factorize_marshall.h"
 #include "luAuxStructTemplated.hpp"
+#include <vector>
+
+/* Per-level, structure-only data of one elimination forest: the pointer and
+   size arrays the marshalling functors compute, and the per-level maxima the
+   MAGMA *_max_nocheck entry points take.  None of it depends on the values,
+   so a persistent workspace builds it once and every later factorization
+   runs the level loop without the marshalling kernels, the device
+   reductions and the host synchronizations behind them.  Level l owns the
+   slice [k_st[l], k_end[l]) of each device array; the dimension arrays hold
+   one extra element, as MAGMA's vbatched routines expect. */
+template<class T>
+struct TBatchLevelCache
+{
+    int valid = 0;
+    void *forest = nullptr;
+    int_t nnodes = 0, nlev = 0;
+    std::vector<int_t> k_st, k_end;
+    std::vector<BatchDim_t> maxdiag, maxUdiag, maxUpanel, maxLpanel, scu_m, scu_n, scu_k, scu_ilen, scu_jlen;
+    T **diag_ptrs = nullptr, **diagU_ptrs = nullptr, **panelU_ptrs = nullptr, **panelL_ptrs = nullptr;
+    T **A_ptrs = nullptr, **B_ptrs = nullptr, **C_ptrs = nullptr;
+    BatchDim_t *diag_ld = nullptr, *diag_dim = nullptr, *info = nullptr;
+    BatchDim_t *diagU_ld = nullptr, *diagU_dim = nullptr, *panelU_ld = nullptr, *panelU_dim = nullptr;
+    BatchDim_t *panelL_ld = nullptr, *panelL_dim = nullptr;
+    BatchDim_t *lda = nullptr, *ldb = nullptr, *ldc = nullptr, *m = nullptr, *n = nullptr, *k = nullptr;
+};
 
 // Device memory used to store marshalled batch data for LU and TRSM
 template<class T>
@@ -131,9 +156,10 @@ struct TBatchFactorizeWorkspace {
     gpuStream_t stream;
     gpublasHandle_t cuhandle;
     
-    // Marshall data 
+    // Marshall data (scratch, one level at a time) and its per-level cache
     TBatchLUMarshallData<T> marshall_data;
     TBatchSCUMarshallData<T> sc_marshall_data;
+    TBatchLevelCache<T> lcache;
 
     // GPU copy of the supernode data
     int_t* perm_c_supno, *xsup;
