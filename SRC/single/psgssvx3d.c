@@ -15,12 +15,12 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B using 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
- * May 12, 2021
- * October 5, 2021
- * Last update: November 8, 2021  v7.2.0
+ * Last update: November 8, 2021,   v7.2.0
+ *              September 23, 2026, v9.3.0
+ * </pre>
  */
 
 /*

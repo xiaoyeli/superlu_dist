@@ -14,12 +14,13 @@ at the top-level directory.
  * \brief Driver program for PZGSSVX3D example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
  * August 27, 2022  Add batch option
- *
+ * Last update: September 23, 2026, v9.3.0
+ * </pre>
  */
 #include <stdio.h>
 #include "superlu_zdefs.h"

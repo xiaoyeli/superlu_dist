@@ -1059,7 +1059,10 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	// }
 	      if (flinfo > 0) {
-	          fprintf(stderr, "Insufficient memory for get_perm_c parmetis\n");
+		  if (flinfo == (n+1))
+	              fprintf(stderr, "Error: PARMETIS is not installed.\n");
+		  else 
+	              fprintf(stderr, "Error: Insufficient memory for get_perm_c parmetis.\n");
 		  *info = flinfo;
 		  return;
      	      }

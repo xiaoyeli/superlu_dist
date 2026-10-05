@@ -15,12 +15,12 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B using 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
- * May 12, 2021
- * October 5, 2021
- * Last update: November 8, 2021  v7.2.0
+ * Last update: November 8, 2021,   v7.2.0
+ *              September 23, 2026, v9.3.0
+ * </pre>
  */
 
 /*
@@ -1530,9 +1530,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
 		}
 
-		if (options->IterRefine || options->UseGMRES)
+		if (options->IterRefine)
 		{
-		    /* Iterative refinement, or (options->UseGMRES) a direct GMRES solve. */
+		    /* Improve the solution by iterative refinement. */
 		    int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
 		    dSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
 
@@ -1614,37 +1614,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			}
 		    }
 
-		    if ( options->UseGMRES ) {
-			/* Direct solve (options->UseGMRES, driver -g 1): A x = b with
-			   right-preconditioned GMRES, preconditioner M = LU
-			   (pdgstrs3d), from x0 = 0.  Replaces the triangular solve;
-			   this is NOT iterative refinement. */
-			int gmres_totit = 0, jj_;
-			for (jj_ = 0; jj_ < nrhs; ++jj_) {
-			    if (!grid3d->zscp.Iam)
-				for (i = 0; i < m_loc; ++i)
-				    X[(size_t)jj_*ldx+i] = B[(size_t)jj_*ldb+i];
-			    pdgmres3d (options, n, A, LUstruct, ScalePermstruct, grid3d,
-				       trf3Dpartition, SOLVEstruct1->gsmv_comm,
-				       &X[(size_t)jj_*ldx], m_loc, fst_row,
-				       50 /*restart*/, 2000 /*maxit*/, 1e-14 /*rtol*/,
-				       1e-14 /*atol*/, 0 /*0=MGS,1=CGS*/,
-				       SOLVEstruct1, &gmres_totit, stat, info);
-			}
-#if ( PRNTlevel>=1 )
-			if ( !grid3d->iam )
-			    printf(".. pdgmres3d direct solve: %d total GMRES iterations\n",
-				   gmres_totit);
-#endif
-			for (jj_ = 0; jj_ < nrhs; ++jj_) berr[jj_] = 0.0;
-		    } else {
-		    /* IterRefine == SLU_GMRES selects a GMRES inner solve for the
-		       correction inside pdgsrfs3d; otherwise the classical
-		       triangular solve is used.  The outer refinement loop is
-		       the same either way. */
 		    pdgsrfs3d (options, n, A, anorm, LUstruct, ScalePermstruct, grid3d, trf3Dpartition,
 				B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
-		    }
 
 		    /* Deallocate the storage associated with SOLVEstruct1 */
 		    if (nrhs > 1)
