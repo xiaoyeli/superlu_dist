@@ -105,7 +105,6 @@ get_perm_c_parmetis (SuperMatrix *A, int *perm_r, int *perm_c,
 		     int nprocs_i, int noDomains, 
 		     int_t **sizes, int_t **fstVtxSep,
 		     gridinfo_t *grid, MPI_Comm *metis_comm)
-
 {
   float mem;  /* Memory used during this routine */
   mem = 0.;
@@ -365,15 +364,18 @@ get_perm_c_parmetis (SuperMatrix *A, int *perm_r, int *perm_c,
   if (!iam ) {
     PrintInt10 ("Sizes of separators", 2 * noDomains-1, l_sizes);
     PrintInt10 ("First Vertex Separator", 2 * noDomains-1, l_fstVtxSep);
+    check_perm_dist("check perm_c from parmetis", n, perm_c);
   }
 #endif
 
 #if ( DEBUGlevel>=1 )
   CHECK_MALLOC(iam, "Exit get_perm_c_parmetis()");
 #endif
-  check_perm_dist("check perm_c from parmetis", n, perm_c);
-
+  
+#else
+  return (A->ncol + 1);
 #endif /* HAVE_PARMETIS */
+  
   return (-mem);
 } /* get_perm_c_parmetis */
 

@@ -1059,7 +1059,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	// }
 	      if (flinfo > 0) {
-	          fprintf(stderr, "Insufficient memory for get_perm_c parmetis\n");
+		  if (flinfo == (n+1))
+	              fprintf(stderr, "Error: PARMETIS is not installed.\n");
+		  else 
+	              fprintf(stderr, "Error: Insufficient memory for get_perm_c parmetis.\n");
 		  *info = flinfo;
 		  return;
      	      }
@@ -1734,7 +1737,7 @@ if ( options->GPURES == YES ){
             /* Deallocate the storage associated with SOLVEstruct1 */
 	    if ( nrhs > 1 ) {
 	        if (get_acc_solve()) pdgstrs_delete_device_lsum_x(SOLVEstruct1);
-		pxgstrs_finalize(SOLVEstruct1->gstrs_comm);
+			pxgstrs_finalize(SOLVEstruct1->gstrs_comm);
 	        SUPERLU_FREE(SOLVEstruct1);
 	    }
 
