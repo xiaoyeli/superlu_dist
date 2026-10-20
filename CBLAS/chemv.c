@@ -242,7 +242,6 @@
 		for (i = 1; i <= j-1; ++i) {
 		    i__3 = i;
 		    i__4 = i;
-		    i__5 = i + j * a_dim1;
 		    q__2.r = temp1.r * A(i,j).r - temp1.i * A(i,j).i, 
 			    q__2.i = temp1.r * A(i,j).i + temp1.i * A(i,j)
 			    .r;
@@ -258,7 +257,6 @@
 		}
 		i__2 = j;
 		i__3 = j;
-		i__4 = j + j * a_dim1;
 		d__1 = A(j,j).r;
 		q__3.r = d__1 * temp1.r, q__3.i = d__1 * temp1.i;
 		q__2.r = Y(j).r + q__3.r, q__2.i = Y(j).i + q__3.i;
@@ -284,7 +282,6 @@
 		for (i = 1; i <= j-1; ++i) {
 		    i__3 = iy;
 		    i__4 = iy;
-		    i__5 = i + j * a_dim1;
 		    q__2.r = temp1.r * A(i,j).r - temp1.i * A(i,j).i, 
 			    q__2.i = temp1.r * A(i,j).i + temp1.i * A(i,j)
 			    .r;
@@ -302,7 +299,6 @@
 		}
 		i__2 = jy;
 		i__3 = jy;
-		i__4 = j + j * a_dim1;
 		d__1 = A(j,j).r;
 		q__3.r = d__1 * temp1.r, q__3.i = d__1 * temp1.i;
 		q__2.r = Y(jy).r + q__3.r, q__2.i = Y(jy).i + q__3.i;
@@ -329,7 +325,6 @@
 		temp2.r = 0.f, temp2.i = 0.f;
 		i__2 = j;
 		i__3 = j;
-		i__4 = j + j * a_dim1;
 		d__1 = A(j,j).r;
 		q__2.r = d__1 * temp1.r, q__2.i = d__1 * temp1.i;
 		q__1.r = Y(j).r + q__2.r, q__1.i = Y(j).i + q__2.i;
@@ -338,7 +333,6 @@
 		for (i = j + 1; i <= *n; ++i) {
 		    i__3 = i;
 		    i__4 = i;
-		    i__5 = i + j * a_dim1;
 		    q__2.r = temp1.r * A(i,j).r - temp1.i * A(i,j).i, 
 			    q__2.i = temp1.r * A(i,j).i + temp1.i * A(i,j)
 			    .r;
@@ -372,7 +366,6 @@
 		temp2.r = 0.f, temp2.i = 0.f;
 		i__2 = jy;
 		i__3 = jy;
-		i__4 = j + j * a_dim1;
 		d__1 = A(j,j).r;
 		q__2.r = d__1 * temp1.r, q__2.i = d__1 * temp1.i;
 		q__1.r = Y(jy).r + q__2.r, q__1.i = Y(jy).i + q__2.i;
@@ -385,7 +378,6 @@
 		    iy += *incy;
 		    i__3 = iy;
 		    i__4 = iy;
-		    i__5 = i + j * a_dim1;
 		    q__2.r = temp1.r * A(i,j).r - temp1.i * A(i,j).i, 
 			    q__2.i = temp1.r * A(i,j).i + temp1.i * A(i,j)
 			    .r;

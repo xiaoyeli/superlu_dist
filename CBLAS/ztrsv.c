@@ -199,7 +199,6 @@
 			for (i = j - 1; i >= 1; --i) {
 			    i__1 = i;
 			    i__2 = i;
-			    i__3 = i + j * a_dim1;
 			    z__2.r = temp.r * A(i,j).r - temp.i * A(i,j).i, 
 				    z__2.i = temp.r * A(i,j).i + temp.i * A(i,j).r;
 			    z__1.r = X(i).r - z__2.r, z__1.i = X(i).i - 
@@ -227,7 +226,6 @@
 			    ix -= *incx;
 			    i__1 = ix;
 			    i__2 = ix;
-			    i__3 = i + j * a_dim1;
 			    z__2.r = temp.r * A(i,j).r - temp.i * A(i,j).i, 
 				    z__2.i = temp.r * A(i,j).i + temp.i * A(i,j).r;
 			    z__1.r = X(ix).r - z__2.r, z__1.i = X(ix).i - 
@@ -257,7 +255,6 @@
 			for (i = j + 1; i <= *n; ++i) {
 			    i__3 = i;
 			    i__4 = i;
-			    i__5 = i + j * a_dim1;
 			    z__2.r = temp.r * A(i,j).r - temp.i * A(i,j).i, 
 				    z__2.i = temp.r * A(i,j).i + temp.i * A(i,j).r;
 			    z__1.r = X(i).r - z__2.r, z__1.i = X(i).i - 
@@ -287,7 +284,6 @@
 			    ix += *incx;
 			    i__3 = ix;
 			    i__4 = ix;
-			    i__5 = i + j * a_dim1;
 			    z__2.r = temp.r * A(i,j).r - temp.i * A(i,j).i, 
 				    z__2.i = temp.r * A(i,j).i + temp.i * A(i,j).r;
 			    z__1.r = X(ix).r - z__2.r, z__1.i = X(ix).i - 
@@ -314,7 +310,6 @@
 		    if (noconj) {
 			i__2 = j - 1;
 			for (i = 1; i <= j-1; ++i) {
-			    i__3 = i + j * a_dim1;
 			    i__4 = i;
 			    z__2.r = A(i,j).r * X(i).r - A(i,j).i * X(
 				    i).i, z__2.i = A(i,j).r * X(i).i + 
@@ -361,7 +356,6 @@
 		    if (noconj) {
 			i__2 = j - 1;
 			for (i = 1; i <= j-1; ++i) {
-			    i__3 = i + j * a_dim1;
 			    i__4 = ix;
 			    z__2.r = A(i,j).r * X(ix).r - A(i,j).i * X(
 				    ix).i, z__2.i = A(i,j).r * X(ix).i + 
@@ -410,7 +404,6 @@
 		    if (noconj) {
 			i__1 = j + 1;
 			for (i = *n; i >= j+1; --i) {
-			    i__2 = i + j * a_dim1;
 			    i__3 = i;
 			    z__2.r = A(i,j).r * X(i).r - A(i,j).i * X(
 				    i).i, z__2.i = A(i,j).r * X(i).i + 
@@ -457,7 +450,6 @@
 		    if (noconj) {
 			i__1 = j + 1;
 			for (i = *n; i >= j+1; --i) {
-			    i__2 = i + j * a_dim1;
 			    i__3 = ix;
 			    z__2.r = A(i,j).r * X(ix).r - A(i,j).i * X(
 				    ix).i, z__2.i = A(i,j).r * X(ix).i + 

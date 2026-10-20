@@ -260,7 +260,6 @@
 		    for (i = 1; i <= *m; ++i) {
 			i__3 = i;
 			i__4 = i;
-			i__5 = i + j * a_dim1;
 			z__2.r = temp.r * A(i,j).r - temp.i * A(i,j).i, 
 				z__2.i = temp.r * A(i,j).i + temp.i * A(i,j)
 				.r;
@@ -288,7 +287,6 @@
 		    for (i = 1; i <= *m; ++i) {
 			i__3 = iy;
 			i__4 = iy;
-			i__5 = i + j * a_dim1;
 			z__2.r = temp.r * A(i,j).r - temp.i * A(i,j).i, 
 				z__2.i = temp.r * A(i,j).i + temp.i * A(i,j)
 				.r;
@@ -316,7 +314,6 @@
 		if (noconj) {
 		    i__2 = *m;
 		    for (i = 1; i <= *m; ++i) {
-			i__3 = i + j * a_dim1;
 			i__4 = i;
 			z__2.r = A(i,j).r * X(i).r - A(i,j).i * X(i)
 				.i, z__2.i = A(i,j).r * X(i).i + A(i,j)
@@ -355,7 +352,6 @@
 		if (noconj) {
 		    i__2 = *m;
 		    for (i = 1; i <= *m; ++i) {
-			i__3 = i + j * a_dim1;
 			i__4 = ix;
 			z__2.r = A(i,j).r * X(ix).r - A(i,j).i * X(ix)
 				.i, z__2.i = A(i,j).r * X(ix).i + A(i,j)

@@ -238,7 +238,6 @@ static doublecomplex c_b1 = {1.,0.};
 	for (j = 1; j <= *n; ++j) {
 	    i__2 = *m;
 	    for (i = 1; i <= *m; ++i) {
-		i__3 = i + j * b_dim1;
 		B(i,j).r = 0., B(i,j).i = 0.;
 /* L10: */
 	    }
@@ -260,8 +259,6 @@ static doublecomplex c_b1 = {1.,0.};
 		    if (alpha->r != 1. || alpha->i != 0.) {
 			i__2 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__3 = i + j * b_dim1;
-			    i__4 = i + j * b_dim1;
 			    z__1.r = alpha->r * B(i,j).r - alpha->i * B(i,j)
 				    .i, z__1.i = alpha->r * B(i,j).i + 
 				    alpha->i * B(i,j).r;
@@ -270,19 +267,13 @@ static doublecomplex c_b1 = {1.,0.};
 			}
 		    }
 		    for (k = *m; k >= 1; --k) {
-			i__2 = k + j * b_dim1;
 			if (B(k,j).r != 0. || B(k,j).i != 0.) {
 			    if (nounit) {
-				i__2 = k + j * b_dim1;
 				z_div(&z__1, &B(k,j), &A(k,k));
 				B(k,j).r = z__1.r, B(k,j).i = z__1.i;
 			    }
 			    i__2 = k - 1;
 			    for (i = 1; i <= k-1; ++i) {
-				i__3 = i + j * b_dim1;
-				i__4 = i + j * b_dim1;
-				i__5 = k + j * b_dim1;
-				i__6 = i + k * a_dim1;
 				z__2.r = B(k,j).r * A(i,k).r - B(k,j).i * 
 					A(i,k).i, z__2.i = B(k,j).r * A(i,k).i + B(k,j).i * A(i,k).r;
 				z__1.r = B(i,j).r - z__2.r, z__1.i = B(i,j)
@@ -301,8 +292,6 @@ static doublecomplex c_b1 = {1.,0.};
 		    if (alpha->r != 1. || alpha->i != 0.) {
 			i__2 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__3 = i + j * b_dim1;
-			    i__4 = i + j * b_dim1;
 			    z__1.r = alpha->r * B(i,j).r - alpha->i * B(i,j)
 				    .i, z__1.i = alpha->r * B(i,j).i + 
 				    alpha->i * B(i,j).r;
@@ -312,19 +301,13 @@ static doublecomplex c_b1 = {1.,0.};
 		    }
 		    i__2 = *m;
 		    for (k = 1; k <= *m; ++k) {
-			i__3 = k + j * b_dim1;
 			if (B(k,j).r != 0. || B(k,j).i != 0.) {
 			    if (nounit) {
-				i__3 = k + j * b_dim1;
 				z_div(&z__1, &B(k,j), &A(k,k));
 				B(k,j).r = z__1.r, B(k,j).i = z__1.i;
 			    }
 			    i__3 = *m;
 			    for (i = k + 1; i <= *m; ++i) {
-				i__4 = i + j * b_dim1;
-				i__5 = i + j * b_dim1;
-				i__6 = k + j * b_dim1;
-				i__7 = i + k * a_dim1;
 				z__2.r = B(k,j).r * A(i,k).r - B(k,j).i * 
 					A(i,k).i, z__2.i = B(k,j).r * A(i,k).i + B(k,j).i * A(i,k).r;
 				z__1.r = B(i,j).r - z__2.r, z__1.i = B(i,j)
@@ -348,15 +331,12 @@ static doublecomplex c_b1 = {1.,0.};
 		for (j = 1; j <= *n; ++j) {
 		    i__2 = *m;
 		    for (i = 1; i <= *m; ++i) {
-			i__3 = i + j * b_dim1;
 			z__1.r = alpha->r * B(i,j).r - alpha->i * B(i,j).i, 
 				z__1.i = alpha->r * B(i,j).i + alpha->i * B(i,j).r;
 			temp.r = z__1.r, temp.i = z__1.i;
 			if (noconj) {
 			    i__3 = i - 1;
 			    for (k = 1; k <= i-1; ++k) {
-				i__4 = k + i * a_dim1;
-				i__5 = k + j * b_dim1;
 				z__2.r = A(k,i).r * B(k,j).r - A(k,i).i * 
 					B(k,j).i, z__2.i = A(k,i).r * B(k,j).i + A(k,i).i * B(k,j).r;
 				z__1.r = temp.r - z__2.r, z__1.i = temp.i - 
@@ -372,7 +352,6 @@ static doublecomplex c_b1 = {1.,0.};
 			    i__3 = i - 1;
 			    for (k = 1; k <= i-1; ++k) {
 				d_cnjg(&z__3, &A(k,i));
-				i__4 = k + j * b_dim1;
 				z__2.r = z__3.r * B(k,j).r - z__3.i * B(k,j)
 					.i, z__2.i = z__3.r * B(k,j).i + 
 					z__3.i * B(k,j).r;
@@ -387,7 +366,6 @@ static doublecomplex c_b1 = {1.,0.};
 				temp.r = z__1.r, temp.i = z__1.i;
 			    }
 			}
-			i__3 = i + j * b_dim1;
 			B(i,j).r = temp.r, B(i,j).i = temp.i;
 /* L130: */
 		    }
@@ -397,15 +375,12 @@ static doublecomplex c_b1 = {1.,0.};
 		i__1 = *n;
 		for (j = 1; j <= *n; ++j) {
 		    for (i = *m; i >= 1; --i) {
-			i__2 = i + j * b_dim1;
 			z__1.r = alpha->r * B(i,j).r - alpha->i * B(i,j).i, 
 				z__1.i = alpha->r * B(i,j).i + alpha->i * B(i,j).r;
 			temp.r = z__1.r, temp.i = z__1.i;
 			if (noconj) {
 			    i__2 = *m;
 			    for (k = i + 1; k <= *m; ++k) {
-				i__3 = k + i * a_dim1;
-				i__4 = k + j * b_dim1;
 				z__2.r = A(k,i).r * B(k,j).r - A(k,i).i * 
 					B(k,j).i, z__2.i = A(k,i).r * B(k,j).i + A(k,i).i * B(k,j).r;
 				z__1.r = temp.r - z__2.r, z__1.i = temp.i - 
@@ -421,7 +396,6 @@ static doublecomplex c_b1 = {1.,0.};
 			    i__2 = *m;
 			    for (k = i + 1; k <= *m; ++k) {
 				d_cnjg(&z__3, &A(k,i));
-				i__3 = k + j * b_dim1;
 				z__2.r = z__3.r * B(k,j).r - z__3.i * B(k,j)
 					.i, z__2.i = z__3.r * B(k,j).i + 
 					z__3.i * B(k,j).r;
@@ -436,7 +410,6 @@ static doublecomplex c_b1 = {1.,0.};
 				temp.r = z__1.r, temp.i = z__1.i;
 			    }
 			}
-			i__2 = i + j * b_dim1;
 			B(i,j).r = temp.r, B(i,j).i = temp.i;
 /* L170: */
 		    }
@@ -455,8 +428,6 @@ static doublecomplex c_b1 = {1.,0.};
 		    if (alpha->r != 1. || alpha->i != 0.) {
 			i__2 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__3 = i + j * b_dim1;
-			    i__4 = i + j * b_dim1;
 			    z__1.r = alpha->r * B(i,j).r - alpha->i * B(i,j)
 				    .i, z__1.i = alpha->r * B(i,j).i + 
 				    alpha->i * B(i,j).r;
@@ -466,14 +437,9 @@ static doublecomplex c_b1 = {1.,0.};
 		    }
 		    i__2 = j - 1;
 		    for (k = 1; k <= j-1; ++k) {
-			i__3 = k + j * a_dim1;
 			if (A(k,j).r != 0. || A(k,j).i != 0.) {
 			    i__3 = *m;
 			    for (i = 1; i <= *m; ++i) {
-				i__4 = i + j * b_dim1;
-				i__5 = i + j * b_dim1;
-				i__6 = k + j * a_dim1;
-				i__7 = i + k * b_dim1;
 				z__2.r = A(k,j).r * B(i,k).r - A(k,j).i * 
 					B(i,k).i, z__2.i = A(k,j).r * B(i,k).i + A(k,j).i * B(i,k).r;
 				z__1.r = B(i,j).r - z__2.r, z__1.i = B(i,j)
@@ -489,8 +455,6 @@ static doublecomplex c_b1 = {1.,0.};
 			temp.r = z__1.r, temp.i = z__1.i;
 			i__2 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__3 = i + j * b_dim1;
-			    i__4 = i + j * b_dim1;
 			    z__1.r = temp.r * B(i,j).r - temp.i * B(i,j).i, 
 				    z__1.i = temp.r * B(i,j).i + temp.i * B(i,j).r;
 			    B(i,j).r = z__1.r, B(i,j).i = z__1.i;
@@ -504,8 +468,6 @@ static doublecomplex c_b1 = {1.,0.};
 		    if (alpha->r != 1. || alpha->i != 0.) {
 			i__1 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__2 = i + j * b_dim1;
-			    i__3 = i + j * b_dim1;
 			    z__1.r = alpha->r * B(i,j).r - alpha->i * B(i,j)
 				    .i, z__1.i = alpha->r * B(i,j).i + 
 				    alpha->i * B(i,j).r;
@@ -515,14 +477,9 @@ static doublecomplex c_b1 = {1.,0.};
 		    }
 		    i__1 = *n;
 		    for (k = j + 1; k <= *n; ++k) {
-			i__2 = k + j * a_dim1;
 			if (A(k,j).r != 0. || A(k,j).i != 0.) {
 			    i__2 = *m;
 			    for (i = 1; i <= *m; ++i) {
-				i__3 = i + j * b_dim1;
-				i__4 = i + j * b_dim1;
-				i__5 = k + j * a_dim1;
-				i__6 = i + k * b_dim1;
 				z__2.r = A(k,j).r * B(i,k).r - A(k,j).i * 
 					B(i,k).i, z__2.i = A(k,j).r * B(i,k).i + A(k,j).i * B(i,k).r;
 				z__1.r = B(i,j).r - z__2.r, z__1.i = B(i,j)
@@ -538,8 +495,6 @@ static doublecomplex c_b1 = {1.,0.};
 			temp.r = z__1.r, temp.i = z__1.i;
 			i__1 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__2 = i + j * b_dim1;
-			    i__3 = i + j * b_dim1;
 			    z__1.r = temp.r * B(i,j).r - temp.i * B(i,j).i, 
 				    z__1.i = temp.r * B(i,j).i + temp.i * B(i,j).r;
 			    B(i,j).r = z__1.r, B(i,j).i = z__1.i;
@@ -567,8 +522,6 @@ static doublecomplex c_b1 = {1.,0.};
 			}
 			i__1 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__2 = i + k * b_dim1;
-			    i__3 = i + k * b_dim1;
 			    z__1.r = temp.r * B(i,k).r - temp.i * B(i,k).i, 
 				    z__1.i = temp.r * B(i,k).i + temp.i * B(i,k).r;
 			    B(i,k).r = z__1.r, B(i,k).i = z__1.i;
@@ -577,10 +530,8 @@ static doublecomplex c_b1 = {1.,0.};
 		    }
 		    i__1 = k - 1;
 		    for (j = 1; j <= k-1; ++j) {
-			i__2 = j + k * a_dim1;
 			if (A(j,k).r != 0. || A(j,k).i != 0.) {
 			    if (noconj) {
-				i__2 = j + k * a_dim1;
 				temp.r = A(j,k).r, temp.i = A(j,k).i;
 			    } else {
 				d_cnjg(&z__1, &A(j,k));
@@ -588,9 +539,6 @@ static doublecomplex c_b1 = {1.,0.};
 			    }
 			    i__2 = *m;
 			    for (i = 1; i <= *m; ++i) {
-				i__3 = i + j * b_dim1;
-				i__4 = i + j * b_dim1;
-				i__5 = i + k * b_dim1;
 				z__2.r = temp.r * B(i,k).r - temp.i * B(i,k)
 					.i, z__2.i = temp.r * B(i,k).i + 
 					temp.i * B(i,k).r;
@@ -605,8 +553,6 @@ static doublecomplex c_b1 = {1.,0.};
 		    if (alpha->r != 1. || alpha->i != 0.) {
 			i__1 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__2 = i + k * b_dim1;
-			    i__3 = i + k * b_dim1;
 			    z__1.r = alpha->r * B(i,k).r - alpha->i * B(i,k)
 				    .i, z__1.i = alpha->r * B(i,k).i + 
 				    alpha->i * B(i,k).r;
@@ -630,8 +576,6 @@ static doublecomplex c_b1 = {1.,0.};
 			}
 			i__2 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__3 = i + k * b_dim1;
-			    i__4 = i + k * b_dim1;
 			    z__1.r = temp.r * B(i,k).r - temp.i * B(i,k).i, 
 				    z__1.i = temp.r * B(i,k).i + temp.i * B(i,k).r;
 			    B(i,k).r = z__1.r, B(i,k).i = z__1.i;
@@ -640,10 +584,8 @@ static doublecomplex c_b1 = {1.,0.};
 		    }
 		    i__2 = *n;
 		    for (j = k + 1; j <= *n; ++j) {
-			i__3 = j + k * a_dim1;
 			if (A(j,k).r != 0. || A(j,k).i != 0.) {
 			    if (noconj) {
-				i__3 = j + k * a_dim1;
 				temp.r = A(j,k).r, temp.i = A(j,k).i;
 			    } else {
 				d_cnjg(&z__1, &A(j,k));
@@ -651,9 +593,6 @@ static doublecomplex c_b1 = {1.,0.};
 			    }
 			    i__3 = *m;
 			    for (i = 1; i <= *m; ++i) {
-				i__4 = i + j * b_dim1;
-				i__5 = i + j * b_dim1;
-				i__6 = i + k * b_dim1;
 				z__2.r = temp.r * B(i,k).r - temp.i * B(i,k)
 					.i, z__2.i = temp.r * B(i,k).i + 
 					temp.i * B(i,k).r;
@@ -668,8 +607,6 @@ static doublecomplex c_b1 = {1.,0.};
 		    if (alpha->r != 1. || alpha->i != 0.) {
 			i__2 = *m;
 			for (i = 1; i <= *m; ++i) {
-			    i__3 = i + k * b_dim1;
-			    i__4 = i + k * b_dim1;
 			    z__1.r = alpha->r * B(i,k).r - alpha->i * B(i,k)
 				    .i, z__1.i = alpha->r * B(i,k).i + 
 				    alpha->i * B(i,k).r;

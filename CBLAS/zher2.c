@@ -203,8 +203,6 @@
 		    temp2.r = z__1.r, temp2.i = z__1.i;
 		    i__2 = j - 1;
 		    for (i = 1; i <= j-1; ++i) {
-			i__3 = i + j * a_dim1;
-			i__4 = i + j * a_dim1;
 			i__5 = i;
 			z__3.r = X(i).r * temp1.r - X(i).i * temp1.i, 
 				z__3.i = X(i).r * temp1.i + X(i).i * 
@@ -219,8 +217,6 @@
 			A(i,j).r = z__1.r, A(i,j).i = z__1.i;
 /* L10: */
 		    }
-		    i__2 = j + j * a_dim1;
-		    i__3 = j + j * a_dim1;
 		    i__4 = j;
 		    z__2.r = X(j).r * temp1.r - X(j).i * temp1.i, 
 			    z__2.i = X(j).r * temp1.i + X(j).i * 
@@ -233,8 +229,6 @@
 		    d__1 = A(j,j).r + z__1.r;
 		    A(j,j).r = d__1, A(j,j).i = 0.;
 		} else {
-		    i__2 = j + j * a_dim1;
-		    i__3 = j + j * a_dim1;
 		    d__1 = A(j,j).r;
 		    A(j,j).r = d__1, A(j,j).i = 0.;
 		}
@@ -261,8 +255,6 @@
 		    iy = ky;
 		    i__2 = j - 1;
 		    for (i = 1; i <= j-1; ++i) {
-			i__3 = i + j * a_dim1;
-			i__4 = i + j * a_dim1;
 			i__5 = ix;
 			z__3.r = X(ix).r * temp1.r - X(ix).i * temp1.i, 
 				z__3.i = X(ix).r * temp1.i + X(ix).i * 
@@ -279,8 +271,6 @@
 			iy += *incy;
 /* L30: */
 		    }
-		    i__2 = j + j * a_dim1;
-		    i__3 = j + j * a_dim1;
 		    i__4 = jx;
 		    z__2.r = X(jx).r * temp1.r - X(jx).i * temp1.i, 
 			    z__2.i = X(jx).r * temp1.i + X(jx).i * 
@@ -293,8 +283,6 @@
 		    d__1 = A(j,j).r + z__1.r;
 		    A(j,j).r = d__1, A(j,j).i = 0.;
 		} else {
-		    i__2 = j + j * a_dim1;
-		    i__3 = j + j * a_dim1;
 		    d__1 = A(j,j).r;
 		    A(j,j).r = d__1, A(j,j).i = 0.;
 		}
@@ -324,8 +312,6 @@
 			    .r;
 		    d_cnjg(&z__1, &z__2);
 		    temp2.r = z__1.r, temp2.i = z__1.i;
-		    i__2 = j + j * a_dim1;
-		    i__3 = j + j * a_dim1;
 		    i__4 = j;
 		    z__2.r = X(j).r * temp1.r - X(j).i * temp1.i, 
 			    z__2.i = X(j).r * temp1.i + X(j).i * 
@@ -339,8 +325,6 @@
 		    A(j,j).r = d__1, A(j,j).i = 0.;
 		    i__2 = *n;
 		    for (i = j + 1; i <= *n; ++i) {
-			i__3 = i + j * a_dim1;
-			i__4 = i + j * a_dim1;
 			i__5 = i;
 			z__3.r = X(i).r * temp1.r - X(i).i * temp1.i, 
 				z__3.i = X(i).r * temp1.i + X(i).i * 
@@ -356,8 +340,6 @@
 /* L50: */
 		    }
 		} else {
-		    i__2 = j + j * a_dim1;
-		    i__3 = j + j * a_dim1;
 		    d__1 = A(j,j).r;
 		    A(j,j).r = d__1, A(j,j).i = 0.;
 		}
@@ -380,8 +362,6 @@
 			    .r;
 		    d_cnjg(&z__1, &z__2);
 		    temp2.r = z__1.r, temp2.i = z__1.i;
-		    i__2 = j + j * a_dim1;
-		    i__3 = j + j * a_dim1;
 		    i__4 = jx;
 		    z__2.r = X(jx).r * temp1.r - X(jx).i * temp1.i, 
 			    z__2.i = X(jx).r * temp1.i + X(jx).i * 
@@ -399,8 +379,6 @@
 		    for (i = j + 1; i <= *n; ++i) {
 			ix += *incx;
 			iy += *incy;
-			i__3 = i + j * a_dim1;
-			i__4 = i + j * a_dim1;
 			i__5 = ix;
 			z__3.r = X(ix).r * temp1.r - X(ix).i * temp1.i, 
 				z__3.i = X(ix).r * temp1.i + X(ix).i * 
@@ -416,8 +394,6 @@
 /* L70: */
 		    }
 		} else {
-		    i__2 = j + j * a_dim1;
-		    i__3 = j + j * a_dim1;
 		    d__1 = A(j,j).r;
 		    A(j,j).r = d__1, A(j,j).i = 0.;
 		}
