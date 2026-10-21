@@ -246,10 +246,16 @@ void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, i
 	    tree->type_=MPI_DOUBLE;
 	}
 	if(precision=='z'){
-	    tree->type_=MPI_DOUBLE_COMPLEX;
+	    /* MPI_C_DOUBLE_COMPLEX, not MPI_DOUBLE_COMPLEX: the latter is the
+	       Fortran type and is MPI_DATATYPE_NULL in an MPI built without
+	       Fortran support. Matches C_BcTree_Create_nv(). */
+	    tree->type_=MPI_C_DOUBLE_COMPLEX;
 	}
 	if(precision=='s'){
 	    tree->type_=MPI_FLOAT;
+	}
+	if(precision=='c'){
+	    tree->type_=MPI_C_COMPLEX;
 	}
     //int myIdx = 0;
     int ii=0;
