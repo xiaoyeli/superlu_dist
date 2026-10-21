@@ -1204,6 +1204,7 @@ extern int get_acc_offload(superlu_dist_options_t *);
 extern int get_acc_solve(void);
 extern int get_new3dsolve(void);
 extern int get_new3dsolvetreecomm(void);
+extern int get_solve_levels(void);
 
 /* Routines for debugging */
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);

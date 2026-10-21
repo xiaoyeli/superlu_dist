@@ -621,6 +621,22 @@ get_new3dsolvetreecomm ()
         return 1;  // default      
 }
 
+/* Launch scheme of the single-process GPU triangular solve (SLU_SOLVE_LEVELS):
+   1 (default): one kernel launch per elimination-tree level, no spin-wait;
+   0: one launch over all supernodes, each thread block spin-waiting on its
+      dependencies.
+   Read at every solve, so it can be changed between solves. */
+int
+get_solve_levels ()
+{
+    char *ttemp;
+    ttemp = getenv ("SLU_SOLVE_LEVELS");
+    if (ttemp)
+        return atoi (ttemp) != 0;
+    else
+        return 1;  // default
+}
+
 
 
 void Free_HyP(HyP_t* HyP)
