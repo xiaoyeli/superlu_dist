@@ -96,4 +96,71 @@ jobs:
           export TEST_NUMBER=${{ matrix.test }}
           ./.ci_tests.sh
 
+  # Same sanitizer configuration as superlu's test-ubuntu-asan-ubsan job,
+  # adapted for an MPI build: the library is built once and all 15
+  # .ci_tests.sh cases run against it.
+  test-asan-ubsan:
+    name: Ubuntu AddressSanitizer and UndefinedBehaviorSanitizer build and test
+    runs-on: ubuntu-latest
+    # Backstop in case one rank aborts and the others sit in a collective.
+    timeout-minutes: 60
 
+    env:
+      # detect_leaks=0: Open MPI leaks internally (dlopen'd MCA components etc.),
+      #   so LeakSanitizer would fail every run for allocations that are not ours.
+      # log_path: one report file per rank instead of interleaved stdout.
+      ASAN_OPTIONS: detect_leaks=0:log_path=${{ github.workspace }}/sanitizer-logs/asan
+      UBSAN_OPTIONS: print_stacktrace=1:log_path=${{ github.workspace }}/sanitizer-logs/ubsan
+      # Single-threaded for now: with OMP_NUM_THREADS>1 ASan reports a
+      # heap-buffer-overflow inside the OpenMP task region of pdgstrs2_omp
+      # (SRC/double/pdgstrf2.c) and in dlsum_bmod_inv. Raise this once that
+      # race is fixed so the sanitizer also covers the threaded paths.
+      OMP_NUM_THREADS: 1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc g++ openmpi-bin libopenmpi-dev
+
+      # The internal CBLAS is built on purpose: a system BLAS is not instrumented,
+      # so an out-of-bounds read or write that SuperLU hands to a BLAS call would go
+      # unreported. With the instrumented CBLAS, the BLAS boundary is covered too.
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_C_COMPILER=mpicc
+          -DCMAKE_CXX_COMPILER=mpic++
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=1 -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+          -DCMAKE_CXX_FLAGS="-DAdd_ -DRELEASE -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
+          -DTPL_ENABLE_PARMETISLIB=OFF
+          -DTPL_ENABLE_INTERNAL_BLASLIB=ON
+          -DXSDK_ENABLE_Fortran=OFF
+          -DBUILD_SHARED_LIBS=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: |
+          mkdir -p sanitizer-logs
+          for t in $(seq 1 15); do
+            echo "::group::Test $t"
+            TEST_NUMBER=$t ./.ci_tests.sh
+            echo "::endgroup::"
+          done
+
+      - name: Show sanitizer reports
+        if: failure()
+        run: |
+          shopt -s nullglob
+          for f in sanitizer-logs/*; do
+            echo "===== $f ====="
+            cat "$f"
+          done
