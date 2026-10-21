@@ -15,12 +15,12 @@
     integer a_dim1, a_offset, i__1, i__2;
 
     /* Local variables */
-    static integer info;
-    static real temp;
-    static integer i, j;
-    static integer ix, jx, kx;
+    integer info;
+    real temp;
+    integer i, j;
+    integer ix, jx, kx;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
-    static logical nounit;
+    logical nounit;
 
 
 /*  Purpose   

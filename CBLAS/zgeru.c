@@ -17,9 +17,9 @@
     doublecomplex z__1, z__2;
 
     /* Local variables */
-    static integer info;
-    static doublecomplex temp;
-    static integer i, j, ix, jy, kx;
+    integer info;
+    doublecomplex temp;
+    integer i, j, ix, jy, kx;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
 
 

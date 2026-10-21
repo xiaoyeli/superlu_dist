@@ -22,13 +22,13 @@
     void d_cnjg(doublecomplex *, doublecomplex *);
 
     /* Local variables */
-    static integer info;
-    static logical nota, notb;
-    static doublecomplex temp;
-    static integer i, j, l;
-    static logical conja, conjb;
-    static integer ncola;
-    static integer nrowa, nrowb;
+    integer info;
+    logical nota, notb;
+    doublecomplex temp;
+    integer i, j, l;
+    logical conja, conjb;
+    integer ncola;
+    integer nrowa, nrowb;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
 
 

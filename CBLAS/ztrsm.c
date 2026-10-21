@@ -26,14 +26,14 @@ static doublecomplex c_b1 = {1.,0.};
 	    doublecomplex *, doublecomplex *);
 
     /* Local variables */
-    static integer info;
-    static doublecomplex temp;
-    static integer i, j, k;
-    static logical lside;
-    static integer nrowa;
-    static logical upper;
+    integer info;
+    doublecomplex temp;
+    integer i, j, k;
+    logical lside;
+    integer nrowa;
+    logical upper;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
-    static logical noconj, nounit;
+    logical noconj, nounit;
 
 
 /*  Purpose   

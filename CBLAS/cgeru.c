@@ -16,9 +16,9 @@
     complex q__1, q__2;
 
     /* Local variables */
-    static integer info;
-    static complex temp;
-    static integer i, j, ix, jy, kx;
+    integer info;
+    complex temp;
+    integer i, j, ix, jy, kx;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
 
 

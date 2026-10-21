@@ -20,12 +20,12 @@
 	    doublecomplex *, doublecomplex *);
 
     /* Local variables */
-    static integer info;
-    static doublecomplex temp;
-    static integer i, j;
-    static integer ix, jx, kx;
+    integer info;
+    doublecomplex temp;
+    integer i, j;
+    integer ix, jx, kx;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
-    static logical noconj, nounit;
+    logical noconj, nounit;
 
 
 /*  Purpose   

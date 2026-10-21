@@ -20,12 +20,12 @@
     void r_cnjg(complex *, complex *);
 
     /* Local variables */
-    static integer info;
-    static complex temp;
-    static integer lenx, leny, i, j;
-    static integer ix, iy, jx, jy, kx, ky;
+    integer info;
+    complex temp;
+    integer lenx, leny, i, j;
+    integer ix, iy, jx, jy, kx, ky;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
-    static logical noconj;
+    logical noconj;
 
 
 /*  Purpose   
