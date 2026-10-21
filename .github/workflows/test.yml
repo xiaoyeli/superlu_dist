@@ -111,11 +111,11 @@ jobs:
       # log_path: one report file per rank instead of interleaved stdout.
       ASAN_OPTIONS: detect_leaks=0:log_path=${{ github.workspace }}/sanitizer-logs/asan
       UBSAN_OPTIONS: print_stacktrace=1:log_path=${{ github.workspace }}/sanitizer-logs/ubsan
-      # Single-threaded for now: with OMP_NUM_THREADS>1 ASan reports a
-      # heap-buffer-overflow inside the OpenMP task region of pdgstrs2_omp
-      # (SRC/double/pdgstrf2.c) and in dlsum_bmod_inv. Raise this once that
-      # race is fixed so the sanitizer also covers the threaded paths.
-      OMP_NUM_THREADS: 1
+      # Two threads per rank so the sanitizers also cover the OpenMP paths
+      # (pdgstrs2_omp tasks, threaded solve) and the concurrent calls they make
+      # into the internal CBLAS. Kept at 2 because the tests oversubscribe the
+      # runner with up to 6 ranks.
+      OMP_NUM_THREADS: 2
 
     steps:
       - name: Checkout code
