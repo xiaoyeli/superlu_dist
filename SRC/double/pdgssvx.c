@@ -1067,7 +1067,14 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		  return;
      	      }
 	  } else {
-	      get_perm_c_dist(iam, permc_spec, &GA, perm_c);
+	      /* get_perm_c_dist() calls a serial ordering library (MMD, COLAMD,
+	         or METIS) that is not guaranteed to return the same permutation
+	         on every process -- e.g. when linked against Scotch's METIS
+	         compatibility layer with threads enabled. Compute it once on
+	         process 0 and broadcast, instead of relying on every process
+	         to redundantly recompute the identical answer. */
+	      if ( !iam ) get_perm_c_dist(iam, permc_spec, &GA, perm_c);
+	      MPI_Bcast( perm_c, n, MPI_INT, 0, grid->comm );
           }
 #ifdef GPU_ACC
 		if (get_acc_solve()){
