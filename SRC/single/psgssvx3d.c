@@ -767,7 +767,17 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			col = MPI_UNDEFINED;
 		MPI_Comm_split(grid->comm, col, key, &symb_comm);
 
-		if (permc_spec == NATURAL || permc_spec == MY_PERMC) {
+		/* With Fact == SamePattern (but not SamePattern_SameRowPerm),
+		   perm_c[] is reused from the previous call and
+		   get_perm_c_parmetis() below is skipped, so no separator tree
+		   is computed for ColPerm == PARMETIS either. Without this
+		   branch, sizes[]/fstVtxSep[] would stay NULL (initialized at
+		   the top of this routine) and symbfact_dist() would
+		   dereference them. Fall back to a single trivial top
+		   separator containing all rows, exactly as already done for
+		   NATURAL/MY_PERMC. */
+		if (permc_spec == NATURAL || permc_spec == MY_PERMC
+		    || (permc_spec == PARMETIS && Fact != DOFACT)) {
 		    if (permc_spec == NATURAL) {
 			for (j = 0; j < n; ++j)	perm_c[j] = j;
 		    }
