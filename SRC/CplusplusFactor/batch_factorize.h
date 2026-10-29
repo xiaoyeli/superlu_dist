@@ -5,6 +5,31 @@
 #include "gpuCommon.hpp"
 #include "batch_factorize_marshall.h"
 #include "luAuxStructTemplated.hpp"
+#include <vector>
+
+/* Per-level, structure-only data of one elimination forest: the pointer and
+   size arrays the marshalling functors compute, and the per-level maxima the
+   MAGMA *_max_nocheck entry points take.  None of it depends on the values,
+   so a persistent workspace builds it once and every later factorization
+   runs the level loop without the marshalling kernels, the device
+   reductions and the host synchronizations behind them.  Level l owns the
+   slice [k_st[l], k_end[l]) of each device array; the dimension arrays hold
+   one extra element, as MAGMA's vbatched routines expect. */
+template<class T>
+struct TBatchLevelCache
+{
+    int valid = 0;
+    void *forest = nullptr;
+    int_t nnodes = 0, nlev = 0;
+    std::vector<int_t> k_st, k_end;
+    std::vector<BatchDim_t> maxdiag, maxUdiag, maxUpanel, maxLpanel, scu_m, scu_n, scu_k, scu_ilen, scu_jlen;
+    T **diag_ptrs = nullptr, **diagU_ptrs = nullptr, **panelU_ptrs = nullptr, **panelL_ptrs = nullptr;
+    T **A_ptrs = nullptr, **B_ptrs = nullptr, **C_ptrs = nullptr;
+    BatchDim_t *diag_ld = nullptr, *diag_dim = nullptr, *info = nullptr;
+    BatchDim_t *diagU_ld = nullptr, *diagU_dim = nullptr, *panelU_ld = nullptr, *panelU_dim = nullptr;
+    BatchDim_t *panelL_ld = nullptr, *panelL_dim = nullptr;
+    BatchDim_t *lda = nullptr, *ldb = nullptr, *ldc = nullptr, *m = nullptr, *n = nullptr, *k = nullptr;
+};
 
 // Device memory used to store marshalled batch data for LU and TRSM
 template<class T>
@@ -131,9 +156,10 @@ struct TBatchFactorizeWorkspace {
     gpuStream_t stream;
     gpublasHandle_t cuhandle;
     
-    // Marshall data 
+    // Marshall data (scratch, one level at a time) and its per-level cache
     TBatchLUMarshallData<T> marshall_data;
     TBatchSCUMarshallData<T> sc_marshall_data;
+    TBatchLevelCache<T> lcache;
 
     // GPU copy of the supernode data
     int_t* perm_c_supno, *xsup;
@@ -151,6 +177,46 @@ struct TBatchFactorizeWorkspace {
     int_t *d_lblock_start_dat, **d_lblock_start_ptrs;
     int64_t *d_lblock_gid_offsets, *d_lblock_start_offsets;
     int64_t total_l_blocks, total_start_size;
+
+    // Device-resident reuse: values of A on the device, map from each nonzero
+    // of A to its slot in the flat L (offset < Lnzval_bc_cnt) or U
+    // (Lnzval_bc_cnt + offset) value arrays, and the host buffers pinned for
+    // the per-step transfers.
+    T *d_avals = nullptr;
+    int64_t *d_map = nullptr;
+    int_t nnz_a = 0;
+    void *pinned[3] = {nullptr, nullptr, nullptr};
+
+    // Stage 3: map from each entry of the solve's column-wise U value array
+    // (Unzval_bc_dat) to its source in the factorization's row-wise device U
+    // (Unzval_br_new_dat); -1 for entries with no source.
+    int64_t *d_umap = nullptr;
+    int64_t ucnt = 0;
+    int solve_ready = 0;             // stage 3 set up (map or row-data copy)
+
+    // Stage 4 (A side): map from each entry of the caller's per-system CSC
+    // values, concatenated in system order, to the device L/U slot, with the
+    // fixed equilibration R[i]*C[j] folded in.  Built once on the DOFACT call;
+    // afterwards a reuse step never touches A on the host.
+    int64_t *h_map = nullptr;        // host copy of d_map (stacked position -> slot)
+    int64_t *d_map2 = nullptr;       // entry q -> slot, -1 if none
+    double  *d_scale2 = nullptr;     // entry q -> R[i]*C[j]
+    int     *d_ent_sys = nullptr;    // entry q -> system d
+    int     *d_ent_idx = nullptr;    // entry q -> position in that system's nzval
+    double **d_Aptrs = nullptr;      // device copy of the per-system value pointers
+    double  *h_avals_cat = nullptr;  // pinned staging for host-side values
+    int_t    nnz2 = 0;
+    int      nsys = 0;
+    int      a_prefilled = 0;        // 1: the wrapper already refilled the device L/U
+    double   anorm_cache = 0.0;
+
+    // Pivot-replacement count of the last factorization (device maximum,
+    // pinned host copy), printed after a synchronization: by the
+    // factorization itself, or by the caller after its own (defer_info).
+    BatchDim_t *d_info_max = nullptr, *h_info_max = nullptr;
+    int      defer_info = 0;
+    int      capturing = 0;          // 1: a graph is being captured: no host syncs, no prints
+    T      **h_Aptrs = nullptr;      // last per-system value pointers sent to d_Aptrs
 };
 
 #endif 
