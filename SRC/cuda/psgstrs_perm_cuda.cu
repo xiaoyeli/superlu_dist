@@ -1090,7 +1090,7 @@ void sscale_and_copy_rhs_wrap(float *B, int_t ldb, float *X, int_t ldx, int_t m_
 
     if (total > 0) {
         if (rowequ==FALSE && colequ==FALSE){
-            checkGPU(gpuMemcpy(X, B, sizeof(float)*total, cudaMemcpyDeviceToDevice));
+            checkGPU(gpuMemcpy(X, B, sizeof(float)*total, gpuMemcpyDeviceToDevice));
         }else{
             sscale_and_copy_rhs_kernel<<<blocks, threads>>>(
                 B, X, ScalePermstruct->d_R, ScalePermstruct->d_C,
