@@ -633,11 +633,11 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 
 		MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
 		if ( iinfo == 0 ) {
-		    MPI_Bcast( R,       m, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( C,       n, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &rowcnd, 1, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &colcnd, 1, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &amax,   1, MPI_DOUBLE, 0, grid->comm );
+		    MPI_Bcast( R,       m, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( C,       n, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &rowcnd, 1, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &colcnd, 1, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &amax,   1, MPI_FLOAT, 0, grid->comm );
 		} else {
 		    if ( iinfo > 0 ) {
 			if ( iinfo <= m ) {
@@ -656,11 +656,11 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    } else {
 		MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
 		if ( iinfo == 0 ) {
-		    MPI_Bcast( R,       m, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( C,       n, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &rowcnd, 1, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &colcnd, 1, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &amax,   1, MPI_DOUBLE, 0, grid->comm );
+		    MPI_Bcast( R,       m, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( C,       n, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &rowcnd, 1, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &colcnd, 1, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &amax,   1, MPI_FLOAT, 0, grid->comm );
 		}
 	    }
 
