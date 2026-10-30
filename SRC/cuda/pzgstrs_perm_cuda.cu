@@ -1089,7 +1089,7 @@ void zscale_and_copy_rhs_wrap(doublecomplex *B, int_t ldb, doublecomplex *X, int
 
     if (total > 0) {
         if (rowequ==FALSE && colequ==FALSE){
-            checkGPU(gpuMemcpy(X, B, sizeof(doublecomplex)*total, cudaMemcpyDeviceToDevice));
+            checkGPU(gpuMemcpy(X, B, sizeof(doublecomplex)*total, gpuMemcpyDeviceToDevice));
         }else{
             zscale_and_copy_rhs_kernel<<<blocks, threads>>>(
                 B, X, ScalePermstruct->d_R, ScalePermstruct->d_C,
