@@ -1251,7 +1251,14 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
 	int_t cnt1,cnt2;
 
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
+#ifdef GPU_ACC
+    /* d_x, d_lsum, d_bmod, d_fmod, d_grid below are declared unconditionally
+       on GPU_ACC: they are referenced later in this function under plain
+       "#ifdef GPU_ACC" guards (e.g. pdReDistribute_B_to_X_gpu_wrap()), with
+       no SLU_HAVE_LAPACK check, so they must always be in scope whenever
+       GPU_ACC is on. The actual inversion-based GPU solve kernels further
+       down still additionally require SLU_HAVE_LAPACK, matching
+       pdCompute_Diag_Inv(), which silently does nothing without it. */
 
 #if ( PRNTlevel>=1 )
     if (get_acc_solve()){
