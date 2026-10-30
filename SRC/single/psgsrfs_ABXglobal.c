@@ -101,7 +101,7 @@ static void redist_all_to_diag(int_t, float [], Glu_persist_t *,
  * nrhs   (input) int
  *        Number of right-hand sides.
  *
- * berr   (output) double*, dimension (nrhs)
+ * berr   (output) float*, dimension (nrhs)
  *         The componentwise relative backward error of each solution
  *         vector X(j) (i.e., the smallest relative change in
  *         any element of A or B that makes X(j) an exact solution).
@@ -150,8 +150,8 @@ psgsrfs_ABXglobal(superlu_dist_options_t *options, int_t n,
           nprow, nsupers, nz, p;
     int   i, iam, pkk;
     int_t *ilsum, *xsup;
-    double eps, lstres;
-    double s, safmin, safe1, safe2;
+    float eps, lstres;
+    float s, safmin, safe1, safe2;
 
     /* NEW STUFF */
     int_t num_diag_procs, *diag_procs; /* Record diagonal process numbers. */
@@ -310,7 +310,7 @@ psgsrfs_ABXglobal(superlu_dist_options_t *options, int_t n,
                 /* If temp[i] is exactly 0.0 (computed by PxGSMV), then
                    we know the true residual also must be exactly 0.0. */
 	    }
-	    MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
+	    MPI_Allreduce( &s, &berr[j], 1, MPI_FLOAT, MPI_MAX, grid->comm );
 
 #if ( PRNTlevel>= 1 )
 	    if ( !iam )
