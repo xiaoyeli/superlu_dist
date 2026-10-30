@@ -72,7 +72,12 @@ public:
         return index[0];
     }
     // number of rows
-    int_t nzrows() { return index[1]; }
+    int_t nzrows()
+    {
+        if (index == NULL)
+            return 0;
+        return index[1];
+    }
     int_t haveDiag() { return index[2]; }
     int_t ncols() { return index[3]; }
 
