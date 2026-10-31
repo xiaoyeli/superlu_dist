@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     sLUstruct_t LUstruct;
     sSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
-    float   *berr;
+    float   *berr, *err_bounds;
     float   *b, *xtrue, *d_b;
     int    m, n;
     int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch, gpures, gmres;
