@@ -1157,6 +1157,7 @@ psgstrs(superlu_dist_options_t *options, int_t n,
 	int_t cnt1,cnt2;
 
 
+<<<<<<< HEAD
 #if defined(GPU_ACC)
     /* d_x, d_lsum, d_bmod, d_fmod, d_grid below are declared unconditionally
        on GPU_ACC: they are referenced later in this function under plain

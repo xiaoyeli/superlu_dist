@@ -572,10 +572,10 @@ int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolve(int_t k, int_t offset, diagFactB
     /*=======   Diagonal Broadcast          ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)dFBufs[offset]->BlockLFactor, ksupc * ksupc,
-                  MPI_DOUBLE, kcol(k), (grid->rscp).comm);
+                  get_mpi_type<Ftype>(), kcol(k), (grid->rscp).comm);
     if (mycol == kcol(k))
         MPI_Bcast((void *)dFBufs[offset]->BlockUFactor, ksupc * ksupc,
-                  MPI_DOUBLE, krow(k), (grid->cscp).comm);
+                  get_mpi_type<Ftype>(), krow(k), (grid->cscp).comm);
 
     /*=======   Panel Update                ======*/
     if (myrow == krow(k)) {
@@ -608,13 +608,13 @@ int_t xLUstruct_t<Ftype>::dPanelBcast(int_t k, int_t offset)
     if (UidxSendCounts[k] > 0)
     {
         MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
-        MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
+        MPI_Bcast(k_upanel.val, UvalSendCounts[k], get_mpi_type<Ftype>(), krow(k), grid3d->cscp.comm);
     }
 
     if (LidxSendCounts[k] > 0)
     {
         MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
-        MPI_Bcast(k_lpanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+        MPI_Bcast(k_lpanel.val, LvalSendCounts[k], get_mpi_type<Ftype>(), kcol(k), grid3d->rscp.comm);
     }
     return 0;
 }
