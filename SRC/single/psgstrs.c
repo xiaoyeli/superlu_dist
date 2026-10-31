@@ -1157,7 +1157,14 @@ psgstrs(superlu_dist_options_t *options, int_t n,
 	int_t cnt1,cnt2;
 
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK)
+#if defined(GPU_ACC)
+    /* d_x, d_lsum, d_bmod, d_fmod, d_grid below are declared unconditionally
+       on GPU_ACC: they are referenced later in this function under plain
+       "#ifdef GPU_ACC" guards (e.g. pzReDistribute_B_to_X_gpu_wrap()), with
+       no SLU_HAVE_LAPACK check, so they must always be in scope whenever
+       GPU_ACC is on. The actual inversion-based GPU solve kernels further
+       down still additionally require SLU_HAVE_LAPACK, matching
+       pzCompute_Diag_Inv(), which silently does nothing without it. */
 
 #if ( PRNTlevel>=1 )
     if (get_acc_solve()){
@@ -1170,7 +1177,7 @@ psgstrs(superlu_dist_options_t *options, int_t n,
 
 #ifdef GPUREF
 			//TODO: cusparse not yet implemented for this precision
-#else
+#else /* not GPUREF */
 
 	const int nwrp_block = 1; /* number of warps in each block */
 	const int warp_size = 32; /* number of threads per warp*/
@@ -1181,8 +1188,8 @@ psgstrs(superlu_dist_options_t *options, int_t n,
 	float *d_lsum = NULL;
     int  *d_bmod = NULL;
     int  *d_fmod = NULL;
-#endif
-#endif
+#endif /* end GPUREF */
+#endif /* end GPU_ACC */
 
 // cudaProfilerStart();
     maxsuper = sp_ienv_dist(3, options);

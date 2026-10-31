@@ -320,9 +320,6 @@ int main(int argc, char *argv[])
 	fflush(stdout);
     }
 
-#if ( VAMPIR>=1 )
-    VT_traceoff();
-#endif
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
@@ -337,7 +334,16 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
-    screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    extern int screate_A_x_b(SuperMatrix *A, int nrhs, float **rhs,
+			     int *ldb, float **x, int *ldx,
+			     FILE *fp, char * postfix, gridinfo_t *grid);
+			     
+    /* Generate a good RHS in double precision, then rounded to single.
+       See LAWN 165: bullet 7, page 20. */
+    /* The returned A, b and xtrue are in single precision
+       b <- A * xtrue in double internally, then rounded to single */
+    screate_A_x_b(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    
 
 #ifdef GPU_ACC
     if ( options.GPURES == YES ){
@@ -348,13 +354,14 @@ int main(int argc, char *argv[])
 #endif
 
 
-    if ( !(berr = floatMalloc_dist(nrhs)) )
-	ABORT("Malloc fails for berr[].");
-
     /* ------------------------------------------------------------
        NOW WE SOLVE THE LINEAR SYSTEM.
        ------------------------------------------------------------*/
-
+       
+    if ( !(err_bounds = floatCalloc_dist(nrhs*3)) )
+	ABORT("Malloc fails for err_bounds[].");
+    if ( !(berr = floatMalloc_dist(nrhs)) )
+	ABORT("Malloc fails for berr[].");
 
     m = A.nrow;
     n = A.ncol;
@@ -367,25 +374,50 @@ int main(int argc, char *argv[])
     PStatInit(&stat);
 
     /* Call the linear equation solver. */
-if ( options.GPURES == YES ){
+    if ( options.GPURES == YES ){
 // if ( 0 ){
-    psgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
+        psgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    // options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
+        // options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
     // checkGPU(gpuMemcpy(d_b, b, sizeof(float) * (size_t)(ldb*nrhs), gpuMemcpyHostToDevice));
     // psgssvx(&options, &A, &ScalePermstruct,d_b, ldb, nrhs, &grid,
 	//     &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
 #ifdef GPU_ACC
-    checkGPU(gpuMemcpy(b, d_b, sizeof(float) * (size_t)(ldb*nrhs), gpuMemcpyDeviceToHost));
-    checkGPU (gpuFree (d_b));
+       checkGPU(gpuMemcpy(b, d_b, sizeof(float) * (size_t)(ldb*nrhs), gpuMemcpyDeviceToHost));
+        checkGPU (gpuFree (d_b));
 #endif
-
-}else
-    psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+    }
+    else if ( options.IterRefine >= SLU_DOUBLE ) {
+        extern void psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
+			sScalePermstruct_t *ScalePermstruct,
+			float B[], int ldb, int nrhs, gridinfo_t *grid,
+			sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct,
+			float *err_bounds, SuperLUStat_t *stat, int *info,
+			double *dxtrue);
+        extern void psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
+				 sScalePermstruct_t *ScalePermstruct,
+				 float B[], int ldb, int nrhs, gridinfo_t *grid,
+				 sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct, float *berr,
+				 SuperLUStat_t *stat, int *info, double *xtrue);
+				 
+        /* Call the linear equation solver with extra-precise iterative refinement */
+	double *dxtrue = NULL;  /* for checking purpose, need to compute dxtrue in another routine */
+        psgssvx_d2(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		   &LUstruct, &SOLVEstruct, err_bounds, &stat, &info, dxtrue);
+    }
+    else {
+        /* Call the linear equation solver */
+#if ( PRNTlevel>=2 )
+        psgssvx_tracking(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+			 &LUstruct, &SOLVEstruct, berr, &stat, &info, dxtrue);
+#else
+        psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
-
+#endif
+    }
+    
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
 	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
@@ -395,6 +427,13 @@ if ( options.GPURES == YES ){
         /* Check the accuracy of the solution. */
         psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		         nrhs, b, ldb, xtrue, ldx, grid.comm);
+	if ( iam==0 && (options.IterRefine >= SLU_DOUBLE) ) {
+	    printf("** Forward error bounds:\n");
+	    printf("\tNormwise:       %e\n", err_bounds[0]);
+	    printf("\tComponentwise:  %e\n", err_bounds[1*nrhs]);
+	    printf("** Componentwise backword error: %e\n", err_bounds[2*nrhs]);
+	    fflush(stdout);
+	}
     }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
@@ -412,6 +451,7 @@ if ( options.GPURES == YES ){
     sLUstructFree(&LUstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
+    SUPERLU_FREE(err_bounds);
     SUPERLU_FREE(berr);
     fclose(fp);
 
