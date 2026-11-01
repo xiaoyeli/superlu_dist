@@ -2547,7 +2547,7 @@ void applyRowPerm(int_t* colptr, int_t* rowind, int* perm_r, int_t n) {
  * @param stat Information on program execution.
  * @param grid3d The 3D process grid. 
  */
-void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA,
+int_t permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA,
 			    int *perm_c, int_t *etree, Glu_persist_t *Glu_persist,
 			    Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
 			    superlu_dist_mem_usage_t*symb_mem_usage,
@@ -2625,24 +2625,19 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
     {
         /* iinfo > 0: either the matrix is singular (iinfo <= n, from
            pivotL() by way of symbfact()) or symbolic factorization ran
-           out of memory (iinfo > n).
-
-           This serial symbolic factorization only runs on 2D grid layer
-           0 of the 3D grid (see the caller); the other Z-layers are
-           waiting on a later collective over the full 3D grid that this
-           layer would never reach if it just returned here, hanging the
-           job instead of failing it. Until that is restructured so the
-           caller can propagate iinfo across all layers and return
-           info > 0 to the application (like the 2D drivers already do),
-           abort the whole 3D grid together instead of letting this
-           layer exit on its own, which left the job's fate to a race
-           between this process dying and the others' collective calls. */
+           out of memory (iinfo > n). This serial symbolic factorization
+           only runs on 2D grid layer 0 of the 3D grid (see the caller),
+           so hand iinfo back to it instead of aborting here; the caller
+           broadcasts it to the other Z-layers at a point they all reach
+           uniformly, so the whole 3D grid can return info > 0 to the
+           application together, like the 2D drivers already do. */
         if (!iam)
             fprintf(stderr, "symbfact() error returns %d\n", (int)iinfo);
-        MPI_Abort(grid3d->comm, 1);
     }
 
     Destroy_CompCol_Permuted_dist(&GAC);
+
+    return iinfo;
 }
 
 #ifdef REFACTOR_SYMBOLIC 

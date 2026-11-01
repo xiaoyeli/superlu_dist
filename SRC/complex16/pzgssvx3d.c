@@ -560,6 +560,9 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     float dist_mem_use; /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
     float flinfo; /* track memory usage of parallel symbolic factorization */
+    int_t symb_linfo = 0; /* return code of serial symbolic factorization,
+			      computed on 2D grid layer 0 and broadcast to
+			      the other Z-layers of the 3D grid below */
     bool Solve3D = true;
     int_t nsupers;
 #if (PRNTlevel >= 2)
@@ -837,7 +840,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				ABORT("Malloc fails for Glu_freeable.");
 
 		    /* compute symbolic LU or ILU */
-		    permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
+		    symb_linfo = permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
 					   Glu_persist, Glu_freeable, stat,
 					   &symb_mem_usage,
 					   grid3d);
@@ -863,6 +866,21 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    } /* end if Fact not SamePattern_SameRowPerm */
 	} /* end if not Factored */
     } /* end 2D process layer 0 */
+
+    /* permCol_SymbolicFact3d() above (serial symbolic factorization) runs
+       only on 2D grid layer 0; symb_linfo > 0 means it found the matrix
+       singular or ran out of memory. Every process of every Z-layer
+       reaches this MPI_Bcast uniformly (whether or not it took the branch
+       above), so broadcast the result here and have the whole 3D grid
+       return info > 0 to the application together, like the 2D drivers.
+       Returning only on grid layer 0 instead would hang the other
+       Z-layers, which wait on later collectives over grid3d->comm that
+       grid layer 0 would never reach. */
+    MPI_Bcast(&symb_linfo, 1, mpi_int_t, 0, grid3d->zscp.comm);
+    if ( symb_linfo > 0 ) {
+	*info = symb_linfo;
+	return;
+    }
 
     MPI_Bcast(&rowequ, 1, MPI_INT, 0, grid3d->zscp.comm);
     MPI_Bcast(&colequ, 1, MPI_INT, 0, grid3d->zscp.comm);
