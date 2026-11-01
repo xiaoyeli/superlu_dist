@@ -169,6 +169,13 @@ void sscaleFromScratch(
         return;
     }
 
+    /* *iinfo > 0 means psgsequ() found a zero row or column scale factor
+       (A has an empty row/column); R, C, rowcnd and colcnd are not fully
+       computed in that case (see psgsequ.c), so skip applying them here
+       instead of scaling A by garbage. The matrix is singular; the
+       caller will still get info > 0 back, from pivotL() by way of
+       symbfact(), a little further down. */
+    if (*iinfo == 0) {
     pslaqgs(A, R, C, rowcnd, colcnd, amax, equed);
 
     if      (strncmp(equed, "R", 1) == 0) { ScalePermstruct->DiagScale = ROW; *rowequ = 1; *colequ = 0; }
@@ -182,6 +189,7 @@ void sscaleFromScratch(
         fflush(stdout);
     }
 #endif
+    }
 }
 
 void sscaleMatrixDiagonally(fact_t Fact, sScalePermstruct_t *ScalePermstruct,

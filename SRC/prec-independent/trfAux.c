@@ -2602,8 +2602,11 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
     
     stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 
-    if (iinfo < 0)
+    if (iinfo <= 0)
     {
+        /* Successful return: iinfo < 0 is the usual case (negative of the
+           number of bytes needed for LSUB); iinfo == 0 only happens for
+           a 1x1 matrix. */
         QuerySpace_dist(n, -iinfo, Glu_freeable, symb_mem_usage);
 #if (PRNTlevel >= 1)
         if (!iam)
@@ -2620,11 +2623,23 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
     }
     else
     {
+        /* iinfo > 0: either the matrix is singular (iinfo <= n, from
+           pivotL() by way of symbfact()) or symbolic factorization ran
+           out of memory (iinfo > n).
+
+           This serial symbolic factorization only runs on 2D grid layer
+           0 of the 3D grid (see the caller); the other Z-layers are
+           waiting on a later collective over the full 3D grid that this
+           layer would never reach if it just returned here, hanging the
+           job instead of failing it. Until that is restructured so the
+           caller can propagate iinfo across all layers and return
+           info > 0 to the application (like the 2D drivers already do),
+           abort the whole 3D grid together instead of letting this
+           layer exit on its own, which left the job's fate to a race
+           between this process dying and the others' collective calls. */
         if (!iam)
-        {
             fprintf(stderr, "symbfact() error returns %d\n", (int)iinfo);
-            exit(-1); 
-        }
+        MPI_Abort(grid3d->comm, 1);
     }
 
     Destroy_CompCol_Permuted_dist(&GAC);

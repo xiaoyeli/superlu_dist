@@ -77,7 +77,10 @@ static void  pruneL(const int jcol, const int *perm_r, const int pivrow, const i
  * ============
  *   < 0, number of bytes needed for LSUB.
  *   = 0, matrix dimension is 1.
- *   > 0, number of bytes allocated when out of memory.
+ *   > 0, if <= n (the number of columns), pivotL() found no diagonal
+ *        entry for column (return value - 1): the matrix is singular,
+ *        matching the "info" convention documented for *gssvx().
+ *        Otherwise, number of bytes allocated when out of memory.
  * </pre>
  */
 int_t symbfact
@@ -155,7 +158,8 @@ int_t symbfact
 		return info;
 
 	    for (i = j; i <= k; ++i)
-		pivotL(i, perm_r, &pivrow, Glu_persist, Glu_freeable); 
+		if ( (info = pivotL(i, perm_r, &pivrow, Glu_persist, Glu_freeable)) != 0 )
+		    return info;
 
 	    j = k+1;
 	} else {
@@ -171,7 +175,8 @@ int_t symbfact
 				 Glu_persist, Glu_freeable)) != 0)
 		return info;
 
-	    pivotL(j, perm_r, &pivrow, Glu_persist, Glu_freeable); 
+	    if ( (info = pivotL(j, perm_r, &pivrow, Glu_persist, Glu_freeable)) != 0 )
+		return info;
 
 	    /* Prune columns [0:j-1] using column j. */
 	    pruneL(j, perm_r, pivrow, nseg, segrep, repfnz, xprune,
@@ -689,6 +694,13 @@ static int_t column_dfs
  *   pivotL() interchanges row subscripts so that each diagonal block of a
  *   supernode in L has the row subscripts sorted in order of pivots.
  *   The row subscripts in the off-diagonal block are not sorted.
+ *
+ * Return value
+ * ============
+ *   = 0, success.
+ *   = jcol + 1, column jcol has no diagonal entry in its structure
+ *       (e.g. because row jcol of A is structurally empty): the matrix
+ *       is singular and no pivot could be found.
  * </pre>
  */
 static int_t pivotL
@@ -732,8 +744,15 @@ static int_t pivotL
 
     /* Diagonal pivot exists? */
     if ( diag == SLU_EMPTY ) {
-	printf("At column %d ", jcol);
-	ABORT("pivotL() encounters zero diagonal");
+	/* Column jcol has no diagonal entry in its structure (e.g. because
+	   row jcol of A is structurally empty), so no pivot can be found.
+	   Signal this to the caller as a singular matrix instead of
+	   aborting the whole process: the caller has no way to recover
+	   from an abort, and other kinds of structural/numerical
+	   singularity already return info > 0 rather than exit. Return
+	   (jcol+1), matching the "U(i,i) is exactly zero" convention
+	   documented for the *gssvx() info argument. */
+	return (jcol + 1);
     }
 
     /* Record pivot row. */
