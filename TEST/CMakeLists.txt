@@ -78,6 +78,18 @@ if(enable_double)
   target_link_libraries(pdtest ${all_link_libs})
   target_compile_features(pdtest PUBLIC c_std_99)
   add_superlu_dist_tests(pdtest g20.rua)
+  
+  set(TESTsingular singular.c)
+  add_executable(singular ${TESTsingular})
+  target_link_libraries(singular ${all_link_libs})
+  target_compile_features(singular PUBLIC c_std_99)
+  add_test( NAME singular_zero-row-2d
+	    	    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2
+            	    ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/singular zero_row 2d ) # or abglobal, or 3d
+  set(SINGLE_OUTPUT ${SuperLU_DIST_BINARY_DIR}/TEST/singular_zero-row-2d.out)
+  add_test( NAME singular_structural-2d
+	    	    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2
+            	    ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/singular structural 2d ) # also: ok, numeric, zero_colcnd
 endif()
 
 #if(enable_complex16)
