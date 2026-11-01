@@ -763,8 +763,13 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
                 }
  	    } else if ( iinfo < 0 ) return;
 
-	    /* Now iinfo == 0 */
-
+	    /* iinfo > 0 means psgsequ() found a zero row or column scale
+	       factor (A has an empty row/column); R, C, rowcnd and colcnd
+	       are not fully computed in that case (see psgsequ.c), so skip
+	       applying them here instead of scaling A by garbage. The
+	       matrix is singular; the caller will still get info > 0 back,
+	       from pivotL() by way of symbfact(), a little further down. */
+	    if ( iinfo == 0 ) {
             /* Equilibrate matrix A if it is badly-scaled.
                A <-- diag(R)*A*diag(C)                     */
 	    pslaqgs(A, R, C, rowcnd, colcnd, amax, equed);
@@ -787,6 +792,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 		fflush(stdout);
 	    }
 #endif
+	    }
 	} /* end if Fact ... */
 
 	stat->utime[EQUIL] = SuperLU_timer_() - t;
