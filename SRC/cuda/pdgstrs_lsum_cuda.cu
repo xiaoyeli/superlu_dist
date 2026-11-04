@@ -62,6 +62,32 @@ at the top-level directory.
 
 #ifdef __cplusplus
 extern "C" {
+
+/* Level-synchronous launches for the single-process solve: when set, the
+   L and U kernels are launched once per elimination-tree level over the
+   supernodes of that level (leaves first for L, roots first for U), so no
+   thread block ever spins on a dependency.  Set by pdgstrs3d_newsolve(). */
+static int   *g_solve_levlist = NULL;
+static int_t *g_solve_levlims = NULL;
+static int    g_solve_nlev = 0;
+static int   *g_solve_levwarp = NULL;   /* per level: use the warp-per-supernode kernel */
+void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwarp)
+{
+    g_solve_levlist = d_levlist; g_solve_levlims = levlims; g_solve_nlev = nlev; g_solve_levwarp = levwarp;
+}
+/* Stream of the level launches (0: the legacy default stream).  The batched
+   interface's fast solve sets it so that the whole reuse call is ordered on
+   one stream and can be captured in a graph. */
+static cudaStream_t g_solve_stream = 0;
+void dlsum_set_solve_stream(void *stream)
+{
+    g_solve_stream = (cudaStream_t) stream;
+}
+/* SLU_SOLVE_PROF=1: synchronize after every level launch and print its time */
+static int solve_prof_on(void)
+{ static int on = -1; if (on < 0) { const char *e = getenv("SLU_SOLVE_PROF"); on = e ? atoi(e) : 0; } return on; }
+#define SOLVE_PROF_BEGIN(lab) double _tp0 = 0.0; int _prof = solve_prof_on(); if (_prof) { cudaDeviceSynchronize(); _tp0 = SuperLU_timer_(); }
+#define SOLVE_PROF_LEVEL(lab, lvl, w, kind) if (_prof) { cudaDeviceSynchronize(); double _t = SuperLU_timer_(); printf("[solve-prof] %s level %d: %d supernodes %s %.1f us\n", lab, lvl, w, kind, 1e6*(_t-_tp0)); _tp0 = _t; }
 #endif
 
 
@@ -2232,7 +2258,8 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
  int_t *xsup,
  int *bcols_masked,
  gridinfo_t *grid,
-  int gemmflag
+  int gemmflag,
+  int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 )
 {
     double zero = 0.0, alpha = 1.0, beta = 0.0;
@@ -2327,7 +2354,7 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
             // }
 
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
-                do{
+                if (!nowait) do{
                     /* Use atomic load to bypass L1 cache on AMD GPUs;
                      * plain load + __threadfence() does NOT invalidate
                      * L1 on CDNA/RDNA, causing an infinite spin. */
@@ -2486,6 +2513,7 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
                     }
                     __syncthreads();
 
+                    if (!nowait) {   /* fmod counters are only read by spinning blocks */
                     luptr_tmp1 = lloc[idx_v];
                     lb = 0;
                     nbrow=0;
@@ -2518,6 +2546,7 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
                        }
                    }
                    __syncthreads();
+                   } /* !nowait */
 
 
                 }else {
@@ -2640,7 +2669,8 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
  long int *Lindval_loc_bc_offset,
  int_t *xsup,
  int *bcols_masked,
- gridinfo_t *grid
+ gridinfo_t *grid,
+ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 )
 {
     double zero = 0.0;
@@ -2744,7 +2774,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
             // }
 
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
-                do{
+                if (!nowait) do{
                     tmp=atomicAdd(&fmod[lib*aln_i], 0);
                     __threadfence();
                 }while(tmp>0);
@@ -2762,7 +2792,9 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                 for (i = lne; i < knsupc; i+=WARP_SIZE)
                     x[i + ii ]+=  lsum[i + il ];
 
-                // __syncwarp();
+                #ifdef HAVE_CUDA
+                __syncwarp();   /* the Linv product below reads the other lanes' x */
+                #endif
 
 
                //  if(Llu->inv == 1){
@@ -2831,7 +2863,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                         d_atomicAdd(&lsum[il+irow + j*iknsupc], -temp1);
                         }
 
-                        if(i==nbrow+lsub[lptr1_tmp+1]-1){
+                        if(!nowait && i==nbrow+lsub[lptr1_tmp+1]-1){
                        	 atomicSub(&fmod[lk*aln_i],1);
                        	 // __threadfence();
                         }
@@ -2955,10 +2987,30 @@ void dlsum_fmod_inv_gpu_wrap
         if(1){
     #endif
             dim3 dimBlock(nthread_x, nthread_y);
-            dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, gemmflag);
+            if (g_solve_nlev > 0) {
+                /* leaves first; each launch depends only on the previous ones */
+                SOLVE_PROF_BEGIN("L")
+                int nwarp_blk = (nthread_x * nthread_y) / WARP_SIZE;
+                for (int lvl = 0; lvl < g_solve_nlev; ++lvl) {
+                    int w = (int)(g_solve_levlims[lvl + 1] - g_solve_levlims[lvl]);
+                    if (w <= 0) continue;
+                    int *list = g_solve_levlist + g_solve_levlims[lvl];
+                    if (nrhs == 1 && g_solve_levwarp && g_solve_levwarp[lvl]) {
+                        dlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(w, nwarp_blk), dimBlock, 0, g_solve_stream >>>(w,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,list, grid, 1);
+                        SOLVE_PROF_LEVEL("L", lvl, w, "warp")
+                    } else {
+                        dlsum_fmod_inv_gpu_mrhs<<< w, dimBlock, 0, g_solve_stream >>>(w,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,list, grid, gemmflag, 1);
+                        SOLVE_PROF_LEVEL("L", lvl, w, "block")
+                    }
+                }
+            } else {
+                SOLVE_PROF_BEGIN("L")
+                dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, gemmflag, 0);
+                SOLVE_PROF_LEVEL("L", -1, nbcol_loc, "spin-wait")
+            }
         }else{
             dim3 dimBlock(nthread_x, nthread_y,1);
-            dlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
+            dlsum_fmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid, 0);
         }
         checkGPU(gpuGetLastError());
         // checkGPU(gpuDeviceSynchronize());
@@ -3079,7 +3131,9 @@ int_t *Uindval_loc_bc_dat,
 long int *Uindval_loc_bc_offset,
 int_t *xsup,
 gridinfo_t *grid,
-int gemmflag
+int gemmflag,
+int *bcols_list   /* optional: block -> local block column (level-synchronous launches) */,
+int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 )
 {
     double zero = 0.0, alpha = 1.0, beta = 0.0;
@@ -3102,7 +3156,7 @@ int gemmflag
 	double rC[THR_N][THR_M];
 	// __shared__ double x_share[DIM_X*DIM_Y];
 
-	bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
+	bid = bcols_list ? (blockIdx_x < nbcol_loc ? bcols_list[blockIdx_x] : nbcol_loc) : nbcol_loc-blockIdx_x-1;  // reversed order: higher block IDs are checked first in spin wait
 	int idx = threadIdx_x;  // thread's m dimension
 	int idy = threadIdx_y;  // thread's n dimension
 	int ni,mi;
@@ -3120,7 +3174,7 @@ int gemmflag
 
 
 	// the first nbcol_loc handles all computations and broadcast communication
-	if(bid<nbcol_loc){
+	if(bcols_list ? (blockIdx_x < nbcol_loc) : (bid<nbcol_loc)){
 		if(Uinv_bc_offset[bid]==-1 && Ucolind_bc_offset[bid]==-1){
 		return;
 		}
@@ -3150,7 +3204,7 @@ int gemmflag
 
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 			    // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
-				do{
+				if (!nowait) do{
 					tmp=atomicAdd(&bmod[lib*aln_i], 0);
 					__threadfence();
 				}while(tmp>0);
@@ -3346,6 +3400,7 @@ int gemmflag
 
 					}//if(nrhs==1)
 	                __syncthreads();
+                    if (!nowait)
                     for (ub = tid; ub < nub; ub+=block_size){
                         ik = lloc[ub];
                         atomicSub(&bmod[ik*aln_i],1);
@@ -3920,7 +3975,9 @@ long int *Uinv_bc_offset,
 int_t *Uindval_loc_bc_dat,
 long int *Uindval_loc_bc_offset,
 int_t *xsup,
-gridinfo_t *grid
+gridinfo_t *grid,
+int *bcols_list   /* optional: warp -> local block column (level-synchronous launches) */,
+int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 )
 {
     double zero = 0.0;
@@ -3965,7 +4022,7 @@ gridinfo_t *grid
 
 	// the first nbcol_loc handles all computations and broadcast communication
 	if(wrp<nbcol_loc){
-        wrp= nbcol_loc-wrp-1;  // This makes sure higher warp IDs are checked first in spin wait
+        wrp= bcols_list ? bcols_list[wrp] : nbcol_loc-wrp-1;  // reversed order: higher warp IDs are checked first in spin wait
 		if(Uinv_bc_offset[wrp]==-1 && Ucolind_bc_offset[wrp]==-1){
 		return;
 		}
@@ -3995,7 +4052,7 @@ gridinfo_t *grid
 
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 			    // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
-				do{
+				if (!nowait) do{
 					tmp=atomicAdd(&bmod[lib*aln_i], 0);
 					__threadfence();
 				}while(tmp>0);
@@ -4128,6 +4185,7 @@ gridinfo_t *grid
                     __syncwarp();
                     #endif
 
+                    if (!nowait)
                     for (ub = lne; ub < nub; ub+=WARP_SIZE){
                         ik = lloc[ub];
                         atomicSub(&bmod[ik*aln_i],1);
@@ -4612,19 +4670,38 @@ if(procs==1){
     if(1){
 #endif
         dim3 dimBlock(nthread_x, nthread_y);
-        dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag);
+        if (g_solve_nlev > 0) {
+            /* roots first; each launch depends only on the previous ones */
+            SOLVE_PROF_BEGIN("U")
+            int nwarp_blk = (nthread_x * nthread_y) / WARP_SIZE;
+            for (int lvl = g_solve_nlev - 1; lvl >= 0; --lvl) {
+                int w = (int)(g_solve_levlims[lvl + 1] - g_solve_levlims[lvl]);
+                if (w <= 0) continue;
+                int *list = g_solve_levlist + g_solve_levlims[lvl];
+                if (nrhs == 1 && g_solve_levwarp && g_solve_levwarp[lvl]) {
+                    dlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(w, nwarp_blk), dimBlock, 0, g_solve_stream >>>(w,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,list, 1);
+                    SOLVE_PROF_LEVEL("U", lvl, w, "warp")
+                } else {
+                    dlsum_bmod_inv_gpu_mrhs<<< w, dimBlock, 0, g_solve_stream >>>(w,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag,list, 1);
+                    SOLVE_PROF_LEVEL("U", lvl, w, "block")
+                }
+            }
+        } else {
+            SOLVE_PROF_BEGIN("U")
+            dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,gemmflag,NULL, 0);
+            SOLVE_PROF_LEVEL("U", -1, nbcol_loc, "spin-wait")
+        }
     }else{
         dim3 dimBlock(nthread_x, nthread_y,1);
-        // dlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
+        // dlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid,NULL,0);
 #ifdef U_BLOCK_PER_ROW_ROWDATA
         dlsum_bmod_inv_gpu_1rhs_new_rowdata<<< nbrow_loc, dimBlock >>>(nbrow_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_br_dat,Ucolind_br_offset,Unzval_br_new_dat,Unzval_br_new_offset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
 #else
         dlsum_bmod_inv_gpu_1rhs_new<<< nbrow_loc, dimBlock >>>(nbrow_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Uind_br_dat,Uind_br_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
 #endif
     }
-
-
-    gpuDeviceSynchronize();
+    /* no synchronization here: what follows is ordered on the stream (the
+       host-RHS path copies x back with a synchronous memcpy anyway) */
 }else{
     #ifdef HAVE_NVSHMEM
     int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256

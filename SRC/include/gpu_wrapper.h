@@ -71,6 +71,7 @@ at the top-level directory.
 #define gpuMallocHost cudaMallocHost
 #define gpuEvent_t cudaEvent_t
 #define gpuMemset cudaMemset
+#define gpuMemsetAsync cudaMemsetAsync
 #define  GPUBLAS_STATUS_SUCCESS CUBLAS_STATUS_SUCCESS 
 #define  GPUBLAS_STATUS_NOT_INITIALIZED CUBLAS_STATUS_NOT_INITIALIZED 
 #define  GPUBLAS_STATUS_ALLOC_FAILED CUBLAS_STATUS_ALLOC_FAILED 
@@ -173,6 +174,7 @@ at the top-level directory.
 #define gpuMallocHost hipHostMalloc
 #define gpuEvent_t hipEvent_t
 #define gpuMemset hipMemset
+#define gpuMemsetAsync hipMemsetAsync
 #define  GPUBLAS_STATUS_SUCCESS HIPBLAS_STATUS_SUCCESS 
 #define  GPUBLAS_STATUS_NOT_INITIALIZED HIPBLAS_STATUS_NOT_INITIALIZED 
 #define  GPUBLAS_STATUS_ALLOC_FAILED HIPBLAS_STATUS_ALLOC_FAILED 
