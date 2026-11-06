@@ -32,7 +32,8 @@ at the top-level directory.
  */
 int psCompRow_loc_to_CompCol_global
 (
- int_t need_value, /* Input. Whether need to gather numerical values */
+ int_t need_value, /* Input. Whether need to gather numerical values
+                      (2: on process 0 only) */
  SuperMatrix *A,   /* Input. Distributed matrix in NRformat_loc format. */
  gridinfo_t *grid, /* Input */
  SuperMatrix *GA   /* Output */
@@ -241,7 +242,15 @@ int psCompRow_loc_to_CompCol_global
     it = nnz_loc;
     MPI_Allgatherv(rowind_buf, it, mpi_int_t, GAstore->rowind,
 		   itemp_32, rdispls, mpi_int_t, grid->comm);
-    if ( need_value ) {
+    if ( need_value == 2 ) {
+      /* The numerical values are only needed on process 0 (MC64). */
+      GAstore->nzval = NULL;
+      if ( !grid->iam &&
+           !(GAstore->nzval = (float *) floatMalloc_dist (nnz)) )
+          ABORT ("SUPERLU_MALLOC fails for GAstore->rnzval[]");
+      MPI_Gatherv(a_buf, it, MPI_FLOAT, GAstore->nzval,
+		  itemp_32, rdispls, MPI_FLOAT, 0, grid->comm);
+    } else if ( need_value ) {
       if ( !(GAstore->nzval = (float *) floatMalloc_dist (nnz)) )
           ABORT ("SUPERLU_MALLOC fails for GAstore->rnzval[]");
       MPI_Allgatherv(a_buf, it, MPI_FLOAT, GAstore->nzval,
