@@ -785,6 +785,8 @@ pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
         ABORT("Malloc fails for ptr_to_ibuf[].");
     gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
     gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
+    gstrs_comm->B_to_X_recv_idx = NULL;
+    gstrs_comm->X_to_B_recv_idx = NULL;
 
     return 0;
 } /* PDGSTRS_INIT */

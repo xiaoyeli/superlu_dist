@@ -327,6 +327,8 @@ void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
     SUPERLU_FREE(gstrs_comm->B_to_X_SendCnt);
     SUPERLU_FREE(gstrs_comm->X_to_B_SendCnt);
     SUPERLU_FREE(gstrs_comm->ptr_to_ibuf);
+    if ( gstrs_comm->B_to_X_recv_idx ) SUPERLU_FREE(gstrs_comm->B_to_X_recv_idx);
+    if ( gstrs_comm->X_to_B_recv_idx ) SUPERLU_FREE(gstrs_comm->X_to_B_recv_idx);
     SUPERLU_FREE(gstrs_comm);
 }
 

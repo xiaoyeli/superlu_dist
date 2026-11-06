@@ -537,6 +537,13 @@ typedef struct {
     int_t  *recv_ibuf2;
     void   *send_dbuf2;
     void   *recv_dbuf2;
+
+    /* Received row indices of the B-to-X and X-to-B redistributions, saved
+       by the first solve after pXgstrs_init(): they only depend on the
+       permutations, the supernode partition and the row distribution of B,
+       so later solves exchange the numerical values only. */
+    int_t  *B_to_X_recv_idx;
+    int_t  *X_to_B_recv_idx;
 } pxgstrs_comm_t;
 
 /*
