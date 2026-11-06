@@ -611,6 +611,9 @@ extern void    pzgsequ (SuperMatrix *, double *, double *, double *,
 extern double  pzlangs (char *, SuperMatrix *, gridinfo_t *);
 extern void    pzlaqgs (SuperMatrix *, double *, double *, double,
 			double, double, char *);
+extern int     pzPermute_Dense_Matrix_cached(int_t, int_t, int_t [], int perm[],
+				      doublecomplex X[], int ldx, doublecomplex B[], int ldb,
+				      int nrhs, gridinfo_t *, pxgstrs_comm_t *);
 extern int     pzPermute_Dense_Matrix(int_t, int_t, int_t [], int perm[],
 				      doublecomplex [], int, doublecomplex [], int, int,
 				      gridinfo_t *);

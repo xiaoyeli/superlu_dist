@@ -1783,9 +1783,10 @@ if ( options->GPURES == YES ){
 
 #endif
 	}else{
-		pzPermute_Dense_Matrix(fst_row, m_loc, SOLVEstruct->row_to_proc,
+		pzPermute_Dense_Matrix_cached(fst_row, m_loc, SOLVEstruct->row_to_proc,
 					SOLVEstruct->inv_perm_c,
-					X, ldx, B, ldb, nrhs, grid);
+					X, ldx, B, ldb, nrhs, grid,
+					SOLVEstruct->gstrs_comm);
 #if ( DEBUGlevel>=2 )
 		printf("\n (%d) .. After pzPermute_Dense_Matrix(): b =\n", iam);
 		for (i = 0; i < m_loc; ++i)

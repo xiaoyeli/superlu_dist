@@ -611,6 +611,9 @@ extern void    psgsequ (SuperMatrix *, float *, float *, float *,
 extern float  pslangs (char *, SuperMatrix *, gridinfo_t *);
 extern void    pslaqgs (SuperMatrix *, float *, float *, float,
 			float, float, char *);
+extern int     psPermute_Dense_Matrix_cached(int_t, int_t, int_t [], int perm[],
+				      float X[], int ldx, float B[], int ldb,
+				      int nrhs, gridinfo_t *, pxgstrs_comm_t *);
 extern int     psPermute_Dense_Matrix(int_t, int_t, int_t [], int perm[],
 				      float [], int, float [], int, int,
 				      gridinfo_t *);

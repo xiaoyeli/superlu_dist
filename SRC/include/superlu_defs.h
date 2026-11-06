@@ -544,7 +544,23 @@ typedef struct {
        so later solves exchange the numerical values only. */
     int_t  *B_to_X_recv_idx;
     int_t  *X_to_B_recv_idx;
+
+    /* Communication pattern of the final permutation B <= Pc'*X of the
+       solution (see pdPermute_Dense_Matrix_cached()), built by the first
+       solve. */
+    struct pxperm_cache *perm_cache;
 } pxgstrs_comm_t;
+
+typedef struct pxperm_cache {
+    int    nsend, nrecv;       /* number of partner processes */
+    int    *send_proc, *send_cnt, *send_displ;  /* rows sent to each partner */
+    int    *recv_proc, *recv_cnt, *recv_displ;  /* rows received from each partner */
+    int_t  *send_pos;          /* position in the send buffer of each local row */
+    int_t  *recv_row;          /* local row of each received entry */
+    int_t  nrecvtot;
+} pxperm_cache_t;
+
+extern void pxperm_cache_free(pxperm_cache_t *);
 
 /*
  *-- This contains the options used to control the solution process.
