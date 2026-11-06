@@ -576,7 +576,9 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 		MPI_Wait(&req_d,&status);
 	#endif
 #endif
-	MPI_Barrier( grid->comm );
+	/* The CPU trisolve sends its L-solve messages on their own communicator,
+	   so they cannot be mistaken for these. */
+	if ( get_acc_solve() ) MPI_Barrier( grid->comm );
 
 
 	Nreq_send=0;
@@ -856,7 +858,8 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 	#endif
 #endif
 
-	MPI_Barrier( grid->comm );
+	/* pdgstrs() ends its CPU trisolve with a barrier. */
+	if ( get_acc_solve() ) MPI_Barrier( grid->comm );
 	Nreq_send=0;
 	Nreq_recv=0;
 	for (pp=0;pp<procs && !cached;pp++){
@@ -1230,6 +1233,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     int  nfrecv = 0; /* Count of total messages to be recv'd. */
     int  nbrecv = 0; /* Count of total messages to be recv'd. */
     int  nleaf = 0, nroot = 0;
+    MPI_Comm comm_L;
     int  nleaftmp = 0, nroottmp = 0;
     int_t  msgsize;
         /*-- Counts used for U-solve --*/
@@ -1387,7 +1391,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n,
     }
 #endif
 
-    MPI_Barrier( grid->comm );
+    if ( get_acc_solve() ) MPI_Barrier( grid->comm ); /* GPU trisolve */
     t1_sol = SuperLU_timer_();
     t = SuperLU_timer_();
 
@@ -1608,9 +1612,26 @@ if ( options->GPURES == YES ) {
     }
 
 	/* ---------------------------------------------------------
+	   The L-solve messages use their own communicator: a process that
+	   finished its L-solve can start the U-solve (whose receives match any
+	   tag on grid->comm) without a barrier in between.
+	   --------------------------------------------------------- */
+	comm_L = grid->comm;
+	if ( !get_acc_solve() ) { /* CPU trisolve */
+	    if ( Llu->comm_L == MPI_COMM_NULL )
+		MPI_Comm_dup(grid->comm, &Llu->comm_L);
+	    comm_L = Llu->comm_L;
+	    for (lk = 0; lk < CEILING( nsupers, grid->npcol ); ++lk)
+		if ( LBtree_ptr[lk].empty_ == NO ) LBtree_ptr[lk].comm_ = comm_L;
+	    for (lk = 0; lk < CEILING( nsupers, grid->nprow ); ++lk)
+		if ( LRtree_ptr[lk].empty_ == NO ) LRtree_ptr[lk].comm_ = comm_L;
+	}
+
+	/* ---------------------------------------------------------
 	   Initialize the async Bcast trees on all processes.
 	   --------------------------------------------------------- */
 	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
+
 
 	nbtree = 0;
 	for (lk=0;lk<nsupers_j;++lk){
@@ -2356,7 +2377,7 @@ t1 = SuperLU_timer_();
 
 			/* Receive a message. */
 			MPI_Recv( recvbuf0, maxrecvsz, MPI_DOUBLE,
-				MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
+				MPI_ANY_SOURCE, MPI_ANY_TAG, comm_L, &status );
 			// MPI_Irecv(recvbuf0,maxrecvsz,MPI_DOUBLE,MPI_ANY_SOURCE,MPI_ANY_TAG,grid->comm,&req);
 			// ready=0;
 			// while(ready==0){
@@ -2560,7 +2581,6 @@ t1 = SuperLU_timer_();
 				// deallocate requests here
 			}
 		}
-		MPI_Barrier( grid->comm );
 
 	}  /* end CPU trisolve */
 #if ( PROFlevel>=1 )

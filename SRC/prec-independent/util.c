@@ -340,6 +340,18 @@ void pxperm_cache_free(pxperm_cache_t *c)
     SUPERLU_FREE(c);
 }
 
+/*! \brief Free a communicator of SuperLU_DIST and set it to MPI_COMM_NULL
+ * (nothing to do if it is MPI_COMM_NULL or if MPI is already finalized).
+ */
+void superlu_comm_free(MPI_Comm *comm)
+{
+    int finalized;
+    if ( *comm == MPI_COMM_NULL ) return;
+    MPI_Finalized(&finalized);
+    if ( !finalized ) MPI_Comm_free(comm);
+    *comm = MPI_COMM_NULL;
+}
+
 /*! \brief Diagnostic print of segment info after panel_dfs().
  */
 void print_panel_seg_dist(int_t n, int_t w, int_t jcol, int_t nseg,

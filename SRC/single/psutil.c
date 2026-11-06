@@ -548,6 +548,7 @@ void sLUstructInit(const int_t n, sLUstruct_t *LUstruct)
     LUstruct->Llu->sched_perm_c_supno = NULL;
     LUstruct->Llu->sched_nsupers = 0;
     LUstruct->Llu->sched_opts = 0;
+    LUstruct->Llu->comm_L = MPI_COMM_NULL;
     LUstruct->dt = 's';
     LUstruct->trf3Dpart = NULL;
 }
@@ -565,6 +566,7 @@ void sLUstructFree(sLUstruct_t *LUstruct)
     SUPERLU_FREE(LUstruct->Glu_persist);
     if ( LUstruct->Llu->sched_perm_c_supno )
         SUPERLU_FREE(LUstruct->Llu->sched_perm_c_supno);
+    superlu_comm_free(&LUstruct->Llu->comm_L); /* see psgstrs() */
     SUPERLU_FREE(LUstruct->Llu);
     sDestroy_trf3Dpartition(LUstruct->trf3Dpart);
 
@@ -588,6 +590,7 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 #endif
 
     sDestroy_Tree(n, grid, LUstruct);
+    superlu_comm_free(&Llu->comm_L); /* see psgstrs() */
 
     if ( Llu->sched_perm_c_supno ) {
         SUPERLU_FREE(Llu->sched_perm_c_supno);

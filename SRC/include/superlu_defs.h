@@ -561,6 +561,7 @@ typedef struct pxperm_cache {
 } pxperm_cache_t;
 
 extern void pxperm_cache_free(pxperm_cache_t *);
+extern void superlu_comm_free(MPI_Comm *);
 
 /*
  *-- This contains the options used to control the solution process.

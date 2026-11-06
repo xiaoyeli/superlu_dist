@@ -318,6 +318,11 @@ typedef struct {
     int_t *sched_perm_c_supno;
     int_t sched_nsupers;
     int   sched_opts;  /* options of that schedule (see pdgstrf()) */
+
+    /* Communicator of the L-solve messages, a duplicate of grid->comm created by
+       the first solve, so that the L- and U-solves need no barrier. The L-solve
+       trees use it; dDestroy_LU() frees it with them. */
+    MPI_Comm comm_L;
 } dLocalLU_t;
 
 typedef struct
