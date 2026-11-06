@@ -416,6 +416,9 @@ void dLUstructInit(const int_t n, dLUstruct_t *LUstruct)
 	   SUPERLU_MALLOC(sizeof(dLocalLU_t))) )
 	ABORT("Malloc fails for LocalLU_t.");
     LUstruct->Llu->inv = 0;
+    LUstruct->Llu->sched_perm_c_supno = NULL;
+    LUstruct->Llu->sched_nsupers = 0;
+    LUstruct->Llu->sched_opts = 0;
     LUstruct->dt = 'd';
     LUstruct->trf3Dpart = NULL;
 }
@@ -431,6 +434,8 @@ void dLUstructFree(dLUstruct_t *LUstruct)
 
     SUPERLU_FREE(LUstruct->etree);
     SUPERLU_FREE(LUstruct->Glu_persist);
+    if ( LUstruct->Llu->sched_perm_c_supno )
+        SUPERLU_FREE(LUstruct->Llu->sched_perm_c_supno);
     SUPERLU_FREE(LUstruct->Llu);
     dDestroy_trf3Dpartition(LUstruct->trf3Dpart);
 
@@ -454,6 +459,12 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 #endif
 
     dDestroy_Tree(n, grid, LUstruct);
+
+    if ( Llu->sched_perm_c_supno ) {
+        SUPERLU_FREE(Llu->sched_perm_c_supno);
+        Llu->sched_perm_c_supno = NULL;
+        Llu->sched_nsupers = 0;
+    }
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
