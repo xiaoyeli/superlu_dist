@@ -2,8 +2,20 @@
 #include "dcomplex.h"
 #include "superlu_defs.h"
 
+/* getenv() is a linear scan of the environment: query it once, not for
+   every message forwarded in the triangular solves. The trees are created
+   by one thread, which reads it first; the forwarding threads only read
+   the cached value. */
+static int comm_tree_mpi_wait(void)
+{
+    static int flag = -1;
+    if (flag < 0) flag = (getenv("COMM_TREE_MPI_WAIT") != NULL);
+    return flag;
+}
+
 	void C_BcTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* needrecv){
 		assert(msgSize>0);
+		(void) comm_tree_mpi_wait(); /* read it before any thread forwards messages */
 
       int nprocs = 0;
       MPI_Comm_size(comm, &nprocs);
@@ -155,7 +167,7 @@
           int error_code = MPI_Isend( localBuffer, msgSize, tree->type_, 
               iProc, tree->tag_,tree->comm_, &tree->sendRequests_[idxRecv] );
 			  
-			  if(getenv("COMM_TREE_MPI_WAIT"))
+			  if(comm_tree_mpi_wait())
 			  	  MPI_Wait(&tree->sendRequests_[idxRecv],&status) ; 
 			  else
 				  MPI_Test(&tree->sendRequests_[idxRecv],&flag,&status) ; 
@@ -227,6 +239,7 @@
 
 void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* needrecvrd,int* needsendrd){
     assert(msgSize>0);
+    (void) comm_tree_mpi_wait(); /* read it before any thread forwards messages */
 
     int nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
@@ -315,7 +328,7 @@ void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, i
 			  int error_code = MPI_Isend(localBuffer, msgSize, Tree->type_, 
 				  iProc, Tree->tag_,Tree->comm_, &Tree->sendRequests_[0] );
 					
-					if(getenv("COMM_TREE_MPI_WAIT"))
+					if(comm_tree_mpi_wait())
 						MPI_Wait(&Tree->sendRequests_[0],&status) ; 
 					else
 						MPI_Test(&Tree->sendRequests_[0],&flag,&status) ; 					  
