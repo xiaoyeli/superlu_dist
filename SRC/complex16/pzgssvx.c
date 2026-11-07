@@ -796,7 +796,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
              (parSymbFact == NO || options->RowPerm != NO) ) {
              /* Performs serial symbolic factorzation and/or MC64 */
 
-            need_value = (options->RowPerm == LargeDiag_MC64);
+            /* Values are only needed by MC64, which runs on process 0. */
+            need_value = (options->RowPerm == LargeDiag_MC64) ? 2 : 0;
 
             pzCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
 
@@ -808,7 +809,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
             if ( need_value ) {
                 a_GA = (doublecomplex *) GAstore->nzval;
-                GA_mem_use += nnz * sizeof(doublecomplex);
+                /* With need_value == 2, only process 0 stores the values. */
+                if ( a_GA ) GA_mem_use += nnz * sizeof(doublecomplex);
             } else assert(GAstore->nzval == NULL);
 	}
 
@@ -1781,9 +1783,10 @@ if ( options->GPURES == YES ){
 
 #endif
 	}else{
-		pzPermute_Dense_Matrix(fst_row, m_loc, SOLVEstruct->row_to_proc,
+		pzPermute_Dense_Matrix_cached(fst_row, m_loc, SOLVEstruct->row_to_proc,
 					SOLVEstruct->inv_perm_c,
-					X, ldx, B, ldb, nrhs, grid);
+					X, ldx, B, ldb, nrhs, grid,
+					SOLVEstruct->gstrs_comm);
 #if ( DEBUGlevel>=2 )
 		printf("\n (%d) .. After pzPermute_Dense_Matrix(): b =\n", iam);
 		for (i = 0; i < m_loc; ++i)

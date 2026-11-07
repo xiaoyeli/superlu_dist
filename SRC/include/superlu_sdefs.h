@@ -313,6 +313,16 @@ typedef struct {
     gridinfo_t *d_grid;
 #endif
 
+    /* Static schedule of the last factorization (perm_c_supno followed by
+       iperm_c_supno), reused by SamePattern_SameRowPerm refactorizations. */
+    int_t *sched_perm_c_supno;
+    int_t sched_nsupers;
+    int   sched_opts;  /* options of that schedule (see psgstrf()) */
+
+    /* Communicator of the L-solve messages, a duplicate of grid->comm created by
+       the first solve, so that the L- and U-solves need no barrier. The L-solve
+       trees use it; sDestroy_LU() frees it with them. */
+    MPI_Comm comm_L;
 } sLocalLU_t;
 
 typedef struct
@@ -606,6 +616,9 @@ extern void    psgsequ (SuperMatrix *, float *, float *, float *,
 extern float  pslangs (char *, SuperMatrix *, gridinfo_t *);
 extern void    pslaqgs (SuperMatrix *, float *, float *, float,
 			float, float, char *);
+extern int     psPermute_Dense_Matrix_cached(int_t, int_t, int_t [], int perm[],
+				      float X[], int ldx, float B[], int ldb,
+				      int nrhs, gridinfo_t *, pxgstrs_comm_t *);
 extern int     psPermute_Dense_Matrix(int_t, int_t, int_t [], int perm[],
 				      float [], int, float [], int, int,
 				      gridinfo_t *);

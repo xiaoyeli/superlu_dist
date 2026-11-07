@@ -32,7 +32,8 @@ at the top-level directory.
  */
 int psCompRow_loc_to_CompCol_global
 (
- int_t need_value, /* Input. Whether need to gather numerical values */
+ int_t need_value, /* Input. Whether need to gather numerical values
+                      (2: on process 0 only) */
  SuperMatrix *A,   /* Input. Distributed matrix in NRformat_loc format. */
  gridinfo_t *grid, /* Input */
  SuperMatrix *GA   /* Output */
@@ -297,7 +298,15 @@ int psCompRow_loc_to_CompCol_global
     it = nnz_loc;
     MPI_Allgatherv(rowind_buf, it, mpi_int_t, GAstore->rowind,
 		   itemp_32, rdispls, mpi_int_t, grid->comm);
-    if ( need_value ) {
+    if ( need_value == 2 ) {
+      /* The numerical values are only needed on process 0 (MC64). */
+      GAstore->nzval = NULL;
+      if ( !grid->iam &&
+           !(GAstore->nzval = (float *) floatMalloc_dist (nnz)) )
+          ABORT ("SUPERLU_MALLOC fails for GAstore->rnzval[]");
+      MPI_Gatherv(a_buf, it, MPI_FLOAT, GAstore->nzval,
+		  itemp_32, rdispls, MPI_FLOAT, 0, grid->comm);
+    } else if ( need_value ) {
       if ( !(GAstore->nzval = (float *) floatMalloc_dist (nnz)) )
           ABORT ("SUPERLU_MALLOC fails for GAstore->rnzval[]");
       MPI_Allgatherv(a_buf, it, MPI_FLOAT, GAstore->nzval,
@@ -458,6 +467,127 @@ int psPermute_Dense_Matrix
     return 0;
 } /* psPermute_Dense_Matrix */
 
+/*! \brief Same as psPermute_Dense_Matrix(), but the communication pattern
+ * (partner processes, counts and received row indices) only depends on perm[]
+ * and row_to_proc[]: it is computed by the first call and saved in gstrs_comm,
+ * and the numerical values are then exchanged point to point with the
+ * processes that share entries only (no dense all-to-all collectives).
+ */
+int psPermute_Dense_Matrix_cached
+(
+ int_t fst_row,
+ int_t m_loc,
+ int_t row_to_proc[],
+ int perm[],
+ float X[], int ldx,
+ float B[], int ldb,
+ int nrhs,
+ gridinfo_t *grid,
+ pxgstrs_comm_t *gstrs_comm
+)
+{
+    const int tag = 24;
+    pxperm_cache_t *c = gstrs_comm->perm_cache;
+    int_t i, j, k, l;
+    int p, q, procs = grid->nprow * grid->npcol, nreq;
+    float *send_dbuf, *recv_dbuf;
+    MPI_Request *reqs;
+
+    if ( !c ) {
+        int *sendcnts, *recvcnts, *ptr;
+        int_t *send_ibuf, *recv_ibuf;
+        if ( !(c = (pxperm_cache_t *) SUPERLU_MALLOC(sizeof(pxperm_cache_t))) )
+            ABORT("Malloc fails for perm_cache.");
+        if ( !(sendcnts = SUPERLU_MALLOC(3*procs * sizeof(int))) )
+            ABORT("Malloc fails for sendcnts[].");
+        recvcnts = sendcnts + procs;
+        ptr = recvcnts + procs;
+        for (p = 0; p < procs; ++p) sendcnts[p] = 0;
+        for (i = fst_row; i < fst_row + m_loc; ++i) ++sendcnts[row_to_proc[perm[i]]];
+        MPI_Alltoall(sendcnts, 1, MPI_INT, recvcnts, 1, MPI_INT, grid->comm);
+        c->nsend = c->nrecv = 0;
+        for (p = 0; p < procs; ++p) {
+            if ( sendcnts[p] ) ++c->nsend;
+            if ( recvcnts[p] ) ++c->nrecv;
+        }
+        /* One allocation for the six partner arrays. */
+        if ( !(c->send_proc = SUPERLU_MALLOC(3*(c->nsend + c->nrecv + 2) * sizeof(int))) )
+            ABORT("Malloc fails for perm_cache arrays.");
+        c->send_cnt = c->send_proc + c->nsend + 1;
+        c->send_displ = c->send_cnt + c->nsend + 1;
+        c->recv_proc = c->send_displ + c->nsend + 1;
+        c->recv_cnt = c->recv_proc + c->nrecv + 1;
+        c->recv_displ = c->recv_cnt + c->nrecv + 1;
+        for (p = 0, q = 0, k = 0; p < procs; ++p) {
+            ptr[p] = k;
+            if ( sendcnts[p] ) {
+                c->send_proc[q] = p; c->send_cnt[q] = sendcnts[p];
+                c->send_displ[q] = k; k += sendcnts[p]; ++q;
+            }
+        }
+        for (p = 0, q = 0, l = 0; p < procs; ++p) {
+            if ( recvcnts[p] ) {
+                c->recv_proc[q] = p; c->recv_cnt[q] = recvcnts[p];
+                c->recv_displ[q] = l; l += recvcnts[p]; ++q;
+            }
+        }
+        c->nrecvtot = l;
+        if ( !(c->send_pos = intMalloc_dist(m_loc + l + 1)) )
+            ABORT("Malloc fails for perm_cache positions.");
+        c->recv_row = c->send_pos + m_loc;
+        if ( !(send_ibuf = intMalloc_dist(m_loc + l + 1)) )
+            ABORT("Malloc fails for send_ibuf[].");
+        recv_ibuf = send_ibuf + m_loc;
+        for (i = fst_row; i < fst_row + m_loc; ++i) {
+            j = perm[i];
+            p = row_to_proc[j];
+            c->send_pos[i - fst_row] = ptr[p];
+            send_ibuf[ptr[p]++] = j;
+        }
+        if ( !(reqs = (MPI_Request *) SUPERLU_MALLOC((c->nsend + c->nrecv + 1) * sizeof(MPI_Request))) )
+            ABORT("Malloc fails for reqs[].");
+        nreq = 0;
+        for (q = 0; q < c->nrecv; ++q)
+            MPI_Irecv(&recv_ibuf[c->recv_displ[q]], c->recv_cnt[q], mpi_int_t,
+                      c->recv_proc[q], tag, grid->comm, &reqs[nreq++]);
+        for (q = 0; q < c->nsend; ++q)
+            MPI_Isend(&send_ibuf[c->send_displ[q]], c->send_cnt[q], mpi_int_t,
+                      c->send_proc[q], tag, grid->comm, &reqs[nreq++]);
+        MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
+        for (i = 0; i < l; ++i) c->recv_row[i] = recv_ibuf[i] - fst_row;
+        SUPERLU_FREE(reqs);
+        SUPERLU_FREE(send_ibuf);
+        SUPERLU_FREE(sendcnts);
+        gstrs_comm->perm_cache = c;
+    }
+
+    /* Exchange the numerical values (RHS stored in row major in the buffers). */
+    if ( !(send_dbuf = floatMalloc_dist((m_loc + c->nrecvtot + 1) * (size_t)nrhs)) )
+        ABORT("Malloc fails for send_dbuf[].");
+    recv_dbuf = send_dbuf + m_loc * (size_t)nrhs;
+    for (i = 0; i < m_loc; ++i) {
+        l = c->send_pos[i] * nrhs;
+        for (k = 0; k < nrhs; ++k) send_dbuf[l + k] = X[i + k*ldx];
+    }
+    if ( !(reqs = (MPI_Request *) SUPERLU_MALLOC((c->nsend + c->nrecv + 1) * sizeof(MPI_Request))) )
+        ABORT("Malloc fails for reqs[].");
+    nreq = 0;
+    for (q = 0; q < c->nrecv; ++q)
+        MPI_Irecv(&recv_dbuf[c->recv_displ[q] * (size_t)nrhs], c->recv_cnt[q] * nrhs,
+                  MPI_FLOAT, c->recv_proc[q], tag, grid->comm, &reqs[nreq++]);
+    for (q = 0; q < c->nsend; ++q)
+        MPI_Isend(&send_dbuf[c->send_displ[q] * (size_t)nrhs], c->send_cnt[q] * nrhs,
+                  MPI_FLOAT, c->send_proc[q], tag, grid->comm, &reqs[nreq++]);
+    MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
+    for (i = 0, l = 0; i < c->nrecvtot; ++i) {
+        j = c->recv_row[i];
+        for (k = 0; k < nrhs; ++k) B[j + k*ldb] = recv_dbuf[l++];
+    }
+    SUPERLU_FREE(reqs);
+    SUPERLU_FREE(send_dbuf);
+    return 0;
+} /* psPermute_Dense_Matrix_cached */
+
 
 /*! \brief Allocate storage in LUstruct */
 void sLUstructInit(const int_t n, sLUstruct_t *LUstruct)
@@ -471,6 +601,10 @@ void sLUstructInit(const int_t n, sLUstruct_t *LUstruct)
 	   SUPERLU_MALLOC(sizeof(sLocalLU_t))) )
 	ABORT("Malloc fails for LocalLU_t.");
     LUstruct->Llu->inv = 0;
+    LUstruct->Llu->sched_perm_c_supno = NULL;
+    LUstruct->Llu->sched_nsupers = 0;
+    LUstruct->Llu->sched_opts = 0;
+    LUstruct->Llu->comm_L = MPI_COMM_NULL;
     LUstruct->dt = 's';
     LUstruct->trf3Dpart = NULL;
 }
@@ -486,6 +620,9 @@ void sLUstructFree(sLUstruct_t *LUstruct)
 
     SUPERLU_FREE(LUstruct->etree);
     SUPERLU_FREE(LUstruct->Glu_persist);
+    if ( LUstruct->Llu->sched_perm_c_supno )
+        SUPERLU_FREE(LUstruct->Llu->sched_perm_c_supno);
+    superlu_comm_free(&LUstruct->Llu->comm_L); /* see psgstrs() */
     SUPERLU_FREE(LUstruct->Llu);
     sDestroy_trf3Dpartition(LUstruct->trf3Dpart);
 
@@ -509,6 +646,13 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 #endif
 
     sDestroy_Tree(n, grid, LUstruct);
+    superlu_comm_free(&Llu->comm_L); /* see psgstrs() */
+
+    if ( Llu->sched_perm_c_supno ) {
+        SUPERLU_FREE(Llu->sched_perm_c_supno);
+        Llu->sched_perm_c_supno = NULL;
+        Llu->sched_nsupers = 0;
+    }
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
@@ -829,6 +973,9 @@ psgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
         ABORT("Malloc fails for ptr_to_ibuf[].");
     gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
     gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
+    gstrs_comm->B_to_X_recv_idx = NULL;
+    gstrs_comm->X_to_B_recv_idx = NULL;
+    gstrs_comm->perm_cache = NULL;
 
     return 0;
 } /* PSGSTRS_INIT */

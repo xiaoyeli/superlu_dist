@@ -327,7 +327,29 @@ void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
     SUPERLU_FREE(gstrs_comm->B_to_X_SendCnt);
     SUPERLU_FREE(gstrs_comm->X_to_B_SendCnt);
     SUPERLU_FREE(gstrs_comm->ptr_to_ibuf);
+    if ( gstrs_comm->B_to_X_recv_idx ) SUPERLU_FREE(gstrs_comm->B_to_X_recv_idx);
+    if ( gstrs_comm->X_to_B_recv_idx ) SUPERLU_FREE(gstrs_comm->X_to_B_recv_idx);
+    if ( gstrs_comm->perm_cache ) pxperm_cache_free(gstrs_comm->perm_cache);
     SUPERLU_FREE(gstrs_comm);
+}
+
+void pxperm_cache_free(pxperm_cache_t *c)
+{
+    SUPERLU_FREE(c->send_proc);
+    SUPERLU_FREE(c->send_pos);
+    SUPERLU_FREE(c);
+}
+
+/*! \brief Free a communicator of SuperLU_DIST and set it to MPI_COMM_NULL
+ * (nothing to do if it is MPI_COMM_NULL or if MPI is already finalized).
+ */
+void superlu_comm_free(MPI_Comm *comm)
+{
+    int finalized;
+    if ( *comm == MPI_COMM_NULL ) return;
+    MPI_Finalized(&finalized);
+    if ( !finalized ) MPI_Comm_free(comm);
+    *comm = MPI_COMM_NULL;
 }
 
 /*! \brief Diagnostic print of segment info after panel_dfs().
