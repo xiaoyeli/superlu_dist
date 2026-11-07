@@ -549,7 +549,32 @@ typedef struct {
        solution (see pdPermute_Dense_Matrix_cached()), built by the first
        solve. */
     struct pxperm_cache *perm_cache;
+
+    /* Node-aware two-stage B-to-X exchange (see pdReDistribute_B_to_X()). */
+    struct pxb2x_agg *b2x_agg;
 } pxgstrs_comm_t;
+
+/* In the B-to-X redistribution every process sends a few rows to each
+   diagonal process, so a diagonal process receives one message from nearly
+   every process. With the node-aware exchange, the rows destined for a
+   diagonal process on another node are first gathered by one process of the
+   sending node ("aggregator"), which forwards them in a single message. */
+typedef struct pxb2x_agg {
+    int    enabled;
+    int    nnodes, mynode;
+    int    *node_lo, *node_cnt;   /* first rank and size of each node */
+    int    *agg_of_q;             /* per diagonal process: my aggregator, -1 if same node */
+    int    my_q;                  /* my index in diag_procs[], -1 if not diagonal */
+    int    nagg;                  /* number of diagonal processes I aggregate for */
+    int    *agg_q;                /* their indices in diag_procs[] */
+    int_t  *agg_tot;              /* rows forwarded to each of them */
+    int_t  *agg_cnt, *agg_off;    /* nagg x node size: rows from each node process */
+    /* Same for the X-to-B exchange (the aggregator scatters to its node). */
+    int_t  *x2b_tot, *x2b_cnt, *x2b_off;
+} pxb2x_agg_t;
+
+extern pxb2x_agg_t *pxb2x_agg_setup(gridinfo_t *, int, int_t *, int *, int *);
+extern void pxb2x_agg_free(pxb2x_agg_t *);
 
 typedef struct pxperm_cache {
     int    nsend, nrecv;       /* number of partner processes */

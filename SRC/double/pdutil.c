@@ -921,6 +921,7 @@ pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     gstrs_comm->B_to_X_recv_idx = NULL;
     gstrs_comm->X_to_B_recv_idx = NULL;
     gstrs_comm->perm_cache = NULL;
+    gstrs_comm->b2x_agg = NULL;
 
     return 0;
 } /* PDGSTRS_INIT */
