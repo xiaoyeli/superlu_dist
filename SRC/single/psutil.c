@@ -471,6 +471,9 @@ void sLUstructInit(const int_t n, sLUstruct_t *LUstruct)
 	   SUPERLU_MALLOC(sizeof(sLocalLU_t))) )
 	ABORT("Malloc fails for LocalLU_t.");
     LUstruct->Llu->inv = 0;
+    LUstruct->Llu->sched_perm_c_supno = NULL;
+    LUstruct->Llu->sched_nsupers = 0;
+    LUstruct->Llu->sched_opts = 0;
     LUstruct->dt = 's';
     LUstruct->trf3Dpart = NULL;
 }
@@ -486,6 +489,8 @@ void sLUstructFree(sLUstruct_t *LUstruct)
 
     SUPERLU_FREE(LUstruct->etree);
     SUPERLU_FREE(LUstruct->Glu_persist);
+    if ( LUstruct->Llu->sched_perm_c_supno )
+        SUPERLU_FREE(LUstruct->Llu->sched_perm_c_supno);
     SUPERLU_FREE(LUstruct->Llu);
     sDestroy_trf3Dpartition(LUstruct->trf3Dpart);
 
@@ -509,6 +514,12 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 #endif
 
     sDestroy_Tree(n, grid, LUstruct);
+
+    if ( Llu->sched_perm_c_supno ) {
+        SUPERLU_FREE(Llu->sched_perm_c_supno);
+        Llu->sched_perm_c_supno = NULL;
+        Llu->sched_nsupers = 0;
+    }
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
@@ -829,6 +840,8 @@ psgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
         ABORT("Malloc fails for ptr_to_ibuf[].");
     gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
     gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
+    gstrs_comm->B_to_X_recv_idx = NULL;
+    gstrs_comm->X_to_B_recv_idx = NULL;
 
     return 0;
 } /* PSGSTRS_INIT */

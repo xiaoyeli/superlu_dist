@@ -313,6 +313,11 @@ typedef struct {
     gridinfo_t *d_grid;
 #endif
 
+    /* Static schedule of the last factorization (perm_c_supno followed by
+       iperm_c_supno), reused by SamePattern_SameRowPerm refactorizations. */
+    int_t *sched_perm_c_supno;
+    int_t sched_nsupers;
+    int   sched_opts;  /* options of that schedule (see pdgstrf()) */
 } dLocalLU_t;
 
 typedef struct
