@@ -537,7 +537,56 @@ typedef struct {
     int_t  *recv_ibuf2;
     void   *send_dbuf2;
     void   *recv_dbuf2;
+
+    /* Received row indices of the B-to-X and X-to-B redistributions, saved
+       by the first solve after pXgstrs_init(): they only depend on the
+       permutations, the supernode partition and the row distribution of B,
+       so later solves exchange the numerical values only. */
+    int_t  *B_to_X_recv_idx;
+    int_t  *X_to_B_recv_idx;
+
+    /* Communication pattern of the final permutation B <= Pc'*X of the
+       solution (see pdPermute_Dense_Matrix_cached()), built by the first
+       solve. */
+    struct pxperm_cache *perm_cache;
+
+    /* Node-aware two-stage B-to-X exchange (see pdReDistribute_B_to_X()). */
+    struct pxb2x_agg *b2x_agg;
 } pxgstrs_comm_t;
+
+/* In the B-to-X redistribution every process sends a few rows to each
+   diagonal process, so a diagonal process receives one message from nearly
+   every process. With the node-aware exchange, the rows destined for a
+   diagonal process on another node are first gathered by one process of the
+   sending node ("aggregator"), which forwards them in a single message. */
+typedef struct pxb2x_agg {
+    int    enabled;
+    int    nnodes, mynode;
+    int    *node_lo, *node_cnt;   /* first rank and size of each node */
+    int    *agg_of_q;             /* per diagonal process: my aggregator, -1 if same node */
+    int    my_q;                  /* my index in diag_procs[], -1 if not diagonal */
+    int    nagg;                  /* number of diagonal processes I aggregate for */
+    int    *agg_q;                /* their indices in diag_procs[] */
+    int_t  *agg_tot;              /* rows forwarded to each of them */
+    int_t  *agg_cnt, *agg_off;    /* nagg x node size: rows from each node process */
+    /* Same for the X-to-B exchange (the aggregator scatters to its node). */
+    int_t  *x2b_tot, *x2b_cnt, *x2b_off;
+} pxb2x_agg_t;
+
+extern pxb2x_agg_t *pxb2x_agg_setup(gridinfo_t *, int, int_t *, int *, int *);
+extern void pxb2x_agg_free(pxb2x_agg_t *);
+
+typedef struct pxperm_cache {
+    int    nsend, nrecv;       /* number of partner processes */
+    int    *send_proc, *send_cnt, *send_displ;  /* rows sent to each partner */
+    int    *recv_proc, *recv_cnt, *recv_displ;  /* rows received from each partner */
+    int_t  *send_pos;          /* position in the send buffer of each local row */
+    int_t  *recv_row;          /* local row of each received entry */
+    int_t  nrecvtot;
+} pxperm_cache_t;
+
+extern void pxperm_cache_free(pxperm_cache_t *);
+extern void superlu_comm_free(MPI_Comm *);
 
 /*
  *-- This contains the options used to control the solution process.

@@ -327,7 +327,161 @@ void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
     SUPERLU_FREE(gstrs_comm->B_to_X_SendCnt);
     SUPERLU_FREE(gstrs_comm->X_to_B_SendCnt);
     SUPERLU_FREE(gstrs_comm->ptr_to_ibuf);
+    if ( gstrs_comm->B_to_X_recv_idx ) SUPERLU_FREE(gstrs_comm->B_to_X_recv_idx);
+    if ( gstrs_comm->X_to_B_recv_idx ) SUPERLU_FREE(gstrs_comm->X_to_B_recv_idx);
+    if ( gstrs_comm->perm_cache ) pxperm_cache_free(gstrs_comm->perm_cache);
+    if ( gstrs_comm->b2x_agg ) pxb2x_agg_free(gstrs_comm->b2x_agg);
     SUPERLU_FREE(gstrs_comm);
+}
+
+/* Set up the node-aware B-to-X and X-to-B exchanges of p[sdz]gstrs()
+   (collective over grid->comm): diag[] lists the ndiag diagonal processes,
+   SendCnt[] the B-to-X rows sent to each process and x2bRecvCnt[] the X-to-B
+   rows received from each process. The exchanges are only enabled when the
+   processes of each node have consecutive ranks, there is more than one node,
+   the tags fit under MPI_TAG_UB, and SUPERLU_SOLVE_NODE_AGG is not set to 0. */
+pxb2x_agg_t *
+pxb2x_agg_setup(gridinfo_t *grid, int ndiag, int_t *diag, int *SendCnt,
+                int *x2bRecvCnt)
+{
+    pxb2x_agg_t *a;
+    MPI_Comm ncomm;
+    int procs = grid->nprow * grid->npcol, iam = grid->iam;
+    int lsize, leader, r, q, n, ok = 1, *lead, *cnt, *allcnt;
+
+    if ( !(a = (pxb2x_agg_t *) SUPERLU_MALLOC(sizeof(pxb2x_agg_t))) )
+        ABORT("Malloc fails for b2x_agg.");
+    a->enabled = 0;
+#if MPI_VERSION < 3
+    return a; /* MPI_Comm_split_type() is MPI-3 */
+#else
+    {   /* The tags of the exchanges go up to 100 + 2*procs; MPI guarantees
+           MPI_TAG_UB >= 32767. The environment variable is read on every process
+           but the decision is collective, so that all of them agree. */
+        int *tag_ub, flag, on = 1, all_on;
+        char *env = getenv("SUPERLU_SOLVE_NODE_AGG");
+        MPI_Comm_get_attr(grid->comm, MPI_TAG_UB, &tag_ub, &flag);
+        if ( (flag ? *tag_ub : 32767) < 100 + 2*procs ) on = 0;
+        if ( env && atoi(env) == 0 ) on = 0;
+        MPI_Allreduce(&on, &all_on, 1, MPI_INT, MPI_MIN, grid->comm);
+        if ( !all_on ) return a;
+    }
+    MPI_Comm_split_type(grid->comm, MPI_COMM_TYPE_SHARED, iam, MPI_INFO_NULL, &ncomm);
+    MPI_Comm_size(ncomm, &lsize);
+    MPI_Allreduce(&iam, &leader, 1, MPI_INT, MPI_MIN, ncomm);
+    if ( !(lead = SUPERLU_MALLOC(procs * sizeof(int))) ) ABORT("Malloc fails for lead[].");
+    MPI_Allgather(&leader, 1, MPI_INT, lead, 1, MPI_INT, grid->comm);
+    /* Each node must be a block of consecutive ranks. */
+    for (r = 0, n = 0; r < procs; ++r) {
+        if ( lead[r] == r ) ++n;
+        else if ( r == 0 || lead[r] != lead[r-1] ) ok = 0;
+    }
+    if ( !ok || n < 2 ) {
+        SUPERLU_FREE(lead);
+        MPI_Comm_free(&ncomm);
+        return a;
+    }
+    a->enabled = 1;
+    a->nnodes = n;
+    if ( !(a->node_lo = SUPERLU_MALLOC((2*n + ndiag + 1) * sizeof(int))) )
+        ABORT("Malloc fails for b2x_agg arrays.");
+    a->node_cnt = a->node_lo + n;
+    a->agg_of_q = a->node_cnt + n;
+    for (r = 0, n = -1; r < procs; ++r) {
+        if ( lead[r] == r ) { ++n; a->node_lo[n] = r; a->node_cnt[n] = 0; }
+        ++a->node_cnt[n];
+        if ( r == iam ) a->mynode = n;
+    }
+    /* Node of each diagonal process, my index among them. */
+    a->my_q = -1;
+    a->nagg = 0;
+    for (q = 0; q < ndiag; ++q) {
+        int d = diag[q], nd;
+        if ( d == iam ) a->my_q = q;
+        for (nd = 0; nd < a->nnodes; ++nd)
+            if ( d >= a->node_lo[nd] && d < a->node_lo[nd] + a->node_cnt[nd] ) break;
+        if ( nd == a->mynode ) a->agg_of_q[q] = -1;
+        else {
+            a->agg_of_q[q] = a->node_lo[a->mynode] + q % a->node_cnt[a->mynode];
+            if ( a->agg_of_q[q] == iam ) ++a->nagg;
+        }
+    }
+    /* Rows sent by each process of the node to each diagonal process. */
+    if ( !(cnt = SUPERLU_MALLOC(2 * (ndiag + 1) * (lsize + 1) * sizeof(int))) )
+        ABORT("Malloc fails for cnt[].");
+    allcnt = cnt + 2*ndiag + 2;
+    /* B-to-X rows sent to, and X-to-B rows received from, each diagonal process. */
+    for (q = 0; q < ndiag; ++q) {
+        cnt[2*q] = SendCnt[diag[q]];
+        cnt[2*q + 1] = x2bRecvCnt[diag[q]];
+    }
+    /* The ranks of ncomm are ordered as in grid->comm (key iam) and each node is a
+       block of consecutive ranks, so process lo + ls of the node is rank ls. */
+    MPI_Allgather(cnt, 2*ndiag, MPI_INT, allcnt, 2*ndiag, MPI_INT, ncomm);
+    if ( a->nagg ) {
+        int k = 0, ls;
+        if ( !(a->agg_q = SUPERLU_MALLOC(a->nagg * sizeof(int))) )
+            ABORT("Malloc fails for agg_q[].");
+        if ( !(a->agg_tot = intMalloc_dist(a->nagg * (2*lsize + 1))) )
+            ABORT("Malloc fails for agg_tot[].");
+        a->agg_cnt = a->agg_tot + a->nagg;
+        a->agg_off = a->agg_cnt + a->nagg * lsize;
+        if ( !(a->x2b_tot = intMalloc_dist(a->nagg * (2*lsize + 1))) )
+            ABORT("Malloc fails for x2b_tot[].");
+        a->x2b_cnt = a->x2b_tot + a->nagg;
+        a->x2b_off = a->x2b_cnt + a->nagg * lsize;
+        for (q = 0; q < ndiag; ++q) {
+            if ( a->agg_of_q[q] != iam ) continue;
+            a->agg_q[k] = q;
+            a->agg_tot[k] = a->x2b_tot[k] = 0;
+            for (ls = 0; ls < lsize; ++ls) {
+                a->agg_cnt[k*lsize + ls] = allcnt[ls*2*ndiag + 2*q];
+                a->agg_off[k*lsize + ls] = a->agg_tot[k];
+                a->agg_tot[k] += allcnt[ls*2*ndiag + 2*q];
+                a->x2b_cnt[k*lsize + ls] = allcnt[ls*2*ndiag + 2*q + 1];
+                a->x2b_off[k*lsize + ls] = a->x2b_tot[k];
+                a->x2b_tot[k] += allcnt[ls*2*ndiag + 2*q + 1];
+            }
+            ++k;
+        }
+    }
+    SUPERLU_FREE(cnt);
+    SUPERLU_FREE(lead);
+    MPI_Comm_free(&ncomm);
+    return a;
+#endif
+}
+
+void pxb2x_agg_free(pxb2x_agg_t *a)
+{
+    if ( a->enabled ) {
+        SUPERLU_FREE(a->node_lo); /* also holds node_cnt[] and agg_of_q[] */
+        if ( a->nagg ) {
+            SUPERLU_FREE(a->agg_q);
+            SUPERLU_FREE(a->agg_tot);
+            SUPERLU_FREE(a->x2b_tot);
+        }
+    }
+    SUPERLU_FREE(a);
+}
+
+void pxperm_cache_free(pxperm_cache_t *c)
+{
+    SUPERLU_FREE(c->send_proc);
+    SUPERLU_FREE(c->send_pos);
+    SUPERLU_FREE(c);
+}
+
+/*! \brief Free a communicator of SuperLU_DIST and set it to MPI_COMM_NULL
+ * (nothing to do if it is MPI_COMM_NULL or if MPI is already finalized).
+ */
+void superlu_comm_free(MPI_Comm *comm)
+{
+    int finalized;
+    if ( *comm == MPI_COMM_NULL ) return;
+    MPI_Finalized(&finalized);
+    if ( !finalized ) MPI_Comm_free(comm);
+    *comm = MPI_COMM_NULL;
 }
 
 /*! \brief Diagnostic print of segment info after panel_dfs().

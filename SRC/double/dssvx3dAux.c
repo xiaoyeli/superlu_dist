@@ -249,13 +249,13 @@ void dfindRowPerm_MC64(gridinfo_t* grid, int_t job,
     LOG_FUNC_ENTER();
     #endif
     // Check input parameters
-    if (colptr == NULL || rowind == NULL || a_GA == NULL ||
+    int root = 0;
+    /* The values are only needed on the root, which runs MC64. */
+    if (colptr == NULL || rowind == NULL || (grid->iam == root && a_GA == NULL) ||
         perm_r == NULL ) {
         fprintf(stderr, "Error: NULL input parameter.\n");
         return;
     }
-
-    int root = 0;
 
     // If the current node is the root node, perform the permutation computation
     if (grid->iam == root) {

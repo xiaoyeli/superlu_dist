@@ -715,11 +715,13 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    if (Fact != SamePattern_SameRowPerm &&
 			(parSymbFact == NO || options->RowPerm != NO))
 	    {
-		int need_value = (options->RowPerm == LargeDiag_MC64);
+		/* Values are only needed by MC64, which runs on process 0. */
+		int need_value = (options->RowPerm == LargeDiag_MC64) ? 2 : 0;
 		psCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
 		GAstore = (NCformat *)GA.Store;
 		nnz = GAstore->nnz;
-		GA_mem_use = (nnz + n + 1) * sizeof(int_t) + need_value * nnz * sizeof(float);
+		GA_mem_use = (nnz + n + 1) * sizeof(int_t)
+		             + (GAstore->nzval ? nnz * sizeof(float) : 0);
 		if (!need_value)
 		    assert(GAstore->nzval == NULL);
 	    }
