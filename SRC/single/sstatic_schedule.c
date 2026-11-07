@@ -399,7 +399,28 @@ sstatic_schedule(superlu_dist_options_t * options, int m, int n,
 
         /* communication */
         MPI_Alltoall (sendcnts, 1, MPI_INT, recvcnts, 1, MPI_INT, grid->comm);
-        MPI_Alltoall (srows, nrbp1, MPI_INT, rrows, nrbp1, MPI_INT, grid->comm);
+        /* srows[p*nrbp1:(p+1)*nrbp1] is zero if sendcnts[p] == 0, so only
+           exchange the rows of the dense MPI_Alltoall which are nonzero
+           (point-to-point, empty messages skipped). */
+        {
+            int nreq = 0, nprocs = Pr * Pc;
+            MPI_Request *reqs;
+            if (!(reqs = SUPERLU_MALLOC (2 * nprocs * sizeof (MPI_Request))))
+                ABORT ("Malloc fails for reqs[].");
+            for (p = 0; p < nprocs; p++) {
+                if (recvcnts[p])
+                    MPI_Irecv (&rrows[p * nrbp1], nrbp1, MPI_INT, p, 0,
+                               grid->comm, &reqs[nreq++]);
+                else
+                    memset (&rrows[p * nrbp1], 0, nrbp1 * sizeof (int));
+            }
+            for (p = 0; p < nprocs; p++)
+                if (sendcnts[p])
+                    MPI_Isend (&srows[p * nrbp1], nrbp1, MPI_INT, p, 0,
+                               grid->comm, &reqs[nreq++]);
+            MPI_Waitall (nreq, reqs, MPI_STATUSES_IGNORE);
+            SUPERLU_FREE (reqs);
+        }
 
 	log_memory( -(nblocks * iword), stat );  /* blocks[] to be freed soon */
 
@@ -414,8 +435,23 @@ sstatic_schedule(superlu_dist_options_t * options, int m, int n,
         if (!(blockr = intMalloc_dist (nblocks))) ABORT ("Malloc fails for blockr[].");
 	log_memory( nblocks * iword, stat );
 
-        MPI_Alltoallv (blocks, sendcnts, sdispls, mpi_int_t, blockr, recvcnts,
-                       rdispls, mpi_int_t, grid->comm);
+        /* MPI_Alltoallv with point-to-point messages (empty ones skipped). */
+        {
+            int nreq = 0, nprocs = Pr * Pc;
+            MPI_Request *reqs;
+            if (!(reqs = SUPERLU_MALLOC (2 * nprocs * sizeof (MPI_Request))))
+                ABORT ("Malloc fails for reqs[].");
+            for (p = 0; p < nprocs; p++)
+                if (recvcnts[p])
+                    MPI_Irecv (&blockr[rdispls[p]], recvcnts[p], mpi_int_t, p, 1,
+                               grid->comm, &reqs[nreq++]);
+            for (p = 0; p < nprocs; p++)
+                if (sendcnts[p])
+                    MPI_Isend (&blocks[sdispls[p]], sendcnts[p], mpi_int_t, p, 1,
+                               grid->comm, &reqs[nreq++]);
+            MPI_Waitall (nreq, reqs, MPI_STATUSES_IGNORE);
+            SUPERLU_FREE (reqs);
+        }
 
         SUPERLU_FREE (blocks); /* memory logged before */
 
