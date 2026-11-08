@@ -206,6 +206,7 @@ void zscaleMatrixDiagonally(fact_t Fact, zScalePermstruct_t *ScalePermstruct,
 
     if (Fact == SamePattern_SameRowPerm) {
         zscalePrecomputed(A, ScalePermstruct);
+        *iinfo = 0;
     } else {
         zscaleFromScratch(A, ScalePermstruct, grid, rowequ, colequ, iinfo);
     }

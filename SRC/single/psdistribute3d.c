@@ -285,6 +285,7 @@ psdistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	    if ( mycol == pc ) { /* Block column jb in my process column */
 		fsupc = FstBlockC( jb );
 		nsupc = SuperSize( jb );
+		ljb = LBj( jb, grid ); /* Local block number */
 
  		/* Scatter A into SPA (for L), or into U directly. */
 		for (j = fsupc, dense_col = dense; j < FstBlockC(jb+1); ++j) {
@@ -316,7 +317,10 @@ psdistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 						/*assert(irow>=index[istart]);*/
 						uval[len + irow - index[istart]] = a[i];
 					}
-			    } else { /* in L; put in SPA first */
+			    } else if ( Lrowind_bc_ptr[ljb] ) {
+					/* in L; put in SPA first. A block column has no L
+					   storage on a grid if superGridMap[jb] == NOT_IN_GRID:
+					   nothing would gather and clear its SPA entries. */
 					irow = ilsum[lb] + irow - FstBlockC( gb );
 					dense_col[irow] = a[i];
   			    }
@@ -331,7 +335,6 @@ psdistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 #endif
 
 		/* Gather the values of A from SPA into Lnzval[]. */
-		ljb = LBj( jb, grid ); /* Local block number */
 		index = Lrowind_bc_ptr[ljb];
 		if ( index ) {
 		    nrbl = index[0];   /* Number of row blocks. */
