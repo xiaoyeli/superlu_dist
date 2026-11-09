@@ -593,6 +593,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     Fact = options->Fact;
 
     validateInput_pdgssvx3d(options, A, ldb, nrhs, grid3d, info);
+    if (*info) return;
 
     /* Initialization. */
 
@@ -754,10 +755,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    permc_spec = options->ColPerm;
 
 	    if (parSymbFact == YES || permc_spec == PARMETIS) {
-		if(grid3d->npdep!=1){
-    		    fprintf(stderr, "Error: ParMETIS and Parallel Symbolic Factorization are not yet supported with grid3d->npdep>1.\n");
-			return; // or exit(-1); if you want to terminate the program
-		}
+		/* Rejected on entry, by validateInput_pdgssvx3d(), if
+		   grid3d->npdep > 1. */
 		nprocs_num = grid->nprow * grid->npcol;
 		noDomains = (int)(pow(2, ((int)LOG2(nprocs_num))));
 

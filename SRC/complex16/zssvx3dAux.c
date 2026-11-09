@@ -56,6 +56,16 @@ void validateInput_pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
         fprintf(stderr,
                 "Extra precise iterative refinement yet to support.");
     }
+    else if (Fact != FACTORED && grid3d->npdep > 1 &&
+             (options->ParSymbFact == YES || options->ColPerm == PARMETIS))
+    {
+        /* Checked here, on every process, since only layer 0 computes the
+           ordering: returning there alone would leave the other layers
+           waiting for it. */
+        *info = -1;
+        if (!grid3d->iam)
+            fprintf(stderr, "Error: ParMETIS and Parallel Symbolic Factorization are not yet supported with grid3d->npdep>1.\n");
+    }
     else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc || A->Dtype != SLU_Z || A->Mtype != SLU_GE)
         *info = -2;
     else if (ldb < Astore->m_loc)
