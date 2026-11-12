@@ -135,7 +135,7 @@ get_perm_c_vbatch(
 		get_colamd_dist(m, n, Astore->nnz, Astore->colptr, Astore->rowind,
 				perm_c);
 		break;
-#ifdef HAVE_PARMETIS
+#ifdef HAVE_METIS
             case METIS_AT_PLUS_A: /* METIS ordering on A'+A */
 		if ( m != n ) ABORT("Matrix is not square");
 		at_plus_a_dist(n, Astore->nnz, Astore->colptr, Astore->rowind,
