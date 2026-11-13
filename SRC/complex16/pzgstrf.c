@@ -307,6 +307,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int num_look_aheads, look_id;
     int *look_ahead; /* global look_ahead table */
     int_t *perm_c_supno, *iperm_c_supno;
+    int sched_opts; /* options the static schedule depends on */
           /* perm_c_supno[k] = j means at the k-th step of elimination,
 	   * the j-th supernode is chosen. */
     MPI_Request *recv_req, **recv_reqs, **send_reqs, **send_reqs_u,
@@ -607,8 +608,27 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     perm_c_supno = SUPERLU_MALLOC (2 * nsupers * sizeof (int_t));
     iperm_c_supno = perm_c_supno + nsupers;
 
-    zstatic_schedule(options, m, n, LUstruct, grid, stat,
-		    perm_c_supno, iperm_c_supno, info);
+    /* The schedule only depends on the structure of L and U and on the options
+       below: reuse the one of the previous factorization when the pattern, the
+       permutations and these options are kept. */
+    sched_opts = (options->lookahead_etree == YES)
+                 | ((options->ParSymbFact == YES) << 1)
+                 | ((options->SymPattern == YES) << 2)
+                 | ((int) options->RowPerm << 3);
+    if ( options->Fact == SamePattern_SameRowPerm && Llu->sched_perm_c_supno
+         && Llu->sched_nsupers == nsupers && Llu->sched_opts == sched_opts ) {
+        memcpy(perm_c_supno, Llu->sched_perm_c_supno,
+               2 * nsupers * sizeof (int_t));
+    } else {
+        zstatic_schedule(options, m, n, LUstruct, grid, stat,
+		        perm_c_supno, iperm_c_supno, info);
+        if ( Llu->sched_perm_c_supno ) SUPERLU_FREE(Llu->sched_perm_c_supno);
+        if ( !(Llu->sched_perm_c_supno = SUPERLU_MALLOC (2 * nsupers * sizeof (int_t))) )
+            ABORT ("Malloc fails for sched_perm_c_supno[].");
+        memcpy(Llu->sched_perm_c_supno, perm_c_supno, 2 * nsupers * sizeof (int_t));
+        Llu->sched_nsupers = nsupers;
+        Llu->sched_opts = sched_opts;
+    }
 
 #if ( DEBUGlevel >= 2 )
     PrintInt10("schedule:perm_c_supno", nsupers, perm_c_supno);
