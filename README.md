@@ -228,6 +228,7 @@ contains the key CPP definitions used throughout the code.
     -Denable_python=ON | OFF
 
     -TPL_ENABLE_PARMETISLIB=ON | OFF
+    -DTPL_ENABLE_METISLIB=OFF | ON
     -DTPL_ENABLE_INTERNAL_BLASLIB=OFF | ON
     -DTPL_ENABLE_LAPACKLIB=OFF | ON
     -TPL_ENABLE_COMBBLASLIB=OFF | ON
@@ -335,6 +336,14 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_PARMETIS
 ```
+Without ParMetis, Metis alone provides the METIS_AT_PLUS_A column ordering,
+which is then also the default, instead of MMD_AT_PLUS_A. With CMake:
+```
+    -DTPL_ENABLE_PARMETISLIB=OFF \
+    -DTPL_ENABLE_METISLIB=ON \
+    -DTPL_METIS_LIBRARIES="<metis directory>/lib/libmetis.a"
+```
+With make.inc, define HAVE_METIS = TRUE and add METISLIB to the libraries.
   #### 2.3.2 LAPACK.
   Starting Version 6.0, the triangular solve routine can perform explicit
   inversion on the diagonal blocks, using LAPACK's xTRTRI inversion routine.

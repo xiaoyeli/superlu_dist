@@ -38,7 +38,7 @@ get_metis_dist(
 	  int *perm_c    /* out - the column permutation vector. */
 	  )
 {
-#ifdef HAVE_PARMETIS
+#ifdef HAVE_METIS
     int_t i, nm;
     int_t *perm, *iperm;
 
@@ -113,7 +113,7 @@ get_metis_dist(
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(0, "Exit get_metis_dist()");
 #endif
-#endif /* HAVE_PARMETIS */
+#endif /* HAVE_METIS */
     return;
 } /* end get_metis_dist */
 
@@ -532,7 +532,7 @@ get_perm_c_dist(int pnum, int ispec, SuperMatrix *A, int *perm_c)
 	      printf(".. Use approximate minimum degree column ordering.\n");
 #endif
 	      return;
-#ifdef HAVE_PARMETIS
+#ifdef HAVE_METIS
         case METIS_AT_PLUS_A: /* METIS ordering on A'+A */
 	      if ( m != n ) ABORT("Matrix is not square");
 	      at_plus_a_dist(n, Astore->nnz, Astore->colptr, Astore->rowind,
@@ -550,7 +550,7 @@ get_perm_c_dist(int pnum, int ispec, SuperMatrix *A, int *perm_c)
 	      if ( !pnum ) printf(".. Use METIS ordering on A'+A\n");
 #endif
 	      return;
-#endif /* matching ifdef HAVE_PARMETIS */
+#endif /* matching ifdef HAVE_METIS */
 
         default:
 	      ABORT("Invalid ISPEC");
