@@ -163,6 +163,7 @@ endfunction()
 set(CI_DATA ${SuperLU_DIST_SOURCE_DIR}/EXAMPLE)
 set(CI_G2 -x 40 -y 30)          # generated 2D grid problem, n = 1200
 set(CI_G3 -x 12 -y 11 -z 10)    # generated 3D grid problem, n = 1320
+set(CI_GB -x 8 -y 7 -z 6)       # smaller grid for several unknowns per point (-U)
 
 # -f: one letter per call.  D DOFACT, F FACTORED, P SamePattern,
 #     R SamePattern_SameRowPerm; each call has new values / a new RHS.
@@ -198,6 +199,22 @@ foreach(p ${CI_PRECISIONS})
                            LABELS cpu 2d ilu)
   add_superlu_dist_ci_test(3d_ilu0 ${p} 4 -r 2 -c 1 -d 2 -I 0 -q 0 -k 1 -f DFPF ${CI_G3}
                            LABELS cpu 3d ilu)
+  # fill-reducing orderings (MMD_AT_PLUS_A, METIS_AT_PLUS_A) and the C++
+  # factorization
+  add_superlu_dist_ci_test(2d_ilu0_mmd ${p} 4 -r 2 -c 2 -I 0 -q 2 -f DFPRF ${CI_G3}
+                           LABELS cpu 2d ilu ordering)
+  add_superlu_dist_ci_test(3d_ilu0_metis ${p} 4 -r 2 -c 1 -d 2 -I 0 -q 4 -f DFPF ${CI_G3}
+                           LABELS cpu 3d ilu ordering)
+  add_superlu_dist_ci_test(3d_ilu0_v1 ${p} 4 -r 2 -c 1 -d 2 -I 0 -q 4 -f DF ${CI_G3}
+                           ENV GPU3DVERSION=1 LABELS cpu 3d ilu)
+  # user-defined supernodes of several columns: dense blocks of -U unknowns
+  # per grid point, red-black ordering (-q 8, MY_PERMC)
+  add_superlu_dist_ci_test(2d_ilu0_usersup ${p} 4 -r 2 -c 2 -I 0 -U 4 -p 0 -q 8 -f DFPF ${CI_GB}
+                           LABELS cpu 2d ilu)
+  add_superlu_dist_ci_test(3d_ilu0_usersup ${p} 4 -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DFPF ${CI_GB}
+                           LABELS cpu 3d ilu)
+  add_superlu_dist_ci_test(3d_ilu0_usersup_v1 ${p} 4 -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DF ${CI_GB}
+                           ENV GPU3DVERSION=1 LABELS cpu 3d ilu)
   add_superlu_dist_ci_test(batch ${p} 1 -b 4 -s 2 ${CI_G3} LABELS cpu batch)
   add_superlu_dist_ci_test(vbatch ${p} 1 -B 4 -f DRR ${CI_G3} LABELS cpu batch)
 endforeach()
@@ -314,6 +331,12 @@ if(TPL_ENABLE_CUDALIB OR TPL_ENABLE_HIPLIB)
                              ENV ${CI_GPU_ENV} SUPERLU_ACC_SOLVE=1 LABELS gpu 3d solveonly)
     add_superlu_dist_ci_test(gpu_3d_ilu0 ${p} 2 -r 1 -c 1 -d 2 -I 0 -q 0 -f DF ${CI_G3}
                              ENV ${CI_GPU_ENV} GPU3DVERSION=0 SUPERLU_ACC_SOLVE=1 LABELS gpu 3d ilu)
+    add_superlu_dist_ci_test(gpu_3d_ilu0_v1 ${p} 1 -r 1 -c 1 -d 1 -I 0 -q 4 -f DF ${CI_G3}
+                             ENV ${CI_GPU_ENV} GPU3DVERSION=1 SUPERLU_ACC_SOLVE=1 LABELS gpu 3d ilu)
+    add_superlu_dist_ci_test(gpu_3d_ilu0_usersup ${p} 1 -r 1 -c 1 -d 1 -I 0 -U 4 -p 0 -q 8 -f DF ${CI_GB}
+                             ENV ${CI_GPU_ENV} GPU3DVERSION=0 SUPERLU_ACC_SOLVE=1 LABELS gpu 3d ilu)
+    add_superlu_dist_ci_test(gpu_3d_ilu0_usersup_v1 ${p} 1 -r 1 -c 1 -d 1 -I 0 -U 4 -p 0 -q 8 -f DF ${CI_GB}
+                             ENV ${CI_GPU_ENV} GPU3DVERSION=1 SUPERLU_ACC_SOLVE=1 LABELS gpu 3d ilu)
     add_superlu_dist_ci_test(gpu_batch ${p} 1 -b 8 -s 2 ${CI_G3}
                              ENV ${CI_GPU_ENV} GPU3DVERSION=1 SUPERLU_ACC_SOLVE=1 LABELS gpu batch)
     add_superlu_dist_ci_test(gpu_vbatch ${p} 1 -B 4 -f DRR ${CI_G3}

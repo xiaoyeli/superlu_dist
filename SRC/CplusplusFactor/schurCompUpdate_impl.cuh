@@ -207,7 +207,13 @@ __device__ void scatterGPU_dev(
     if (gj > gi) // its in upanel
     {
         li = dA->g2lRow(gi);
+        /* ILU: the destination block may not be stored; no fill-in then.
+           find() returns the same value to every thread of the block. */
+        if (dA->uPanelVec[li].isEmpty())
+            return;
         lj = dA->uPanelVec[li].find(gj);
+        if (lj < 0)
+            return;
         Dst = dA->uPanelVec[li].blkPtr(lj);
         lddst = dA->supersize(gi);
         dstRowLen = dA->supersize(gi);
@@ -218,7 +224,12 @@ __device__ void scatterGPU_dev(
     else
     {
         lj = dA->g2lCol(gj);
+        /* ILU: the destination block may not be stored; no fill-in then. */
+        if (dA->lPanelVec[lj].isEmpty())
+            return;
         li = dA->lPanelVec[lj].find(gi);
+        if (li < 0)
+            return;
         Dst = dA->lPanelVec[lj].blkPtr(li);
         lddst = dA->lPanelVec[lj].LDA();
         dstRowLen = dA->lPanelVec[lj].nbrow(li);

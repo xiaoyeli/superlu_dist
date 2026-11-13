@@ -173,6 +173,7 @@ typedef struct {
     int nprow, npcol, npdep;     /* npdep == 0: 2D interface */
     int nx, ny, nz;              /* generated matrix */
     int scramble;
+    int blk;                     /* unknowns per grid point = user-defined supernode size */
     char steps[64];
     int equil, rowperm, colperm, ir, lookahead, nrhs;
     int ilu, solveonly, batch, vbatch, gpures, gmres, diaginv, parsymb;
@@ -190,12 +191,15 @@ static void usage(void)
     printf("\t-d <int>   process Z-dimension; 0 = 2D interface (default 0)\n");
     printf("\t-x -y -z <int>  grid of the generated matrix    (default 12 12 1)\n");
     printf("\t-k <0|1>   scramble the rows of the generated matrix (default 0)\n");
+    printf("\t-U <int>   unknowns per grid point, coupled by dense blocks; with -I 0 the\n");
+    printf("\t           blocks are passed as user-defined supernodes (default 1)\n");
     printf("\t-f <str>   sequence of calls, letters D F P R   (default D)\n");
     printf("\t           D DOFACT, F FACTORED, P SamePattern, R SamePattern_SameRowPerm\n");
     printf("\t-e <int>   equilibration 0/1\n");
     printf("\t-p <int>   row permutation 0 NOROWPERM, 1 LargeDiag_MC64, 2 LargeDiag_HWPM\n");
     printf("\t-q <int>   column permutation 0 NATURAL, 1 MMD_ATA, 2 MMD_AT_PLUS_A,\n");
-    printf("\t           3 COLAMD, 4 METIS_AT_PLUS_A, 5 PARMETIS, 6 METIS_ATA\n");
+    printf("\t           3 COLAMD, 4 METIS_AT_PLUS_A, 5 PARMETIS, 6 METIS_ATA,\n");
+    printf("\t           8 MY_PERMC: red-black ordering of the generated grid\n");
     printf("\t-i <int>   iterative refinement 0 none, 1 single, 2 double\n");
     printf("\t-s <int>   number of right-hand sides           (default 1)\n");
     printf("\t-l <int>   number of look-ahead levels\n");
@@ -222,41 +226,46 @@ static void usage(void)
    ------------------------------------------------------------------------ */
 
 /* Nonsymmetric, strictly row diagonally dominant convection-diffusion
-   stencil on an nx x ny x nz grid, in natural ordering. */
-static void generate_matrix(int nx, int ny, int nz, int scramble, gmat_t *G)
+   stencil on an nx x ny x nz grid, in natural ordering.  With blk > 1 every
+   grid point carries blk unknowns, numbered consecutively, and every stencil
+   entry is a dense blk x blk block. */
+static void generate_matrix(int nx, int ny, int nz, int blk, int scramble, gmat_t *G)
 {
-    int_t n = (int_t) nx * ny * nz;
-    int_t i, j, k, row, col, p = 0, q;
-    int d;
+    int_t ng = (int_t) nx * ny * nz, n = ng * blk;
+    int_t i, j, k, g, row, col, p = 0, q;
+    int d, a, c;
 
     G->n = n;
     G->rowptr = intMalloc_dist(n + 1);
-    G->colind = intMalloc_dist(7 * n);
-    G->val = SMALLOC(7 * n);
+    G->colind = intMalloc_dist(7 * n * blk);
+    G->val = SMALLOC(7 * n * blk);
 
     for (k = 0; k < nz; ++k) for (j = 0; j < ny; ++j) for (i = 0; i < nx; ++i) {
-	int_t nbr[7]; int nn = 0, idiag = -1;
-	double sum = 0.0;
-	row = i + nx * (j + (int_t) ny * k);
-	G->rowptr[row] = p;
+	int_t nbr[7]; int nn = 0;
+	g = i + nx * (j + (int_t) ny * k);
 	/* neighbours in increasing column order */
-	if (k > 0)      nbr[nn++] = row - (int_t) nx * ny;
-	if (j > 0)      nbr[nn++] = row - nx;
-	if (i > 0)      nbr[nn++] = row - 1;
-	idiag = nn;     nbr[nn++] = row;
-	if (i < nx - 1) nbr[nn++] = row + 1;
-	if (j < ny - 1) nbr[nn++] = row + nx;
-	if (k < nz - 1) nbr[nn++] = row + (int_t) nx * ny;
-	for (d = 0; d < nn; ++d) {
-	    col = nbr[d];
-	    G->colind[p + d] = col;
-	    if (d == idiag) continue;
-	    G->val[p + d] = S_make(-(1.0 + 0.3 * urand(row, col)),
+	if (k > 0)      nbr[nn++] = g - (int_t) nx * ny;
+	if (j > 0)      nbr[nn++] = g - nx;
+	if (i > 0)      nbr[nn++] = g - 1;
+	nbr[nn++] = g;
+	if (i < nx - 1) nbr[nn++] = g + 1;
+	if (j < ny - 1) nbr[nn++] = g + nx;
+	if (k < nz - 1) nbr[nn++] = g + (int_t) nx * ny;
+	for (a = 0; a < blk; ++a) {
+	    int_t pdiag = -1;
+	    double sum = 0.0;
+	    row = g * blk + a;
+	    G->rowptr[row] = p;
+	    for (d = 0; d < nn; ++d) for (c = 0; c < blk; ++c, ++p) {
+		col = nbr[d] * blk + c;
+		G->colind[p] = col;
+		if (col == row) { pdiag = p; continue; }
+		G->val[p] = S_make(-(1.0 + 0.3 * urand(row, col)),
 				   IS_COMPLEX ? 0.3 * urand(col, row + n) : 0.0);
-	    sum += S_abs(G->val[p + d]);
+		sum += S_abs(G->val[p]);
+	    }
+	    G->val[pdiag] = S_make(sum + 0.2, IS_COMPLEX ? 0.3 : 0.0);
 	}
-	G->val[p + idiag] = S_make(sum + 0.2, IS_COMPLEX ? 0.3 : 0.0);
-	p += nn;
     }
     G->rowptr[n] = p;
     G->nnz = p;
@@ -284,6 +293,23 @@ static void generate_matrix(int nx, int ny, int nz, int scramble, gmat_t *G)
 	SUPERLU_FREE(sigma);
 	G->rowptr = rowptr; G->colind = colind; G->val = val;
     }
+}
+
+/* Column permutation for ColPerm = MY_PERMC: red-black ordering of the grid
+   points, the unknowns of a point kept together.  The red points are
+   independent of each other, so the elimination tree is bushy. */
+static void redblack_perm_c(int nx, int ny, int nz, int blk, int *perm_c)
+{
+    int_t g, next = 0;
+    int i, j, k, a, color;
+
+    for (color = 0; color < 2; ++color)
+	for (k = 0; k < nz; ++k) for (j = 0; j < ny; ++j) for (i = 0; i < nx; ++i) {
+	    if ((i + j + k) % 2 != color) continue;
+	    g = i + nx * (j + (int_t) ny * k);
+	    for (a = 0; a < blk; ++a) perm_c[g * blk + a] = (int) (next * blk + a);
+	    ++next;
+	}
 }
 
 /* Read a matrix file on the calling process; the format follows the suffix. */
@@ -640,7 +666,7 @@ static int run_batch(params_t *par, superlu_dist_options_t *options,
 
     for (d = 0; d < nb; ++d) {
 	if (variable && !par->file && d > 0)
-	    generate_matrix(par->nx + d, par->ny, par->nz, par->scramble, &G[d]);
+	    generate_matrix(par->nx + d, par->ny, par->nz, par->blk, par->scramble, &G[d]);
 	else
 	    G[d] = *G0;
 	md[d] = (int) G[d].n; nnzd[d] = (int) G[d].nnz; ld[d] = md[d];
@@ -765,6 +791,7 @@ int main(int argc, char *argv[])
     par.nprow = par.npcol = 1; par.npdep = 0;
     par.nx = par.ny = 12; par.nz = 1;
     strcpy(par.steps, "D");
+    par.blk = 1;
     par.equil = par.rowperm = par.colperm = par.ir = par.lookahead = -1;
     par.ilu = -1; par.gpures = -1; par.diaginv = -1; par.parsymb = -1;
     par.la_etree = par.tinypivot = -1;
@@ -788,6 +815,7 @@ int main(int argc, char *argv[])
 	    case 'y': par.ny = atoi(*cpp); break;
 	    case 'z': par.nz = atoi(*cpp); break;
 	    case 'k': par.scramble = atoi(*cpp); break;
+	    case 'U': par.blk = atoi(*cpp); break;
 	    case 'f': strncpy(par.steps, *cpp, sizeof(par.steps) - 1); break;
 	    case 'e': par.equil = atoi(*cpp); break;
 	    case 'p': par.rowperm = atoi(*cpp); break;
@@ -839,6 +867,8 @@ int main(int argc, char *argv[])
     if (par.la_etree != -1) options.lookahead_etree = par.la_etree;
     if (par.tinypivot != -1) options.ReplaceTinyPivot = par.tinypivot;
     if (par.solveonly) options.SolveOnly = YES;
+    /* The dense blocks of a generated matrix are the supernodes of its ILU */
+    if (par.blk > 1 && par.ilu != -1) options.UserDefineSupernode = YES;
     options.UseGMRES = par.gmres;
     if (par.batch > 0) options.batchCount = par.batch;
     if (par.vbatch > 0) { options.batchCount = par.vbatch; options.Algo3d = YES; }
@@ -887,6 +917,16 @@ int main(int argc, char *argv[])
     why = unsupported(&par, &options);
     if (!why && par.solveonly && !use3d) why = "SolveOnly is implemented in the 3D interface only";
     if (!why && par.gmres && use3d) why = "UseGMRES is implemented in the 2D interface only";
+    if (!why && (par.blk < 1 || (par.blk > 1 && par.file)))
+	why = "-U needs a generated matrix and a block size >= 1";
+    if (!why && options.ColPerm == MY_PERMC && par.file)
+	why = "-q 8 (MY_PERMC) orders the grid of a generated matrix";
+    if (!why && options.UserDefineSupernode == YES &&
+	(par.scramble || options.RowPerm != NOROWPERM ||
+	 (options.ColPerm != NATURAL && options.ColPerm != MY_PERMC) ||
+	 options.ParSymbFact == YES || par.batch > 0 || par.vbatch > 0))
+	why = "user-defined supernodes need the blocks kept together: "
+	      "-k 0, -p 0, -q 0 or 8, serial symbolic factorization, no batch";
     if (!why && (par.batch > 0 || par.vbatch > 0) && np != 1)
 	why = "the batched interfaces run on one process";
     if (why) {
@@ -901,10 +941,15 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------ */
     if (!iam) {
 	if (par.file) read_matrix(par.file, &G);
-	else generate_matrix(par.nx, par.ny, par.nz, par.scramble, &G);
+	else generate_matrix(par.nx, par.ny, par.nz, par.blk, par.scramble, &G);
 	if (par.file) printf("  matrix %s", par.file);
-	else printf("  generated %d x %d x %d grid%s", par.nx, par.ny, par.nz,
-		    par.scramble ? ", rows scrambled" : "");
+	else {
+	    printf("  generated %d x %d x %d grid%s", par.nx, par.ny, par.nz,
+		   par.scramble ? ", rows scrambled" : "");
+	    if (par.blk > 1)
+		printf(", %d unknowns per point%s", par.blk,
+		       options.UserDefineSupernode == YES ? " = user-defined supernodes" : "");
+	}
 	printf(": n %ld, nnz %ld, nrhs %d\n", (long) G.n, (long) G.nnz, par.nrhs);
 	if (options.PrintStat) {
 	    print_sp_ienv_dist(&options);
@@ -973,6 +1018,8 @@ int main(int argc, char *argv[])
 	    X_(ScalePermstructInit)(n, n, &ScalePermstruct);
 	    X_(LUstructInit)(n, &LUstruct);
 	    options.Fact = DOFACT;
+	    if (options.ColPerm == MY_PERMC)
+		redblack_perm_c(par.nx, par.ny, par.nz, par.blk, ScalePermstruct.perm_c);
 	    if (istep > 0) ++ver;
 	    break;
 	case 'F':
@@ -998,6 +1045,22 @@ int main(int argc, char *argv[])
 	    if (!iam) printf("  -f %s: unknown letter '%c'\n", par.steps, step);
 	    nfail++;
 	    goto done;
+	}
+
+	/* User-defined supernodes: one per grid point.  The partition is in
+	   the final column order, and holds for any ordering that keeps the
+	   unknowns of a point together because the blocks have one size (the
+	   postordering of the etree keeps them together too: inside a dense
+	   block the etree is a chain).  The symbolic factorization runs on
+	   every process in 2D and on Z-layer 0 in 3D, which then sends the
+	   partition to the other layers.  Destroy_LU() frees the arrays. */
+	if (options.UserDefineSupernode == YES && (step == 'D' || step == 'P') &&
+	    (!use3d || grid3d.zscp.Iam == 0)) {
+	    int_t *supno = intMalloc_dist(n), *xsup = intMalloc_dist(n + 1);
+	    for (i = 0; i < n; ++i) supno[i] = i / par.blk;
+	    for (i = 0; i <= n / par.blk; ++i) xsup[i] = i * par.blk;
+	    LUstruct.Glu_persist->supno = supno;
+	    LUstruct.Glu_persist->xsup = xsup;
 	}
 
 	/* The distributed matrix.  The solver overwrites it (equilibration),

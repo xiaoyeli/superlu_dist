@@ -19,6 +19,7 @@ provided in SuperLU_DIST.
      - a sequence of factorization modes, e.g. -f DFPRF:
          D DOFACT, F FACTORED, P SamePattern, R SamePattern_SameRowPerm
      - SolveOnly (-S 1), ILU(0) (-I 0), orderings (-p, -q), refinement (-i),
+     - ILU(0) with user-defined supernodes of several columns (-I 0 -U <size>)
        GMRES (-G 1), DiagInv (-D 1), several right-hand sides (-s)
      - the batched interfaces (-b fixed size, -B variable size)
    on a matrix file or, without a file name, on a generated nonsymmetric

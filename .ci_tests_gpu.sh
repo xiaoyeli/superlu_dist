@@ -39,6 +39,7 @@ SLU_CI_GPU_AWARE_MPI="${SLU_CI_GPU_AWARE_MPI:-0}"
 # Generated 3D grid problems; the larger one gives supernodes big enough for
 # the GEMM offload of the C code.
 G3="-x 12 -y 11 -z 10"      # n = 1320
+GB="-x 8 -y 7 -z 6"         # with -U: that many unknowns per grid point
 G3L="-x 24 -y 22 -z 20"     # n = 10560
 
 FS="SUPERLU_ACC_OFFLOAD=1 SUPERLU_ACC_SOLVE=1"   # GPU factorization and solve
@@ -142,8 +143,15 @@ add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 1 -c 1 -d 2 -S 1 -f DF $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -I 0 -q 0 -f DF $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DF $G3
 add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 1 -c 1 -d 2 -I 0 -q 0 -f DF $G3
-# (ILU(0) is not supported by the C++ factorization: with GPU3DVERSION=1
-#  "pdtest_ci -d 1 -I 0 -q 0" hangs on the GPU and crashes on the CPU; not run.)
+add_test pass ci 4 "$F $V0"  $T/pdtest_ci -r 2 -c 2 -I 0 -q 2 -f DFPRF $G3
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DF $G3
+add_test pass ci 1 "$FS $V1" $T/pztest_ci -r 1 -c 1 -d 1 -I 0 -q 4 -f DF $G3
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 2 -I 0 -q 4 -f DF $G3
+# ILU(0) with user-defined supernodes of several columns (-U), red-black ordering
+add_test pass ci 4 "$F $V0"  $T/pdtest_ci -r 2 -c 2 -I 0 -U 4 -p 0 -q 8 -f DFPF $GB
+add_test pass ci 1 "$FS $V0" $T/pztest_ci -r 1 -c 1 -d 1 -I 0 -U 3 -p 0 -q 8 -f DF $GB
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -U 4 -p 0 -q 8 -f DF $GB
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pztest_ci -r 1 -c 1 -d 2 -I 0 -U 3 -p 0 -q 8 -f DF $GB
 
 # ---------------------------------------------------------------------------
 # Batched interfaces (MAGMA): fixed size (-b), variable size with reuse of

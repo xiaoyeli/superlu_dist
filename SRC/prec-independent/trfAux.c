@@ -274,7 +274,12 @@ int_t* getPerm_c_supno(int_t nsupers, int n, superlu_dist_options_t *options,
     /* ================================================== *
      * static scheduling of j-th step of LU-factorization *
      * ================================================== */
-    if ( options->lookahead_etree == YES && /* use e-tree of symmetrized matrix, and      */
+    /* An incomplete factorization (ILU) must be scheduled with the etree of
+       the symmetrized matrix as well: its L and U structures are not closed
+       under fill, so the tree built from them below (the first off-diagonal
+       block of each supernode) does not order all the dependencies. */
+    if ( (options->lookahead_etree == YES ||
+          options->ILU_level != SLU_EMPTY) && /* use e-tree of symmetrized matrix, and      */
             (options->ParSymbFact == NO ||      /* 1) symmetric fact with serial symbolic, or */
              (options->SymPattern == YES &&      /* 2) symmetric pattern, and                  */
               options->RowPerm == NOROWPERM)) )  /*    no rowperm to destroy the symmetry      */
@@ -1217,7 +1222,12 @@ int_t* getPerm_c_supno_allgrid(int_t nsupers, superlu_dist_options_t *options,
     /* ================================================== *
      * static scheduling of j-th step of LU-factorization *
      * ================================================== */
-    if ( options->lookahead_etree == YES && /* use e-tree of symmetrized matrix, and      */
+    /* An incomplete factorization (ILU) must be scheduled with the etree of
+       the symmetrized matrix as well: its L and U structures are not closed
+       under fill, so the tree built from them below (the first off-diagonal
+       block of each supernode) does not order all the dependencies. */
+    if ( (options->lookahead_etree == YES ||
+          options->ILU_level != SLU_EMPTY) && /* use e-tree of symmetrized matrix, and      */
             (options->ParSymbFact == NO ||      /* 1) symmetric fact with serial symbolic, or */
              (options->SymPattern == YES &&      /* 2) symmetric pattern, and                  */
               options->RowPerm == NOROWPERM)) )  /*    no rowperm to destroy the symmetry      */

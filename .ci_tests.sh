@@ -20,6 +20,7 @@ export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
 # Generated matrices: a 2D and a 3D grid problem, small enough for a CI runner.
 G2="-x 40 -y 30"            # n = 1200
 G3="-x 12 -y 11 -z 10"      # n = 1320
+GB="-x 8 -y 7 -z 6"         # with -U: that many unknowns per grid point
 
 # ---------------------------------------------------------------------------
 # 1-15: the original tests (pdtest and the 2D EXAMPLE drivers).  Their numbers
@@ -148,7 +149,8 @@ add_test pass ci 4 "" $T/pztest_ci -r 2 -c 2 -d 1 -S 1 -f DF $G3
 add_test pass ci 4 "" $T/pstest_ci -r 1 -c 2 -d 2 -S 1 -f DF $G2
 
 # ---------------------------------------------------------------------------
-# ILU(0), natural ordering: the solution must be the one of a textbook ILU(0).
+# ILU(0): the solution must be the one of a textbook ILU(0) of the permuted
+# and scaled matrix, with the natural and with fill-reducing orderings.
 # With GMRES (2D) the incomplete factors precondition a solve to full accuracy.
 # ---------------------------------------------------------------------------
 ci_group ilu
@@ -161,6 +163,26 @@ add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DFPF $G3
 add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 0 -f DFPF $G3
 add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -I 0 -q 0 -k 1 -f DFPF $G3
 add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 1 -d 4 -I 0 -q 0 -s 2 $G2
+# fill-reducing orderings: MMD_AT_PLUS_A, METIS_AT_PLUS_A, ParMETIS
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -q 2 -f DFPRF $G3
+add_test pass ci 6 "" $T/pztest_ci -r 2 -c 3 -I 0 -q 4 -f DFPRF $D/cg20.cua
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -q 5 -f DF $G3
+add_test pass ci 2 "" $T/pdtest_ci -r 2 -c 1 -I 0 -q 1 $D/big.rua
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 4 -f DFPF $G3
+add_test pass ci 4 "" $T/pstest_ci -r 1 -c 2 -d 2 -I 0 -q 2 -f DF $G3
+# the C++ factorization (GPU3DVERSION=1)
+add_test pass ci 1 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DFPF $G3
+add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 4 -f DF $G3
+add_test pass ci 4 "GPU3DVERSION=1" $T/pztest_ci -r 2 -c 2 -d 1 -I 0 -q 2 -f DF $G3
+# user-defined supernodes of several columns (options.UserDefineSupernode):
+# -U gives each grid point that many unknowns coupled by dense blocks, one
+# supernode per point; natural and red-black (-q 8, MY_PERMC) orderings
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -U 4 -p 0 -q 8 -f DFPRF $GB
+add_test pass ci 6 "" $T/pztest_ci -r 2 -c 3 -I 0 -U 3 -p 0 -q 0 -f DFPF $GB
+add_test pass ci 1 "" $T/pstest_ci -r 1 -c 1 -I 0 -U 2 -p 0 -q 8 $GB
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DFPF $GB
+add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -I 0 -U 3 -p 0 -q 8 -s 2 $GB
+add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DF $GB
 
 # ---------------------------------------------------------------------------
 # Batched interfaces (one process): -b fixed size, -B variable size with the

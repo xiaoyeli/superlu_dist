@@ -383,7 +383,12 @@ int_t xLUstruct_t<Ftype>::dScatter(int_t m, int_t n,
     if (gj > gi) // its in upanel
     {
         int li = g2lRow(gi);
+        /* ILU: the destination block may not be stored; no fill-in then. */
+        if (uPanelVec[li].isEmpty())
+            return 0;
         int lj = uPanelVec[li].find(gj);
+        if (lj == GLOBAL_BLOCK_NOT_FOUND)
+            return 0;
         Dst = uPanelVec[li].blkPtr(lj);
         lddst = supersize(gi);
         dstRowLen = supersize(gi);
@@ -395,7 +400,12 @@ int_t xLUstruct_t<Ftype>::dScatter(int_t m, int_t n,
     else
     {
         int lj = g2lCol(gj);
+        /* ILU: the destination block may not be stored; no fill-in then. */
+        if (lPanelVec[lj].isEmpty())
+            return 0;
         int li = lPanelVec[lj].find(gi);
+        if (li == GLOBAL_BLOCK_NOT_FOUND)
+            return 0;
         Dst = lPanelVec[lj].blkPtr(li);
         lddst = lPanelVec[lj].LDA();
         dstRowLen = lPanelVec[lj].nbrow(li);
