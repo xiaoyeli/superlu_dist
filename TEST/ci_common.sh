@@ -36,7 +36,7 @@
 #   SLU_CI_MPIRUN      launcher up to the process count, e.g. "srun -n"
 #                      (default: "mpirun -n", plus --oversubscribe and, for
 #                      root, --allow-run-as-root when mpirun is Open MPI)
-#   SLU_CI_TIMEOUT     seconds allowed for one test        (default: 600)
+#   SLU_CI_TIMEOUT     seconds allowed for one test        (default: 300)
 #   SLU_CI_XTRUE_TOL   tolerance of the "xtrue"/"berr" checks (default: 1e-6)
 #   SLU_CI_XTRUE_TOL_SINGLE  the same in single precision  (default: 1e-2)
 #   SLU_CI_VERBOSE     1: print the output of every test, not only of failures
@@ -49,13 +49,16 @@ TEST_FOLDER="$BUILD_DIR/TEST"
 # short names for the test tables
 D="$DATA_FOLDER"; E="$EXAMPLE_FOLDER"; T="$TEST_FOLDER"
 
-SLU_CI_TIMEOUT="${SLU_CI_TIMEOUT:-600}"
+SLU_CI_TIMEOUT="${SLU_CI_TIMEOUT:-300}"
 SLU_CI_XTRUE_TOL="${SLU_CI_XTRUE_TOL:-1e-6}"
 SLU_CI_XTRUE_TOL_SINGLE="${SLU_CI_XTRUE_TOL_SINGLE:-1e-2}"
 
 if [ -z "${SLU_CI_MPIRUN:-}" ]; then
     SLU_CI_MPIRUN="mpirun"
-    if mpirun --version 2>&1 | grep -qi "open.\?mpi\|open-rte"; then
+    # Open MPI: 4.x reports "Open MPI"/"OpenRTE", 5.x may report only its
+    # launcher, "prterun (PRRTE)"; ompi_info is installed with all of them.
+    if mpirun --version 2>&1 | grep -qiE "open ?mpi|open-rte|openrte|prte|prrte" ||
+       command -v ompi_info > /dev/null 2>&1; then
         SLU_CI_MPIRUN="$SLU_CI_MPIRUN --oversubscribe"
         [ "$(id -u)" = "0" ] && SLU_CI_MPIRUN="$SLU_CI_MPIRUN --allow-run-as-root"
     fi
