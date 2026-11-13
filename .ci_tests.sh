@@ -68,11 +68,10 @@ add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 2 $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 3 $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 4 -f DFPRF $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 5 -f DFPRF $G3
-add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 5 -P 1 -f DFRF $G3
-add_test pass  ci 4 "" $T/pztest_ci -r 2 -c 2 -q 5 -P 1 -f DFRF $D/cg20.cua
-# Known defect: SamePattern after a parallel symbolic factorization returns a
-# wrong solution.
-add_test xfail ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 5 -P 1 -f DP $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 5 -P 1 -f DFPRF $G3
+add_test pass  ci 4 "" $T/pztest_ci -r 2 -c 2 -q 5 -P 1 -f DFPRF $D/cg20.cua
+# Parallel symbolic factorization of a NATURAL ordering (no separator tree)
+add_test pass  ci 6 "" $T/pdtest_ci -r 3 -c 2 -q 0 -P 1 -f DFPRF $G3
 
 # Row permutation (-p), equilibration (-e), refinement (-i), DiagInv (-D),
 # GMRES (-G).  "-k 1" scrambles the rows: only a row permutation can solve it.

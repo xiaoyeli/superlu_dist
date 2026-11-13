@@ -221,9 +221,12 @@ foreach(q 0 2 3 4)
 endforeach()
 add_superlu_dist_ci_test(3d_colperm5 d 4 -r 2 -c 2 -d 1 -q 5 -f DFPF ${CI_G3}
                          LABELS cpu 3d ordering)
-add_superlu_dist_ci_test(2d_parsymbfact d 4 -r 2 -c 2 -q 5 -P 1 -f DFRF ${CI_G3}
+add_superlu_dist_ci_test(2d_parsymbfact d 4 -r 2 -c 2 -q 5 -P 1 -f DFPRF ${CI_G3}
                          LABELS cpu 2d ordering)
-add_superlu_dist_ci_test(2d_parsymbfact z 4 -r 2 -c 2 -q 5 -P 1 -f DFRF ${CI_DATA}/cg20.cua
+add_superlu_dist_ci_test(2d_parsymbfact z 4 -r 2 -c 2 -q 5 -P 1 -f DFPRF ${CI_DATA}/cg20.cua
+                         LABELS cpu 2d ordering)
+# parallel symbolic factorization of a NATURAL ordering (no separator tree)
+add_superlu_dist_ci_test(2d_parsymbfact_natural d 6 -r 3 -c 2 -q 0 -P 1 -f DFPRF ${CI_G3}
                          LABELS cpu 2d ordering)
 
 # ---- row permutation (-k 1 scrambles the rows: only pivoting can solve it),
@@ -247,9 +250,6 @@ add_superlu_dist_ci_test(3d_rankorder_xy d 4 -r 2 -c 1 -d 2 -f DFPF ${CI_G3}
 # (SamePattern_SameRowPerm, letter R of -f, is unreliable in the 3D interface:
 #  it hangs, corrupts the heap or returns a wrong solution depending on the
 #  grid and the ordering.  No 3D test runs it; see .ci_tests.sh, group 3d.)
-# SamePattern after a parallel symbolic factorization
-add_superlu_dist_ci_test(2d_parsymbfact_samepattern d 4 -r 2 -c 2 -q 5 -P 1 -f DP ${CI_G3}
-                         LABELS cpu 2d ordering XFAIL)
 
 ######################################################################
 # GPU tests ("ctest -L gpu"), only in a GPU build.
