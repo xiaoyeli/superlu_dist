@@ -107,6 +107,10 @@ add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3L    # NVSHM
 add_test pass ci 4 "$FS $V0" $T/pztest_ci -r 2 -c 2 -d 1 -f DFPF $G3     # NVSHMEM
 add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -q 2 -D 1 -f DFPF $G3
 add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -g 1 -f DF $G3  # RHS on the GPU
+# ParMETIS ordering with the parallel symbolic factorization (double only;
+# fresh factorization and solves)
+add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -q 5 -P 1 -f DFDF $G3L
+add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 2 -c 1 -d 2 -q 5 -P 1 -f DF $G3L  # NVSHMEM
 
 # ---------------------------------------------------------------------------
 # 3D interface, C++ code (GPU3DVERSION=1)
@@ -123,6 +127,8 @@ add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pztest_ci -r 1 -c 1 -d 2 -f DFPF $G3
 add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pstest_ci -r 1 -c 1 -d 2 -f DFPF $G3
 add_gpu_mpi_test pass ci 4 "$F $V1"  $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3L
 add_gpu_mpi_test pass ci 4 "$FS $V1" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3L   # NVSHMEM
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 2 -q 5 -P 1 -f DFDF $G3L
+add_gpu_mpi_test pass ci 4 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 4 -q 5 -P 1 -f DF $D/big.rua
 add_gpu_mpi_test pass xtrue 2 "$FS $V1" $E/pddrive3d -r 1 -c 1 -d 2 -i 1 -p 1 -q 4 $D/big.rua
 
 # ---------------------------------------------------------------------------

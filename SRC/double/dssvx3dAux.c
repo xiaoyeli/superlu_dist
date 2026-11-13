@@ -533,7 +533,9 @@ void dperform_row_permutation(
     int_t* rowind = NULL;
     int_t nnz = 0;
     double* a_GA = NULL;
-    if ( Fact != SamePattern_SameRowPerm ) {
+    /* GA is also absent for ParSymbFact = YES with NOROWPERM: the
+       distributed symbolic factorization consumes A directly. */
+    if ( Fact != SamePattern_SameRowPerm && GA->Store != NULL ) {
 	GAstore = (NCformat *)GA->Store;
 	colptr = GAstore->colptr;
 	rowind = GAstore->rowind;

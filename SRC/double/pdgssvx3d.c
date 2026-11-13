@@ -523,7 +523,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			   double *berr, SuperLUStat_t *stat, int *info)
 {
     NRformat_loc *Astore = A->Store;
-    SuperMatrix GA; /* Global A in NC format */
+    SuperMatrix GA = {0}; /* Global A in NC format, when one is required. */
     NCformat *GAstore;
     double *a_GA;
 
@@ -594,6 +594,24 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
     validateInput_pdgssvx3d(options, A, ldb, nrhs, grid3d, info);
 
+    /* The 3D parallel symbolic factorization covers a fresh factorization
+       only.  Reject the rest on every rank before entering layer-specific
+       collectives. */
+    if (parSymbFact == YES && Fact != DOFACT && Fact != FACTORED) {
+        ABORT("The 3D ParSymbFact path does not yet support symbolic-pattern reuse.");
+    }
+    if (parSymbFact == YES && Fact == DOFACT &&
+        options->ColPerm != NATURAL && options->ColPerm != MY_PERMC &&
+        options->ColPerm != PARMETIS) {
+        ABORT("The 3D ParSymbFact path requires ColPerm=NATURAL, MY_PERMC, or PARMETIS.");
+    }
+#ifndef HAVE_PARMETIS
+    if (Fact == DOFACT &&
+        (parSymbFact == YES || options->ColPerm == PARMETIS)) {
+        ABORT("ColPerm=PARMETIS and ParSymbFact=YES require a build configured with ParMETIS support.");
+    }
+#endif
+
     /* Initialization. */
 
     /* definition of factored seen by each process layer */
@@ -658,6 +676,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     MPI_Comm symb_comm; /* communicator for symbolic factorization */
     int col, key;		/* parameters for creating a new communicator */
     Pslu_freeable_t Pslu_freeable;
+    /* Parallel symbolic factorization: compact L/U structures and the
+       supernodal dependency tree, built on layer 0 and sent to the others */
+    int_t *dist_xlsub = NULL, *dist_lsub = NULL;
+    int_t *dist_xusub = NULL, *dist_usub = NULL;
+    int_t *dist_setree = NULL;
+    float dist_symb_mem = 0.0;
 
     sizes = NULL;
     fstVtxSep = NULL;
@@ -754,10 +778,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    permc_spec = options->ColPerm;
 
 	    if (parSymbFact == YES || permc_spec == PARMETIS) {
-		if(grid3d->npdep!=1){
-    		    fprintf(stderr, "Error: ParMETIS and Parallel Symbolic Factorization are not yet supported with grid3d->npdep>1.\n");
-			return; // or exit(-1); if you want to terminate the program
-		}
 		nprocs_num = grid->nprow * grid->npcol;
 		noDomains = (int)(pow(2, ((int)LOG2(nprocs_num))));
 
@@ -788,12 +808,17 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			ABORT("SUPERLU_MALLOC fails for sizes.");
 		    if (!(fstVtxSep = intMalloc_dist(2 * noDomains)))
 			ABORT("SUPERLU_MALLOC fails for fstVtxSep.");
-		    for (i = 0; i < 2 * noDomains - 2; ++i) {
+		    /* Trivial separator tree: all the rows in the first leaf
+		       domain, every separator empty.  One domain needs no
+		       separator property, so this is valid for any perm_c[].
+		       (All the rows in the top separator makes symbfact_dist()
+		       return a wrong structure on more than one process.) */
+		    for (i = 0; i < 2 * noDomains - 1; ++i) {
 			sizes[i] = 0;
-			fstVtxSep[i] = 0;
+			fstVtxSep[i] = m;
 		    }
-		    sizes[2 * noDomains - 2] = m;
-		    fstVtxSep[2 * noDomains - 2] = 0;
+		    sizes[0] = m;
+		    fstVtxSep[0] = 0;
 		} else if (permc_spec != PARMETIS) {
 		    /* same as before */
 		    printf("{%4d,%4d}: pdgssvx3d: invalid ColPerm option when ParSymbfact is used\n",
@@ -813,7 +838,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 						 grid, &symb_comm);
 		    if (flinfo > 0)
 			ABORT("ERROR in get perm_c parmetis.");
-		} else {
+		} else if (!(parSymbFact == YES && permc_spec == NATURAL)) {
 		    /* get_perm_c_dist() calls a serial ordering library (MMD,
 		       COLAMD, or METIS) that is not guaranteed to return the
 		       same permutation on every process -- e.g. when linked
@@ -848,7 +873,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		} /* end serial symbolic factorization */
 		else { /* parallel symbolic factorization */
-		    //TODO: need a 3D version of symbfact_dist
 		    t = SuperLU_timer_();
 		    flinfo = symbfact_dist(options, nprocs_num, noDomains,
 					  A, perm_c, perm_r,
@@ -858,6 +882,35 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 		    if (flinfo > 0)
 		        ABORT("Insufficient memory for parallel symbolic factorization.");
+
+		    /* Convert the process-local parallel-symbolic output once on
+		       layer zero.  The compact 2D structures are subsequently
+		       replicated down each z-line and assembled independently on
+		       every process layer. */
+		    dist_symb_mem = ddist_symbLU(options, n, &Pslu_freeable,
+						 Glu_persist, &dist_xlsub,
+						 &dist_lsub, &dist_xusub,
+						 &dist_usub, grid);
+		    if (dist_symb_mem > 0)
+			ABORT("Insufficient memory while redistributing parallel symbolic data.");
+
+		    nsupers = getNsupers(n, Glu_persist);
+		    dist_setree = ddist_build_supno_tree(
+			n, nsupers, sizes, fstVtxSep, noDomains,
+			dist_xlsub, dist_lsub, dist_xusub, dist_usub,
+			Glu_persist, grid);
+
+		    /* Install a scalar etree consistent with the supernodal tree.
+		       The direct 3D partition initializer consumes dist_setree, but
+		       later common code still carries LUstruct->etree. */
+		    for (j = 0; j < nsupers; ++j) {
+			int_t col_first = Glu_persist->xsup[j];
+			int_t col_last = Glu_persist->xsup[j + 1] - 1;
+			for (i = col_first; i < col_last; ++i)
+			    etree[i] = i + 1;
+			etree[col_last] = (dist_setree[j] == nsupers)
+			    ? n : Glu_persist->xsup[dist_setree[j]];
+		    }
 		}
 
 		/* Destroy GA */
@@ -903,7 +956,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	    dbcastPermutedSparseA(A, ScalePermstruct, Glu_freeable,
 			     LUstruct, grid3d);
 	} else {
-		    ; //TODO: need a parmetis version of dbcastPermutedSparseA broadcasting Pslu_freeable
+	    dbcastDistSymbLU(A, ScalePermstruct, LUstruct,
+			     &dist_xlsub, &dist_lsub,
+			     &dist_xusub, &dist_usub,
+			     &dist_symb_mem, &dist_setree,
+			     grid3d);
 	}
     }
 
@@ -936,7 +993,15 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		LUstruct->trf3Dpart = (dtrf3Dpartition_t *)SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 		// computes the new partition for 3D factorization here
 		trf3Dpartition=LUstruct->trf3Dpart;
-	        dnewTrfPartitionInit(nsupers, LUstruct, grid3d);
+		if (parSymbFact == YES)
+		    dnewTrfPartitionInitFromSetree(nsupers, dist_setree,
+						   LUstruct, grid3d);
+		else
+		    dnewTrfPartitionInit(nsupers, LUstruct, grid3d);
+		if (dist_setree != NULL) {
+		    SUPERLU_FREE(dist_setree);
+		    dist_setree = NULL;
+		}
 	    }
 	}
 
@@ -965,16 +1030,17 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		   NOTE: the row permutation Pc*Pr is applied internally in the
 			distribution routine. */
 
-		// TODO: need a 3D version of ddist_psymbtonum
 		t = SuperLU_timer_();
-		dist_mem_use = ddist_psymbtonum(options, n, A, ScalePermstruct,
-						&Pslu_freeable, LUstruct, grid);
+		dist_mem_use = ddist_psymbtonum3d(
+		    options, n, A, ScalePermstruct,
+		    dist_xlsub, dist_lsub, dist_xusub, dist_usub,
+		    dist_symb_mem, LUstruct, grid3d);
 		if (dist_mem_use > 0)
 		    ABORT("Not enough memory available for dist_psymbtonum\n");
+		dist_xlsub = dist_lsub = NULL;
+		dist_xusub = dist_usub = NULL;
 
 		stat->utime[DIST] = SuperLU_timer_() - t;
-
-		ABORT("ddist_psymbtonum does not yet work with 3D factorization\n");
 
 	    }
 

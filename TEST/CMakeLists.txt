@@ -221,6 +221,24 @@ foreach(q 0 2 3 4)
 endforeach()
 add_superlu_dist_ci_test(3d_colperm5 d 4 -r 2 -c 2 -d 1 -q 5 -f DFPF ${CI_G3}
                          LABELS cpu 3d ordering)
+# ParMETIS on several Z-layers, and the parallel symbolic factorization in the
+# 3D interface (double precision; fresh factorization only: D and F)
+add_superlu_dist_ci_test(3d_colperm5_2x2x2 d 8 -r 2 -c 2 -d 2 -q 5 -f DFPF ${CI_G3}
+                         LABELS cpu 3d ordering)
+foreach(grid 2x2x1 2x1x2 1x1x4 2x2x2)
+  string(REPLACE "x" ";" g ${grid})
+  list(GET g 0 r)
+  list(GET g 1 c)
+  list(GET g 2 d)
+  math(EXPR np "${r}*${c}*${d}")
+  foreach(v 0 1)
+    add_superlu_dist_ci_test(3d_parsymbfact_${grid}_v${v} d ${np}
+                             -r ${r} -c ${c} -d ${d} -q 5 -P 1 -f DFDF ${CI_G3}
+                             ENV GPU3DVERSION=${v} LABELS cpu 3d ordering)
+  endforeach()
+endforeach()
+add_superlu_dist_ci_test(3d_parsymbfact_big d 4 -r 2 -c 1 -d 2 -q 5 -P 1 -f DF -s 3
+                         ${CI_DATA}/big.rua LABELS cpu 3d ordering)
 add_superlu_dist_ci_test(2d_parsymbfact d 4 -r 2 -c 2 -q 5 -P 1 -f DFPRF ${CI_G3}
                          LABELS cpu 2d ordering)
 add_superlu_dist_ci_test(2d_parsymbfact z 4 -r 2 -c 2 -q 5 -P 1 -f DFPRF ${CI_DATA}/cg20.cua

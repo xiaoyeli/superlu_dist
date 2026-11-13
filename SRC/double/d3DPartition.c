@@ -20,7 +20,10 @@ at the top-level directory.
 
 #include "superlu_ddefs.h"
 
-void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
+static void dnewTrfPartitionInitWithOwnedSetree(int_t nsupers,
+                                                int_t *setree,
+                                                dLUstruct_t *LUstruct,
+                                                gridinfo3d_t *grid3d)
 {
 
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -35,9 +38,6 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
         fprintf(stderr, "Error: Invalid arguments to dnewTrfPartitionInit().\n");
         return;
     }
-
-      // Calculation of supernodal etree
-    int_t *setree = supernodal_etree(nsupers, LUstruct->etree, LUstruct->Glu_persist->supno, LUstruct->Glu_persist->xsup);
 
     // Conversion of supernodal etree to list
     treeList_t *treeList = setree2list(nsupers, setree);
@@ -211,7 +211,62 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
 }
 
 
-// function to broadcast permuted sparse matrix and symbolic factorization data from
+/*
+ * Initialize the 3D forest partition from a caller-supplied supernodal
+ * dependency tree.  The partition owns the copy installed in gEtreeInfo, so
+ * callers may release or reuse setree_in after this routine returns.
+ */
+void dnewTrfPartitionInitFromSetree(int_t nsupers, const int_t *setree_in,
+                                    dLUstruct_t *LUstruct,
+                                    gridinfo3d_t *grid3d)
+{
+    int_t *setree;
+
+    if (nsupers < 1 || setree_in == NULL || LUstruct == NULL ||
+        LUstruct->Glu_persist == NULL || LUstruct->trf3Dpart == NULL ||
+        grid3d == NULL) {
+        ABORT("Invalid arguments to dnewTrfPartitionInitFromSetree().");
+    }
+
+    setree = intMalloc_dist(nsupers + 1);
+    if (setree == NULL)
+        ABORT("Malloc fails for the supernodal dependency tree.");
+
+    for (int_t k = 0; k < nsupers; ++k) {
+        const int_t parent = setree_in[k];
+        if (parent != nsupers && (parent <= k || parent >= nsupers)) {
+            SUPERLU_FREE(setree);
+            ABORT("Invalid parent in the supernodal dependency tree.");
+        }
+        setree[k] = parent;
+    }
+    setree[nsupers] = nsupers;
+
+    dnewTrfPartitionInitWithOwnedSetree(nsupers, setree, LUstruct, grid3d);
+}
+
+
+/* Preserve the serial-symbolic entry point. */
+void dnewTrfPartitionInit(int_t nsupers, dLUstruct_t *LUstruct,
+                          gridinfo3d_t *grid3d)
+{
+    int_t *setree;
+
+    if (LUstruct == NULL || LUstruct->Glu_persist == NULL ||
+        LUstruct->etree == NULL || grid3d == NULL)
+        ABORT("Invalid arguments to dnewTrfPartitionInit().");
+
+    setree = supernodal_etree(nsupers, LUstruct->etree,
+                              LUstruct->Glu_persist->supno,
+                              LUstruct->Glu_persist->xsup);
+    if (setree == NULL)
+        ABORT("Failed to construct the supernodal elimination tree.");
+
+    dnewTrfPartitionInitWithOwnedSetree(nsupers, setree, LUstruct, grid3d);
+}
+
+
+// function to broad permuted sparse matrix and symbolic factorization data from
 // 2d to 3d grid
 
 void dbcastPermutedSparseA(SuperMatrix *A,
@@ -399,3 +454,113 @@ void dbcastPermutedSparseA(SuperMatrix *A,
 
 }
 
+
+/*
+ * Broadcast the compact numerical-symbolic representation produced by
+ * ddist_symbLU() from layer zero to the matching (prow,pcol) rank in every
+ * other process layer.  Each receiver gets private arrays because the
+ * numerical assembly stage reorders and frees them.
+ */
+void dbcastDistSymbLU(SuperMatrix *A,
+                      dScalePermstruct_t *ScalePermstruct,
+                      dLUstruct_t *LUstruct,
+                      int_t **xlsub, int_t **lsub,
+                      int_t **xusub, int_t **usub,
+                      float *memStrLU, int_t **setree,
+                      gridinfo3d_t *grid3d)
+{
+    gridinfo_t *grid;
+    Glu_persist_t *Glu_persist;
+    NRformat_loc *Astore;
+    MPI_Comm zcomm;
+    int zrank;
+    int_t m, n, nsupers = 0;
+    int_t nLcols, nUrows;
+    int64_t nLsub = 0, nUsub = 0;
+
+    if (A == NULL || A->Store == NULL || ScalePermstruct == NULL ||
+        LUstruct == NULL || LUstruct->Glu_persist == NULL ||
+        xlsub == NULL || lsub == NULL || xusub == NULL || usub == NULL ||
+        memStrLU == NULL || setree == NULL || grid3d == NULL)
+        ABORT("Invalid arguments to dbcastDistSymbLU().");
+
+    grid = &grid3d->grid2d;
+    Glu_persist = LUstruct->Glu_persist;
+    Astore = (NRformat_loc *) A->Store;
+    zcomm = grid3d->zscp.comm;
+    zrank = grid3d->zscp.Iam;
+    m = A->nrow;
+    n = A->ncol;
+
+    if (zrank == 0)
+        nsupers = Glu_persist->supno[n - 1] + 1;
+    MPI_Bcast(&nsupers, 1, mpi_int_t, 0, zcomm);
+
+    /* The layer-zero driver installs a scalar etree compatible with the
+       supplied supernodal tree.  Keep this common field valid on every
+       depth. */
+    if (LUstruct->etree == NULL)
+        ABORT("Missing etree in dbcastDistSymbLU().");
+    MPI_Bcast(LUstruct->etree, n, mpi_int_t, 0, zcomm);
+
+    allocBcastArray((void **) &Glu_persist->supno,
+                    (n + 1) * sizeof(int_t), 0, zcomm);
+    allocBcastArray((void **) &Glu_persist->xsup,
+                    (nsupers + 1) * sizeof(int_t), 0, zcomm);
+    allocBcastArray((void **) setree,
+                    (nsupers + 1) * sizeof(int_t), 0, zcomm);
+
+    nLcols = CEILING(nsupers, grid->npcol);
+    nUrows = CEILING(nsupers, grid->nprow);
+    allocBcastArray((void **) xlsub, (nLcols + 1) * sizeof(int_t),
+                    0, zcomm);
+    allocBcastArray((void **) xusub, (nUrows + 1) * sizeof(int_t),
+                    0, zcomm);
+
+    if (zrank == 0) {
+        nLsub = (*xlsub)[nLcols];
+        nUsub = (*xusub)[nUrows];
+    }
+    MPI_Bcast(&nLsub, 1, MPI_INT64_T, 0, zcomm);
+    MPI_Bcast(&nUsub, 1, MPI_INT64_T, 0, zcomm);
+    if (nLsub > 0)
+        allocBcastLargeArray((void **) lsub, nLsub * sizeof(int_t),
+                             0, zcomm);
+    else if (zrank != 0)
+        *lsub = NULL;
+    if (nUsub > 0)
+        allocBcastLargeArray((void **) usub, nUsub * sizeof(int_t),
+                             0, zcomm);
+    else if (zrank != 0)
+        *usub = NULL;
+
+    MPI_Bcast(memStrLU, 1, MPI_FLOAT, 0, zcomm);
+
+    /* Scale/permutation state is modified only on layer zero. */
+    MPI_Bcast(&ScalePermstruct->DiagScale, sizeof(DiagScale_t), MPI_BYTE,
+              0, zcomm);
+    MPI_Bcast(ScalePermstruct->perm_r, m * sizeof(int_t), MPI_BYTE,
+              0, zcomm);
+    MPI_Bcast(ScalePermstruct->perm_c, n * sizeof(int_t), MPI_BYTE,
+              0, zcomm);
+    if (ScalePermstruct->DiagScale == ROW ||
+        ScalePermstruct->DiagScale == BOTH)
+        allocBcastArray((void **) &ScalePermstruct->R,
+                        m * sizeof(double), 0, zcomm);
+    if (ScalePermstruct->DiagScale == COL ||
+        ScalePermstruct->DiagScale == BOTH)
+        allocBcastArray((void **) &ScalePermstruct->C,
+                        n * sizeof(double), 0, zcomm);
+
+    /* dGatherNRformat_loc3d_allgrid() already allocated matching local A
+       buffers on every layer; propagate the scaled layer-zero contents. */
+    MPI_Bcast(&Astore->nnz_loc, sizeof(int_t), MPI_BYTE, 0, zcomm);
+    MPI_Bcast(&Astore->m_loc, sizeof(int_t), MPI_BYTE, 0, zcomm);
+    MPI_Bcast(&Astore->fst_row, sizeof(int_t), MPI_BYTE, 0, zcomm);
+    MPI_Bcast(Astore->nzval, Astore->nnz_loc * sizeof(double), MPI_BYTE,
+              0, zcomm);
+    MPI_Bcast(Astore->rowptr, (Astore->m_loc + 1) * sizeof(int_t), MPI_BYTE,
+              0, zcomm);
+    MPI_Bcast(Astore->colind, Astore->nnz_loc * sizeof(int_t), MPI_BYTE,
+              0, zcomm);
+}

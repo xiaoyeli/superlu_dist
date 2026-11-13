@@ -577,6 +577,14 @@ static const char *unsupported(const params_t *par, superlu_dist_options_t *opti
     if (par->colperm == PARMETIS || par->parsymb == 1)
 	return "ColPerm = PARMETIS / ParSymbFact need ParMETIS";
 #endif
+#if !defined(SLU_CI_DOUBLE)
+    /* Only pdgssvx3d has the 3D parallel symbolic factorization, and ParMETIS
+       on several Z-layers. */
+    if (par->npdep >= 1 && (par->parsymb == 1 ||
+			    (par->colperm == PARMETIS && par->npdep > 1)))
+	return "ParMETIS on several Z-layers and ParSymbFact in the 3D interface "
+	       "are implemented in double precision only";
+#endif
 #ifndef HAVE_METIS
     if (par->colperm == METIS_AT_PLUS_A || par->colperm == METIS_ATA)
 	return "the METIS orderings need METIS";

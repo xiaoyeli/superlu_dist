@@ -115,11 +115,17 @@ add_test pass ci 4 "SUPERLU_RANKORDER=XY" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G
 # 3D: orderings, row permutation, refinement, DiagInv.
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 2 $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 4 $G3
+# ParMETIS in the 3D interface (double precision only): serial symbolic
+# factorization, then the parallel one (-P 1), which supports a fresh
+# factorization and solves with it (D, F), not the reuse modes (P, R).
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -q 5 -f DFPF $G3
-# Known defects of the 3D interface with ParMETIS: the parallel symbolic
-# factorization crashes (below), and ColPerm = PARMETIS hangs on more than
-# one Z-layer (not run: "pdtest_ci -r 2 -c 1 -d 2 -q 5").
-add_test xfail ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -q 5 -P 1 $G3
+add_test pass  ci 8 "" $T/pdtest_ci -r 2 -c 2 -d 2 -q 5 -f DFPF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -q 5 -P 1 -f DFDF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 5 -P 1 -f DFDF -s 3 $D/big.rua
+add_test pass  ci 8 "" $T/pdtest_ci -r 2 -c 2 -d 2 -q 5 -P 1 -p 1 -k 1 -f DF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 1 -c 1 -d 4 -q 5 -P 1 -f DF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 0 -P 1 -f DF $D/big.rua
+add_test pass  ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -q 5 -P 1 -f DF $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -p 1 -k 1 -f DFPF $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -i 2 -f DFPF $D/big.rua
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -D 1 -f DFPF $G3
