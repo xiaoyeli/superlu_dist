@@ -2583,7 +2583,10 @@ int_t permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix
                (int)sp_ienv_dist(2, options), (int)sp_ienv_dist(3, options),
 	       (int)sp_ienv_dist(6, options));
 #endif
-#if (DEBUGlevel >= 1)
+#ifdef SLU_DUMP_GAC /* Debugging aid, off by default: it writes GAC.dat in the
+		       current directory, only handles real double matrices, and
+		       dereferences GAC's values, which a pattern-only GAC lacks
+		       (it crashed every DEBUGlevel>=1 run with ColPerm=NATURAL). */
     extern void file_dPrint_NCPformat_triplet(FILE *fp, SuperMatrix *A);
     if (!iam) {
 	FILE *fp = fopen("GAC.dat", "w");

@@ -3,102 +3,100 @@ name: GitHub CI tests
 on: [push, pull_request]
 
 jobs:
+  # The library is built once per configuration and all the tests of
+  # .ci_tests.sh run against it (./.ci_tests.sh list shows them).  A test that
+  # needs a package the configuration lacks reports SKIP.
   test:
-    name: Build and test
+    name: Build and test (${{ matrix.config.name }})
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     strategy:
+      fail-fast: false
       matrix:
-        compiler:
-          - gcc
-        test: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        config:
+          # 32-bit indices, no ordering package, system BLAS
+          - name: basic
+            packages: ""
+            cflags: -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0
+            cmake: >-
+              -DTPL_ENABLE_PARMETISLIB=OFF
+            tests: all
+            ctest: false
+          # METIS/ParMETIS orderings, parallel symbolic factorization, LAPACK
+          # (DiagInv); also runs the ctest suite
+          - name: parmetis-lapack
+            packages: libmetis-dev libparmetis-dev
+            cflags: -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0
+            cmake: >-
+              -DTPL_ENABLE_PARMETISLIB=ON
+              -DTPL_PARMETIS_INCLUDE_DIRS=/usr/include
+              -DTPL_PARMETIS_LIBRARIES="/usr/lib/libparmetis.so;/usr/lib/x86_64-linux-gnu/libmetis.so"
+              -DTPL_ENABLE_LAPACKLIB=ON
+            tests: all
+            ctest: true
+          # 64-bit indices
+          - name: int64
+            packages: ""
+            cflags: -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0
+            cmake: >-
+              -DTPL_ENABLE_PARMETISLIB=OFF
+              -DXSDK_INDEX_SIZE=64
+            tests: all
+            ctest: false
+          # The library's debug checks (DEBUGlevel=1), 32-bit indices.  (With
+          # 64-bit indices some debug-only checks do not compile with GCC 14.)
+          # The driver skips what the debug allocator aborts on: the 3D
+          # interface on several Z-layers with ColPerm=NATURAL.
+          - name: debug
+            packages: ""
+            cflags: -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=1
+            cmake: >-
+              -DTPL_ENABLE_PARMETISLIB=OFF
+            tests: all
+            ctest: false
+
+    env:
+      OMP_NUM_THREADS: 1
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Install dependencies
         run: |
-          export BLUE="\033[34;1m"
-          mkdir -p installDir
-
-          printf "${BLUE} SLU; Installing gcc-9 via apt\n"
           sudo apt-get update
-          sudo apt-get install build-essential software-properties-common -y
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt-get update
-          sudo apt-get install gcc-9 g++-9 -y
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
-          export CXX="g++-9"
-          export CC="gcc-9"
-          printf "${BLUE} SLU; Done installing gcc-9 via apt\n"
+          sudo apt-get install -y cmake gcc g++ gfortran openmpi-bin libopenmpi-dev \
+               libblas-dev liblapack-dev ${{ matrix.config.packages }}
 
-          printf "${BLUE} SLU; Installing gfortran via apt\n"
-          sudo apt-get install gfortran-9 -y
-          sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 60
-          printf "${BLUE} SLU; Done installing gfortran via apt\n"
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_C_COMPILER=mpicc
+          -DCMAKE_CXX_COMPILER=mpic++
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_FLAGS="${{ matrix.config.cflags }}"
+          -DCMAKE_CXX_FLAGS="-DAdd_ -DRELEASE"
+          -DTPL_ENABLE_INTERNAL_BLASLIB=OFF
+          -DBUILD_SHARED_LIBS=OFF
+          -DMPIEXEC_PREFLAGS=--oversubscribe
+          ${{ matrix.config.cmake }}
 
-          printf "${BLUE} SLU; Installing openmpi\n"
-          sudo apt-get install openmpi-bin libopenmpi-dev
-          printf "${BLUE} SLU; Done installing openmpi\n"
+      - name: Build
+        run: cmake --build build --parallel 4
 
-          printf "${BLUE} SLU; Installing BLASfrom apt\n"
-          sudo apt-get install libblas-dev
-          export BLAS_LIB=/usr/lib/libblas/libblas.so
-          printf "${BLUE} SLU; Done installing BLASfrom apt\n"
+      - name: Test (.ci_tests.sh)
+        run: ./.ci_tests.sh "${{ matrix.config.tests }}"
 
-          printf "${BLUE} SLU; Installing LAPACKfrom apt\n"
-          sudo apt-get install liblapack-dev
-          export LAPACK_LIB=/usr/lib/liblapack.so
-          printf "${BLUE} SLU; Done installing LAPACKfrom apt\n"
-
-          # printf "${BLUE} SLU; Installing ParMetis-4.0 from source\n"
-          # cd $GITHUB_WORKSPACE/installDir
-          # wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
-          # tar -xf parmetis-4.0.3.tar.gz
-          # cd parmetis-4.0.3/
-          # mkdir -p install
-          # make config shared=1 cc=mpicc cxx=mpic++ prefix=$PWD/install
-          # make install > make_parmetis_install.log 2>&1
-          # printf "${BLUE} SLU; Done installing ParMetis-4.0 from source\n"
-
-      - name: Install package
-        run: |
-          export BLUE="\033[34;1m"
-          printf "${BLUE} SLU; Installing superlu_dist from source\n"
-          cd $GITHUB_WORKSPACE
-          rm -rf build
-          mkdir -p build
-          cd build 
-          cmake .. \
-          -DTPL_ENABLE_PARMETISLIB=OFF \
-          -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=1" \
-          -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
-          -DTPL_BLAS_LIBRARIES="$BLAS_LIB" \
-          -DTPL_LAPACK_LIBRARIES="$LAPACK_LIB" \
-          -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DCMAKE_C_COMPILER=mpicc \
-          -DCMAKE_CXX_COMPILER=mpic++ \
-          -DCMAKE_INSTALL_PREFIX=. \
-          -DCMAKE_BUILD_TYPE=Debug \
-          -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF
-          make
-          make install
-          printf "${BLUE} SLU; Done installing superlu_dist from source\n"
-
-          # -DTPL_PARMETIS_INCLUDE_DIRS="$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/metis/include;$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/install/include" \
-          # -DTPL_PARMETIS_LIBRARIES="$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/install/lib/libparmetis.so" \          
-    
-      - name: Test
-        run: |
-          cd $GITHUB_WORKSPACE
-          export TEST_NUMBER=${{ matrix.test }}
-          ./.ci_tests.sh
+      - name: Test (ctest)
+        if: ${{ matrix.config.ctest }}
+        run: ctest --test-dir build -L ci --output-on-failure
 
   # Same sanitizer configuration as superlu's test-ubuntu-asan-ubsan job,
-  # adapted for an MPI build: the library is built once and all 15
-  # .ci_tests.sh cases run against it.
+  # adapted for an MPI build: the library is built once and the 15 tests of
+  # the group "legacy" of .ci_tests.sh run against it.  (The other groups
+  # have not been run under the sanitizers yet; add them here once they are
+  # clean, e.g. "./.ci_tests.sh legacy 2d 3d".)
   test-asan-ubsan:
     name: Ubuntu AddressSanitizer and UndefinedBehaviorSanitizer build and test
     runs-on: ubuntu-latest
@@ -150,11 +148,7 @@ jobs:
       - name: Test
         run: |
           mkdir -p sanitizer-logs
-          for t in $(seq 1 15); do
-            echo "::group::Test $t"
-            TEST_NUMBER=$t ./.ci_tests.sh
-            echo "::endgroup::"
-          done
+          ./.ci_tests.sh legacy
 
       - name: Show sanitizer reports
         if: failure()

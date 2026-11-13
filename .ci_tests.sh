@@ -1,31 +1,184 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+# CPU tests of SuperLU_DIST, run by .github/workflows/test.yml.
+#
+#   ./.ci_tests.sh                 run every test, print a summary
+#   ./.ci_tests.sh list            list the tests with their numbers
+#   ./.ci_tests.sh 17              run test 17        (also: TEST_NUMBER=17)
+#   ./.ci_tests.sh "3 20-25"       run a selection
+#   ./.ci_tests.sh "2d ilu"        run groups: legacy 2d 3d solveonly ilu batch examples
+#
+# The exit status is 0 only if no test failed.  See TEST/ci_common.sh for the
+# format of a test line and for the environment knobs (build directory,
+# MPI launcher, timeout), and the header of TEST/ptest_ci.c for the options
+# of the self-checking drivers p{s,d,z}test_ci used by most tests.
 
-export RED="\033[31;1m"
-export BLUE="\033[34;1m"
 export ROOT_DIR="$PWD"
-printf "${BLUE} SLU; Entered tests file:\n"
+. "$ROOT_DIR/TEST/ci_common.sh"
 
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
 
-export DATA_FOLDER=$ROOT_DIR/EXAMPLE
-export EXAMPLE_FOLDER=$ROOT_DIR/build/EXAMPLE
-export TEST_FOLDER=$ROOT_DIR/build/TEST
+# Generated matrices: a 2D and a 3D grid problem, small enough for a CI runner.
+G2="-x 40 -y 30"            # n = 1200
+G3="-x 12 -y 11 -z 10"      # n = 1320
 
-case "${TEST_NUMBER}" in
-1)  mpirun "-n" "1" --oversubscribe "$TEST_FOLDER/pdtest" "-r" "1" "-c" "1" "-s" "1" "-b" "2" "-x" "8" "-m" "20" "-f" "$DATA_FOLDER/g20.rua" ;;
-2)  mpirun "-n" "1" --oversubscribe "$TEST_FOLDER/pdtest" "-r" "1" "-c" "1" "-s" "3" "-b" "2" "-x" "8" "-m" "20" "-f" "$DATA_FOLDER/g20.rua" ;;
-3)  mpirun "-n" "3" --oversubscribe "$TEST_FOLDER/pdtest" "-r" "1" "-c" "3" "-s" "1" "-b" "2" "-x" "8" "-m" "20" "-f" "$DATA_FOLDER/g20.rua" ;;
-4)  mpirun "-n" "3" --oversubscribe "$TEST_FOLDER/pdtest" "-r" "1" "-c" "3" "-s" "3" "-b" "2" "-x" "8" "-m" "20" "-f" "$DATA_FOLDER/g20.rua" ;;
-5)  mpirun "-n" "2" --oversubscribe "$TEST_FOLDER/pdtest" "-r" "2" "-c" "1" "-s" "1" "-b" "2" "-x" "8" "-m" "20" "-f" "$DATA_FOLDER/g20.rua" ;;
-6)  mpirun "-n" "2" --oversubscribe "$TEST_FOLDER/pdtest" "-r" "2" "-c" "1" "-s" "3" "-b" "2" "-x" "8" "-m" "20" "-f" "$DATA_FOLDER/g20.rua" ;;
-7)  mpirun "-n" "6" --oversubscribe "$TEST_FOLDER/pdtest" "-r" "2" "-c" "3" "-s" "1" "-b" "2" "-x" "8" "-m" "20" "-f" "$DATA_FOLDER/g20.rua" ;;
-8)  mpirun "-n" "6" --oversubscribe "$TEST_FOLDER/pdtest" "-r" "2" "-c" "3" "-s" "3" "-b" "2" "-x" "8" "-m" "20" "-f" "$DATA_FOLDER/g20.rua" ;;
-9)  mpirun "-n" "4" --oversubscribe "$EXAMPLE_FOLDER/pddrive1" "-r" "2" "-c" "2" "$DATA_FOLDER/big.rua" ;;
-10) mpirun "-n" "4" --oversubscribe "$EXAMPLE_FOLDER/pddrive2" "-r" "2" "-c" "2" "$DATA_FOLDER/big.rua" ;;
-11) mpirun "-n" "4" --oversubscribe "$EXAMPLE_FOLDER/pddrive3" "-r" "2" "-c" "2" "$DATA_FOLDER/big.rua" ;;
-12) mpirun "-n" "4" --oversubscribe "$EXAMPLE_FOLDER/pzdrive1" "-r" "2" "-c" "2" "$DATA_FOLDER/cg20.cua" ;;
-13) mpirun "-n" "4" --oversubscribe "$EXAMPLE_FOLDER/pzdrive2" "-r" "2" "-c" "2" "$DATA_FOLDER/cg20.cua" ;;
-14) mpirun "-n" "4" --oversubscribe "$EXAMPLE_FOLDER/pzdrive3" "-r" "2" "-c" "2" "$DATA_FOLDER/cg20.cua" ;;
-15) mpirun "-n" "4" --oversubscribe "$EXAMPLE_FOLDER/pddrive_ABglobal" "-r" "2" "-c" "2" "$DATA_FOLDER/big.rua" ;;
-*) printf "${RED} ###SLU: Unknown test\n" ;;
-esac
+# ---------------------------------------------------------------------------
+# 1-15: the original tests (pdtest and the 2D EXAMPLE drivers).  Their numbers
+# are kept; they are now checked for accuracy instead of exit status only.
+# ---------------------------------------------------------------------------
+ci_group legacy
+add_test pass pdtest 1 "" $T/pdtest -r 1 -c 1 -s 1 -b 2 -x 8 -m 20 -f $D/g20.rua
+add_test pass pdtest 1 "" $T/pdtest -r 1 -c 1 -s 3 -b 2 -x 8 -m 20 -f $D/g20.rua
+add_test pass pdtest 3 "" $T/pdtest -r 1 -c 3 -s 1 -b 2 -x 8 -m 20 -f $D/g20.rua
+add_test pass pdtest 3 "" $T/pdtest -r 1 -c 3 -s 3 -b 2 -x 8 -m 20 -f $D/g20.rua
+add_test pass pdtest 2 "" $T/pdtest -r 2 -c 1 -s 1 -b 2 -x 8 -m 20 -f $D/g20.rua
+add_test pass pdtest 2 "" $T/pdtest -r 2 -c 1 -s 3 -b 2 -x 8 -m 20 -f $D/g20.rua
+add_test pass pdtest 6 "" $T/pdtest -r 2 -c 3 -s 1 -b 2 -x 8 -m 20 -f $D/g20.rua
+add_test pass pdtest 6 "" $T/pdtest -r 2 -c 3 -s 3 -b 2 -x 8 -m 20 -f $D/g20.rua
+add_test pass xtrue  4 "" $E/pddrive1 -r 2 -c 2 $D/big.rua
+add_test pass xtrue  4 "" $E/pddrive2 -r 2 -c 2 $D/big.rua
+add_test pass xtrue  4 "" $E/pddrive3 -r 2 -c 2 $D/big.rua
+add_test pass xtrue  4 "" $E/pzdrive1 -r 2 -c 2 $D/cg20.cua
+add_test pass xtrue  4 "" $E/pzdrive2 -r 2 -c 2 $D/cg20.cua
+add_test pass xtrue  4 "" $E/pzdrive3 -r 2 -c 2 $D/cg20.cua
+add_test pass xtrue  4 "" $E/pddrive_ABglobal -r 2 -c 2 $D/big.rua
+
+# ---------------------------------------------------------------------------
+# 2D interface p?gssvx: process grids, precisions, factorization modes.
+# -f DFPRF = DOFACT, FACTORED, SamePattern, SamePattern_SameRowPerm, FACTORED,
+# each call with new matrix values and/or a new right-hand side.
+# ---------------------------------------------------------------------------
+ci_group 2d
+add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -f DFPRF $G2
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -f DFPRF -s 3 $G3
+add_test pass ci 3 "" $T/pdtest_ci -r 1 -c 3 -f DFPRF $G3
+add_test pass ci 3 "" $T/pdtest_ci -r 3 -c 1 -f DFPRF $G3
+add_test pass ci 6 "" $T/pdtest_ci -r 2 -c 3 -f DFPRF $G3
+add_test pass ci 6 "" $T/pdtest_ci -r 3 -c 2 -f DFPRFD $D/big.rua
+add_test pass ci 4 "" $T/pztest_ci -r 2 -c 2 -f DFPRF -s 2 $G3
+add_test pass ci 6 "" $T/pztest_ci -r 3 -c 2 -f DFPRF $D/cg20.cua
+add_test pass ci 4 "" $T/pstest_ci -r 2 -c 2 -f DFPRF $G3
+add_test pass ci 2 "" $T/pstest_ci -r 1 -c 2 -f DFPRF $D/g20.rua
+
+# Column orderings (-q), 2D: NATURAL, MMD_ATA, MMD_AT_PLUS_A, COLAMD,
+# METIS_AT_PLUS_A, PARMETIS without and with parallel symbolic factorization.
+# (METIS_ATA, -q 6, is declared in colperm_t but not implemented.)
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 0 $G2
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 1 $G2
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 2 $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 3 $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 4 -f DFPRF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 5 -f DFPRF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 5 -P 1 -f DFRF $G3
+add_test pass  ci 4 "" $T/pztest_ci -r 2 -c 2 -q 5 -P 1 -f DFRF $D/cg20.cua
+# Known defect: SamePattern after a parallel symbolic factorization returns a
+# wrong solution.
+add_test xfail ci 4 "" $T/pdtest_ci -r 2 -c 2 -q 5 -P 1 -f DP $G3
+
+# Row permutation (-p), equilibration (-e), refinement (-i), DiagInv (-D),
+# GMRES (-G).  "-k 1" scrambles the rows: only a row permutation can solve it.
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -p 0 -e 0 $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -p 1 -k 1 -f DFPRF $G3
+add_test pass ci 4 "" $T/pztest_ci -r 2 -c 2 -p 1 -k 1 -f DFPRF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -p 2 -k 1 $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -i 2 -s 2 -f DFPRF $D/big.rua
+add_test pass ci 4 "" $T/pstest_ci -r 2 -c 2 -i 1 -f DF $D/big.rua
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -D 1 -f DFPRF $G3
+add_test pass ci 4 "" $T/pztest_ci -r 2 -c 2 -D 1 -f DFPRF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -G 1 -f DF $G3
+
+# ---------------------------------------------------------------------------
+# 3D interface p?gssvx3d: process grids nprow x npcol x npdep.
+# ---------------------------------------------------------------------------
+ci_group 3d
+# (1x1x1: no SamePattern_SameRowPerm step.  "pdtest_ci -d 1 -f DR" fails in
+#  about half of the runs on one process, ending in heap corruption; the
+#  multi-process 3D grids below run that step reliably.)
+add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPF $G3
+add_test pass ci 2 "" $T/pdtest_ci -r 1 -c 1 -d 2 -f DFPF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 1 -d 4 -f DFPF -s 3 $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 2 -d 2 -f DFPF $D/big.rua
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -f DFPRF $G3
+add_test pass ci 8 "" $T/pdtest_ci -r 2 -c 2 -d 2 -f DFPF $G3
+add_test pass ci 6 "" $T/pdtest_ci -r 3 -c 2 -d 1 -f DFPRF $D/big.rua
+add_test pass ci 4 "" $T/pztest_ci -r 2 -c 1 -d 2 -f DFPF -s 2 $G3
+add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -f DFPF $D/cg20.cua
+add_test pass ci 4 "" $T/pstest_ci -r 2 -c 1 -d 2 -f DFPF $G3
+add_test pass ci 4 "SUPERLU_RANKORDER=XY" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3
+
+# SamePattern_SameRowPerm on more than one Z-layer.  Known defect: it returns
+# a wrong solution unless the column ordering is NATURAL (EXAMPLE/pddrive3d3
+# shows the same, see the end of this file).
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -f DRF -q 0 -p 0 -e 0 $G2
+add_test xfail ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -f DRF $G3
+
+# 3D: orderings, row permutation, refinement, DiagInv.
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 2 $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 4 $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -q 5 -f DFPRF $G3
+# Known defects of the 3D interface with ParMETIS: the parallel symbolic
+# factorization crashes (below), and ColPerm = PARMETIS hangs on more than
+# one Z-layer (not run: "pdtest_ci -r 2 -c 1 -d 2 -q 5").
+add_test xfail ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -q 5 -P 1 $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -p 1 -k 1 -f DFPF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -i 2 -f DFPF $D/big.rua
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -D 1 -f DFPF $G3
+add_test pass  ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -D 1 -f DFPF $G3
+
+# 3D with the C++ factorization (GPU3DVERSION=1), here on the CPU.
+add_test pass ci 1 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPF $G3
+add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3
+add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 4 -f DFPF $D/big.rua
+add_test pass ci 4 "GPU3DVERSION=1" $T/pztest_ci -r 1 -c 2 -d 2 -f DFPF $G3
+add_test pass ci 4 "GPU3DVERSION=1" $T/pstest_ci -r 2 -c 1 -d 2 -f DFPF $G3
+
+# ---------------------------------------------------------------------------
+# SolveOnly (3D interface): the matrix holds the L and U factors.
+# ---------------------------------------------------------------------------
+ci_group solveonly
+add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -d 1 -S 1 -f DF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -S 1 -f DF -s 3 $G3
+add_test pass ci 4 "" $T/pztest_ci -r 2 -c 2 -d 1 -S 1 -f DF $G3
+add_test pass ci 4 "" $T/pstest_ci -r 1 -c 2 -d 2 -S 1 -f DF $G2
+
+# ---------------------------------------------------------------------------
+# ILU(0), natural ordering: the solution must be the one of a textbook ILU(0).
+# With GMRES (2D) the incomplete factors precondition a solve to full accuracy.
+# ---------------------------------------------------------------------------
+ci_group ilu
+add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -I 0 -q 0 -f DFPRF $G2
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -q 0 -f DFPRF $G3
+add_test pass ci 6 "" $T/pztest_ci -r 2 -c 3 -I 0 -q 0 -k 1 -f DFPRF $G3
+add_test pass ci 4 "" $T/pstest_ci -r 2 -c 2 -I 0 -q 0 $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -q 0 -G 1 -f DF $G3
+# (3D: no SamePattern_SameRowPerm step here.  "pdtest_ci -d 1 -I 0 -q 0 -f DFPRF"
+#  intermittently ends in "double free or corruption" in that step.)
+add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DFPF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 0 -f DFPF $G3
+add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -I 0 -q 0 -k 1 -f DFPF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 1 -d 4 -I 0 -q 0 -s 2 $G2
+
+# ---------------------------------------------------------------------------
+# Batched interfaces (one process): -b fixed size, -B variable size with the
+# factorization state reused by SamePattern_SameRowPerm calls.
+# ---------------------------------------------------------------------------
+ci_group batch
+add_test pass ci 1 "" $T/pdtest_ci -b 4 $G3
+add_test pass ci 1 "" $T/pztest_ci -b 3 -s 2 $G3
+add_test pass ci 1 "" $T/pstest_ci -b 3 $D/big.rua
+add_test pass ci 1 "" $T/pdtest_ci -B 4 -f DRR $G3
+add_test pass ci 1 "" $T/pztest_ci -B 3 -f DR $D/cg20.cua
+add_test pass ci 1 "" $T/pstest_ci -B 3 -f DR $G2
+
+# ---------------------------------------------------------------------------
+# The 3D EXAMPLE drivers.
+# ---------------------------------------------------------------------------
+ci_group examples
+add_test pass  xtrue 4 "" $E/pddrive3d  -r 2 -c 1 -d 2 $D/big.rua
+add_test pass  xtrue 4 "" $E/pddrive3d1 -r 2 -c 1 -d 2 $D/big.rua
+add_test pass  xtrue 4 "" $E/pddrive3d2 -r 2 -c 1 -d 2 $D/big.rua
+add_test xfail xtrue 4 "" $E/pddrive3d3 -r 2 -c 1 -d 2 $D/big.rua
+add_test pass  xtrue 4 "" $E/pzdrive3d  -r 1 -c 2 -d 2 $D/cg20.cua
+add_test pass  xtrue_s 4 "" $E/psdrive3d -r 2 -c 1 -d 2 $D/big.rua
+
+ci_main "${1:-${TEST_NUMBER:-all}}"

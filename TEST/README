@@ -10,3 +10,31 @@ provided in SuperLU_DIST.
 
 2. bash scripts to run tests:
    - pdtest.sh / pztest.sh : invoke many runs varying several input parameters.
+
+3. Self-checking drivers pstest_ci / pdtest_ci / pztest_ci (single, double,
+   complex; one source, ptest_ci.c).  They verify every solution they compute
+   and exit with status 0 (pass), 1 (fail) or 77 (the build cannot run the
+   requested configuration).  One run covers a combination of
+     - the 2D interface (-d 0) or the 3D interface (-d >= 1), any process grid
+     - a sequence of factorization modes, e.g. -f DFPRF:
+         D DOFACT, F FACTORED, P SamePattern, R SamePattern_SameRowPerm
+     - SolveOnly (-S 1), ILU(0) (-I 0), orderings (-p, -q), refinement (-i),
+       GMRES (-G 1), DiagInv (-D 1), several right-hand sides (-s)
+     - the batched interfaces (-b fixed size, -B variable size)
+   on a matrix file or, without a file name, on a generated nonsymmetric
+   3/5/7-point grid operator (-x -y -z).  CPU or GPU code is selected with the
+   environment variables SUPERLU_ACC_OFFLOAD, SUPERLU_ACC_SOLVE, GPU3DVERSION.
+   "pdtest_ci -h" lists the options.  Examples:
+  $ mpiexec -n 4 pdtest_ci -r 2 -c 2 -f DFPRF -x 12 -y 11 -z 10
+  $ mpiexec -n 4 pztest_ci -r 2 -c 1 -d 2 -f DFPF ../EXAMPLE/cg20.cua
+  $ GPU3DVERSION=1 SUPERLU_ACC_OFFLOAD=1 mpiexec -n 1 pdtest_ci -d 1 -b 8
+
+4. Test suites built on these programs:
+   - ctest (from the build directory): "ctest -L ci" runs the self-checking
+     tests, "ctest -L cpu" / "ctest -L gpu" the CPU / GPU ones; other labels:
+     2d 3d ordering ilu solveonly batch.
+   - ../.ci_tests.sh (CPU, GitHub Actions) and ../.ci_tests_gpu.sh (GPU,
+     GitLab): "./.ci_tests.sh list" shows the tests, "./.ci_tests.sh all" or
+     a list of numbers or groups runs them.  ci_common.sh holds the shared
+     machinery and documents the environment knobs (build directory, MPI
+     launcher, timeout).

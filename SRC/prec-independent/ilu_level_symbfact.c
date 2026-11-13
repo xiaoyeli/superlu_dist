@@ -227,12 +227,12 @@ int_t ilu_level_symbfact
     Glu_freeable->nnzLU = nnzL + nnzU - min_mn;	
 
 #if ( DEBUGlevel>=1 )
-    PrintInt32("lsub", Glu_freeable->xlsub[n], Glu_freeable->lsub);
-    PrintInt32("xlsub", n+1, Glu_freeable->xlsub);
-    PrintInt32("usub", Glu_freeable->xusub[n], Glu_freeable->usub);
-    PrintInt32("xusub", n+1, Glu_freeable->xusub);
-    PrintInt32("supno", n, Glu_persist->supno);
-    PrintInt32("xsup", n+1, Glu_persist->xsup);
+    PrintInt10("lsub", Glu_freeable->xlsub[n], Glu_freeable->lsub);
+    PrintInt10("xlsub", n+1, Glu_freeable->xlsub);
+    PrintInt10("usub", Glu_freeable->xusub[n], Glu_freeable->usub);
+    PrintInt10("xusub", n+1, Glu_freeable->xusub);
+    PrintInt10("supno", n, Glu_persist->supno);
+    PrintInt10("xsup", n+1, Glu_persist->xsup);
 #endif
 
     SUPERLU_FREE(segrep);
