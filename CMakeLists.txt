@@ -223,7 +223,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
       else()
         set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG" CACHE STRING "")
       endif()
-      set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
+      set(CMAKE_CUDA_FLAGS_DEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
     endif()
 
 #     find_package(CUB REQUIRED)
