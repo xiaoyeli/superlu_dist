@@ -8,7 +8,9 @@ jobs:
   # needs a package the configuration lacks reports SKIP.
   test:
     name: Build and test (${{ matrix.config.name }})
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest became Ubuntu 26.04 in November 2026, which has no
+    # libparmetis-dev package and ships Open MPI 5 instead of 4.1.
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
 
     strategy:
@@ -99,7 +101,9 @@ jobs:
   # clean, e.g. "./.ci_tests.sh legacy 2d 3d".)
   test-asan-ubsan:
     name: Ubuntu AddressSanitizer and UndefinedBehaviorSanitizer build and test
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest became Ubuntu 26.04 in November 2026, which has no
+    # libparmetis-dev package and ships Open MPI 5 instead of 4.1.
+    runs-on: ubuntu-24.04
     # Backstop in case one rank aborts and the others sit in a collective.
     timeout-minutes: 60
 
