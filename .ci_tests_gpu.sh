@@ -82,9 +82,11 @@ add_test pass ci 4 "$F $V0"  $T/pztest_ci -r 2 -c 2 -f DFPRF $G3
 add_test pass ci 2 "$F $V0"  $T/pstest_ci -r 1 -c 2 -f DFPRF $G3
 add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 2 -c 2 -f DFPRF $G3L        # NVSHMEM
 add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 2 -c 1 -f DFPRF -s 2 $G3    # NVSHMEM
-# Known defect: the GPU solve on more than one process column returns a wrong
-# solution for more than one right-hand side.
-add_test xfail ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 2 -s 2 $G3            # NVSHMEM
+# Several right-hand sides across process columns (reduction trees with one
+# and with two children)
+add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 2 -s 2 $G3             # NVSHMEM
+add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 1 -c 4 -s 4 -f DFPRF $G3    # NVSHMEM
+add_test pass ci 3 "$FS $V0" $T/pztest_ci -r 1 -c 3 -s 3 -f DF $G3       # NVSHMEM
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -q 2 -D 1 -f DFPRF $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -q 0 -p 1 -k 1 $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -g 1 -f DF $G3       # RHS on the GPU
