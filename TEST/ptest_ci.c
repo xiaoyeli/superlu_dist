@@ -915,6 +915,18 @@ int main(int argc, char *argv[])
     }
 
     why = unsupported(&par, &options);
+#if defined(GPU_ACC) && defined(HAVE_CUDA) && defined(HAVE_NVSHMEM)
+    if (get_acc_solve()) {
+	/* The library aborts on a 2D grid with one process on one GPU and
+	   several on another, where NVSHMEM would hang.  Each Z-layer has its
+	   own 2D grid: skip if any of them is laid out that way. */
+	int mixed = superlu_gpu_sharing_is_mixed(grid->comm, NULL, NULL), any;
+	MPI_Allreduce(&mixed, &any, 1, MPI_INT, MPI_MAX, comm);
+	if (!why && any)
+	    why = "NVSHMEM hangs with one process on one GPU and several on another: "
+		  "use a multiple of the number of GPUs or SUPERLU_MPI_PROCESS_PER_GPU";
+    }
+#endif
     if (!why && par.solveonly && !use3d) why = "SolveOnly is implemented in the 3D interface only";
     if (!why && par.gmres && use3d) why = "UseGMRES is implemented in the 2D interface only";
     if (!why && (par.blk < 1 || (par.blk > 1 && par.file)))

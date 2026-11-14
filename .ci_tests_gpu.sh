@@ -29,6 +29,11 @@
 # With a GPU-aware MPI or NVSHMEM, every process must see the GPUs of the
 # processes it talks to: do not confine each MPI rank to its own GPU (e.g.
 # "srun --gpus-per-task=1"); SUPERLU_BIND_MPI_GPU=1 spreads the ranks instead.
+# NVSHMEM also needs the processes of a 2D grid spread evenly enough: with one
+# process on one GPU and several on another its initialization hangs (5, 6 or
+# 7 processes on 4 GPUs).  The library aborts with a message on such a layout
+# and the driver reports SKIP; SUPERLU_MPI_PROCESS_PER_GPU sets how many
+# consecutive ranks SUPERLU_BIND_MPI_GPU=1 puts on each GPU.
 
 export ROOT_DIR="$PWD"
 . "$ROOT_DIR/TEST/ci_common.sh"
@@ -97,6 +102,11 @@ add_test pass ci 4 "$FS2 $V0" $T/pdtest_ci -r 2 -c 2 -s 3 -f DFPRF $G3    # NVSH
 add_test pass ci 4 "$FS2 $V0" $T/pztest_ci -r 2 -c 2 -s 4 -f DF $G3       # NVSHMEM
 add_test pass ci 2 "$FS2 $V0" $T/pstest_ci -r 1 -c 2 -s 2 -f DF $G3       # NVSHMEM
 add_test pass ci 4 "$FS2 $V0" $T/pdtest_ci -r 2 -c 1 -d 2 -s 3 -f DF $G3  # NVSHMEM
+# six processes: on four GPUs the default binding leaves two GPUs with one
+# process next to two with two, a layout NVSHMEM hangs on (reported as SKIP);
+# two processes per GPU run everywhere
+add_test pass ci 6 "$FS $V0" $T/pdtest_ci -r 3 -c 2 -s 2 -f DF $G3
+add_test pass ci 6 "$FS $V0 SUPERLU_MPI_PROCESS_PER_GPU=2" $T/pdtest_ci -r 3 -c 2 -s 2 -f DF $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -q 2 -D 1 -f DFPRF $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -q 0 -p 1 -k 1 $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -g 1 -f DF $G3       # RHS on the GPU

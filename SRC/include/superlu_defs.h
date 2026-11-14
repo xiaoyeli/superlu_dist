@@ -1187,6 +1187,11 @@ extern int_t get_gpublas_nb (void);
 extern int_t get_num_gpu_streams (void);
 extern int getnGPUStreams(void);
 extern int get_mpi_process_per_gpu (void);
+#ifdef HAVE_CUDA
+/* 1 if one GPU holds one process of the communicator and another several:
+   NVSHMEM, hence the multi-process GPU triangular solve, hangs on that. */
+extern int superlu_gpu_sharing_is_mixed(MPI_Comm, int *, int *);
+#endif
 extern int sizeof_int_t(void);
 /*to print out various statistics from GPU activities*/
 extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
