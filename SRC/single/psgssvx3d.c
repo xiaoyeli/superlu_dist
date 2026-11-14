@@ -15,12 +15,12 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B using 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
- * May 12, 2021
- * October 5, 2021
- * Last update: November 8, 2021  v7.2.0
+ * Last update: November 8, 2021,   v7.2.0
+ *              September 23, 2026, v9.3.0
+ * </pre>
  */
 
 /*
@@ -561,6 +561,9 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     float dist_mem_use; /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
     float flinfo; /* track memory usage of parallel symbolic factorization */
+    int_t symb_linfo = 0; /* return code of serial symbolic factorization,
+			      computed on 2D grid layer 0 and broadcast to
+			      the other Z-layers of the 3D grid below */
     bool Solve3D = true;
     int_t nsupers;
 #if (PRNTlevel >= 2)
@@ -590,6 +593,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     Fact = options->Fact;
 
     validateInput_psgssvx3d(options, A, ldb, nrhs, grid3d, info);
+    if (*info) return; /* invalid input, reported by pxerr_dist() */
 
     /* Initialization. */
 
@@ -767,7 +771,17 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			col = MPI_UNDEFINED;
 		MPI_Comm_split(grid->comm, col, key, &symb_comm);
 
-		if (permc_spec == NATURAL || permc_spec == MY_PERMC) {
+		/* With Fact == SamePattern (but not SamePattern_SameRowPerm),
+		   perm_c[] is reused from the previous call and
+		   get_perm_c_parmetis() below is skipped, so no separator tree
+		   is computed for ColPerm == PARMETIS either. Without this
+		   branch, sizes[]/fstVtxSep[] would stay NULL (initialized at
+		   the top of this routine) and symbfact_dist() would
+		   dereference them. Fall back to a single trivial top
+		   separator containing all rows, exactly as already done for
+		   NATURAL/MY_PERMC. */
+		if (permc_spec == NATURAL || permc_spec == MY_PERMC
+		    || (permc_spec == PARMETIS && Fact != DOFACT)) {
 		    if (permc_spec == NATURAL) {
 			for (j = 0; j < n; ++j)	perm_c[j] = j;
 		    }
@@ -801,7 +815,15 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		    if (flinfo > 0)
 			ABORT("ERROR in get perm_c parmetis.");
 		} else {
-		    get_perm_c_dist(iam, permc_spec, &GA, perm_c);
+		    /* get_perm_c_dist() calls a serial ordering library (MMD,
+		       COLAMD, or METIS) that is not guaranteed to return the
+		       same permutation on every process -- e.g. when linked
+		       against Scotch's METIS compatibility layer with threads
+		       enabled. Compute it once on process 0 and broadcast,
+		       instead of relying on every process to redundantly
+		       recompute the identical answer. */
+		    if (!iam) get_perm_c_dist(iam, permc_spec, &GA, perm_c);
+		    MPI_Bcast(perm_c, n, MPI_INT, 0, grid->comm);
 		}
 	    }
 
@@ -820,7 +842,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				ABORT("Malloc fails for Glu_freeable.");
 
 		    /* compute symbolic LU or ILU */
-		    permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
+		    symb_linfo = permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
 					   Glu_persist, Glu_freeable, stat,
 					   &symb_mem_usage,
 					   grid3d);
@@ -847,8 +869,31 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end if not Factored */
     } /* end 2D process layer 0 */
 
+    /* permCol_SymbolicFact3d() above (serial symbolic factorization) runs
+       only on 2D grid layer 0; symb_linfo > 0 means it found the matrix
+       singular or ran out of memory. Every process of every Z-layer
+       reaches this MPI_Bcast uniformly (whether or not it took the branch
+       above), so broadcast the result here and have the whole 3D grid
+       return info > 0 to the application together, like the 2D drivers.
+       Returning only on grid layer 0 instead would hang the other
+       Z-layers, which wait on later collectives over grid3d->comm that
+       grid layer 0 would never reach. */
+    MPI_Bcast(&symb_linfo, 1, mpi_int_t, 0, grid3d->zscp.comm);
+    if ( symb_linfo > 0 ) {
+	*info = symb_linfo;
+	return;
+    }
+
     MPI_Bcast(&rowequ, 1, MPI_INT, 0, grid3d->zscp.comm);
     MPI_Bcast(&colequ, 1, MPI_INT, 0, grid3d->zscp.comm);
+
+    /* With Fact == SamePattern_SameRowPerm, sbcastPermutedSparseA() below is
+       skipped and every grid distributes its own copy of A into L and U: scale
+       the copies of the other grids as grid 0 has scaled its copy above, with
+       the R and C that sbcastPermutedSparseA() sent them before. */
+    if (Fact == SamePattern_SameRowPerm && Equil && grid3d->zscp.Iam != 0)
+	sscaleMatrixDiagonally(Fact, ScalePermstruct, A, stat, grid, &rowequ,
+			       &colequ, &iinfo);
 
     /* Now all processes in 3D grid participate */
 
@@ -942,12 +987,15 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    }
 
-	    if (Fact != SamePattern_SameRowPerm) {
-		// checkDist3DLUStruct(LUstruct, grid3d);
-		// zeros out the Supernodes that are not owned by the grid
-		sinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
-					trf3Dpartition->sForests, LUstruct, grid3d);
+	    // checkDist3DLUStruct(LUstruct, grid3d);
+	    /* Zero out the supernodes that are not owned by this grid. Also needed
+	       for SamePattern_SameRowPerm: the distribution routine above has
+	       refilled L and U with the entries of A on all grids, and the
+	       ancestor reduction of the 3D factorization sums the grids. */
+	    sinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
+				    trf3Dpartition->sForests, LUstruct, grid3d);
 
+	    if (Fact != SamePattern_SameRowPerm) {
 		sLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(sLUValSubBuf_t));
 		sLluBufInit(LUvsb, LUstruct);
 		trf3Dpartition->LUvsb = LUvsb;

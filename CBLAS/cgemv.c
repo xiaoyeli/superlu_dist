@@ -20,12 +20,12 @@
     void r_cnjg(complex *, complex *);
 
     /* Local variables */
-    static integer info;
-    static complex temp;
-    static integer lenx, leny, i, j;
-    static integer ix, iy, jx, jy, kx, ky;
+    integer info;
+    complex temp;
+    integer lenx, leny, i, j;
+    integer ix, iy, jx, jy, kx, ky;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
-    static logical noconj;
+    logical noconj;
 
 
 /*  Purpose   
@@ -259,7 +259,6 @@
 		    for (i = 1; i <= *m; ++i) {
 			i__3 = i;
 			i__4 = i;
-			i__5 = i + j * a_dim1;
 			q__2.r = temp.r * A(i,j).r - temp.i * A(i,j).i, 
 				q__2.i = temp.r * A(i,j).i + temp.i * A(i,j)
 				.r;
@@ -287,7 +286,6 @@
 		    for (i = 1; i <= *m; ++i) {
 			i__3 = iy;
 			i__4 = iy;
-			i__5 = i + j * a_dim1;
 			q__2.r = temp.r * A(i,j).r - temp.i * A(i,j).i, 
 				q__2.i = temp.r * A(i,j).i + temp.i * A(i,j)
 				.r;
@@ -315,7 +313,6 @@
 		if (noconj) {
 		    i__2 = *m;
 		    for (i = 1; i <= *m; ++i) {
-			i__3 = i + j * a_dim1;
 			i__4 = i;
 			q__2.r = A(i,j).r * X(i).r - A(i,j).i * X(i)
 				.i, q__2.i = A(i,j).r * X(i).i + A(i,j)
@@ -354,7 +351,6 @@
 		if (noconj) {
 		    i__2 = *m;
 		    for (i = 1; i <= *m; ++i) {
-			i__3 = i + j * a_dim1;
 			i__4 = ix;
 			q__2.r = A(i,j).r * X(ix).r - A(i,j).i * X(ix)
 				.i, q__2.i = A(i,j).r * X(ix).i + A(i,j)

@@ -923,9 +923,12 @@ void pdgstrs2_omp
 
     // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
     // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for
+    /* Flops of this call; stat is shared, so the threads sum into a
+       reduction variable instead of updating stat->ops[] concurrently. */
+    flops_t ops_fact = 0.0;
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) default(shared) \
-    private(b,j,iukp,rukp,segsize)
+    private(b,j,iukp,rukp,segsize) reduction(+:ops_fact)
 #endif
     /* Loop through all the blocks in the row. */
     for (b = 0; b < nb; ++b) {
@@ -965,7 +968,7 @@ void pdgstrs2_omp
 		} /* end task */
 		rukp += segsize;
 #ifndef USE_Ublock_info
-		stat->ops[FACT] += segsize * (segsize + 1);
+		ops_fact += segsize * (segsize + 1);
 #endif
 	    } /* end if segsize > 0 */
 	} /* end for j in parallel ... */
@@ -975,6 +978,8 @@ void pdgstrs2_omp
     }  /* end for b ... */
 
 #ifndef USE_Ublock_info
+    stat->ops[FACT] += ops_fact;
+
     /* Deallocate memory */
     SUPERLU_FREE(blocks_index_pointers);
 #endif

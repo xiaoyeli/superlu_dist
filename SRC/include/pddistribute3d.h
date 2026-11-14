@@ -42,6 +42,24 @@ void dbcastPermutedSparseA(SuperMatrix *A,
 
 void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
 
+float ddist_psymbtonum3d(superlu_dist_options_t *options, int_t n,
+                         SuperMatrix *A,
+                         dScalePermstruct_t *ScalePermstruct,
+                         int_t *xlsub, int_t *lsub,
+                         int_t *xusub, int_t *usub, float memStrLU,
+                         dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+
+void dbcastDistSymbLU(SuperMatrix *A,
+                      dScalePermstruct_t *ScalePermstruct,
+                      dLUstruct_t *LUstruct,
+                      int_t **xlsub, int_t **lsub,
+                      int_t **xusub, int_t **usub,
+                      float *memStrLU, int_t **setree,
+                      gridinfo3d_t *grid3d);
+void dnewTrfPartitionInitFromSetree(int_t nsupers, const int_t *setree,
+                                    dLUstruct_t *LUstruct,
+                                    gridinfo3d_t *grid3d);
+
 
 int compareInt_t(void *a, void *b);
 int compareInt(void *a, void *b);

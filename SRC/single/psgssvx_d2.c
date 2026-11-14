@@ -763,8 +763,13 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
                 }
  	    } else if ( iinfo < 0 ) return;
 
-	    /* Now iinfo == 0 */
-
+	    /* iinfo > 0 means psgsequ() found a zero row or column scale
+	       factor (A has an empty row/column); R, C, rowcnd and colcnd
+	       are not fully computed in that case (see psgsequ.c), so skip
+	       applying them here instead of scaling A by garbage. The
+	       matrix is singular; the caller will still get info > 0 back,
+	       from pivotL() by way of symbfact(), a little further down. */
+	    if ( iinfo == 0 ) {
             /* Equilibrate matrix A if it is badly-scaled.
                A <-- diag(R)*A*diag(C)                     */
 	    pslaqgs(A, R, C, rowcnd, colcnd, amax, equed);
@@ -787,6 +792,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 		fflush(stdout);
 	    }
 #endif
+	    }
 	} /* end if Fact ... */
 
 	stat->utime[EQUIL] = SuperLU_timer_() - t;
@@ -1030,7 +1036,15 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	    else col = MPI_UNDEFINED;
 	    MPI_Comm_split (grid->comm, col, key, &symb_comm );
 
-	    if ( permc_spec == NATURAL || permc_spec == MY_PERMC ) {
+	    /* With Fact == SamePattern (but not SamePattern_SameRowPerm), perm_c[]
+	       is reused from the previous call and get_perm_c_parmetis() below is
+	       skipped, so no separator tree is computed for ColPerm == PARMETIS
+	       either. Without this branch, sizes[]/fstVtxSep[] would stay NULL
+	       (initialized at the top of this routine) and symbfact_dist() would
+	       dereference them. Fall back to the trivial separator tree, exactly
+	       as already done for NATURAL/MY_PERMC. */
+	    if ( permc_spec == NATURAL || permc_spec == MY_PERMC
+	         || ( permc_spec == PARMETIS && Fact != DOFACT ) ) {
 		if ( permc_spec == NATURAL ) {
 		     for (j = 0; j < n; ++j) perm_c[j] = j;
                 }
@@ -1038,12 +1052,18 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 		     ABORT("SUPERLU_MALLOC fails for sizes.");
 		if ( !(fstVtxSep = intMalloc_dist(2 * noDomains)) )
 		    ABORT("SUPERLU_MALLOC fails for fstVtxSep.");
-		for (i = 0; i < 2*noDomains - 2; ++i) {
+		/* Trivial separator tree: all the rows in the first leaf
+		   domain, every separator empty.  One domain needs no
+		   separator property, so this is valid for any perm_c[].
+		   (All the rows in the top separator, as was done before, makes
+		   symbfact_dist() return a wrong structure on more than one
+		   process, except for very small matrices.) */
+		for (i = 0; i < 2*noDomains - 1; ++i) {
 		    sizes[i] = 0;
-		    fstVtxSep[i] = 0;
+		    fstVtxSep[i] = m;
 		}
-		sizes[2*noDomains - 2] = m;
-		fstVtxSep[2*noDomains - 2] = 0;
+		sizes[0] = m;
+		fstVtxSep[0] = 0;
 	    } else if ( permc_spec != PARMETIS ) {   /* same as before */
 		printf("{" IFMT "," IFMT "}: psgssvx: invalid ColPerm option when ParSymbfact is used\n",
 		       MYROW(grid->iam, grid), MYCOL(grid->iam, grid));
@@ -1075,7 +1095,14 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 		  return;
      	      }
 	  } else {
-	      get_perm_c_dist(iam, permc_spec, &GA, perm_c);
+	      /* get_perm_c_dist() calls a serial ordering library (MMD, COLAMD,
+	         or METIS) that is not guaranteed to return the same permutation
+	         on every process -- e.g. when linked against Scotch's METIS
+	         compatibility layer with threads enabled. Compute it once on
+	         process 0 and broadcast, instead of relying on every process
+	         to redundantly recompute the identical answer. */
+	      if ( !iam ) get_perm_c_dist(iam, permc_spec, &GA, perm_c);
+	      MPI_Bcast( perm_c, n, MPI_INT, 0, grid->comm );
           }
         }
 

@@ -1,51 +1,191 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+# GPU tests of SuperLU_DIST, run by .gitlab-ci.yml on a GPU runner.
+#
+#   ./.ci_tests_gpu.sh             run every test, print a summary
+#   ./.ci_tests_gpu.sh list        list the tests with their numbers
+#   ./.ci_tests_gpu.sh 7           run test 7         (also: TEST_NUMBER=7)
+#   ./.ci_tests_gpu.sh "5-20"      run a selection
+#   ./.ci_tests_gpu.sh "2d batch"  run groups: legacy 2d 3d 3dcpp features batch
+#
+# The exit status is 0 only if no test failed.  See TEST/ci_common.sh for the
+# format of a test line and for the environment knobs (build directory,
+# MPI launcher, timeout), and the header of TEST/ptest_ci.c for the options
+# of the self-checking drivers p{s,d,z}test_ci used by most tests.
+#
+# The GPU code paths are selected with environment variables:
+#   SUPERLU_ACC_OFFLOAD=1   numerical factorization on the GPU
+#   SUPERLU_ACC_SOLVE=1     triangular solves on the GPU
+#   SUPERLU_ACC_SOLVE=2     the same, with the GEMM kernels when there are
+#                           several right-hand sides
+#   GPU3DVERSION=0|1        3D factorization: C code with GEMM offload (0),
+#                           or the C++ code with the whole panel work on the
+#                           GPU (1); 1 also runs the batched factorization
+# What the build or the machine cannot run is skipped, not failed:
+#   - a GPU triangular solve on a 2D grid of more than one process needs
+#     NVSHMEM (ROCSHMEM); the driver reports SKIP without it;
+#   - GPU3DVERSION=1 on more than one process needs a GPU-aware MPI: those
+#     tests are only run with SLU_CI_GPU_AWARE_MPI=1; so is the 3D interface
+#     with the right-hand side on the GPU (-g 1), on any number of processes;
+#   - the batched interface with GPU3DVERSION=1 needs MAGMA.
+# With a GPU-aware MPI or NVSHMEM, every process must see the GPUs of the
+# processes it talks to: do not confine each MPI rank to its own GPU (e.g.
+# "srun --gpus-per-task=1"); SUPERLU_BIND_MPI_GPU=1 spreads the ranks instead.
+# NVSHMEM also needs the processes of a 2D grid spread evenly enough: with one
+# process on one GPU and several on another its initialization hangs (5, 6 or
+# 7 processes on 4 GPUs).  The library aborts with a message on such a layout
+# and the driver reports SKIP; SUPERLU_MPI_PROCESS_PER_GPU sets how many
+# consecutive ranks SUPERLU_BIND_MPI_GPU=1 puts on each GPU.
 
-export RED="\033[31;1m"
-export BLUE="\033[34;1m"
 export ROOT_DIR="$PWD"
-printf "${BLUE} SLU; Entered tests file:\n"
-export DATA_FOLDER=$ROOT_DIR/EXAMPLE
-export EXAMPLE_FOLDER=$ROOT_DIR/build/EXAMPLE
+. "$ROOT_DIR/TEST/ci_common.sh"
 
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+# one GPU per MPI rank when there are several GPUs (ranks share them otherwise)
+export SUPERLU_BIND_MPI_GPU="${SUPERLU_BIND_MPI_GPU:-1}"
+SLU_CI_GPU_AWARE_MPI="${SLU_CI_GPU_AWARE_MPI:-0}"
 
-export OMP_NUM_THREADS=1
+# Generated 3D grid problems; the larger one gives supernodes big enough for
+# the GEMM offload of the C code.
+G3="-x 12 -y 11 -z 10"      # n = 1320
+GB="-x 8 -y 7 -z 6"         # with -U: that many unknowns per grid point
+G3L="-x 24 -y 22 -z 20"     # n = 10560
 
+FS="SUPERLU_ACC_OFFLOAD=1 SUPERLU_ACC_SOLVE=1"   # GPU factorization and solve
+FS2="SUPERLU_ACC_OFFLOAD=1 SUPERLU_ACC_SOLVE=2"  # the same, GEMM solve kernels
+F="SUPERLU_ACC_OFFLOAD=1 SUPERLU_ACC_SOLVE=0"    # GPU factorization, CPU solve
+S="SUPERLU_ACC_OFFLOAD=0 SUPERLU_ACC_SOLVE=1"    # CPU factorization, GPU solve
+V0="GPU3DVERSION=0 SUPERLU_N_GEMM=64"            # C code, low offload threshold
+V1="GPU3DVERSION=1"                              # C++ code
 
-case "${TEST_NUMBER}" in
-1)  # Test SLU.(1): batched SpLU/SpTRSV (for real matrices) for solving 16 linear systems with the same sparsity pattern ("-b 16") 
-    echo -e "\nSuperLU_DIST: Testing batched SpLU/SpTRSV (for real matrices)."
-    export GPU3DVERSION=1 # value 1 uses magma for operations in the batched solver
-    export SUPERLU_ACC_OFFLOAD=1 # # you can turn GPU SpLU ON (1) and OFF (0) 
-    export SUPERLU_ACC_SOLVE=1 # you can turn GPU SpTRSV ON (1) and OFF (0) 
-    mat=$DATA_FOLDER/big.rua # 
-    mpirun -np 1 ${EXAMPLE_FOLDER}/pddrive3d -r 1 -c 1 -d 1 -b 16 -i 0 -s 1 $mat ;;
-2)  # Test SLU.(2): 2D SpLU/SpTRSV (for real matrices) with 1x1 MPIs.   
-    echo -e "\nSuperLU_DIST: Testing 2D SpLU/SpTRSV (for real matrices) with 1x1 MPIs."
-    export SUPERLU_ACC_OFFLOAD=1 # # you can turn GPU SpLU ON (1) and OFF (0) 
-    export SUPERLU_ACC_SOLVE=1 # you can turn GPU SpTRSV ON (1) and OFF (0) 
-    rowperm=1 # row permutation option: 0: NOROWPERM, 1: LargeDiag_MC64, 2: LargeDiag_HWPM
-    colperm=2 # column permutation: 0: NATURAL, 1: MMD_ATA, 2: MMD_AT_PLUS_A, 3: COLAMD, 4: METIS_AT_PLUS_A, 5: PARMETIS, 6: METIS_ATA
-    mat=$DATA_FOLDER/big.rua # 
-    mpirun -np 1 ${EXAMPLE_FOLDER}/pddrive -r 1 -c 1 -i 0 -p $rowperm -q $colperm $mat ;;
-3)  # Test SLU.(3): 3D SpLU/SpTRSV (for real matrices) with 1x1x2 MPIs/GPUs.    
-    echo -e "\nSuperLU_DIST: Testing 3D SpLU/SpTRSV (for real matrices) with 1x1x2 MPIs"
-    export SUPERLU_ACC_OFFLOAD=1 # you can turn GPU SpLU ON (1) and OFF (0) 
-    export GPU3DVERSION=0 # value 1 uses the latest c++ factorization code
-    export SUPERLU_ACC_SOLVE=1 # you can turn GPU SpTRSV ON (1) and OFF (0) 
-    rowperm=1 # row permutation option: 0: NOROWPERM, 1: LargeDiag_MC64, 2: LargeDiag_HWPM
-    colperm=2 # column permutation: 0: NATURAL, 1: MMD_ATA, 2: MMD_AT_PLUS_A, 3: COLAMD, 4: METIS_AT_PLUS_A, 5: PARMETIS, 6: METIS_ATA
-    mat=$DATA_FOLDER/big.rua # 
-    mpirun -np 2 ${EXAMPLE_FOLDER}/pddrive3d -r 1 -c 1 -d 2 -i 1 -p $rowperm -q $colperm $mat ;; 
-4)  # Test SLU.(3): 3D SpLU/SpTRSV (for real matrices) with 1x1x2 MPIs/GPUs.    
-    echo -e "\nSuperLU_DIST: Testing 3D SpLU/SpTRSV (for real matrices) with 1x1x2 MPIs"
-    export SUPERLU_ACC_OFFLOAD=1 # you can turn GPU SpLU ON (1) and OFF (0) 
-    export GPU3DVERSION=1 # value 1 uses the latest c++ factorization code
-    export SUPERLU_ACC_SOLVE=1 # you can turn GPU SpTRSV ON (1) and OFF (0) 
-    export MPICH_GPU_SUPPORT_ENABLED=1 # GPU-aware MPI is needed for the C++ factorization code 
-    rowperm=1 # row permutation option: 0: NOROWPERM, 1: LargeDiag_MC64, 2: LargeDiag_HWPM
-    colperm=4 # column permutation: 0: NATURAL, 1: MMD_ATA, 2: MMD_AT_PLUS_A, 3: COLAMD, 4: METIS_AT_PLUS_A, 5: PARMETIS, 6: METIS_ATA
-    mat=$DATA_FOLDER/big.rua # 
-    mpirun -np 2 ${EXAMPLE_FOLDER}/pddrive3d -r 1 -c 1 -d 2 -i 1 -p $rowperm -q $colperm $mat ;;     
-*) printf "${RED} ###YL: Unknown test\n" ;;
-esac
+# Tests that need a GPU-aware MPI: listed, but skipped without one.
+add_gpu_mpi_test() {
+    local expect="$1" check="$2" np="$3" envs="$4"; shift 4
+    [ "$SLU_CI_GPU_AWARE_MPI" = 1 ] || expect=skip
+    add_test "$expect" "$check" "$np" "$envs MPICH_GPU_SUPPORT_ENABLED=1" "$@"
+}
+
+# ---------------------------------------------------------------------------
+# 1-3: the original tests (EXAMPLE drivers), now checked for accuracy.  The
+# original test 4 (C++ code on 1x1x2) is the last test of the group 3dcpp.
+# ---------------------------------------------------------------------------
+ci_group legacy
+# batched SpLU/SpTRSV (MAGMA) of 16 systems with the same sparsity pattern
+add_test pass berr  1 "$FS $V1" $E/pddrive3d -r 1 -c 1 -d 1 -b 16 -i 0 -s 1 $D/big.rua
+# 2D SpLU/SpTRSV, 1x1
+add_test pass xtrue 1 "$FS" $E/pddrive -r 1 -c 1 -i 0 -p 1 -q 2 $D/big.rua
+# 3D SpLU/SpTRSV, 1x1x2, C code
+add_test pass xtrue 2 "$FS GPU3DVERSION=0" $E/pddrive3d -r 1 -c 1 -d 2 -i 1 -p 1 -q 2 $D/big.rua
+
+# ---------------------------------------------------------------------------
+# 2D interface p?gssvx.  -f DFPRF = DOFACT, FACTORED, SamePattern,
+# SamePattern_SameRowPerm, FACTORED, each with new values / a new RHS.
+# ---------------------------------------------------------------------------
+ci_group 2d
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -f DFPRF $G3L
+add_test pass ci 1 "$FS $V0" $T/pztest_ci -r 1 -c 1 -f DFPRF -s 3 $G3
+add_test pass ci 1 "$FS $V0" $T/pstest_ci -r 1 -c 1 -f DFPRF $G3
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -f DFPRFD -i 2 $D/big.rua
+add_test pass ci 1 "$FS $V0" $T/pztest_ci -r 1 -c 1 -f DFPRF $D/cg20.cua
+add_test pass ci 1 "$S"      $T/pdtest_ci -r 1 -c 1 -f DFPRF $G3
+add_test pass ci 4 "$F $V0"  $T/pdtest_ci -r 2 -c 2 -f DFPRF $G3L
+add_test pass ci 4 "$F $V0"  $T/pztest_ci -r 2 -c 2 -f DFPRF $G3
+add_test pass ci 2 "$F $V0"  $T/pstest_ci -r 1 -c 2 -f DFPRF $G3
+add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 2 -c 2 -f DFPRF $G3L        # NVSHMEM
+add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 2 -c 1 -f DFPRF -s 2 $G3    # NVSHMEM
+# Several right-hand sides across process columns (reduction trees with one
+# and with two children)
+add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 2 -s 2 $G3             # NVSHMEM
+add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 1 -c 4 -s 4 -f DFPRF $G3    # NVSHMEM
+add_test pass ci 3 "$FS $V0" $T/pztest_ci -r 1 -c 3 -s 3 -f DF $G3       # NVSHMEM
+# SUPERLU_ACC_SOLVE=2: the GEMM kernels for several right-hand sides
+add_test pass ci 1 "$FS2 $V0" $T/pdtest_ci -r 1 -c 1 -s 5 -f DF $G3
+add_test pass ci 4 "$FS2 $V0" $T/pdtest_ci -r 2 -c 2 -s 3 -f DFPRF $G3    # NVSHMEM
+add_test pass ci 4 "$FS2 $V0" $T/pztest_ci -r 2 -c 2 -s 4 -f DF $G3       # NVSHMEM
+add_test pass ci 2 "$FS2 $V0" $T/pstest_ci -r 1 -c 2 -s 2 -f DF $G3       # NVSHMEM
+add_test pass ci 4 "$FS2 $V0" $T/pdtest_ci -r 2 -c 1 -d 2 -s 3 -f DF $G3  # NVSHMEM
+# six processes: on four GPUs the default binding leaves two GPUs with one
+# process next to two with two, a layout NVSHMEM hangs on (reported as SKIP);
+# two processes per GPU run everywhere
+add_test pass ci 6 "$FS $V0" $T/pdtest_ci -r 3 -c 2 -s 2 -f DF $G3
+add_test pass ci 6 "$FS $V0 SUPERLU_MPI_PROCESS_PER_GPU=2" $T/pdtest_ci -r 3 -c 2 -s 2 -f DF $G3
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -q 2 -D 1 -f DFPRF $G3
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -q 0 -p 1 -k 1 $G3
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -g 1 -f DF $G3       # RHS on the GPU
+
+# ---------------------------------------------------------------------------
+# 3D interface p?gssvx3d, C code (GPU3DVERSION=0)
+# ---------------------------------------------------------------------------
+ci_group 3d
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPRF $G3L
+add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -f DFPRF $G3L
+add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 4 -f DFPRF -s 3 $G3
+add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 1 -c 1 -d 2 -f DFPRF $G3
+add_test pass ci 2 "$FS $V0" $T/pstest_ci -r 1 -c 1 -d 2 -f DFPRF $G3
+add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -f DFPRF -i 2 $D/big.rua
+add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 1 -c 1 -d 2 -f DFPRF $D/cg20.cua
+add_test pass ci 4 "$F $V0"  $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3L
+add_test pass ci 4 "$F $V0"  $T/pztest_ci -r 1 -c 2 -d 2 -f DFPRF $G3
+add_test pass ci 2 "$S $V0"  $T/pdtest_ci -r 1 -c 1 -d 2 -f DFPRF $G3
+add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3L    # NVSHMEM
+add_test pass ci 4 "$FS $V0" $T/pztest_ci -r 2 -c 2 -d 1 -f DFPRF $G3     # NVSHMEM
+add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -q 2 -D 1 -f DFPRF $G3
+# RHS on the GPU: the 3D interface gathers and scatters it with MPI calls on
+# device pointers, so it needs a GPU-aware MPI (segmentation fault without)
+add_gpu_mpi_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -g 1 -f DF $G3
+# ParMETIS ordering with the parallel symbolic factorization (double only;
+# fresh factorization and solves)
+add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -q 5 -P 1 -f DFDF $G3L
+add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 2 -c 1 -d 2 -q 5 -P 1 -f DF $G3L  # NVSHMEM
+
+# ---------------------------------------------------------------------------
+# 3D interface, C++ code (GPU3DVERSION=1)
+# ---------------------------------------------------------------------------
+ci_group 3dcpp
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPRF $G3L
+add_test pass ci 1 "$FS $V1" $T/pztest_ci -r 1 -c 1 -d 1 -f DFPRF -s 2 $G3
+add_test pass ci 1 "$FS $V1" $T/pstest_ci -r 1 -c 1 -d 1 -f DFPRF $G3
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPRF -i 2 $D/big.rua
+add_test pass ci 1 "$F $V1"  $T/pztest_ci -r 1 -c 1 -d 1 -f DFPRF $D/cg20.cua
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 2 -f DFPRF $G3L
+add_gpu_mpi_test pass ci 4 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 4 -f DFPRF $G3
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pztest_ci -r 1 -c 1 -d 2 -f DFPRF $G3
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pstest_ci -r 1 -c 1 -d 2 -f DFPRF $G3
+add_gpu_mpi_test pass ci 4 "$F $V1"  $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3L
+add_gpu_mpi_test pass ci 4 "$FS $V1" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3L   # NVSHMEM
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 2 -q 5 -P 1 -f DFDF $G3L
+add_gpu_mpi_test pass ci 4 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 4 -q 5 -P 1 -f DF $D/big.rua
+add_gpu_mpi_test pass xtrue 2 "$FS $V1" $E/pddrive3d -r 1 -c 1 -d 2 -i 1 -p 1 -q 4 $D/big.rua
+
+# ---------------------------------------------------------------------------
+# SolveOnly and ILU(0) with the GPU solve
+# ---------------------------------------------------------------------------
+ci_group features
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 1 -S 1 -f DF -s 2 $G3
+add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 1 -c 1 -d 2 -S 1 -f DF $G3
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -I 0 -q 0 -f DF $G3
+add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DF $G3
+add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 1 -c 1 -d 2 -I 0 -q 0 -f DF $G3
+add_test pass ci 4 "$F $V0"  $T/pdtest_ci -r 2 -c 2 -I 0 -q 2 -f DFPRF $G3
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DF $G3
+add_test pass ci 1 "$FS $V1" $T/pztest_ci -r 1 -c 1 -d 1 -I 0 -q 4 -f DF $G3
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 2 -I 0 -q 4 -f DF $G3
+# ILU(0) with user-defined supernodes of several columns (-U), red-black ordering
+add_test pass ci 4 "$F $V0"  $T/pdtest_ci -r 2 -c 2 -I 0 -U 4 -p 0 -q 8 -f DFPF $GB
+add_test pass ci 1 "$FS $V0" $T/pztest_ci -r 1 -c 1 -d 1 -I 0 -U 3 -p 0 -q 8 -f DF $GB
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -U 4 -p 0 -q 8 -f DF $GB
+add_gpu_mpi_test pass ci 2 "$FS $V1" $T/pztest_ci -r 1 -c 1 -d 2 -I 0 -U 3 -p 0 -q 8 -f DF $GB
+
+# ---------------------------------------------------------------------------
+# Batched interfaces (MAGMA): fixed size (-b), variable size with reuse of
+# the factorization state (-B)
+# ---------------------------------------------------------------------------
+ci_group batch
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -b 8 -s 2 $G3
+add_test pass ci 1 "$FS $V1" $T/pztest_ci -b 4 $G3
+add_test pass ci 1 "$FS $V1" $T/pstest_ci -b 4 $G3
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -b 4 $D/big.rua
+add_test pass ci 1 "$FS $V1" $T/pdtest_ci -B 4 -f DRR $G3
+add_test pass ci 1 "$FS $V1" $T/pztest_ci -B 3 -f DR $G3
+add_test pass ci 1 "$FS $V1" $T/pstest_ci -B 3 -f DR $G3
+
+ci_main "${1:-${TEST_NUMBER:-all}}"

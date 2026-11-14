@@ -1,0 +1,1 @@
+#include "pdgstrs_perm_cuda.cu"

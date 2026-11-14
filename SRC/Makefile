@@ -129,6 +129,11 @@ ifeq ($(HAVE_PARMETIS),TRUE)
 else
 		printf "/* #define HAVE_PARMETIS TRUE */\n" >> superlu_dist_config.h
 endif
+ifneq ($(filter TRUE,$(HAVE_METIS) $(HAVE_PARMETIS)),)
+		printf "#define HAVE_METIS TRUE\n" >> superlu_dist_config.h
+else
+		printf "/* #define HAVE_METIS TRUE */\n" >> superlu_dist_config.h
+endif
 ifeq ($(HAVE_COLAMD),TRUE)
 		printf "#define HAVE_COLAMD TRUE\n" >> superlu_dist_config.h
 else

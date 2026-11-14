@@ -16,14 +16,14 @@
     integer a_dim1, a_offset, b_dim1, b_offset, i__1, i__2, i__3;
 
     /* Local variables */
-    static integer info;
-    static real temp;
-    static integer i, j, k;
-    static logical lside;
-    static integer nrowa;
-    static logical upper;
+    integer info;
+    real temp;
+    integer i, j, k;
+    logical lside;
+    integer nrowa;
+    logical upper;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
-    static logical nounit;
+    logical nounit;
 
 
 /*  Purpose   

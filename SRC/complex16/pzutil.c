@@ -122,8 +122,37 @@ int pzCompRow_loc_to_CompCol_global
 	rdispls[i] = i * (n_loc + 1);
 	j += n_locs[i]; /* First column of next block in colptr_loc[] */
     }
-    MPI_Alltoallv(colptr_send, sendcnts, sdispls, mpi_int_t,
-		  colptr_blk, recvcnts, rdispls, mpi_int_t, grid->comm);
+    /* Only the blocks with nonzeros need to be exchanged: the column
+       pointers of an empty block are all equal (their differences, the
+       column counts, are all zero). The number of nonzeros per block is
+       exchanged first and empty blocks are zero-filled on the receiver. */
+    {
+        int *nnzcnts, nreq = 0;
+        MPI_Request *reqs;
+        if ( !(nnzcnts = SUPERLU_MALLOC(2*procs * sizeof(int))) )
+            ABORT("Malloc fails for nnzcnts[].");
+        if ( !(reqs = SUPERLU_MALLOC(2*procs * sizeof(MPI_Request))) )
+            ABORT("Malloc fails for reqs[].");
+        for (i = 0; i < procs; ++i)
+            nnzcnts[i] = (colptr_loc[fst_rows[i] + n_locs[i]] -
+                          colptr_loc[fst_rows[i]]) > 0;
+        MPI_Alltoall(nnzcnts, 1, MPI_INT, nnzcnts + procs, 1, MPI_INT,
+                     grid->comm);
+        for (i = 0; i < procs; ++i) {
+            if ( nnzcnts[procs + i] )
+                MPI_Irecv(&colptr_blk[rdispls[i]], recvcnts[i], mpi_int_t, i, 0,
+                          grid->comm, &reqs[nreq++]);
+            else
+                for (j = 0; j < recvcnts[i]; ++j) colptr_blk[rdispls[i] + j] = 0;
+        }
+        for (i = 0; i < procs; ++i)
+            if ( nnzcnts[i] )
+                MPI_Isend(&colptr_send[sdispls[i]], sendcnts[i], mpi_int_t, i, 0,
+                          grid->comm, &reqs[nreq++]);
+        MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
+        SUPERLU_FREE(reqs);
+        SUPERLU_FREE(nnzcnts);
+    }
 
     /* Adjust colptr_blk[] so that they contain the local indices of the
        column pointers in the receive buffer. */
@@ -159,15 +188,44 @@ int pzCompRow_loc_to_CompCol_global
     if ( !(rowind_recv = (int_t *) intMalloc_dist(2*k)) )
         ABORT("Malloc fails for rowind_recv[]");
     rowind_buf = rowind_recv + k;
-    MPI_Alltoallv(rowind_loc, sendcnts, sdispls, mpi_int_t,
-		  rowind_recv, recvcnts, rdispls, mpi_int_t, grid->comm);
+    {
+        int nreq = 0;
+        MPI_Request *reqs;
+        if ( !(reqs = SUPERLU_MALLOC(2*procs * sizeof(MPI_Request))) )
+            ABORT("Malloc fails for reqs[].");
+        for (i = 0; i < procs; ++i)
+            if ( recvcnts[i] )
+                MPI_Irecv(&rowind_recv[rdispls[i]], recvcnts[i], mpi_int_t, i, 1,
+                          grid->comm, &reqs[nreq++]);
+        for (i = 0; i < procs; ++i)
+            if ( sendcnts[i] )
+                MPI_Isend(&rowind_loc[sdispls[i]], sendcnts[i], mpi_int_t, i, 1,
+                          grid->comm, &reqs[nreq++]);
+        MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
+        SUPERLU_FREE(reqs);
+    }
     if ( need_value ) {
         if ( !(a_recv = (doublecomplex *) doublecomplexMalloc_dist(2*k)) )
 	    ABORT("Malloc fails for rowind_recv[]");
 	a_buf = a_recv + k;
-	MPI_Alltoallv(a_loc, sendcnts, sdispls, SuperLU_MPI_DOUBLE_COMPLEX,
-                      a_recv, recvcnts, rdispls, SuperLU_MPI_DOUBLE_COMPLEX,
-                      grid->comm);
+        {
+            int nreq = 0;
+            MPI_Request *reqs;
+            if ( !(reqs = SUPERLU_MALLOC(2*procs * sizeof(MPI_Request))) )
+                ABORT("Malloc fails for reqs[].");
+            for (i = 0; i < procs; ++i)
+                if ( recvcnts[i] )
+                    MPI_Irecv(&a_recv[rdispls[i]], recvcnts[i],
+                              SuperLU_MPI_DOUBLE_COMPLEX, i, 2, grid->comm,
+                              &reqs[nreq++]);
+            for (i = 0; i < procs; ++i)
+                if ( sendcnts[i] )
+                    MPI_Isend(&a_loc[sdispls[i]], sendcnts[i],
+                              SuperLU_MPI_DOUBLE_COMPLEX, i, 2, grid->comm,
+                              &reqs[nreq++]);
+            MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
+            SUPERLU_FREE(reqs);
+        }
     }
 
     /* Reset colptr_loc[] to point to the n_loc global columns. */

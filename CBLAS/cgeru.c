@@ -16,9 +16,9 @@
     complex q__1, q__2;
 
     /* Local variables */
-    static integer info;
-    static complex temp;
-    static integer i, j, ix, jy, kx;
+    integer info;
+    complex temp;
+    integer i, j, ix, jy, kx;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
 
 
@@ -148,8 +148,6 @@
 		temp.r = q__1.r, temp.i = q__1.i;
 		i__2 = *m;
 		for (i = 1; i <= *m; ++i) {
-		    i__3 = i + j * a_dim1;
-		    i__4 = i + j * a_dim1;
 		    i__5 = i;
 		    q__2.r = X(i).r * temp.r - X(i).i * temp.i, q__2.i =
 			     X(i).r * temp.i + X(i).i * temp.r;
@@ -178,8 +176,6 @@
 		ix = kx;
 		i__2 = *m;
 		for (i = 1; i <= *m; ++i) {
-		    i__3 = i + j * a_dim1;
-		    i__4 = i + j * a_dim1;
 		    i__5 = ix;
 		    q__2.r = X(ix).r * temp.r - X(ix).i * temp.i, q__2.i =
 			     X(ix).r * temp.i + X(ix).i * temp.r;

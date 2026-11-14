@@ -366,6 +366,7 @@ endif() ######### enable compex16
 if (TPL_ENABLE_HIPLIB)
   set(hipsources
     hip/pdgstrs_lsum_cuda.hip.cpp
+    hip/pdgstrs_perm_cuda.hip.cpp
     hip/dsuperlu_gpu.hip.cpp
     hip/superlu_gpu_utils.hip.cpp
     hip/LUgpuCHandle_interface_impl.hip.cpp
@@ -373,10 +374,10 @@ if (TPL_ENABLE_HIPLIB)
     hip/batch_block_copy.hip.cpp
   )
   if(enable_single)
-    list(APPEND hipsources hip/psgstrs_lsum_cuda.hip.cpp hip/ssuperlu_gpu.hip.cpp)
+    list(APPEND hipsources hip/psgstrs_lsum_cuda.hip.cpp hip/psgstrs_perm_cuda.hip.cpp hip/ssuperlu_gpu.hip.cpp)
   endif()
   if(enable_complex16)
-    list(APPEND hipsources hip/pzgstrs_lsum_cuda.hip.cpp hip/zsuperlu_gpu.hip.cpp)
+    list(APPEND hipsources hip/pzgstrs_lsum_cuda.hip.cpp hip/pzgstrs_perm_cuda.hip.cpp hip/zsuperlu_gpu.hip.cpp)
   endif()
 
   if (TPL_HIP_USE_LEGACY_FINDHIP)
@@ -419,10 +420,10 @@ endif()
 
 if (TPL_ENABLE_NVSHMEM)
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB} ${NVSHMEM_LIB}) 
+    ${PARMETIS_LIB} ${METIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB} ${NVSHMEM_LIB}) 
 else()
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB})
+    ${PARMETIS_LIB} ${METIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB})
 endif()
 
 if (NOT MSVC)

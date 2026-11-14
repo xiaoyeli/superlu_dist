@@ -22,6 +22,7 @@ at the top-level directory.
  * Last update: December 12, 2021  v7.2.0
  *              October 1, 2022    v8.1.1  code cleanup (remove #if 0 ...)
  *              September 23, 2026, v9.3.0
+ * </pre>
  */
 
 #include "superlu_sdefs.h"

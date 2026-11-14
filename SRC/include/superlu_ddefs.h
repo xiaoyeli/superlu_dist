@@ -1408,6 +1408,28 @@ extern void dbcastPermutedSparseA(SuperMatrix *A,
                           dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
 
 extern void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+extern void dnewTrfPartitionInitFromSetree(int_t nsupers,
+                                           const int_t *setree,
+                                           dLUstruct_t *LUstruct,
+                                           gridinfo3d_t *grid3d);
+/* Parallel symbolic factorization in the 3D driver */
+extern float ddist_symbLU(superlu_dist_options_t *, int_t,
+                          Pslu_freeable_t *, Glu_persist_t *,
+                          int_t **, int_t **, int_t **, int_t **,
+                          gridinfo_t *);
+extern int_t *ddist_build_supno_tree(int_t, int_t, const int_t *,
+                                     const int_t *, int, const int_t *,
+                                     const int_t *, const int_t *,
+                                     const int_t *, Glu_persist_t *,
+                                     gridinfo_t *);
+extern float ddist_psymbtonum3d(superlu_dist_options_t *, int_t,
+                                SuperMatrix *, dScalePermstruct_t *,
+                                int_t *, int_t *, int_t *, int_t *, float,
+                                dLUstruct_t *, gridinfo3d_t *);
+extern void dbcastDistSymbLU(SuperMatrix *, dScalePermstruct_t *,
+                             dLUstruct_t *, int_t **, int_t **,
+                             int_t **, int_t **, float *, int_t **,
+                             gridinfo3d_t *);
 
 
     /* from xtrf3Dpartition.h */

@@ -19,6 +19,7 @@ at the top-level directory.
  * Oak Ridge National Lab
  * May 12, 2021
  * Last update: December 12, 2021  v7.2.0
+ * </pre>
  */
 
 #include "superlu_sdefs.h"

@@ -15,11 +15,11 @@
 	    i__3;
 
     /* Local variables */
-    static integer info;
-    static logical nota, notb;
-    static real temp;
-    static integer i, j, l, ncola;
-    static integer nrowa, nrowb;
+    integer info;
+    logical nota, notb;
+    real temp;
+    integer i, j, l, ncola;
+    integer nrowa, nrowb;
     extern /* Subroutine */ int input_error_dist(char *, integer *);
 
 

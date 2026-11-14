@@ -21,41 +21,46 @@ build:
       - build_artifact
     expire_in: 1 week
 
-test 1/4:
+# One job per group of .ci_tests_gpu.sh ("./.ci_tests_gpu.sh list" shows the
+# tests and their groups).  A test the image cannot run reports SKIP:
+#   - the base docker image has no cuda-aware MPI, so the multi-process tests
+#     of the C++ GPU code (group 3dcpp) are skipped unless
+#     SLU_CI_GPU_AWARE_MPI=1 is set;
+#   - the multi-process GPU triangular solves need NVSHMEM.
+.gpu_test:
   stage: test
   needs: [build]
   script:
     - cd ~/superlu_dist/superlu_dist/
-    - cp -a $CI_PROJECT_DIR/build_artifact/. . 
-    - export TEST_NUMBER=1
-    - ls -ltr
-    - ./.ci_tests_gpu.sh
+    - cp -a $CI_PROJECT_DIR/build_artifact/. .
+    - ./.ci_tests_gpu.sh "$TEST_GROUP"
 
-test 2/4:
-  stage: test
-  needs: [build]
-  script:
-    - cd ~/superlu_dist/superlu_dist/
-    - cp -a $CI_PROJECT_DIR/build_artifact/. .   
-    - export TEST_NUMBER=2
-    - ./.ci_tests_gpu.sh
+test legacy:
+  extends: .gpu_test
+  variables:
+    TEST_GROUP: legacy
 
-test 3/4:
-  stage: test
-  needs: [build]
-  script:
-    - cd ~/superlu_dist/superlu_dist/
-    - cp -a $CI_PROJECT_DIR/build_artifact/. . 
-    - export TEST_NUMBER=3
-    - ./.ci_tests_gpu.sh
+test 2d:
+  extends: .gpu_test
+  variables:
+    TEST_GROUP: 2d
 
-## currently we cannot test the C++ GPU code, as the base docker image doesn't install cuda-aware MPI
-# test 4/4:
-#   stage: test
-#   needs: [build]
-#   script:
-#     - cd ~/superlu_dist/superlu_dist/
-#     - cp -a $CI_PROJECT_DIR/build_artifact/. . 
-#     - export TEST_NUMBER=4
-#     - ./.ci_tests_gpu.sh
+test 3d:
+  extends: .gpu_test
+  variables:
+    TEST_GROUP: 3d
 
+test 3dcpp:
+  extends: .gpu_test
+  variables:
+    TEST_GROUP: 3dcpp
+
+test features:
+  extends: .gpu_test
+  variables:
+    TEST_GROUP: features
+
+test batch:
+  extends: .gpu_test
+  variables:
+    TEST_GROUP: batch

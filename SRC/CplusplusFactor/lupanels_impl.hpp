@@ -383,7 +383,12 @@ int_t xLUstruct_t<Ftype>::dScatter(int_t m, int_t n,
     if (gj > gi) // its in upanel
     {
         int li = g2lRow(gi);
+        /* ILU: the destination block may not be stored; no fill-in then. */
+        if (uPanelVec[li].isEmpty())
+            return 0;
         int lj = uPanelVec[li].find(gj);
+        if (lj == GLOBAL_BLOCK_NOT_FOUND)
+            return 0;
         Dst = uPanelVec[li].blkPtr(lj);
         lddst = supersize(gi);
         dstRowLen = supersize(gi);
@@ -395,7 +400,12 @@ int_t xLUstruct_t<Ftype>::dScatter(int_t m, int_t n,
     else
     {
         int lj = g2lCol(gj);
+        /* ILU: the destination block may not be stored; no fill-in then. */
+        if (lPanelVec[lj].isEmpty())
+            return 0;
         int li = lPanelVec[lj].find(gi);
+        if (li == GLOBAL_BLOCK_NOT_FOUND)
+            return 0;
         Dst = lPanelVec[lj].blkPtr(li);
         lddst = lPanelVec[lj].LDA();
         dstRowLen = lPanelVec[lj].nbrow(li);
@@ -572,10 +582,10 @@ int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolve(int_t k, int_t offset, diagFactB
     /*=======   Diagonal Broadcast          ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)dFBufs[offset]->BlockLFactor, ksupc * ksupc,
-                  MPI_DOUBLE, kcol(k), (grid->rscp).comm);
+                  get_mpi_type<Ftype>(), kcol(k), (grid->rscp).comm);
     if (mycol == kcol(k))
         MPI_Bcast((void *)dFBufs[offset]->BlockUFactor, ksupc * ksupc,
-                  MPI_DOUBLE, krow(k), (grid->cscp).comm);
+                  get_mpi_type<Ftype>(), krow(k), (grid->cscp).comm);
 
     /*=======   Panel Update                ======*/
     if (myrow == krow(k)) {
@@ -608,13 +618,13 @@ int_t xLUstruct_t<Ftype>::dPanelBcast(int_t k, int_t offset)
     if (UidxSendCounts[k] > 0)
     {
         MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
-        MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
+        MPI_Bcast(k_upanel.val, UvalSendCounts[k], get_mpi_type<Ftype>(), krow(k), grid3d->cscp.comm);
     }
 
     if (LidxSendCounts[k] > 0)
     {
         MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
-        MPI_Bcast(k_lpanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+        MPI_Bcast(k_lpanel.val, LvalSendCounts[k], get_mpi_type<Ftype>(), kcol(k), grid3d->rscp.comm);
     }
     return 0;
 }

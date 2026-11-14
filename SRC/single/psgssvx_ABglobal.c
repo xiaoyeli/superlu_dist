@@ -633,11 +633,11 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 
 		MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
 		if ( iinfo == 0 ) {
-		    MPI_Bcast( R,       m, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( C,       n, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &rowcnd, 1, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &colcnd, 1, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &amax,   1, MPI_DOUBLE, 0, grid->comm );
+		    MPI_Bcast( R,       m, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( C,       n, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &rowcnd, 1, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &colcnd, 1, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &amax,   1, MPI_FLOAT, 0, grid->comm );
 		} else {
 		    if ( iinfo > 0 ) {
 			if ( iinfo <= m ) {
@@ -656,11 +656,11 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    } else {
 		MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
 		if ( iinfo == 0 ) {
-		    MPI_Bcast( R,       m, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( C,       n, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &rowcnd, 1, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &colcnd, 1, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( &amax,   1, MPI_DOUBLE, 0, grid->comm );
+		    MPI_Bcast( R,       m, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( C,       n, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &rowcnd, 1, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &colcnd, 1, MPI_FLOAT, 0, grid->comm );
+		    MPI_Bcast( &amax,   1, MPI_FLOAT, 0, grid->comm );
 		}
 	    }
 
@@ -851,9 +851,16 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	 *   permc_spec = MY_PERMC: the ordering already supplied in perm_c[]
 	 */
 	permc_spec = options->ColPerm;
-	if ( permc_spec != MY_PERMC && Fact == DOFACT )
-	    /* Use an ordering provided by SuperLU */
-	    get_perm_c_dist(iam, permc_spec, A, perm_c);
+	if ( permc_spec != MY_PERMC && Fact == DOFACT ) {
+	    /* get_perm_c_dist() calls a serial ordering library (MMD, COLAMD,
+	       or METIS) that is not guaranteed to return the same permutation
+	       on every process -- e.g. when linked against Scotch's METIS
+	       compatibility layer with threads enabled. Compute it once on
+	       process 0 and broadcast, instead of relying on every process
+	       to redundantly recompute the identical answer. */
+	    if ( !iam ) get_perm_c_dist(iam, permc_spec, A, perm_c);
+	    MPI_Bcast( perm_c, n, MPI_INT, 0, grid->comm );
+	}
 
 	/* Compute the elimination tree of Pc*(A'+A)*Pc' or Pc*A'*A*Pc'
 	   (a.k.a. column etree), depending on the choice of ColPerm.

@@ -850,9 +850,16 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	 *   permc_spec = MY_PERMC: the ordering already supplied in perm_c[]
 	 */
 	permc_spec = options->ColPerm;
-	if ( permc_spec != MY_PERMC && Fact == DOFACT )
-	    /* Use an ordering provided by SuperLU */
-	    get_perm_c_dist(iam, permc_spec, A, perm_c);
+	if ( permc_spec != MY_PERMC && Fact == DOFACT ) {
+	    /* get_perm_c_dist() calls a serial ordering library (MMD, COLAMD,
+	       or METIS) that is not guaranteed to return the same permutation
+	       on every process -- e.g. when linked against Scotch's METIS
+	       compatibility layer with threads enabled. Compute it once on
+	       process 0 and broadcast, instead of relying on every process
+	       to redundantly recompute the identical answer. */
+	    if ( !iam ) get_perm_c_dist(iam, permc_spec, A, perm_c);
+	    MPI_Bcast( perm_c, n, MPI_INT, 0, grid->comm );
+	}
 
 	/* Compute the elimination tree of Pc*(A'+A)*Pc' or Pc*A'*A*Pc'
 	   (a.k.a. column etree), depending on the choice of ColPerm.

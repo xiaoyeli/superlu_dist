@@ -72,7 +72,12 @@ public:
         return index[0];
     }
     // number of rows
-    int_t nzrows() { return index[1]; }
+    int_t nzrows()
+    {
+        if (index == NULL)
+            return 0;
+        return index[1];
+    }
     int_t haveDiag() { return index[2]; }
     int_t ncols() { return index[3]; }
 
@@ -570,12 +575,12 @@ struct xLUstruct_t
             SUPERLU_FREE(A_gpu.gpuGemmBuffs);
             gpuErrchk(gpuFree((A_gpu.dgpuGemmBuffs)));
 
-            gpuErrchk(cudaFree(A_gpu.dperm_c_supno));
+            gpuErrchk(gpuFree(A_gpu.dperm_c_supno));
 
             for (int stream = 0; stream < A_gpu.numCudaStreams; stream++) {
-                gpuErrchk(cudaStreamDestroy(A_gpu.cuStreams[stream]));
-                gpuErrchk(cudaStreamDestroy(A_gpu.lookAheadLStream[stream]));
-                gpuErrchk(cudaStreamDestroy(A_gpu.lookAheadUStream[stream]));
+                gpuErrchk(gpuStreamDestroy(A_gpu.cuStreams[stream]));
+                gpuErrchk(gpuStreamDestroy(A_gpu.lookAheadLStream[stream]));
+                gpuErrchk(gpuStreamDestroy(A_gpu.lookAheadUStream[stream]));
             }
 
             for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)

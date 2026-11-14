@@ -19,6 +19,7 @@ at the top-level directory.
  * March 15, 2003
  * October 5, 2021
  * Last update: September 23, 2026, v9.3.0
+ * </pre>
  */
 
 #include <math.h>

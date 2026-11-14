@@ -274,7 +274,12 @@ int_t* getPerm_c_supno(int_t nsupers, int n, superlu_dist_options_t *options,
     /* ================================================== *
      * static scheduling of j-th step of LU-factorization *
      * ================================================== */
-    if ( options->lookahead_etree == YES && /* use e-tree of symmetrized matrix, and      */
+    /* An incomplete factorization (ILU) must be scheduled with the etree of
+       the symmetrized matrix as well: its L and U structures are not closed
+       under fill, so the tree built from them below (the first off-diagonal
+       block of each supernode) does not order all the dependencies. */
+    if ( (options->lookahead_etree == YES ||
+          options->ILU_level != SLU_EMPTY) && /* use e-tree of symmetrized matrix, and      */
             (options->ParSymbFact == NO ||      /* 1) symmetric fact with serial symbolic, or */
              (options->SymPattern == YES &&      /* 2) symmetric pattern, and                  */
               options->RowPerm == NOROWPERM)) )  /*    no rowperm to destroy the symmetry      */
@@ -1217,7 +1222,12 @@ int_t* getPerm_c_supno_allgrid(int_t nsupers, superlu_dist_options_t *options,
     /* ================================================== *
      * static scheduling of j-th step of LU-factorization *
      * ================================================== */
-    if ( options->lookahead_etree == YES && /* use e-tree of symmetrized matrix, and      */
+    /* An incomplete factorization (ILU) must be scheduled with the etree of
+       the symmetrized matrix as well: its L and U structures are not closed
+       under fill, so the tree built from them below (the first off-diagonal
+       block of each supernode) does not order all the dependencies. */
+    if ( (options->lookahead_etree == YES ||
+          options->ILU_level != SLU_EMPTY) && /* use e-tree of symmetrized matrix, and      */
             (options->ParSymbFact == NO ||      /* 1) symmetric fact with serial symbolic, or */
              (options->SymPattern == YES &&      /* 2) symmetric pattern, and                  */
               options->RowPerm == NOROWPERM)) )  /*    no rowperm to destroy the symmetry      */
@@ -2547,7 +2557,7 @@ void applyRowPerm(int_t* colptr, int_t* rowind, int* perm_r, int_t n) {
  * @param stat Information on program execution.
  * @param grid3d The 3D process grid. 
  */
-void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA,
+int_t permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA,
 			    int *perm_c, int_t *etree, Glu_persist_t *Glu_persist,
 			    Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
 			    superlu_dist_mem_usage_t*symb_mem_usage,
@@ -2583,7 +2593,10 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
                (int)sp_ienv_dist(2, options), (int)sp_ienv_dist(3, options),
 	       (int)sp_ienv_dist(6, options));
 #endif
-#if (DEBUGlevel >= 1)
+#ifdef SLU_DUMP_GAC /* Debugging aid, off by default: it writes GAC.dat in the
+		       current directory, only handles real double matrices, and
+		       dereferences GAC's values, which a pattern-only GAC lacks
+		       (it crashed every DEBUGlevel>=1 run with ColPerm=NATURAL). */
     extern void file_dPrint_NCPformat_triplet(FILE *fp, SuperMatrix *A);
     if (!iam) {
 	FILE *fp = fopen("GAC.dat", "w");
@@ -2602,8 +2615,11 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
     
     stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 
-    if (iinfo < 0)
+    if (iinfo <= 0)
     {
+        /* Successful return: iinfo < 0 is the usual case (negative of the
+           number of bytes needed for LSUB); iinfo == 0 only happens for
+           a 1x1 matrix. */
         QuerySpace_dist(n, -iinfo, Glu_freeable, symb_mem_usage);
 #if (PRNTlevel >= 1)
         if (!iam)
@@ -2620,14 +2636,21 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix 
     }
     else
     {
+        /* iinfo > 0: either the matrix is singular (iinfo <= n, from
+           pivotL() by way of symbfact()) or symbolic factorization ran
+           out of memory (iinfo > n). This serial symbolic factorization
+           only runs on 2D grid layer 0 of the 3D grid (see the caller),
+           so hand iinfo back to it instead of aborting here; the caller
+           broadcasts it to the other Z-layers at a point they all reach
+           uniformly, so the whole 3D grid can return info > 0 to the
+           application together, like the 2D drivers already do. */
         if (!iam)
-        {
             fprintf(stderr, "symbfact() error returns %d\n", (int)iinfo);
-            exit(-1); 
-        }
     }
 
     Destroy_CompCol_Permuted_dist(&GAC);
+
+    return iinfo;
 }
 
 #ifdef REFACTOR_SYMBOLIC 

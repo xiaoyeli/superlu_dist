@@ -169,6 +169,13 @@ void dscaleFromScratch(
         return;
     }
 
+    /* *iinfo > 0 means pdgsequ() found a zero row or column scale factor
+       (A has an empty row/column); R, C, rowcnd and colcnd are not fully
+       computed in that case (see pdgsequ.c), so skip applying them here
+       instead of scaling A by garbage. The matrix is singular; the
+       caller will still get info > 0 back, from pivotL() by way of
+       symbfact(), a little further down. */
+    if (*iinfo == 0) {
     pdlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
 
     if      (strncmp(equed, "R", 1) == 0) { ScalePermstruct->DiagScale = ROW; *rowequ = 1; *colequ = 0; }
@@ -182,6 +189,7 @@ void dscaleFromScratch(
         fflush(stdout);
     }
 #endif
+    }
 }
 
 void dscaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct,
@@ -198,6 +206,7 @@ void dscaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct,
 
     if (Fact == SamePattern_SameRowPerm) {
         dscalePrecomputed(A, ScalePermstruct);
+        *iinfo = 0;
     } else {
         dscaleFromScratch(A, ScalePermstruct, grid, rowequ, colequ, iinfo);
     }
@@ -525,7 +534,9 @@ void dperform_row_permutation(
     int_t* rowind = NULL;
     int_t nnz = 0;
     double* a_GA = NULL;
-    if ( Fact != SamePattern_SameRowPerm ) {
+    /* GA is also absent for ParSymbFact = YES with NOROWPERM: the
+       distributed symbolic factorization consumes A directly. */
+    if ( Fact != SamePattern_SameRowPerm && GA->Store != NULL ) {
 	GAstore = (NCformat *)GA->Store;
 	colptr = GAstore->colptr;
 	rowind = GAstore->rowind;

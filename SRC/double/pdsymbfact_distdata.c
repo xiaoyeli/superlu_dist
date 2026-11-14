@@ -94,7 +94,6 @@ at the top-level directory.
  *
  * grid   (Input) gridinfo_t*
  *        The 2D process mesh.
- *
  * Return value
  * ============
  *   < 0, number of bytes allocated on return from the dist_symbLU.
@@ -102,8 +101,8 @@ at the top-level directory.
  *        (an approximation).
  * </pre>
  */
-static float
-dist_symbLU (superlu_dist_options_t *options, int_t n,
+float
+ddist_symbLU (superlu_dist_options_t *options, int_t n,
              Pslu_freeable_t *Pslu_freeable, Glu_persist_t *Glu_persist,
 	     int_t **p_xlsub, int_t **p_lsub, int_t **p_xusub, int_t **p_usub,
 	     gridinfo_t *grid
@@ -149,6 +148,7 @@ dist_symbLU (superlu_dist_options_t *options, int_t n,
   xsup_end_s    = Pslu_freeable->xsup_end_loc;
   supno_s       = Pslu_freeable->supno_loc;
   rcv_luind     = NULL;
+  snd_luind     = NULL;
   iword = sizeof(int_t);
   dword = sizeof(double);
   memAux = 0.; memRet = 0.;
@@ -1198,8 +1198,13 @@ ddist_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
- * Glu_freeable (Input) *Glu_freeable_t
- *        The global structure describing the graph of L and U.
+ * xlsub, lsub, xusub, usub (Input)
+ *        Compact L/U symbolic structures produced by ddist_symbLU().  This
+ *        routine mutates and frees all four arrays before returning.
+ *
+ * memStrLU (Input) float
+ *        Persistent-memory accounting returned by ddist_symbLU(); a
+ *        successful value is nonpositive.
  *
  * LUstruct (Input) dLUstruct_t*
  *        Data structures for L and U factors.
@@ -1207,22 +1212,27 @@ ddist_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
  * grid   (Input) gridinfo_t*
  *        The 2D process mesh.
  *
+ * superGridMap (Input) SupernodeToGridMap_t*, optional
+ *        If non-NULL, retain numerical L panel k and U block row k only
+ *        when superGridMap[k] marks k as present on this process layer.
+ *        A NULL map preserves the original 2D behavior.
+ *
  * Return value
  * ============
- *   < 0, number of bytes allocated on return from the dist_symbLU
+ *   < 0, number of bytes allocated on return from this routine
  *   > 0, number of bytes allocated for performing the distribution
  *       of the data, when out of memory.
  *        (an approximation).
  * </pre>
  */
-float
-ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
-		dScalePermstruct_t *ScalePermstruct,
-		Pslu_freeable_t *Pslu_freeable,
-		dLUstruct_t *LUstruct, gridinfo_t *grid)
+static float
+ddist_psymbtonum_from_symb(superlu_dist_options_t *options, int_t n,
+		SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
+		int_t *xlsub, int_t *lsub, int_t *xusub, int_t *usub,
+		float memStrLU, dLUstruct_t *LUstruct, gridinfo_t *grid,
+		const SupernodeToGridMap_t *superGridMap)
 {
   Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-  Glu_freeable_t Glu_freeable_n;
   dLocalLU_t *Llu = LUstruct->Llu;
   int_t bnnz, fsupc, i, irow, istart, j, jb, ib, jj, k, k1,
     len, len1, nsupc, nsupc_gb, ii, nprocs;
@@ -1242,7 +1252,7 @@ ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
   int_t *ainf_colptr, *ainf_rowind, *asup_rowptr, *asup_colind;
   double *asup_val, *ainf_val;
   int_t *xsup, *supno;    /* supernode and column mapping */
-  int_t *lsub, *xlsub, *usub, *usub1, *xusub;
+  int_t *usub1;
   int_t nsupers, nsupers_i, nsupers_j, nsupers_ij;
   int_t next_ind;      /* next available position in index[*] */
   int_t next_val;      /* next available position in nzval[*] */
@@ -1350,7 +1360,6 @@ double *dense, *dense_col; /* SPA */
 
   /* counting memory */
   float memA,         /* memory used by ddist_A: distributing A values. */
-        memStrLU,     /* memory used by dist_symbLU: distributing symbolic LU */
         memDist = 0.; /* memory used for redistributing the data, which does
 		         not include the memory for the numerical values
                          of L and U (positive number).
@@ -1389,10 +1398,6 @@ double *dense, *dense_col; /* SPA */
     ABORT ("ERROR: call of dist_psymbtonum with fact equals SamePattern_SameRowPerm.");
   }
 
-  if ((memStrLU =
-       dist_symbLU (options, n, Pslu_freeable,
-		    Glu_persist, &xlsub, &lsub, &xusub, &usub,	grid)) > 0)
-    return (memStrLU);
   memDist += (-memStrLU);
   xsup  = Glu_persist->xsup;    /* supernode and column mapping */
   supno = Glu_persist->supno;
@@ -1800,9 +1805,16 @@ double *dense, *dense_col; /* SPA */
 
 	/* Set up the initial pointers for each block in
 	   index[] and nzval[]. */
-	/* Add room for descriptors */
-	len1 += BR_HEADER + nrbu * UB_DESCRIPTOR;
-	if ( !(index = intMalloc_dist(len1+1)) ) {
+		/* Add room for descriptors */
+		len1 += BR_HEADER + nrbu * UB_DESCRIPTOR;
+		/* Keep receive workspace bounds conservative even when this depth
+		   does not retain the row locally. */
+		mybufmax[2] = SUPERLU_MAX( mybufmax[2], len1 );
+		mybufmax[3] = SUPERLU_MAX( mybufmax[3], len );
+
+		if (superGridMap == NULL ||
+		    superGridMap[jb] != NOT_IN_GRID) {
+		if ( !(index = intMalloc_dist(len1+1)) ) {
 	  fprintf (stderr, "Malloc fails for Uindex[]");
 	  return (memDist + memNLU + memTRS);
 	}
@@ -1828,9 +1840,7 @@ double *dense, *dense_col; /* SPA */
 #endif
 
 	uval = Unzval_br_ptr[ljb_i];
-	mybufmax[2] = SUPERLU_MAX( mybufmax[2], len1 );
-	mybufmax[3] = SUPERLU_MAX( mybufmax[3], len );
-	index[0] = nrbu;  /* Number of column blocks */
+		index[0] = nrbu;  /* Number of column blocks */
 	index[1] = len;   /* Total length of nzval[] */
 	index[2] = len1;  /* Total length of index */
 	index[len1] = -1; /* End marker */
@@ -1876,9 +1886,29 @@ double *dense, *dense_col; /* SPA */
 	      dense_col[jcol] = zero;
 	      dense_col += ldaspa_j;
 	    }
-	  }
-	}
-      } else {
+		  }
+		}
+		} else {
+		  /* The symbolic counts and communication metadata above describe
+		     the full 2D graph.  Only persistent storage is depth-filtered. */
+		  for (i = 0; i < nrbu; ++i) {
+		    gb = LUb_number[i];
+		    lb = LBj( gb, grid );
+		    LUb_length[lb] = 0;
+		  }
+		  for (j = ilsum[ljb_i], dense_col = dense;
+		       j < ilsum[ljb_i] + nsupc; ++j) {
+		    for (i = asup_rowptr[j]; i < asup_rowptr[j+1]; ++i) {
+		      jcol = asup_colind[i];
+		      gb = BlockNum( jcol );
+		      lb = LBj( gb, grid );
+		      jcol = ilsum_j[lb] + jcol - FstBlockC( gb );
+		      dense_col[jcol] = zero;
+		    }
+		    dense_col += ldaspa_j;
+		  }
+		}
+	      } else {
 	Ufstnz_br_ptr[ljb_i] = NULL;
 	Unzval_br_ptr[ljb_i] = NULL;
       } /* end if-else nrbu ... */
@@ -1967,9 +1997,17 @@ double *dense, *dense_col; /* SPA */
 	  LUb_number[0] = jb;
 	}
 
-	/* Add room for descriptors */
-	len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
-	if ( !(index = intMalloc_dist(len1)) ) {
+		/* Add room for descriptors */
+		len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
+		/* A retained ancestor panel may arrive from another depth.  Size
+		   receive workspaces from the complete symbolic panel. */
+		mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
+		mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
+		mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
+
+		if (superGridMap == NULL ||
+		    superGridMap[jb] != NOT_IN_GRID) {
+		if ( !(index = intMalloc_dist(len1)) ) {
 	  fprintf (stderr, "Malloc fails for index[]");
 	  return (memDist + memNLU + memTRS);
 	}
@@ -2016,10 +2054,7 @@ double *dense, *dense_col; /* SPA */
 	// Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb_j];
 
 	lusup = Lnzval_bc_ptr[ljb_j];
-	mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
-	mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
-	mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
-	index[0] = nrbl;  /* Number of row blocks */
+		index[0] = nrbl;  /* Number of row blocks */
 	index[1] = len;   /* LDA of the nzval[] */
 	next_ind = BC_HEADER;
 	next_val = 0;
@@ -2108,9 +2143,36 @@ double *dense, *dense_col; /* SPA */
 		SUPERLU_FREE(lusup);
 		SUPERLU_FREE(index);
 
-		Lrowind_bc_ptr[ljb_j] = index_srt;
-		Lnzval_bc_ptr[ljb_j] = lusup_srt;
-	} else {
+			Lrowind_bc_ptr[ljb_j] = index_srt;
+			Lnzval_bc_ptr[ljb_j] = lusup_srt;
+		} else {
+		  for (k = 0; k < nrbl; ++k) {
+		    gb = LUb_number[k];
+		    lb = LBi( gb, grid );
+		    LUb_length[lb] = 0;
+		  }
+
+		  /* Values were scattered before the ownership decision.  Clear the
+		     touched SPA locations exactly as the retained-panel path does. */
+		  for (i = xlsub[ljb_j]; i < xlsub[ljb_j+1]; ++i) {
+		    irow = lsub[i];
+		    gb = BlockNum( irow );
+		    if (myrow == PROW( gb, grid )) {
+		      lb = LBi( gb, grid );
+		      irow = ilsum[lb] + irow - FstBlockC( gb );
+		      for (j = 0, dense_col = dense; j < nsupc; ++j) {
+			dense_col[irow] = zero;
+			dense_col += ldaspa;
+		      }
+		    }
+		  }
+		  Lrowind_bc_ptr[ljb_j] = NULL;
+		  Lnzval_bc_ptr[ljb_j] = NULL;
+		  Linv_bc_ptr[ljb_j] = NULL;
+		  Uinv_bc_ptr[ljb_j] = NULL;
+		  Lindval_loc_bc_ptr[ljb_j] = NULL;
+		}
+		} else {
 	  Lrowind_bc_ptr[ljb_j] = NULL;
 	  Lnzval_bc_ptr[ljb_j] = NULL;
 	  Linv_bc_ptr[ljb_j] = NULL;
@@ -3343,5 +3405,315 @@ double *dense, *dense_col; /* SPA */
 #endif
 
   return (- (memDist+memNLU));
-} /* end ddist_psymbtonum */
+} /* end ddist_psymbtonum_from_symb */
 
+
+/* Assemble only the panels assigned to this process layer. */
+float
+ddist_psymbtonum3d(superlu_dist_options_t *options, int_t n,
+		SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
+		int_t *xlsub, int_t *lsub, int_t *xusub, int_t *usub,
+		float memStrLU, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
+{
+  dtrf3Dpartition_t *trf3Dpart;
+
+  if (LUstruct == NULL || grid3d == NULL ||
+      (trf3Dpart = LUstruct->trf3Dpart) == NULL ||
+      trf3Dpart->superGridMap == NULL)
+    ABORT("The 3D symbolic-to-numeric assembly requires an initialized partition.");
+
+  return ddist_psymbtonum_from_symb(options, n, A, ScalePermstruct,
+				     xlsub, lsub, xusub, usub, memStrLU,
+				     LUstruct, &grid3d->grid2d,
+				     trf3Dpart->superGridMap);
+}
+
+
+/* Preserve the 2D interface used by pdgssvx(). */
+float
+ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+		dScalePermstruct_t *ScalePermstruct,
+		Pslu_freeable_t *Pslu_freeable,
+		dLUstruct_t *LUstruct, gridinfo_t *grid)
+{
+  int_t *xlsub = NULL, *lsub = NULL, *xusub = NULL, *usub = NULL;
+  float memStrLU;
+
+  if (options->Fact == SamePattern_SameRowPerm) {
+    ABORT("ERROR: call of dist_psymbtonum with fact equals SamePattern_SameRowPerm.");
+  }
+
+  memStrLU = ddist_symbLU(options, n, Pslu_freeable,
+				 LUstruct->Glu_persist, &xlsub, &lsub,
+				 &xusub, &usub, grid);
+  if (memStrLU > 0)
+    return memStrLU;
+
+  return ddist_psymbtonum_from_symb(options, n, A, ScalePermstruct,
+					   xlsub, lsub, xusub, usub,
+					   memStrLU, LUstruct, grid, NULL);
+}
+
+
+typedef struct {
+  int_t first;
+  int_t last;
+  int_t node;
+} ddist_sep_interval_t;
+
+
+static int
+ddist_compare_sep_intervals(const void *a, const void *b)
+{
+  const ddist_sep_interval_t *left = (const ddist_sep_interval_t *) a;
+  const ddist_sep_interval_t *right = (const ddist_sep_interval_t *) b;
+
+  if (left->first < right->first) return -1;
+  if (left->first > right->first) return 1;
+  if (left->last < right->last) return -1;
+  if (left->last > right->last) return 1;
+  return 0;
+}
+
+
+/*
+ * Construct a supernodal tree from the nested-dissection separator tree used
+ * by symbfact_dist().  Supernodes in one separator are chained in increasing
+ * order, and the chain tail points to the first supernode of the nearest
+ * nonempty ancestor separator.  This adds only conservative dependencies:
+ * sibling subdomains remain independent, while every update endpoint in an
+ * ancestor separator remains present on the source panel's process layer.
+ *
+ * The compact L and U structures are then used to verify that every possible
+ * Schur-update destination is an ancestor of its source panel.  This check is
+ * required because a destination is stored by the L-row endpoint when it is
+ * in U and by the U-column endpoint when it is in L.
+ */
+int_t *
+ddist_build_supno_tree(int_t n, int_t nsupers, const int_t *sizes,
+		       const int_t *fstVtxSep, int noDomains,
+		       const int_t *xlsub, const int_t *lsub,
+		       const int_t *xusub, const int_t *usub,
+		       Glu_persist_t *Glu_persist, gridinfo_t *grid)
+{
+  const int_t *xsup;
+  const int_t *supno;
+  ddist_sep_interval_t *intervals;
+  int_t *sep_parent, *sep_first, *sep_last, *super_sep, *setree;
+  int_t *first_child, *next_sibling, *dfs_next, *stack, *tin, *tout;
+  int_t nseps, nintervals, level_start, level_count, next_start;
+  int_t s, k, jb, gb, ljb, p, child, top, clock, cursor, interval;
+  int local_bad = 0, global_bad = 0;
+  int bad_kind = 0;
+  int_t bad_jb = SLU_EMPTY, bad_gb = SLU_EMPTY;
+  const int myrow = MYROW(grid->iam, grid);
+  const int mycol = MYCOL(grid->iam, grid);
+
+  if (n < 1 || nsupers < 1 || noDomains < 1 || sizes == NULL ||
+      fstVtxSep == NULL || xlsub == NULL || xusub == NULL ||
+      Glu_persist == NULL || Glu_persist->xsup == NULL ||
+      Glu_persist->supno == NULL || grid == NULL)
+    ABORT("Invalid arguments while constructing the distributed supernodal tree.");
+
+  xsup = Glu_persist->xsup;
+  supno = Glu_persist->supno;
+  nseps = 2 * noDomains - 1;
+
+  if ((xlsub[CEILING(nsupers, grid->npcol)] > 0 && lsub == NULL) ||
+      (xusub[CEILING(nsupers, grid->nprow)] > 0 && usub == NULL))
+    ABORT("Missing compact parallel-symbolic subscript data.");
+
+  intervals = (ddist_sep_interval_t *)
+      SUPERLU_MALLOC(nseps * sizeof(ddist_sep_interval_t));
+  sep_parent = intMalloc_dist(nseps);
+  sep_first = intMalloc_dist(nseps);
+  sep_last = intMalloc_dist(nseps);
+  super_sep = intMalloc_dist(nsupers);
+  setree = intMalloc_dist(nsupers + 1);
+  if (intervals == NULL || sep_parent == NULL || sep_first == NULL ||
+      sep_last == NULL || super_sep == NULL || setree == NULL)
+    ABORT("Malloc fails while constructing the distributed supernodal tree.");
+
+  for (s = 0; s < nseps; ++s) {
+    sep_parent[s] = SLU_EMPTY;
+    sep_first[s] = SLU_EMPTY;
+    sep_last[s] = SLU_EMPTY;
+  }
+
+  /* ParMETIS numbers separator nodes level by level, starting with the leaf
+     domains.  Consecutive pairs have one parent in the following level. */
+  level_start = 0;
+  level_count = noDomains;
+  while (level_count > 1) {
+    if (level_count % 2 != 0)
+      ABORT("The parallel-symbolic separator count is not a power of two.");
+    next_start = level_start + level_count;
+    for (s = 0; s < level_count; ++s)
+      sep_parent[level_start + s] = next_start + s / 2;
+    level_start = next_start;
+    level_count /= 2;
+  }
+  if (level_start != nseps - 1)
+    ABORT("Invalid parallel-symbolic separator-tree layout.");
+
+  nintervals = 0;
+  for (s = 0; s < nseps; ++s) {
+    if (sizes[s] < 0 || fstVtxSep[s] < 0 ||
+        fstVtxSep[s] > n || sizes[s] > n - fstVtxSep[s])
+      ABORT("Invalid parallel-symbolic separator interval.");
+    if (sizes[s] > 0) {
+      intervals[nintervals].first = fstVtxSep[s];
+      intervals[nintervals].last = fstVtxSep[s] + sizes[s];
+      intervals[nintervals].node = s;
+      ++nintervals;
+    }
+  }
+  qsort(intervals, nintervals, sizeof(ddist_sep_interval_t),
+	ddist_compare_sep_intervals);
+
+  cursor = 0;
+  for (s = 0; s < nintervals; ++s) {
+    if (intervals[s].first != cursor)
+      ABORT("Parallel-symbolic separators do not partition the column ordering.");
+    cursor = intervals[s].last;
+  }
+  if (cursor != n)
+    ABORT("Parallel-symbolic separators do not cover all columns.");
+
+  interval = 0;
+  for (k = 0; k < nsupers; ++k) {
+    while (interval < nintervals &&
+           xsup[k] >= intervals[interval].last)
+      ++interval;
+    if (interval == nintervals || xsup[k] < intervals[interval].first ||
+        xsup[k + 1] > intervals[interval].last)
+      ABORT("A numerical supernode crosses a parallel-symbolic separator boundary.");
+    s = intervals[interval].node;
+    super_sep[k] = s;
+    if (sep_first[s] == SLU_EMPTY)
+      sep_first[s] = k;
+    sep_last[s] = k;
+  }
+
+  for (k = 0; k < nsupers; ++k) {
+    s = super_sep[k];
+    if (k != sep_last[s]) {
+      setree[k] = k + 1;
+    } else {
+      s = sep_parent[s];
+      while (s != SLU_EMPTY && sep_first[s] == SLU_EMPTY)
+        s = sep_parent[s];
+      setree[k] = (s == SLU_EMPTY) ? nsupers : sep_first[s];
+    }
+    if (setree[k] != nsupers &&
+        (setree[k] <= k || setree[k] >= nsupers))
+      ABORT("Invalid parent in the separator-derived supernodal tree.");
+  }
+  setree[nsupers] = nsupers;
+
+  SUPERLU_FREE(intervals);
+  SUPERLU_FREE(sep_parent);
+  SUPERLU_FREE(sep_first);
+  SUPERLU_FREE(sep_last);
+  SUPERLU_FREE(super_sep);
+
+  /* Build DFS intervals so each compact L/U dependency can be checked in
+     constant time.  The artificial node nsupers joins a possible forest. */
+  first_child = intMalloc_dist(nsupers + 1);
+  next_sibling = intMalloc_dist(nsupers + 1);
+  dfs_next = intMalloc_dist(nsupers + 1);
+  stack = intMalloc_dist(nsupers + 1);
+  tin = intMalloc_dist(nsupers + 1);
+  tout = intMalloc_dist(nsupers + 1);
+  if (first_child == NULL || next_sibling == NULL || dfs_next == NULL ||
+      stack == NULL || tin == NULL || tout == NULL)
+    ABORT("Malloc fails while validating the distributed supernodal tree.");
+
+  for (jb = 0; jb <= nsupers; ++jb) {
+    first_child[jb] = SLU_EMPTY;
+    next_sibling[jb] = SLU_EMPTY;
+    tin[jb] = SLU_EMPTY;
+    tout[jb] = SLU_EMPTY;
+  }
+  for (jb = 0; jb < nsupers; ++jb) {
+    next_sibling[jb] = first_child[setree[jb]];
+    first_child[setree[jb]] = jb;
+  }
+
+  top = 0;
+  clock = 0;
+  stack[0] = nsupers;
+  tin[nsupers] = clock++;
+  dfs_next[nsupers] = first_child[nsupers];
+  while (top >= 0) {
+    jb = stack[top];
+    child = dfs_next[jb];
+    if (child != SLU_EMPTY) {
+      dfs_next[jb] = next_sibling[child];
+      tin[child] = clock++;
+      dfs_next[child] = first_child[child];
+      stack[++top] = child;
+    } else {
+      tout[jb] = clock++;
+      --top;
+    }
+  }
+
+#define DDIST_CHECK_DEPENDENCY(kind_, source_, target_)                    \
+  do {                                                                     \
+    if ((target_) < (source_) ||                                           \
+        ((target_) > (source_) &&                                          \
+         !(tin[(target_)] <= tin[(source_)] &&                             \
+           tout[(source_)] <= tout[(target_)]))) {                         \
+      local_bad = 1;                                                       \
+      if (bad_kind == 0) {                                                 \
+        bad_kind = (kind_);                                                \
+        bad_jb = (source_);                                                \
+        bad_gb = (target_);                                                \
+      }                                                                    \
+    }                                                                      \
+  } while (0)
+
+  /* L_{i,k} can select U row i as an update destination. */
+  for (jb = mycol; jb < nsupers; jb += grid->npcol) {
+    ljb = LBj(jb, grid);
+    for (p = xlsub[ljb]; p < xlsub[ljb + 1]; ++p) {
+      if (lsub[p] < 0 || lsub[p] >= n)
+        ABORT("Invalid L subscript in the parallel-symbolic data.");
+      gb = supno[lsub[p]];
+      DDIST_CHECK_DEPENDENCY(1, jb, gb);
+    }
+  }
+
+  /* U_{k,j} selects L panel j (or column block j in U). */
+  for (jb = myrow; jb < nsupers; jb += grid->nprow) {
+    ljb = LBi(jb, grid);
+    for (p = xusub[ljb]; p < xusub[ljb + 1]; ++p) {
+      if (usub[p] < 0 || usub[p] >= n)
+        ABORT("Invalid U subscript in the parallel-symbolic data.");
+      gb = supno[usub[p]];
+      DDIST_CHECK_DEPENDENCY(2, jb, gb);
+    }
+  }
+#undef DDIST_CHECK_DEPENDENCY
+
+  MPI_Allreduce(&local_bad, &global_bad, 1, MPI_INT, MPI_MAX, grid->comm);
+
+  SUPERLU_FREE(first_child);
+  SUPERLU_FREE(next_sibling);
+  SUPERLU_FREE(dfs_next);
+  SUPERLU_FREE(stack);
+  SUPERLU_FREE(tin);
+  SUPERLU_FREE(tout);
+
+  if (global_bad) {
+    if (local_bad)
+      fprintf(stderr, "[%d] separator tree misses a parallel-symbolic "
+              "%c dependency: source=" IFMT ", target=" IFMT "\n",
+              grid->iam, bad_kind == 1 ? 'L' : 'U', bad_jb, bad_gb);
+    SUPERLU_FREE(setree);
+    ABORT("Parallel-symbolic dependencies are incompatible with the separator tree.");
+  }
+
+  return setree;
+}

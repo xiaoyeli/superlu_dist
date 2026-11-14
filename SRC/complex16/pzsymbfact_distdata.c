@@ -148,6 +148,7 @@ dist_symbLU (superlu_dist_options_t *options, int_t n,
   xsup_end_s    = Pslu_freeable->xsup_end_loc;
   supno_s       = Pslu_freeable->supno_loc;
   rcv_luind     = NULL;
+  snd_luind     = NULL;
   iword = sizeof(int_t);
   dword = sizeof(doublecomplex);
   memAux = 0.; memRet = 0.;

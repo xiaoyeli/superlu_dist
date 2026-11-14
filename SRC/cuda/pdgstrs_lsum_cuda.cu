@@ -1007,11 +1007,12 @@ __global__ void dwait_bcrd
                                    }
 
                                    // atomic return old val
-                                   fmod_tmp = atomicSub(&fmod[lib * aln_i], 1);
                                    //printf("sum2-(%d,%d,%d),lib=%d,k=%d,sum=%f,fmod_tmp=%d, tmp_sum=%lf\n", mype, bid, tid, lib, k,
                                    //       tmp_sum,fmod_tmp, tmp_sum);
                                    //printf("sum2-(%d,%d,%d),lib=%d,k=%d,fmod_tmp=%d\n", mype, bid, tid, lib, k,fmod_tmp);
                                }
+                               /* one message received: decrement once, not once per right-hand side */
+                               fmod_tmp = atomicSub(&fmod[lib * aln_i], 1);
                            }
                        }
                        if (cnt == 1) {
@@ -1040,7 +1041,7 @@ __global__ void dwait_bcrd
                            if (LRtree_ptr[lib].myRoot_ != LRtree_ptr[lib].myRank_) {
                                //cnt=LRtree_ptr[lib].msgSize_;
                                my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
-                               my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
+                               my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_ * nrhs;
                                //double tmp_sum=0;
                                RHS_ITERATE(j) {
                                    for (int aab = 0; aab < knsupc; aab++) {
@@ -1153,9 +1154,10 @@ __global__ void dwait_bcrd
                                }
 
                                // atomic return old val
-                               fmod_tmp = atomicSub(&fmod[lib * aln_i], 1);
                                //printf("sum2-(%d,%d,%d),lib=%d,k=%d,sum=%f,fmod_tmp=%d\n", mype, bid, tid, lib, k,tmp_sum,fmod_tmp);
                            }
+                           /* one message received: decrement once, not once per right-hand side */
+                           fmod_tmp = atomicSub(&fmod[lib * aln_i], 1);
                        }
                    }
                    if (cnt == 1) {
@@ -1180,7 +1182,7 @@ __global__ void dwait_bcrd
                        //printf("sum1-(%d,%d,%d),lib=%d, myRoot=%d\n", mype, bid, tid, lib,LRtree_ptr[lib].myRoot_);
                        if (LRtree_ptr[lib].myRoot_ != LRtree_ptr[lib].myRank_) {
                            my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
-                           my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
+                           my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_ * nrhs;
                            RHS_ITERATE(j) {
                                for (int aab = 0; aab < knsupc; aab++) {
                                    dready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
@@ -1444,11 +1446,12 @@ __global__ void dwait_bcrd_u
                                     }
 
                                     // atomic return old val
-                                    bmod_tmp = atomicSub(&bmod[lib * aln_i], 1);
                                     //printf("sum2-(%d,%d,%d),lib=%d,k=%d,sum=%f,bmod_tmp=%d, tmp_sum=%lf\n", mype, bid, tid, lib, k,
                                     //       tmp_sum,bmod_tmp, tmp_sum);
                                     //printf("sum2-(%d,%d,%d),lib=%d,k=%d,sum=%lf,bmod_tmp=%d\n", mype, bid, tid, lib, k,tmp_sum, bmod_tmp);
                                 }
+                                /* one message received: decrement once, not once per right-hand side */
+                                bmod_tmp = atomicSub(&bmod[lib * aln_i], 1);
                             }
                         }
                         if (cnt == 1) {
@@ -1477,7 +1480,7 @@ __global__ void dwait_bcrd_u
                             if (URtree_ptr[lib].myRoot_ != URtree_ptr[lib].myRank_) {
                                 //cnt=URtree_ptr[lib].msgSize_;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
-                                my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_;
+                                my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_ * nrhs;
                                 // double tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
@@ -1587,9 +1590,10 @@ __global__ void dwait_bcrd_u
                                 }
 
                                 // atomic return old val
-                                bmod_tmp = atomicSub(&bmod[lib * aln_i], 1);
                                 //printf("sum2-(%d,%d,%d),lib=%d,k=%d,sum=%f,bmod_tmp=%d\n", mype, bid, tid, lib, k,tmp_sum,bmod_tmp);
                             }
+                            /* one message received: decrement once, not once per right-hand side */
+                            bmod_tmp = atomicSub(&bmod[lib * aln_i], 1);
                         }
                     }
                     if (cnt == 1) {
@@ -1615,7 +1619,7 @@ __global__ void dwait_bcrd_u
                         //printf("sum1-(%d,%d,%d),lib=%d, myRoot=%d\n", mype, bid, tid, lib,URtree_ptr[lib].myRoot_);
                         if (URtree_ptr[lib].myRoot_ != URtree_ptr[lib].myRank_) {
                             my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
-                            my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_;
+                            my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_ * nrhs;
                             // tmp_sum=0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; aab++) {
@@ -2151,7 +2155,7 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                             //cnt=LRtree_ptr[lib].msgSize_;
 
                             my_flag_rd[ik*RDMA_FLAG_SIZE]=lk;
-                            my_flag_rd[ik*RDMA_FLAG_SIZE+1]=LRtree_ptr[lk].msgSize_;
+                            my_flag_rd[ik*RDMA_FLAG_SIZE+1]=LRtree_ptr[lk].msgSize_ * nrhs;
                             //double tmp_sum=0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < iknsupc; aab++) {
@@ -2223,7 +2227,23 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                         }
                     }
                 }
-                if (tid == 0) fmod_tmp = atomicSub(&fmod[lk * aln_i], 1);
+                /* All the threads have added their updates of block lk to lsum. */
+                __syncthreads();
+                if (tid == 0) {
+                    fmod_tmp = atomicSub(&fmod[lk * aln_i], 1);
+                    /* Last update of block row lk on this process: send the
+                       partial sum to the process of the diagonal block, as
+                       the branch without GEMM does. */
+                    if (fmod_tmp == 1 && LRtree_ptr[lk].myRoot_ != LRtree_ptr[lk].myRank_) {
+                        my_flag_rd[ik*RDMA_FLAG_SIZE] = lk;
+                        my_flag_rd[ik*RDMA_FLAG_SIZE+1] = LRtree_ptr[lk].msgSize_ * nrhs;
+                        RHS_ITERATE(j) {
+                            for (int aab = 0; aab < iknsupc; aab++)
+                                dready_lsum[lk * maxrecvsz * 2 + aab + j * iknsupc] = lsum[il + aab + j * iknsupc];
+                        }
+                        dC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &dready_lsum[0], maxrecvsz, LRtree_ptr[lk].myRoot_);
+                    }
+                }
 
 
             }
@@ -2616,6 +2636,8 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
                             }
                         // }//if(nrhs==1)
 
+                        /* All the threads have added their updates of block lk to lsum. */
+                        __syncthreads();
                         if(tid==0)atomicSub(&fmod[lk*aln_i],1);
 
 
@@ -4555,7 +4577,7 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
                      //cnt=LRtree_ptr[lib].msgSize_;
 
                      my_flag_rd[ik*RDMA_FLAG_SIZE]=ik;
-                     my_flag_rd[ik*RDMA_FLAG_SIZE+1]=URtree_ptr[ik].msgSize_;
+                     my_flag_rd[ik*RDMA_FLAG_SIZE+1]=URtree_ptr[ik].msgSize_ * nrhs;
                      // double tmp_sum=0;
                      RHS_ITERATE(j) {
                          for (int aab = 0; aab < iknsupc; aab++) {

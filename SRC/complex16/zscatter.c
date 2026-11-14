@@ -250,6 +250,7 @@ zscatter_u (
         iuip_lib += UB_DESCRIPTOR + SuperSize (ijb);
         ijb = index[iuip_lib];
     }
+    if ( ijb != jb ) return; // U(i,j) is not stored; in ILU, not allow fill-in
     /* Skip descriptor. Now point to fstnz index of block U(i,j). */
     iuip_lib += UB_DESCRIPTOR;
 

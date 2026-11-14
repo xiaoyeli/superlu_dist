@@ -115,6 +115,8 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
                           This records the moving search target.           */
     lptr = lptr0; /* point to the start of index[] in supernode L(:,k) */
     luptr = luptr0;
+    flops_t lookahead_flops = 0.0; /* summed over the threads, added to
+                                      stat->ops[FACT] after the loop */
 
 #ifdef _OPENMP
     /* Sherry -- examine all the shared variables ??
@@ -124,7 +126,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 /* Yang: this parallel for is causing segfault for one-api compilers*/
 #pragma omp parallel for \
     firstprivate(lptr,luptr,current_b) private(ib,lb) \
-    default(shared) schedule(dynamic)
+    default(shared) schedule(dynamic) reduction(+:lookahead_flops)
 #endif
 #endif
     for (lb = 0; lb < nlb; lb++) { /* Loop through each block in L(:,k) */
@@ -160,7 +162,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 	/*if (thread_id == 0) tt_start = SuperLU_timer_();*/
 
         /* calling gemm */
-	stat->ops[FACT] += 8.0 * (flops_t)temp_nbrow * ldu * ncols;
+	lookahead_flops += 8.0 * (flops_t)temp_nbrow * ldu * ncols;
 #if defined (USE_VENDOR_BLAS)
         zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
                    &lusup[luptr + (knsupc - ldu) * nsupr], &nsupr,
@@ -203,6 +205,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 	}
 #endif
     } /* end parallel for lb = 0, nlb ... all blocks in L(:,k) */
+    stat->ops[FACT] += lookahead_flops;
 
     iukp += nsupc; /* Mov to block U(k,j+1) */
 

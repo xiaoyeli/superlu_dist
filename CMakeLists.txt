@@ -12,7 +12,7 @@ cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "9")
 set(VERSION_MINOR "3")
-set(VERSION_BugFix "0")
+set(VERSION_BugFix "2")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -34,6 +34,9 @@ option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
 option(TPL_ENABLE_PARMETISLIB   "Enable the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
+#-- METIS, for the METIS orderings without ParMETIS (ParMETIS includes METIS)
+option(TPL_ENABLE_METISLIB   "Enable the METIS library without ParMETIS" OFF)
+option(TPL_METIS_LIBRARIES "List of absolute paths to METIS link libraries [].")
 #-- COLAMD
 option(TPL_ENABLE_COLAMDLIB   "Enable the COLAMD library" OFF)
 option(TPL_COLAMD_LIBRARIES "List of absolute paths to COLAMD link libraries [].")
@@ -220,7 +223,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
       else()
         set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG" CACHE STRING "")
       endif()
-      set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
+      set(CMAKE_CUDA_FLAGS_DEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
     endif()
 
 #     find_package(CUB REQUIRED)
@@ -499,6 +502,26 @@ endif()
 
 if(PARMETIS_FOUND)
   set(HAVE_PARMETIS TRUE)
+endif()
+
+#--------------------- METIS ---------------------
+if (TPL_ENABLE_METISLIB)   ## want to use metis without parmetis
+  if (NOT TPL_METIS_LIBRARIES)
+    message(FATAL_ERROR "TPL_METIS_LIBRARIES option should be set for METIS support to be enabled.")
+  endif()
+
+  message("-- Enabled support for METIS.")
+  set(METIS_FOUND TRUE)
+
+  set(METIS_LIB ${TPL_METIS_LIBRARIES})
+  # fix up METIS library names
+  string (REPLACE ";" " " METIS_LIB_STR "${METIS_LIB}")
+  set(METIS_LIB_EXPORT ${METIS_LIB_STR})
+endif()
+
+# ParMETIS includes METIS
+if(PARMETIS_FOUND OR METIS_FOUND)
+  set(HAVE_METIS TRUE)
 endif()
 
 #--------------------- COLAMD ---------------------

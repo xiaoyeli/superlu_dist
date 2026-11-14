@@ -21,7 +21,7 @@ at the top-level directory.
  * August 27, 2022 Add batch option
  * January 7, 2024 Complete the batch interface
  * Last update: September 23, 2026, v9.3.0
- *
+ * </pre>
  */
 #include <math.h>
 #include <stdio.h>

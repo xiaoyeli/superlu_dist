@@ -91,8 +91,8 @@ at the top-level directory.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     9
 #define SUPERLU_DIST_MINOR_VERSION     3
-#define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "September, 2026"
+#define SUPERLU_DIST_PATCH_VERSION     2
+#define SUPERLU_DIST_RELEASE_DATE      "October, 2026"
 
 #include "superlu_dist_config.h"
 
@@ -1187,6 +1187,11 @@ extern int_t get_gpublas_nb (void);
 extern int_t get_num_gpu_streams (void);
 extern int getnGPUStreams(void);
 extern int get_mpi_process_per_gpu (void);
+#ifdef HAVE_CUDA
+/* 1 if one GPU holds one process of the communicator and another several:
+   NVSHMEM, hence the multi-process GPU triangular solve, hangs on that. */
+extern int superlu_gpu_sharing_is_mixed(MPI_Comm, int *, int *);
+#endif
 extern int sizeof_int_t(void);
 /*to print out various statistics from GPU activities*/
 extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
@@ -1270,7 +1275,7 @@ extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void slu_SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d);
 extern int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d);
-extern void permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA, int *perm_c, int_t *etree, 
+extern int_t permCol_SymbolicFact3d(superlu_dist_options_t *options, int n, SuperMatrix *GA, int *perm_c, int_t *etree,
                            Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
 						   superlu_dist_mem_usage_t*symb_mem_usage,
 						   gridinfo3d_t* grid3d);
