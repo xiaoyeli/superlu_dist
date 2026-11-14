@@ -7735,6 +7735,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
     nsupers = supno[n - 1] + 1;
     {
     dLocalLU_t *Llu = LUstruct->Llu;
+#ifdef GPU_ACC
     /* Level-synchronous launches (single process): supernodes in the
        elimination-tree level order of the factorization forest.  Built once
        per pattern; whether a solve uses it is get_solve_levels()
@@ -7781,6 +7782,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 	    Llu->nlevels = -1;   /* not applicable; do not try again */
 	}
     }
+#endif
     }
     Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
