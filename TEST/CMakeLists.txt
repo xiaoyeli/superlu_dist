@@ -187,7 +187,7 @@ foreach(p ${CI_PRECISIONS})
     math(EXPR np "${r}*${c}*${d}")
     foreach(v 0 1)
       add_superlu_dist_ci_test(3d_${grid}_modes_v${v} ${p} ${np}
-                               -r ${r} -c ${c} -d ${d} -f DFPF ${CI_G3}
+                               -r ${r} -c ${c} -d ${d} -f DFPRF ${CI_G3}
                                ENV GPU3DVERSION=${v} LABELS cpu 3d)
     endforeach()
   endforeach()
@@ -197,13 +197,13 @@ foreach(p ${CI_PRECISIONS})
                            LABELS cpu 3d solveonly)
   add_superlu_dist_ci_test(2d_ilu0 ${p} 4 -r 2 -c 2 -I 0 -q 0 -f DFPRF ${CI_G3}
                            LABELS cpu 2d ilu)
-  add_superlu_dist_ci_test(3d_ilu0 ${p} 4 -r 2 -c 1 -d 2 -I 0 -q 0 -k 1 -f DFPF ${CI_G3}
+  add_superlu_dist_ci_test(3d_ilu0 ${p} 4 -r 2 -c 1 -d 2 -I 0 -q 0 -k 1 -f DFPRF ${CI_G3}
                            LABELS cpu 3d ilu)
   # fill-reducing orderings (MMD_AT_PLUS_A, METIS_AT_PLUS_A) and the C++
   # factorization
   add_superlu_dist_ci_test(2d_ilu0_mmd ${p} 4 -r 2 -c 2 -I 0 -q 2 -f DFPRF ${CI_G3}
                            LABELS cpu 2d ilu ordering)
-  add_superlu_dist_ci_test(3d_ilu0_metis ${p} 4 -r 2 -c 1 -d 2 -I 0 -q 4 -f DFPF ${CI_G3}
+  add_superlu_dist_ci_test(3d_ilu0_metis ${p} 4 -r 2 -c 1 -d 2 -I 0 -q 4 -f DFPRF ${CI_G3}
                            LABELS cpu 3d ilu ordering)
   add_superlu_dist_ci_test(3d_ilu0_v1 ${p} 4 -r 2 -c 1 -d 2 -I 0 -q 4 -f DF ${CI_G3}
                            ENV GPU3DVERSION=1 LABELS cpu 3d ilu)
@@ -211,7 +211,7 @@ foreach(p ${CI_PRECISIONS})
   # per grid point, red-black ordering (-q 8, MY_PERMC)
   add_superlu_dist_ci_test(2d_ilu0_usersup ${p} 4 -r 2 -c 2 -I 0 -U 4 -p 0 -q 8 -f DFPF ${CI_GB}
                            LABELS cpu 2d ilu)
-  add_superlu_dist_ci_test(3d_ilu0_usersup ${p} 4 -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DFPF ${CI_GB}
+  add_superlu_dist_ci_test(3d_ilu0_usersup ${p} 4 -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DFPRF ${CI_GB}
                            LABELS cpu 3d ilu)
   add_superlu_dist_ci_test(3d_ilu0_usersup_v1 ${p} 4 -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DF ${CI_GB}
                            ENV GPU3DVERSION=1 LABELS cpu 3d ilu)
@@ -221,10 +221,10 @@ endforeach()
 
 # ---- file matrices (nontrivial row pivoting)
 add_superlu_dist_ci_test(2d_big d 6 -r 3 -c 2 -f DFPRFD ${CI_DATA}/big.rua LABELS cpu 2d)
-add_superlu_dist_ci_test(3d_big d 4 -r 1 -c 2 -d 2 -f DFPF ${CI_DATA}/big.rua LABELS cpu 3d)
+add_superlu_dist_ci_test(3d_big d 4 -r 1 -c 2 -d 2 -f DFPRF ${CI_DATA}/big.rua LABELS cpu 3d)
 add_superlu_dist_ci_test(2d_big s 4 -r 2 -c 2 -i 1 -f DF ${CI_DATA}/big.rua LABELS cpu 2d)
 add_superlu_dist_ci_test(2d_cg20 z 6 -r 3 -c 2 -f DFPRF ${CI_DATA}/cg20.cua LABELS cpu 2d)
-add_superlu_dist_ci_test(3d_cg20 z 4 -r 1 -c 2 -d 2 -f DFPF ${CI_DATA}/cg20.cua LABELS cpu 3d)
+add_superlu_dist_ci_test(3d_cg20 z 4 -r 1 -c 2 -d 2 -f DFPRF ${CI_DATA}/cg20.cua LABELS cpu 3d)
 
 # ---- column orderings: NATURAL, MMD_ATA, MMD_AT_PLUS_A, COLAMD,
 #      METIS_AT_PLUS_A, PARMETIS (skipped when the build lacks the package)
@@ -233,14 +233,14 @@ foreach(q 0 1 2 3 4 5)
                            LABELS cpu 2d ordering)
 endforeach()
 foreach(q 0 2 3 4)
-  add_superlu_dist_ci_test(3d_colperm${q} d 4 -r 2 -c 1 -d 2 -q ${q} -f DFPF ${CI_G2}
+  add_superlu_dist_ci_test(3d_colperm${q} d 4 -r 2 -c 1 -d 2 -q ${q} -f DFPRF ${CI_G2}
                            LABELS cpu 3d ordering)
 endforeach()
-add_superlu_dist_ci_test(3d_colperm5 d 4 -r 2 -c 2 -d 1 -q 5 -f DFPF ${CI_G3}
+add_superlu_dist_ci_test(3d_colperm5 d 4 -r 2 -c 2 -d 1 -q 5 -f DFPRF ${CI_G3}
                          LABELS cpu 3d ordering)
 # ParMETIS on several Z-layers, and the parallel symbolic factorization in the
 # 3D interface (double precision; fresh factorization only: D and F)
-add_superlu_dist_ci_test(3d_colperm5_2x2x2 d 8 -r 2 -c 2 -d 2 -q 5 -f DFPF ${CI_G3}
+add_superlu_dist_ci_test(3d_colperm5_2x2x2 d 8 -r 2 -c 2 -d 2 -q 5 -f DFPRF ${CI_G3}
                          LABELS cpu 3d ordering)
 foreach(grid 2x2x1 2x1x2 1x1x4 2x2x2)
   string(REPLACE "x" ";" g ${grid})
@@ -269,22 +269,17 @@ add_superlu_dist_ci_test(2d_parsymbfact_natural d 6 -r 3 -c 2 -q 0 -P 1 -f DFPRF
 add_superlu_dist_ci_test(2d_norowperm d 4 -r 2 -c 2 -p 0 -e 0 ${CI_G3} LABELS cpu 2d)
 foreach(p d z)
   add_superlu_dist_ci_test(2d_mc64 ${p} 4 -r 2 -c 2 -p 1 -k 1 -f DFPRF ${CI_G3} LABELS cpu 2d)
-  add_superlu_dist_ci_test(3d_mc64 ${p} 4 -r 2 -c 1 -d 2 -p 1 -k 1 -f DFPF ${CI_G3} LABELS cpu 3d)
+  add_superlu_dist_ci_test(3d_mc64 ${p} 4 -r 2 -c 1 -d 2 -p 1 -k 1 -f DFPRF ${CI_G3} LABELS cpu 3d)
   add_superlu_dist_ci_test(2d_diaginv ${p} 4 -r 2 -c 2 -D 1 -f DFPRF ${CI_G3} LABELS cpu 2d)
-  add_superlu_dist_ci_test(3d_diaginv ${p} 4 -r 2 -c 1 -d 2 -D 1 -f DFPF ${CI_G3} LABELS cpu 3d)
+  add_superlu_dist_ci_test(3d_diaginv ${p} 4 -r 2 -c 1 -d 2 -D 1 -f DFPRF ${CI_G3} LABELS cpu 3d)
 endforeach()
 add_superlu_dist_ci_test(2d_hwpm d 4 -r 2 -c 2 -p 2 -k 1 ${CI_G3} LABELS cpu 2d)
 add_superlu_dist_ci_test(2d_refine d 4 -r 2 -c 2 -i 2 -s 2 -f DFPRF ${CI_DATA}/big.rua LABELS cpu 2d)
-add_superlu_dist_ci_test(3d_refine d 4 -r 2 -c 1 -d 2 -i 2 -f DFPF ${CI_DATA}/big.rua LABELS cpu 3d)
+add_superlu_dist_ci_test(3d_refine d 4 -r 2 -c 1 -d 2 -i 2 -f DFPRF ${CI_DATA}/big.rua LABELS cpu 3d)
 add_superlu_dist_ci_test(2d_gmres d 4 -r 2 -c 2 -G 1 -f DF ${CI_G3} LABELS cpu 2d)
 add_superlu_dist_ci_test(2d_ilu0_gmres d 4 -r 2 -c 2 -I 0 -q 0 -G 1 -f DF ${CI_G3} LABELS cpu 2d ilu)
-add_superlu_dist_ci_test(3d_rankorder_xy d 4 -r 2 -c 1 -d 2 -f DFPF ${CI_G3}
+add_superlu_dist_ci_test(3d_rankorder_xy d 4 -r 2 -c 1 -d 2 -f DFPRF ${CI_G3}
                          ENV SUPERLU_RANKORDER=XY LABELS cpu 3d)
-
-# ---- known library defects (expected to fail; remove XFAIL once fixed)
-# (SamePattern_SameRowPerm, letter R of -f, is unreliable in the 3D interface:
-#  it hangs, corrupts the heap or returns a wrong solution depending on the
-#  grid and the ordering.  No 3D test runs it; see .ci_tests.sh, group 3d.)
 
 ######################################################################
 # GPU tests ("ctest -L gpu"), only in a GPU build.
@@ -320,7 +315,7 @@ if(TPL_ENABLE_CUDALIB OR TPL_ENABLE_HIPLIB)
         math(EXPR np "${r}*${c}*${d}")
         if(v EQUAL 0 OR np EQUAL 1 OR enable_gpu_aware_mpi_tests)
           add_superlu_dist_ci_test(gpu_3d_${grid}_v${v} ${p} ${np}
-                                   -r ${r} -c ${c} -d ${d} -f DFPF ${CI_G3}
+                                   -r ${r} -c ${c} -d ${d} -f DFPRF ${CI_G3}
                                    ENV ${CI_GPU_ENV} GPU3DVERSION=${v} SUPERLU_ACC_SOLVE=1
                                        MPICH_GPU_SUPPORT_ENABLED=1
                                    LABELS gpu 3d)

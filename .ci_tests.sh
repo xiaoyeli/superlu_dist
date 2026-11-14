@@ -90,28 +90,18 @@ add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -G 1 -f DF $G3
 # 3D interface p?gssvx3d: process grids nprow x npcol x npdep.
 # ---------------------------------------------------------------------------
 ci_group 3d
-# No SamePattern_SameRowPerm step (letter R) in the 3D tests: known defect,
-# that mode is unreliable in the 3D interface.  Depending on the grid, the
-# ordering and the MPI library it hangs, corrupts the heap or returns a wrong
-# solution; for instance
-#     pdtest_ci -r 1 -c 1 -d 1 -f DR            heap corruption, half of the runs
-#     pdtest_ci -r 3 -c 2 -d 1 -f DFPRF big.rua hangs (Open MPI, 32-bit indices)
-#     pdtest_ci -r 2 -c 1 -d 2 -f DRF           wrong solution or hang, unless
-#                                               the ordering is NATURAL
-#     pddrive3d3 -r 2 -c 1 -d 2 big.rua         the same, in the EXAMPLE driver
-# Put the R steps back once it is fixed.
-add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPF $G3
-add_test pass ci 2 "" $T/pdtest_ci -r 1 -c 1 -d 2 -f DFPF $G3
-add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 1 -d 4 -f DFPF -s 3 $G3
-add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3
-add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 2 -d 2 -f DFPF $D/big.rua
-add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -f DFPF $G3
-add_test pass ci 8 "" $T/pdtest_ci -r 2 -c 2 -d 2 -f DFPF $G3
-add_test pass ci 6 "" $T/pdtest_ci -r 3 -c 2 -d 1 -f DFPF $D/big.rua
-add_test pass ci 4 "" $T/pztest_ci -r 2 -c 1 -d 2 -f DFPF -s 2 $G3
-add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -f DFPF $D/cg20.cua
-add_test pass ci 4 "" $T/pstest_ci -r 2 -c 1 -d 2 -f DFPF $G3
-add_test pass ci 4 "SUPERLU_RANKORDER=XY" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3
+add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPRF $G3
+add_test pass ci 2 "" $T/pdtest_ci -r 1 -c 1 -d 2 -f DFPRF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 1 -d 4 -f DFPRF -s 3 $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 2 -d 2 -f DFPRF $D/big.rua
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -f DFPRF $G3
+add_test pass ci 8 "" $T/pdtest_ci -r 2 -c 2 -d 2 -f DFPRF $G3
+add_test pass ci 6 "" $T/pdtest_ci -r 3 -c 2 -d 1 -f DFPRF $D/big.rua
+add_test pass ci 4 "" $T/pztest_ci -r 2 -c 1 -d 2 -f DFPRF -s 2 $G3
+add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -f DFPRF $D/cg20.cua
+add_test pass ci 4 "" $T/pstest_ci -r 2 -c 1 -d 2 -f DFPRF $G3
+add_test pass ci 4 "SUPERLU_RANKORDER=XY" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3
 
 # 3D: orderings, row permutation, refinement, DiagInv.
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 2 $G3
@@ -119,25 +109,25 @@ add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 4 $G3
 # ParMETIS in the 3D interface (double precision only): serial symbolic
 # factorization, then the parallel one (-P 1), which supports a fresh
 # factorization and solves with it (D, F), not the reuse modes (P, R).
-add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -q 5 -f DFPF $G3
-add_test pass  ci 8 "" $T/pdtest_ci -r 2 -c 2 -d 2 -q 5 -f DFPF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -q 5 -f DFPRF $G3
+add_test pass  ci 8 "" $T/pdtest_ci -r 2 -c 2 -d 2 -q 5 -f DFPRF $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 2 -d 1 -q 5 -P 1 -f DFDF $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 5 -P 1 -f DFDF -s 3 $D/big.rua
 add_test pass  ci 8 "" $T/pdtest_ci -r 2 -c 2 -d 2 -q 5 -P 1 -p 1 -k 1 -f DF $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 1 -c 1 -d 4 -q 5 -P 1 -f DF $G3
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 0 -P 1 -f DF $D/big.rua
 add_test pass  ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -q 5 -P 1 -f DF $G3
-add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -p 1 -k 1 -f DFPF $G3
-add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -i 2 -f DFPF $D/big.rua
-add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -D 1 -f DFPF $G3
-add_test pass  ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -D 1 -f DFPF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -p 1 -k 1 -f DFPRF $G3
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -i 2 -f DFPRF $D/big.rua
+add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -D 1 -f DFPRF $G3
+add_test pass  ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -D 1 -f DFPRF $G3
 
 # 3D with the C++ factorization (GPU3DVERSION=1), here on the CPU.
-add_test pass ci 1 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPF $G3
-add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPF $G3
-add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 4 -f DFPF $D/big.rua
-add_test pass ci 4 "GPU3DVERSION=1" $T/pztest_ci -r 1 -c 2 -d 2 -f DFPF $G3
-add_test pass ci 4 "GPU3DVERSION=1" $T/pstest_ci -r 2 -c 1 -d 2 -f DFPF $G3
+add_test pass ci 1 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 1 -f DFPRF $G3
+add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3
+add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 4 -f DFPRF $D/big.rua
+add_test pass ci 4 "GPU3DVERSION=1" $T/pztest_ci -r 1 -c 2 -d 2 -f DFPRF $G3
+add_test pass ci 4 "GPU3DVERSION=1" $T/pstest_ci -r 2 -c 1 -d 2 -f DFPRF $G3
 
 # ---------------------------------------------------------------------------
 # SolveOnly (3D interface): the matrix holds the L and U factors.
@@ -159,19 +149,19 @@ add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -q 0 -f DFPRF $G3
 add_test pass ci 6 "" $T/pztest_ci -r 2 -c 3 -I 0 -q 0 -k 1 -f DFPRF $G3
 add_test pass ci 4 "" $T/pstest_ci -r 2 -c 2 -I 0 -q 0 $G3
 add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -q 0 -G 1 -f DF $G3
-add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DFPF $G3
-add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 0 -f DFPF $G3
-add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -I 0 -q 0 -k 1 -f DFPF $G3
+add_test pass ci 1 "" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DFPRF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 0 -f DFPRF $G3
+add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -I 0 -q 0 -k 1 -f DFPRF $G3
 add_test pass ci 4 "" $T/pdtest_ci -r 1 -c 1 -d 4 -I 0 -q 0 -s 2 $G2
 # fill-reducing orderings: MMD_AT_PLUS_A, METIS_AT_PLUS_A, ParMETIS
 add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -q 2 -f DFPRF $G3
 add_test pass ci 6 "" $T/pztest_ci -r 2 -c 3 -I 0 -q 4 -f DFPRF $D/cg20.cua
 add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -q 5 -f DF $G3
 add_test pass ci 2 "" $T/pdtest_ci -r 2 -c 1 -I 0 -q 1 $D/big.rua
-add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 4 -f DFPF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 4 -f DFPRF $G3
 add_test pass ci 4 "" $T/pstest_ci -r 1 -c 2 -d 2 -I 0 -q 2 -f DF $G3
 # the C++ factorization (GPU3DVERSION=1)
-add_test pass ci 1 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DFPF $G3
+add_test pass ci 1 "GPU3DVERSION=1" $T/pdtest_ci -r 1 -c 1 -d 1 -I 0 -q 0 -f DFPRF $G3
 add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -q 4 -f DF $G3
 add_test pass ci 4 "GPU3DVERSION=1" $T/pztest_ci -r 2 -c 2 -d 1 -I 0 -q 2 -f DF $G3
 # user-defined supernodes of several columns (options.UserDefineSupernode):
@@ -180,7 +170,7 @@ add_test pass ci 4 "GPU3DVERSION=1" $T/pztest_ci -r 2 -c 2 -d 1 -I 0 -q 2 -f DF 
 add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -I 0 -U 4 -p 0 -q 8 -f DFPRF $GB
 add_test pass ci 6 "" $T/pztest_ci -r 2 -c 3 -I 0 -U 3 -p 0 -q 0 -f DFPF $GB
 add_test pass ci 1 "" $T/pstest_ci -r 1 -c 1 -I 0 -U 2 -p 0 -q 8 $GB
-add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DFPF $GB
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DFPRF $GB
 add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -I 0 -U 3 -p 0 -q 8 -s 2 $GB
 add_test pass ci 4 "GPU3DVERSION=1" $T/pdtest_ci -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DF $GB
 
