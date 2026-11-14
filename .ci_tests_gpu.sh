@@ -24,7 +24,8 @@
 #   - a GPU triangular solve on a 2D grid of more than one process needs
 #     NVSHMEM (ROCSHMEM); the driver reports SKIP without it;
 #   - GPU3DVERSION=1 on more than one process needs a GPU-aware MPI: those
-#     tests are only run with SLU_CI_GPU_AWARE_MPI=1;
+#     tests are only run with SLU_CI_GPU_AWARE_MPI=1; so is the 3D interface
+#     with the right-hand side on the GPU (-g 1), on any number of processes;
 #   - the batched interface with GPU3DVERSION=1 needs MAGMA.
 # With a GPU-aware MPI or NVSHMEM, every process must see the GPUs of the
 # processes it talks to: do not confine each MPI rank to its own GPU (e.g.
@@ -128,7 +129,9 @@ add_test pass ci 2 "$S $V0"  $T/pdtest_ci -r 1 -c 1 -d 2 -f DFPRF $G3
 add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3L    # NVSHMEM
 add_test pass ci 4 "$FS $V0" $T/pztest_ci -r 2 -c 2 -d 1 -f DFPRF $G3     # NVSHMEM
 add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -q 2 -D 1 -f DFPRF $G3
-add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -g 1 -f DF $G3  # RHS on the GPU
+# RHS on the GPU: the 3D interface gathers and scatters it with MPI calls on
+# device pointers, so it needs a GPU-aware MPI (segmentation fault without)
+add_gpu_mpi_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -g 1 -f DF $G3
 # ParMETIS ordering with the parallel symbolic factorization (double only;
 # fresh factorization and solves)
 add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -d 2 -q 5 -P 1 -f DFDF $G3L
