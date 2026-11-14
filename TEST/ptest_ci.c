@@ -35,6 +35,7 @@ at the top-level directory.
  *        F  FACTORED                  same matrix, new right-hand side
  *        P  SamePattern               new matrix values, new right-hand side
  *        R  SamePattern_SameRowPerm   new matrix values, new right-hand side
+ *        X  invalid input (ldb < m_loc): every process must return info = -5
  *     Every call is checked against the matrix values and the exact solution
  *     of that call, so a stale factor or a stale solution is detected,
  *   - SolveOnly (-S), level-based ILU (-I), row/column orderings, equilibration,
@@ -193,7 +194,7 @@ static void usage(void)
     printf("\t-k <0|1>   scramble the rows of the generated matrix (default 0)\n");
     printf("\t-U <int>   unknowns per grid point, coupled by dense blocks; with -I 0 the\n");
     printf("\t           blocks are passed as user-defined supernodes (default 1)\n");
-    printf("\t-f <str>   sequence of calls, letters D F P R   (default D)\n");
+    printf("\t-f <str>   sequence of calls, letters D F P R X (default D)\n");
     printf("\t           D DOFACT, F FACTORED, P SamePattern, R SamePattern_SameRowPerm\n");
     printf("\t-e <int>   equilibration 0/1\n");
     printf("\t-p <int>   row permutation 0 NOROWPERM, 1 LargeDiag_MC64, 2 LargeDiag_HWPM\n");
@@ -1012,6 +1013,44 @@ int main(int argc, char *argv[])
 	    if (!iam) printf("  -f %s: the sequence must start with D\n", par.steps);
 	    nfail++;
 	    break;
+	}
+
+	if (step == 'X') {
+	    /* Invalid input (ldb < m_loc): every process must return at once
+	       with info = -5, leaving the right-hand side and the factors as
+	       they are.  A driver that goes on solves, and overwrites b. */
+	    int lo, hi, touched;
+	    size_t nb = sizeof(scalar_t) * (size_t) ldb * (size_t) par.nrhs;
+	    scalar_t *bsave = (scalar_t *) SUPERLU_MALLOC(nb);
+	    exact_solution(n, par.nrhs, 7 * ver + istep, 0, xtrue);
+	    for (j = 0; j < par.nrhs; ++j)
+		memcpy(b + (size_t) j * ldb, xtrue + (size_t) j * n + fst_row,
+		       (size_t) m_loc * sizeof(scalar_t));
+	    memcpy(bsave, b, nb);
+	    options.Fact = FACTORED;
+	    PStatInit(&stat);
+	    info = 0;
+	    if (use3d)
+		P_(gssvx3d)(&options, &A, &ScalePermstruct, b, (int) m_loc - 1, par.nrhs,
+			    &grid3d, &LUstruct, &SOLVEstruct, berr, &stat, &info);
+	    else
+		P_(gssvx)(&options, &A, &ScalePermstruct, b, (int) m_loc - 1, par.nrhs,
+			  grid, &LUstruct, &SOLVEstruct, berr, &stat, &info);
+	    PStatFree(&stat);
+	    touched = memcmp(bsave, b, nb) != 0;
+	    SUPERLU_FREE(bsave);
+	    MPI_Allreduce(&info, &lo, 1, MPI_INT, MPI_MIN, comm);
+	    MPI_Allreduce(&info, &hi, 1, MPI_INT, MPI_MAX, comm);
+	    MPI_Allreduce(MPI_IN_PLACE, &touched, 1, MPI_INT, MPI_MAX, comm);
+	    if (!iam) {
+		printf("  call %d: invalid input (ldb < m_loc)\n"
+		       "    info %d .. %d, expected -5; right-hand side %s: %s\n",
+		       istep + 1, lo, hi, touched ? "overwritten" : "untouched",
+		       lo == -5 && hi == -5 && !touched ? "ok" : "FAILED");
+		fflush(stdout);
+	    }
+	    if (lo != -5 || hi != -5 || touched) { nfail++; break; }
+	    continue;
 	}
 
 	switch (step) {

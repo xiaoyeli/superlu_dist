@@ -102,6 +102,11 @@ add_test pass ci 4 "" $T/pztest_ci -r 2 -c 1 -d 2 -f DFPRF -s 2 $G3
 add_test pass ci 4 "" $T/pztest_ci -r 1 -c 2 -d 2 -f DFPRF $D/cg20.cua
 add_test pass ci 4 "" $T/pstest_ci -r 2 -c 1 -d 2 -f DFPRF $G3
 add_test pass ci 4 "SUPERLU_RANKORDER=XY" $T/pdtest_ci -r 2 -c 1 -d 2 -f DFPRF $G3
+# invalid input (X): every process returns info < 0 and the factors still solve
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -f DXF $G3
+add_test pass ci 4 "" $T/pstest_ci -r 1 -c 2 -d 2 -f DXF $G3
+add_test pass ci 4 "" $T/pztest_ci -r 2 -c 2 -d 1 -f DXF $G3
+add_test pass ci 4 "" $T/pdtest_ci -r 2 -c 2 -f DXF $G3
 
 # 3D: orderings, row permutation, refinement, DiagInv.
 add_test pass  ci 4 "" $T/pdtest_ci -r 2 -c 1 -d 2 -q 2 $G3

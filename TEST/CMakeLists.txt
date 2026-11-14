@@ -215,6 +215,9 @@ foreach(p ${CI_PRECISIONS})
                            LABELS cpu 3d ilu)
   add_superlu_dist_ci_test(3d_ilu0_usersup_v1 ${p} 4 -r 2 -c 1 -d 2 -I 0 -U 4 -p 0 -q 8 -f DF ${CI_GB}
                            ENV GPU3DVERSION=1 LABELS cpu 3d ilu)
+  # invalid input: every process returns info < 0, the factors still solve
+  add_superlu_dist_ci_test(2d_invalid_input ${p} 4 -r 2 -c 2 -f DXF ${CI_G3} LABELS cpu 2d)
+  add_superlu_dist_ci_test(3d_invalid_input ${p} 4 -r 2 -c 1 -d 2 -f DXF ${CI_G3} LABELS cpu 3d)
   add_superlu_dist_ci_test(batch ${p} 1 -b 4 -s 2 ${CI_G3} LABELS cpu batch)
   add_superlu_dist_ci_test(vbatch ${p} 1 -B 4 -f DRR ${CI_G3} LABELS cpu batch)
 endforeach()

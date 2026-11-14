@@ -593,6 +593,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     Fact = options->Fact;
 
     validateInput_pdgssvx3d(options, A, ldb, nrhs, grid3d, info);
+    if (*info) return; /* invalid input, reported by pxerr_dist() */
 
     /* The 3D parallel symbolic factorization covers a fresh factorization
        only.  Reject the rest on every rank before entering layer-specific

@@ -17,7 +17,8 @@ provided in SuperLU_DIST.
    requested configuration).  One run covers a combination of
      - the 2D interface (-d 0) or the 3D interface (-d >= 1), any process grid
      - a sequence of factorization modes, e.g. -f DFPRF:
-         D DOFACT, F FACTORED, P SamePattern, R SamePattern_SameRowPerm
+         D DOFACT, F FACTORED, P SamePattern, R SamePattern_SameRowPerm,
+         X a call with invalid input, which must return info < 0 at once
      - SolveOnly (-S 1), ILU(0) (-I 0), orderings (-p, -q), refinement (-i),
      - ILU(0) with user-defined supernodes of several columns (-I 0 -U <size>)
        GMRES (-G 1), DiagInv (-D 1), several right-hand sides (-s)

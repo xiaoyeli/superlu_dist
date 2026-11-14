@@ -602,6 +602,7 @@ void psgssvx3d_d2(superlu_dist_options_t *options, SuperMatrix *A,
     Fact = options->Fact;
 
     validateInput_psgssvx3d(options, A, ldb, nrhs, grid3d, info);
+    if (*info) return; /* invalid input, reported by pxerr_dist() */
 
     /* Initialization. */
 
