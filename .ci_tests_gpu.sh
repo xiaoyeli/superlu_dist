@@ -15,6 +15,8 @@
 # The GPU code paths are selected with environment variables:
 #   SUPERLU_ACC_OFFLOAD=1   numerical factorization on the GPU
 #   SUPERLU_ACC_SOLVE=1     triangular solves on the GPU
+#   SUPERLU_ACC_SOLVE=2     the same, with the GEMM kernels when there are
+#                           several right-hand sides
 #   GPU3DVERSION=0|1        3D factorization: C code with GEMM offload (0),
 #                           or the C++ code with the whole panel work on the
 #                           GPU (1); 1 also runs the batched factorization
@@ -43,6 +45,7 @@ GB="-x 8 -y 7 -z 6"         # with -U: that many unknowns per grid point
 G3L="-x 24 -y 22 -z 20"     # n = 10560
 
 FS="SUPERLU_ACC_OFFLOAD=1 SUPERLU_ACC_SOLVE=1"   # GPU factorization and solve
+FS2="SUPERLU_ACC_OFFLOAD=1 SUPERLU_ACC_SOLVE=2"  # the same, GEMM solve kernels
 F="SUPERLU_ACC_OFFLOAD=1 SUPERLU_ACC_SOLVE=0"    # GPU factorization, CPU solve
 S="SUPERLU_ACC_OFFLOAD=0 SUPERLU_ACC_SOLVE=1"    # CPU factorization, GPU solve
 V0="GPU3DVERSION=0 SUPERLU_N_GEMM=64"            # C code, low offload threshold
@@ -88,6 +91,12 @@ add_test pass ci 2 "$FS $V0" $T/pztest_ci -r 2 -c 1 -f DFPRF -s 2 $G3    # NVSHM
 add_test pass ci 2 "$FS $V0" $T/pdtest_ci -r 1 -c 2 -s 2 $G3             # NVSHMEM
 add_test pass ci 4 "$FS $V0" $T/pdtest_ci -r 1 -c 4 -s 4 -f DFPRF $G3    # NVSHMEM
 add_test pass ci 3 "$FS $V0" $T/pztest_ci -r 1 -c 3 -s 3 -f DF $G3       # NVSHMEM
+# SUPERLU_ACC_SOLVE=2: the GEMM kernels for several right-hand sides
+add_test pass ci 1 "$FS2 $V0" $T/pdtest_ci -r 1 -c 1 -s 5 -f DF $G3
+add_test pass ci 4 "$FS2 $V0" $T/pdtest_ci -r 2 -c 2 -s 3 -f DFPRF $G3    # NVSHMEM
+add_test pass ci 4 "$FS2 $V0" $T/pztest_ci -r 2 -c 2 -s 4 -f DF $G3       # NVSHMEM
+add_test pass ci 2 "$FS2 $V0" $T/pstest_ci -r 1 -c 2 -s 2 -f DF $G3       # NVSHMEM
+add_test pass ci 4 "$FS2 $V0" $T/pdtest_ci -r 2 -c 1 -d 2 -s 3 -f DF $G3  # NVSHMEM
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -q 2 -D 1 -f DFPRF $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -q 0 -p 1 -k 1 $G3
 add_test pass ci 1 "$FS $V0" $T/pdtest_ci -r 1 -c 1 -g 1 -f DF $G3       # RHS on the GPU

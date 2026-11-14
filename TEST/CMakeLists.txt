@@ -305,6 +305,9 @@ if(TPL_ENABLE_CUDALIB OR TPL_ENABLE_HIPLIB)
                              ENV ${CI_GPU_ENV} LABELS gpu 2d)
     add_superlu_dist_ci_test(gpu_2d_2x2 ${p} 4 -r 2 -c 2 -f DFPRF ${CI_G3}
                              ENV ${CI_GPU_ENV} SUPERLU_ACC_SOLVE=1 LABELS gpu 2d)
+    # SUPERLU_ACC_SOLVE=2: GEMM solve kernels for several right-hand sides
+    add_superlu_dist_ci_test(gpu_2d_2x2_gemmsolve ${p} 4 -r 2 -c 2 -s 3 -f DF ${CI_G3}
+                             ENV ${CI_GPU_ENV} SUPERLU_ACC_SOLVE=2 LABELS gpu 2d)
     # 3D interface: C code (GPU3DVERSION=0) and C++ code (=1), GPU solve
     foreach(v 0 1)
       foreach(grid 1x1x1 1x1x2 1x1x4 2x1x2)

@@ -2201,7 +2201,23 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                         }
                     }
                 }
-                if (tid == 0) fmod_tmp = atomicSub(&fmod[lk * aln_i], 1);
+                /* All the threads have added their updates of block lk to lsum. */
+                __syncthreads();
+                if (tid == 0) {
+                    fmod_tmp = atomicSub(&fmod[lk * aln_i], 1);
+                    /* Last update of block row lk on this process: send the
+                       partial sum to the process of the diagonal block, as
+                       the branch without GEMM does. */
+                    if (fmod_tmp == 1 && LRtree_ptr[lk].myRoot_ != LRtree_ptr[lk].myRank_) {
+                        my_flag_rd[ik*RDMA_FLAG_SIZE] = lk;
+                        my_flag_rd[ik*RDMA_FLAG_SIZE+1] = LRtree_ptr[lk].msgSize_ * nrhs;
+                        RHS_ITERATE(j) {
+                            for (int aab = 0; aab < iknsupc; aab++)
+                                dready_lsum[lk * maxrecvsz * 2 + aab + j * iknsupc] = lsum[il + aab + j * iknsupc];
+                        }
+                        dC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &dready_lsum[0], maxrecvsz, LRtree_ptr[lk].myRoot_);
+                    }
+                }
 
 
             }
@@ -2591,6 +2607,8 @@ __global__ void dlsum_fmod_inv_gpu_mrhs
                             }
                         // }//if(nrhs==1)
 
+                        /* All the threads have added their updates of block lk to lsum. */
+                        __syncthreads();
                         if(tid==0)atomicSub(&fmod[lk*aln_i],1);
 
 
