@@ -64,6 +64,7 @@ static int dvbatch_devres_on(void)
     return on;
 }
 
+#if defined(GPU_ACC) && defined(HAVE_MAGMA)
 /*! \brief Fact = SamePattern on an existing state: recompute the equilibration
  *  and the row permutation of every matrix from its new values and tell
  *  whether any row permutation changed.
@@ -208,7 +209,6 @@ static int dvbatch_sameperm_check(superlu_dist_options_t *options, int batchCoun
  * GPU build that churns the CUDA device binding and fails with
  * "cudaErrorInvalidDevice: invalid device ordinal".
  */
-#if defined(GPU_ACC) && defined(HAVE_MAGMA)
 /* SLU_BATCH_GRAPH (default 1): capture the device work of a fast reuse call
    in a CUDA graph and replay it afterwards.  Off under the per-kernel
    profiling switches, which synchronize inside the call. */
