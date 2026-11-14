@@ -886,6 +886,14 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     MPI_Bcast(&rowequ, 1, MPI_INT, 0, grid3d->zscp.comm);
     MPI_Bcast(&colequ, 1, MPI_INT, 0, grid3d->zscp.comm);
 
+    /* With Fact == SamePattern_SameRowPerm, sbcastPermutedSparseA() below is
+       skipped and every grid distributes its own copy of A into L and U: scale
+       the copies of the other grids as grid 0 has scaled its copy above, with
+       the R and C that sbcastPermutedSparseA() sent them before. */
+    if (Fact == SamePattern_SameRowPerm && Equil && grid3d->zscp.Iam != 0)
+	sscaleMatrixDiagonally(Fact, ScalePermstruct, A, stat, grid, &rowequ,
+			       &colequ, &iinfo);
+
     /* Now all processes in 3D grid participate */
 
     /* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid */
@@ -978,12 +986,15 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    }
 
-	    if (Fact != SamePattern_SameRowPerm) {
-		// checkDist3DLUStruct(LUstruct, grid3d);
-		// zeros out the Supernodes that are not owned by the grid
-		sinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
-					trf3Dpartition->sForests, LUstruct, grid3d);
+	    // checkDist3DLUStruct(LUstruct, grid3d);
+	    /* Zero out the supernodes that are not owned by this grid. Also needed
+	       for SamePattern_SameRowPerm: the distribution routine above has
+	       refilled L and U with the entries of A on all grids, and the
+	       ancestor reduction of the 3D factorization sums the grids. */
+	    sinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
+				    trf3Dpartition->sForests, LUstruct, grid3d);
 
+	    if (Fact != SamePattern_SameRowPerm) {
 		sLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(sLUValSubBuf_t));
 		sLluBufInit(LUvsb, LUstruct);
 		trf3Dpartition->LUvsb = LUvsb;

@@ -206,6 +206,7 @@ void dscaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct,
 
     if (Fact == SamePattern_SameRowPerm) {
         dscalePrecomputed(A, ScalePermstruct);
+        *iinfo = 0;
     } else {
         dscaleFromScratch(A, ScalePermstruct, grid, rowequ, colequ, iinfo);
     }
