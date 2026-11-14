@@ -3145,11 +3145,14 @@ int_t dleafForestForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t 
 
 /* Threads per block of the single-process GPU triangular-solve kernels
    (SLU_SOLVE_BLOCK, default 128: the blocks are latency-bound with few
-   active threads, so more resident blocks beat the DIM_X*DIM_Y = 256 of the
-   multi-RHS GEMM path); x-dimension capped at 32. */
-static void slu_solve_block_dims(int *nthx, int *nthy)
+   active threads, so more resident blocks beat DIM_X*DIM_Y = 256);
+   x-dimension capped at 32.  The GEMM kernels of SUPERLU_ACC_SOLVE=2 with
+   several right-hand sides index their threads as a DIM_X x DIM_Y block and
+   give a wrong solution on any other layout, so they keep it. */
+static void slu_solve_block_dims(int nrhs, int *nthx, int *nthy)
 {
     static int nt = -1;
+    if ( get_acc_solve() == 2 && nrhs > 1 ) { *nthx = DIM_X; *nthy = DIM_Y; return; }
     if ( nt < 0 ) { const char *e = getenv("SLU_SOLVE_BLOCK"); nt = e ? atoi(e) : 128; if ( nt < 32 ) nt = 32; }
     *nthx = (nt < 32) ? nt : 32; *nthy = nt / *nthx;
 }
@@ -3627,7 +3630,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
         nblock_loc=k;
     }
     dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, (Llu->nlevels > 0 && get_solve_levels()) ? Llu->nlevels : 0, Llu->levwarp);
-	int nthx, nthy; slu_solve_block_dims(&nthx, &nthy);
+	int nthx, nthy; slu_solve_block_dims(nrhs, &nthx, &nthy);
 	dlsum_fmod_inv_gpu_wrap(nblock_loc,nlb,nthx,nthy,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked, d_grid,
                          maxrecvsz,
 	                        flag_bc_q, flag_rd_q, dready_x, dready_lsum, my_flag_bc, my_flag_rd, d_nfrecv, h_nfrecv,
@@ -5743,7 +5746,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
     }
 
     dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, (Llu->nlevels > 0 && get_solve_levels()) ? Llu->nlevels : 0, Llu->levwarp);
-    int nthx, nthy; slu_solve_block_dims(&nthx, &nthy);
+    int nthx, nthy; slu_solve_block_dims(nrhs, &nthx, &nthy);
     dlsum_bmod_inv_gpu_wrap(options, k,nlb,nthx,nthy,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
                         Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
                         Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Ucolind_br_dat,Llu->d_Ucolind_br_offset,
@@ -7642,7 +7645,7 @@ void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *options, int_t n, dLUstruc
     checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(double), (gpuStream_t) stream));
     dlsum_set_solve_stream(stream);
     dlsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0, Llu->levwarp);
-    slu_solve_block_dims(&nthx, &nthy);
+    slu_solve_block_dims(nrhs, &nthx, &nthy);
     dlsum_fmod_inv_gpu_wrap(Llu->nbcol_masked, nlb, nthx, nthy, d_lsum, d_x, nrhs, knsupc, nsupers, SOLVEstruct->d_fmod,
         Llu->d_LBtree_ptr, Llu->d_LRtree_ptr, Llu->d_ilsum, Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset,
         Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset,
