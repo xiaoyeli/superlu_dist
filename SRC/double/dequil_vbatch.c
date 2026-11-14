@@ -18,6 +18,15 @@ at the top-level directory.
  * Last update: September 23, 2026, v9.3.0
  */
 #include "superlu_ddefs.h"
+#ifdef _OPENMP
+#include <omp.h>
+static int vbatch_prep_threads(void)
+{
+    static int nt = -1;
+    if (nt < 0) { const char *e = getenv("SLU_BATCH_THREADS"); nt = e ? atoi(e) : omp_get_num_procs(); if (nt < 1) nt = 1; }
+    return nt;
+}
+#endif
 
 /*! \brief Equilibrate the systems using the LAPACK-style algorithm
  *
@@ -77,7 +86,10 @@ dequil_vbatch(
 	info[i] = 0;
     }
 
-    /* Loop through each matrix in the batch */
+    /* Loop through each matrix in the batch; the matrices are independent */
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 4) num_threads(vbatch_prep_threads()) private(i, j, irow, icol)
+#endif
     for (int k = 0; k < batchCount; ++k) {
 
 	NCformat *Astore = (NCformat *) A[k]->Store;
@@ -177,8 +189,11 @@ dequil_vbatch(
 		    }
 		}
 
-		if ((iinfo != 0) && (rinfo == 0)) {
-			rinfo = k+1;
+		if (iinfo != 0) {
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+		    if (rinfo == 0) rinfo = k+1;
 		}
 
 		/* Now iinfo == 0 */
