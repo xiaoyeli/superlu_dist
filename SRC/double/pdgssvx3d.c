@@ -2318,6 +2318,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	A->Store = Astore3d; // restore Astore to 3D
 
     tph[7] = SuperLU_timer_();
+    /* Phase times of this call, on process 0 with PrintStat only.  A phase
+       that the call skipped (FACTORED, nrhs = 0) has no mark: give it the
+       previous one, i.e. a zero time. */
+    for (int ii = 1; ii < 7; ++ii) if (tph[ii] == 0.0) tph[ii] = tph[ii-1];
+    if ( options->PrintStat == YES && grid3d->iam == 0 )
     printf("[pdgssvx3d] phases ms: gather %.2f  entry->colperm %.2f  colind-perm %.2f  dist+factor %.2f  stats-print %.2f  solve-setup %.2f  solve-block %.2f  total %.2f\n",
            1e3*(tph[0]-tph_in), 1e3*(tph[1]-tph[0]), 1e3*(tph[2]-tph[1]), 1e3*(tph[3]-tph[2]), 1e3*(tph[5]-tph[4]), 1e3*(tph[6]-tph[5]), 1e3*(tph[7]-tph[6]), 1e3*(tph[7]-tph_in));
 #if (DEBUGlevel >= 1)
