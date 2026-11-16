@@ -114,7 +114,25 @@ typedef struct cLUstruct_t cLUstruct_t;
         SCT_t *SCT_, superlu_dist_options_t *options, SuperLUStat_t *stat
     );
 
-    extern void sfreeBatchFactorizeWorkspace(sBatchFactorize_Handle ws);struct dBatchFactorizeWorkspace;
+    extern void sfreeBatchFactorizeWorkspace(sBatchFactorize_Handle ws);
+
+    /* Device-resident batch factorization (pattern-reuse steps keep the GPU
+       workspace and refill the device L/U directly from the values of A). */
+    extern sBatchFactorize_Handle sgetBatchFactorizeWorkspaceEx(
+        int_t nsupers, int_t ldt, strf3Dpartition_t *trf3Dpartition, sLUstruct_t *LUstruct,
+        gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info,
+        int convertU
+    );
+    extern int sbatchDevResSetup(sBatchFactorize_Handle ws, sLUstruct_t *LUstruct,
+                                 float *avals, int_t nnz, const int64_t *map_host);
+    extern int sbatchDevResRefill(sBatchFactorize_Handle ws, const float *avals, int_t nnz);
+    extern void sbatchDevResFree(sBatchFactorize_Handle ws);
+    /* Stage 3: feed the GPU triangular solve from the device factors. */
+    extern int sbatchDevResSolveSetup(sBatchFactorize_Handle ws, const int64_t *umap_host, int64_t ucnt);
+    extern int sbatchDevResSolveReady(sBatchFactorize_Handle ws);
+    extern int sbatchDevResSolveRefresh(sBatchFactorize_Handle ws, sLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol);
+
+struct dBatchFactorizeWorkspace;
 
     // Double 
     typedef struct dBatchFactorizeWorkspace* dBatchFactorize_Handle;
@@ -194,6 +212,22 @@ typedef struct cLUstruct_t cLUstruct_t;
     );
 
     extern void zfreeBatchFactorizeWorkspace(zBatchFactorize_Handle ws);
+
+    /* Device-resident batch factorization (pattern-reuse steps keep the GPU
+       workspace and refill the device L/U directly from the values of A). */
+    extern zBatchFactorize_Handle zgetBatchFactorizeWorkspaceEx(
+        int_t nsupers, int_t ldt, ztrf3Dpartition_t *trf3Dpartition, zLUstruct_t *LUstruct,
+        gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info,
+        int convertU
+    );
+    extern int zbatchDevResSetup(zBatchFactorize_Handle ws, zLUstruct_t *LUstruct,
+                                 doublecomplex *avals, int_t nnz, const int64_t *map_host);
+    extern int zbatchDevResRefill(zBatchFactorize_Handle ws, const doublecomplex *avals, int_t nnz);
+    extern void zbatchDevResFree(zBatchFactorize_Handle ws);
+    /* Stage 3: feed the GPU triangular solve from the device factors. */
+    extern int zbatchDevResSolveSetup(zBatchFactorize_Handle ws, const int64_t *umap_host, int64_t ucnt);
+    extern int zbatchDevResSolveReady(zBatchFactorize_Handle ws);
+    extern int zbatchDevResSolveRefresh(zBatchFactorize_Handle ws, zLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol);
 #ifdef __cplusplus
 }
 #endif

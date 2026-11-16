@@ -473,6 +473,7 @@ void sLUstructInit(const int_t n, sLUstruct_t *LUstruct)
     LUstruct->Llu->inv = 0;
     LUstruct->dt = 's';
     LUstruct->trf3Dpart = NULL;
+    LUstruct->batch_dev = NULL;
 }
 
 /*! \brief Deallocate LUstruct */
