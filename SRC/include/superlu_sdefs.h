@@ -355,6 +355,8 @@ typedef struct {
     sLocalLU_t *Llu;
     strf3Dpartition_t *trf3Dpart;
     char dt;
+    void *batch_dev;   /* device-resident batch factorization state (see
+                          sbatchDevRes* in batch_factorize.cu); NULL if unused */
 } sLUstruct_t;
 
 

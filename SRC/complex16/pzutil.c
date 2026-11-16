@@ -474,6 +474,7 @@ void zLUstructInit(const int_t n, zLUstruct_t *LUstruct)
     LUstruct->Llu->inv = 0;
     LUstruct->dt = 'z';
     LUstruct->trf3Dpart = NULL;
+    LUstruct->batch_dev = NULL;
 }
 
 /*! \brief Deallocate LUstruct */

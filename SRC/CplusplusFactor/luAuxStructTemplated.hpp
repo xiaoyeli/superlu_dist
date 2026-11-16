@@ -156,18 +156,21 @@ inline T one();
 
 // Specialization for double
 template<>
+__host__ __device__
 inline double one<double>() {
     return 1.0;
 }
 
 // Specialization for float
 template<>
+__host__ __device__
 inline float one<float>() {
     return 1.0f;
 }
 
 // Specialization for std::complex<double>
 template<>
+__host__ __device__
 inline doublecomplex one<doublecomplex>() {
     doublecomplex z = {1.0, 0.0};
     return z;
@@ -179,18 +182,21 @@ inline T zeroT();
 
 // Specialization for double
 template<>
+__host__ __device__
 inline double zeroT<double>() {
     return 0.0;
 }
 
 // Specialization for float
 template<>
+__host__ __device__
 inline float zeroT<float>() {
     return 0.0f;
 }
 
 // Specialization for std::complex<double>
 template<>
+__host__ __device__
 inline doublecomplex zeroT<doublecomplex>() {
     doublecomplex z = {0.0, 0.0};
     return z;
@@ -230,6 +236,12 @@ inline doublecomplex atomicAddT<doublecomplex>(doublecomplex* address, doublecom
 __host__ __device__
 inline doublecomplex operator-(const doublecomplex& a, const doublecomplex& b) {
     return {a.r - b.r, a.i - b.i};
+}
+
+// External Operator Overload for '+'
+__host__ __device__
+inline doublecomplex operator+(const doublecomplex& a, const doublecomplex& b) {
+    return {a.r + b.r, a.i + b.i};
 }
 
 // External Operator Overload for '=='
@@ -274,6 +286,14 @@ __host__ __device__
 inline doublecomplex& operator-=(doublecomplex& a, const doublecomplex& b) {
     a.r -= b.r;
     a.i -= b.i;
+    return a;
+}
+
+// External Operator Overload for '+='
+__host__ __device__
+inline doublecomplex& operator+=(doublecomplex& a, const doublecomplex& b) {
+    a.r += b.r;
+    a.i += b.i;
     return a;
 }
 

@@ -1055,7 +1055,7 @@ __global__ void gatherUvalsKernel(const T* src, const int64_t* map, int64_t n, T
     int64_t j = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
     if (j >= n) return;
     int64_t m = map[j];
-    dst[j] = (m < 0) ? T(0) : src[m];
+    dst[j] = (m < 0) ? zeroT<T>() : src[m];
 }
 
 /* Inverse of every diagonal block, one thread block per local block column:
@@ -1079,17 +1079,17 @@ __global__ void diagInvKernel(int_t nsupers, int npcol, int mycol, const int_t* 
     T* Ui = Uinv + Uinv_off[lk];
     for (int j = threadIdx.x; j < n; j += blockDim.x) {
         /* column j of inv(L), L unit lower */
-        for (int i = 0; i < j; ++i) Li[j * n + i] = T(0);
-        Li[j * n + j] = T(1);
+        for (int i = 0; i < j; ++i) Li[j * n + i] = zeroT<T>();
+        Li[j * n + j] = one<T>();
         for (int i = j + 1; i < n; ++i) {
-            T s = T(0);
+            T s = zeroT<T>();
             for (int l = j; l < i; ++l) s += L[l * nsupr + i] * Li[j * n + l];
             Li[j * n + i] = -s;
         }
         /* column j of inv(U), U upper non-unit */
-        for (int i = j + 1; i < n; ++i) Ui[j * n + i] = T(0);
+        for (int i = j + 1; i < n; ++i) Ui[j * n + i] = zeroT<T>();
         for (int i = j; i >= 0; --i) {
-            T s = (i == j) ? T(1) : T(0);
+            T s = (i == j) ? one<T>() : zeroT<T>();
             for (int l = i + 1; l <= j; ++l) s -= L[l * nsupr + i] * Ui[j * n + l];
             Ui[j * n + i] = s / L[i * nsupr + i];
         }
@@ -1686,11 +1686,49 @@ void scopyGPULUDataToHost(
 }
 
 void sfreeBatchFactorizeWorkspace(sBatchFactorizeWorkspace* ws)
-{ 
-    freeBatchFactorizeWorkspaceT<float>(ws); 
+{
+    freeBatchFactorizeWorkspaceT<float>(ws);
 }
 
-//double  
+sBatchFactorizeWorkspace* sgetBatchFactorizeWorkspaceEx(
+    int_t nsupers, int_t ldt, strf3Dpartition_t *trf3Dpartition, sLUstruct_t *LUstruct,
+    gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info, int convertU
+)
+{
+    return getBatchFactorizeWorkspaceT<float>(nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info, convertU);
+}
+
+int sbatchDevResSetup(sBatchFactorizeWorkspace* ws, sLUstruct_t *LUstruct, float *avals, int_t nnz, const int64_t *map_host)
+{
+    return batchDevResSetupT<float>(ws, LUstruct, avals, nnz, map_host);
+}
+
+int sbatchDevResRefill(sBatchFactorizeWorkspace* ws, const float *avals, int_t nnz)
+{
+    return batchDevResRefillT<float>(ws, avals, nnz);
+}
+
+void sbatchDevResFree(sBatchFactorizeWorkspace* ws)
+{
+    freeBatchFactorizeWorkspaceT<float>(ws);   /* unregisters the pinned host buffers first */
+}
+
+int sbatchDevResSolveSetup(sBatchFactorizeWorkspace* ws, const int64_t *umap_host, int64_t ucnt)
+{
+    return batchDevResSolveSetupT<float>(ws, umap_host, ucnt);
+}
+
+int sbatchDevResSolveReady(sBatchFactorizeWorkspace* ws)
+{
+    return ws && ws->solve_ready;
+}
+
+int sbatchDevResSolveRefresh(sBatchFactorizeWorkspace* ws, sLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol)
+{
+    return batchDevResSolveRefreshT<float>(ws, LUstruct, nsupers, npcol, mycol);
+}
+
+//double
 int dsparseTreeFactorBatchGPU(dBatchFactorizeWorkspace* ws, sForest_t *sforest)
 {
     return sparseTreeFactorBatchGPUT<double>(ws, sforest);
@@ -1789,8 +1827,46 @@ int dbatchDevResSolveReady(dBatchFactorizeWorkspace* ws)
 }
 
 int dbatchDevResSolveRefresh(dBatchFactorizeWorkspace* ws, dLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol)
-{ 
-    return batchDevResSolveRefreshT<double>(ws, LUstruct, nsupers, npcol, mycol); 
+{
+    return batchDevResSolveRefreshT<double>(ws, LUstruct, nsupers, npcol, mycol);
+}
+
+zBatchFactorizeWorkspace* zgetBatchFactorizeWorkspaceEx(
+    int_t nsupers, int_t ldt, ztrf3Dpartition_t *trf3Dpartition, zLUstruct_t *LUstruct,
+    gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info, int convertU
+)
+{
+    return getBatchFactorizeWorkspaceT<doublecomplex>(nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info, convertU);
+}
+
+int zbatchDevResSetup(zBatchFactorizeWorkspace* ws, zLUstruct_t *LUstruct, doublecomplex *avals, int_t nnz, const int64_t *map_host)
+{
+    return batchDevResSetupT<doublecomplex>(ws, LUstruct, avals, nnz, map_host);
+}
+
+int zbatchDevResRefill(zBatchFactorizeWorkspace* ws, const doublecomplex *avals, int_t nnz)
+{
+    return batchDevResRefillT<doublecomplex>(ws, avals, nnz);
+}
+
+void zbatchDevResFree(zBatchFactorizeWorkspace* ws)
+{
+    freeBatchFactorizeWorkspaceT<doublecomplex>(ws);   /* unregisters the pinned host buffers first */
+}
+
+int zbatchDevResSolveSetup(zBatchFactorizeWorkspace* ws, const int64_t *umap_host, int64_t ucnt)
+{
+    return batchDevResSolveSetupT<doublecomplex>(ws, umap_host, ucnt);
+}
+
+int zbatchDevResSolveReady(zBatchFactorizeWorkspace* ws)
+{
+    return ws && ws->solve_ready;
+}
+
+int zbatchDevResSolveRefresh(zBatchFactorizeWorkspace* ws, zLUstruct_t *LUstruct, int_t nsupers, int npcol, int mycol)
+{
+    return batchDevResSolveRefreshT<doublecomplex>(ws, LUstruct, nsupers, npcol, mycol);
 }
 
 void *dbatchDevResStream(dBatchFactorizeWorkspace* ws)
