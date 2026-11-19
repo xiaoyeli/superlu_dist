@@ -36,7 +36,7 @@ module load cudatoolkit
 module load cray-libsci
 # module use /global/common/software/nersc/pe/modulefiles/latest
 # module load nvshmem/2.11.0
-module load python/3.11
+module load python
 
 export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_master
 

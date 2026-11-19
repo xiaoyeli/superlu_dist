@@ -5,6 +5,11 @@
 # module load PrgEnv-gnu
 # module load gcc/11.2.0
 module load cmake
+# NVSHMEM is built for CUDA 12.9 only: load that CUDA and the cray-mpich
+# built for it (the default cray-mpich/9.1.0 needs CUDA 13)
+module load nvshmem/3.2.5-1
+module load cudatoolkit/12.9
+module load cray-mpich/9.0.1
 # module load cudatoolkit/11.7
 # avoid bug in cray-libsci/21.08.1.2
 # module load cray-libsci/22.11.1.2
@@ -14,6 +19,10 @@ ulimit -s unlimited
 export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
+# nvshmem/3.2.5-1 sets SLURM_MPI_TYPE=pmix, under which srun starts every
+# rank of cray-mpich/9.0.1 as a separate one-process job
+export SLURM_MPI_TYPE=cray_shasta
+export LD_LIBRARY_PATH="$MPICH_DIR/lib:$CRAY_MPICH_ROOTDIR/gtl/lib:$LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 #SUPERLU settings:
 

@@ -13,11 +13,12 @@ cmake .. \
      -DCMAKE_CUDA_FLAGS="-ccbin nvc++" \
      -DCMAKE_C_COMPILER=cc \
      -DCMAKE_CXX_COMPILER=CC \
+     -DCMAKE_Fortran_COMPILER=ftn \
+     -DCMAKE_Fortran_FLAGS="-c++libs" \
      -DXSDK_ENABLE_Fortran=ON \
      -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=CC" \
      -DCMAKE_CUDA_ARCHITECTURES=80 \
      -DTPL_ENABLE_CUDALIB=TRUE \
-     -DTPL_CUDA_LIBRARIES="/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/targets/x86_64-linux/lib/libcudart.so" \
      -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
      -DTPL_BLAS_LIBRARIES=$CRAY_LIBSCI_PREFIX/lib/libsci_nvidia_mp.a \

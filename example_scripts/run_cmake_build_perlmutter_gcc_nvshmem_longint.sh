@@ -7,7 +7,9 @@ module load cmake
 module load cudatoolkit
 
 # module use /global/common/software/nersc/pe/modulefiles/latest
-module load nvshmem/3.2.5-1
+# NVSHMEM is off: nvshmem/3.2.5-1 is built for CUDA 12.9 only.  To turn it on,
+# load nvshmem/3.2.5-1, cudatoolkit/12.9 and cray-mpich/9.0.1 and use a MAGMA
+# built for CUDA 12.9 (see run_cmake_build_perlmutter_gcc_nvshmem_openblas.sh)
 export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_master
 # avoid bug in cudatoolkit
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.4\/compat:/}

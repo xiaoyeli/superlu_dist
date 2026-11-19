@@ -28,11 +28,17 @@
 
 module load cmake
 module load PrgEnv-nvidia
-module load cudatoolkit
+# NVSHMEM is built for CUDA 12.9 only: the NVIDIA compilers that come with it
+# (HPC SDK 25.5), that CUDA, and the cray-mpich built for it (the default
+# cray-mpich/9.1.0 needs CUDA 13)
+module load nvidia/25.5
+module load cudatoolkit/12.9
 module load cray-libsci
 # module use /global/common/software/nersc/pe/modulefiles/latest
 module load nvshmem/3.2.5-1
-export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_master
+module load cray-mpich/9.0.1
+export MAGMA_ROOT=/global/cfs/cdirs/m2957/lib/magma_master_cuda12.9
+export LD_LIBRARY_PATH="$MPICH_DIR/lib:$CRAY_MPICH_ROOTDIR/gtl/lib:$LD_LIBRARY_PATH"
 # avoid bug in cudatoolkit
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-12.4\/compat:/}
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
@@ -65,7 +71,7 @@ cmake .. \
   -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m2957/lib/lib/PrgEnv-nvidia/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m2957/lib/lib/PrgEnv-nvidia/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.so" \
   -DTPL_ENABLE_COMBBLASLIB=OFF \
   -DTPL_ENABLE_NVSHMEM=ON \
-  -DTPL_NVSHMEM_LIBRARIES="-L${CUDA_HOME}/lib64/stubs/ -lnvidia-ml -L/usr/lib64 -lgdrapi -lstdc++ -L/opt/cray/libfabric/1.22.0/lib64 -lfabric -L${NVSHMEM_HOME}/lib -lnvshmem" \
+  -DTPL_NVSHMEM_LIBRARIES="-L${CUDA_HOME}/lib64/stubs/ -lnvidia-ml -L/usr/lib64 -lgdrapi -lstdc++ -L/opt/cray/libfabric/2.3.1/lib64 -lfabric -L${NVSHMEM_HOME}/lib -lnvshmem" \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
   -DMPIEXEC_NUMPROC_FLAG=-n \
   -DMPIEXEC_EXECUTABLE=/usr/bin/srun \

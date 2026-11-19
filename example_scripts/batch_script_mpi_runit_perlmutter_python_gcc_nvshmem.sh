@@ -14,15 +14,23 @@
 #modules:
 module load PrgEnv-gnu
 module load cmake
-module load cudatoolkit
+# NVSHMEM is built for CUDA 12.9 only: load that CUDA and the cray-mpich
+# built for it (the default cray-mpich/9.1.0 needs CUDA 13)
+module load nvshmem/3.2.5-1
+module load cudatoolkit/12.9
+module load cray-mpich/9.0.1
 module load cray-libsci
-module load python/3.11
+module load python
 ulimit -s unlimited
 #MPI settings:
 ################################################# 
 export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
+# nvshmem/3.2.5-1 sets SLURM_MPI_TYPE=pmix, under which srun starts every
+# rank of cray-mpich/9.0.1 as a separate one-process job
+export SLURM_MPI_TYPE=cray_shasta
+export LD_LIBRARY_PATH="$MPICH_DIR/lib:$CRAY_MPICH_ROOTDIR/gtl/lib:$LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 NROW=2   # number of MPI row processes 
 NCOL=2   # number of MPI column processes 
@@ -54,7 +62,8 @@ export SUPERLU_MPI_PROCESS_PER_GPU=$nmpipergpu # nmpipergpu>1 can better saturat
 ## The following is NVSHMEM settings for multi-GPU trisolve 
 ################################################# 
 # module load nvshmem/2.11.0
-NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+# NVSHMEM_HOME=/global/cfs/cdirs/m2957/lib/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=${NVSHMEM_ROOT}
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}

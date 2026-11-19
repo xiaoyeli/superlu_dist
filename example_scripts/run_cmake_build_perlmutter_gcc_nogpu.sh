@@ -23,8 +23,8 @@ cmake .. \
      -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
      -DTPL_ENABLE_LAPACKLIB=ON \
      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
-     -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/23.12.5/GNU/12.3/x86_64/lib/libsci_gnu_123_mp.so \
+     -DTPL_BLAS_LIBRARIES=${CRAY_LIBSCI_PREFIX}/lib/libsci_gnu_mp.so \
+     -DTPL_LAPACK_LIBRARIES=${CRAY_LIBSCI_PREFIX}/lib/libsci_gnu_mp.so \
      -DBUILD_SHARED_LIBS=OFF \
      -DCMAKE_BUILD_TYPE=Debug \
      -DCMAKE_INSTALL_PREFIX=.

@@ -10,7 +10,7 @@
 
 #module load PrgEnv-gnu
 #module load gcc/11.2.0
-module load cmake/3.24.3
+module load cmake
 
 cmake .. \
   -DCMAKE_C_FLAGS="  -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
@@ -22,13 +22,13 @@ cmake .. \
   -DTPL_ENABLE_LAPACKLIB=ON \
   -DBUILD_SHARED_LIBS=ON \
   -DTPL_ENABLE_CUDALIB=ON \
-  -DCMAKE_CUDA_FLAGS="-I${MPICH_DIR}/include -ccbin=/opt/cray/pe/craype/2.7.19/bin/CC" \
+  -DCMAKE_CUDA_FLAGS="-I${MPICH_DIR}/include -ccbin=CC" \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
   -DCMAKE_BUILD_TYPE=Release \
-  -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/default/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
-  -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/default/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
+  -DTPL_BLAS_LIBRARIES=${CRAY_LIBSCI_PREFIX}/lib/libsci_gnu_mp.so \
+  -DTPL_LAPACK_LIBRARIES=${CRAY_LIBSCI_PREFIX}/lib/libsci_gnu_mp.so \
   -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \
   -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.so" \
   -DTPL_ENABLE_COMBBLASLIB=OFF \
