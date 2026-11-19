@@ -138,6 +138,14 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
            it is left from last iteration.
            Note: Blocks may not be sorted in L. Different thread picks up
 	   different lb.   */
+        /* schedule(dynamic) does not hand a thread its iterations in increasing
+           order, so the search may already be past lb: restart it from the
+           first block. */
+        if (current_b > lb) {
+            current_b = 0;
+            lptr = lptr0;
+            luptr = luptr0;
+        }
         for (; current_b < lb; ++current_b) {
             temp_nbrow = lsub[lptr + 1];    /* Number of full rows. */
             lptr += LB_DESCRIPTOR;  /* Skip descriptor. */
