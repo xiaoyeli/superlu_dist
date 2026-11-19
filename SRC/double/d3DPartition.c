@@ -266,7 +266,7 @@ void dnewTrfPartitionInit(int_t nsupers, dLUstruct_t *LUstruct,
 }
 
 
-// function to broad permuted sparse matrix and symbolic factorization data from
+// function to broadcast permuted sparse matrix and symbolic factorization data from
 // 2d to 3d grid
 
 void dbcastPermutedSparseA(SuperMatrix *A,
@@ -564,3 +564,4 @@ void dbcastDistSymbLU(SuperMatrix *A,
     MPI_Bcast(Astore->colind, Astore->nnz_loc * sizeof(int_t), MPI_BYTE,
               0, zcomm);
 }
+

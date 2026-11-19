@@ -27,8 +27,8 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef __SUPERLU_DDEFS /* allow multiple inclusions */
-#define __SUPERLU_DDEFS
+#ifndef SUPERLU_DDEFS_H /* allow multiple inclusions */
+#define SUPERLU_DDEFS_H
 
 /*
  * File name:	superlu_ddefs.h
@@ -1853,4 +1853,4 @@ extern double *dready_lsum;
   }
 #endif
 
-#endif /* __SUPERLU_dDEFS */
+#endif /* SUPERLU_DDEFS_H */

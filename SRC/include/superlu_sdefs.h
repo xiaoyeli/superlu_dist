@@ -27,8 +27,8 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef __SUPERLU_SDEFS /* allow multiple inclusions */
-#define __SUPERLU_SDEFS
+#ifndef SUPERLU_SDEFS_H /* allow multiple inclusions */
+#define SUPERLU_SDEFS_H
 
 /*
  * File name:	superlu_sdefs.h
@@ -263,6 +263,14 @@ typedef struct {
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
     int nbcol_masked; /*number of local block columns in my 2D grid*/
+    /* Level-synchronous single-process GPU triangular solve: supernodes in
+       elimination-tree level order (device), level boundaries (host). */
+    int   *d_levlist;
+    int_t *levlims;
+    int    nlevels;
+    int   *levwarp;      /* per level: 1 = warp-per-supernode kernel (nrhs == 1) */
+    double acc_solve_flops[2];   /* L/U solve flop counts of this pattern, for the stats */
+    int    acc_solve_flops_nrhs; /* nrhs they were computed for (-1: not yet) */
 
 #ifdef GPU_ACC
     /* The following variables are used in GPU trisolve */
@@ -357,6 +365,7 @@ typedef struct {
     char dt;
     void *batch_dev;   /* device-resident batch factorization state (see
                           sbatchDevRes* in batch_factorize.cu); NULL if unused */
+    float batch_anorm; /* norm(A) of the first factorization, reused on fast steps */
 } sLUstruct_t;
 
 
@@ -400,6 +409,16 @@ typedef struct {
     #ifdef GPU_ACC
     float *d_lsum, *d_lsum_save;      /* used for device lsum*/
     float *d_x;         /* used for device solution vector*/
+    float *d_Xgpures;   /* GPURES: scaled RHS / permuted solution, kept across solves */
+    size_t d_Xgpures_len;
+    /* Fast GPU-resident solve of the batched interface (one process,
+       per-level launches): maps built once per pattern by a marker pass
+       through the regular path.  fast_in[s]: for position s of the solver's
+       x vector, the stacked entry (row + rhs*m) it is loaded from, or -1;
+       fast_out[row + rhs*m]: the position s holding that entry's solution.
+       fast_xlen == 0: not available. */
+    int_t fast_xlen, fast_m, fast_nrhs;
+    int_t *fast_in, *fast_out;
     int  *d_fmod_save, *d_fmod;         /* used for device fmod vector*/
     int  *d_bmod_save, *d_bmod;         /* used for device bmod vector*/
 
@@ -445,6 +464,32 @@ typedef struct {
     int_t    *rowptr;       /* A_big rowptr,  size m_big+1 */
     float   *b;            /* stacked RHS / solution workspace, m_big*nrhs */
     float   *berr;         /* backward error of the stacked solve, size nrhs */
+    /* GPU-resident RHS/solution (options->GPURES == YES: RHSptr[] and Xptr[]
+       are device pointers).  Per stacked row g = (system d, local row i). */
+    float   *d_b;          /* stacked device RHS / solution, m_big*nrhs */
+    int_t    *d_rowsys;     /* d */
+    int_t    *d_rowloc;     /* i */
+    int_t    *d_rhsdst;     /* offset_m[d] + perm_c[perm_r[i]]: where b_big takes row i */
+    int_t    *d_xsrc;       /* offset_m[d] + perm_c[i]: where x_d[i] is read from */
+    float   *d_rscale;     /* R[i] or 1 */
+    float   *d_cscale;     /* C[i] or 1 */
+    float  **d_RHSptrs;    /* device copies of the per-system pointer arrays */
+    float  **d_Xptrs;
+    int      *d_ldRHS;
+    int      *d_ldX;
+    /* fast solve (sSOLVEstruct_t.fast_*, composed with the per-system maps) */
+    int_t    *d_fin_g;      /* solver position s -> stacked row g (system/row via d_rowsys/d_rowloc), -1 */
+    int      *d_fin_j;      /* solver position s -> rhs index */
+    int_t    *d_fout_s;     /* g + j*m_big -> solver position s */
+    int_t     fast_xlen;    /* 0: not available */
+    float  **h_RHSptrs;    /* last pointer arrays sent to the device (skip the copy when unchanged) */
+    float  **h_Xptrs;
+    int      *h_ldRHS, *h_ldX;
+    /* CUDA graph of the device work of a fast reuse call: captured on the
+       first such call after a check against the eager run, replayed after */
+    void     *graph_exec;
+    int       graph_state;  /* 0 none yet, 1 ready, -1 off (capture failed or replay differed) */
+    int       graph_nrhs, graph_batch;
 } svbatch_ctx_t;
 
 /*==== For 3D code ====*/
@@ -780,6 +825,9 @@ extern void sComputeLevelsets(int , int_t , gridinfo_t *,
 #ifdef GPU_ACC
 extern void psconvertU(superlu_dist_options_t *, gridinfo_t *, sLUstruct_t *, SuperLUStat_t *, int);
 
+extern void slsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwarp);
+extern void slsum_set_solve_stream(void *stream);
+extern void psgstrs3d_gpu_fast_solve(superlu_dist_options_t *, int_t, sLUstruct_t *, sSOLVEstruct_t *, gridinfo3d_t *, int, void *stream);
 extern void slsum_fmod_inv_gpu_wrap(int, int, int, int, float *, float *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, float *, int64_t *, float *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *,
 int_t , uint64_t* ,uint64_t* ,float* ,float* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int);
 
@@ -1383,6 +1431,28 @@ extern void sbcastPermutedSparseA(SuperMatrix *A,
                           sLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
 
 extern void snewTrfPartitionInit(int_t nsupers,  sLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+extern void snewTrfPartitionInitFromSetree(int_t nsupers,
+                                           const int_t *setree,
+                                           sLUstruct_t *LUstruct,
+                                           gridinfo3d_t *grid3d);
+/* Parallel symbolic factorization in the 3D driver */
+extern float sdist_symbLU(superlu_dist_options_t *, int_t,
+                          Pslu_freeable_t *, Glu_persist_t *,
+                          int_t **, int_t **, int_t **, int_t **,
+                          gridinfo_t *);
+extern int_t *sdist_build_supno_tree(int_t, int_t, const int_t *,
+                                     const int_t *, int, const int_t *,
+                                     const int_t *, const int_t *,
+                                     const int_t *, Glu_persist_t *,
+                                     gridinfo_t *);
+extern float sdist_psymbtonum3d(superlu_dist_options_t *, int_t,
+                                SuperMatrix *, sScalePermstruct_t *,
+                                int_t *, int_t *, int_t *, int_t *, float,
+                                sLUstruct_t *, gridinfo3d_t *);
+extern void sbcastDistSymbLU(SuperMatrix *, sScalePermstruct_t *,
+                             sLUstruct_t *, int_t **, int_t **,
+                             int_t **, int_t **, float *, int_t **,
+                             gridinfo3d_t *);
 
 
     /* from xtrf3Dpartition.h */
@@ -1806,4 +1876,4 @@ extern float *sready_lsum;
   }
 #endif
 
-#endif /* __SUPERLU_sDEFS */
+#endif /* SUPERLU_SDEFS_H */
