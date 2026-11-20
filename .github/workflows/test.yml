@@ -46,6 +46,24 @@ jobs:
               -DXSDK_INDEX_SIZE=64
             tests: all
             ctest: false
+          # 64-bit indices with the METIS/ParMETIS orderings, the parallel
+          # symbolic factorization and LAPACK; also runs the ctest suite.
+          # libparmetis-dev has 32-bit indices, so the step "Build 64-bit
+          # ParMETIS" below builds ParMETIS 4.0.3 (with its METIS 5.1.0) for
+          # this configuration.  Mixing int (32-bit) and int_t (64-bit)
+          # arrays goes unnoticed in the 32-bit configurations.
+          - name: int64-parmetis
+            packages: ""
+            parmetis64: true
+            cflags: -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0
+            cmake: >-
+              -DTPL_ENABLE_PARMETISLIB=ON
+              -DTPL_PARMETIS_INCLUDE_DIRS="$HOME/parmetis-4.0.3-int64/include;$HOME/parmetis-4.0.3-int64/metis/include"
+              -DTPL_PARMETIS_LIBRARIES="$HOME/parmetis-4.0.3-int64/build-int64/libparmetis/libparmetis.a;$HOME/parmetis-4.0.3-int64/build-int64/libmetis/libmetis.a"
+              -DTPL_ENABLE_LAPACKLIB=ON
+              -DXSDK_INDEX_SIZE=64
+            tests: all
+            ctest: true
           # The library's debug checks (DEBUGlevel=1), 32-bit indices.  (With
           # 64-bit indices some debug-only checks do not compile with GCC 14.)
           # The driver skips what the debug allocator aborts on: the 3D
@@ -70,6 +88,44 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake gcc g++ gfortran openmpi-bin libopenmpi-dev \
                libblas-dev liblapack-dev ${{ matrix.config.packages }}
+
+      # ParMETIS with 64-bit indices (IDXTYPEWIDTH 64), for the int64-parmetis
+      # configuration.  Bump the "-v1" of the key to rebuild it.
+      - name: Cache 64-bit ParMETIS
+        if: ${{ matrix.config.parmetis64 }}
+        id: cache-parmetis64
+        uses: actions/cache@v6
+        with:
+          path: ~/parmetis-4.0.3-int64
+          key: parmetis-4.0.3-int64-ubuntu-24.04-v1
+
+      - name: Build 64-bit ParMETIS
+        if: ${{ matrix.config.parmetis64 && steps.cache-parmetis64.outputs.cache-hit != 'true' }}
+        run: |
+          # The original download site (glaros.dtc.umn.edu) is often down;
+          # Launchpad and the Ubuntu archive keep the same tarball.
+          cd "$RUNNER_TEMP"
+          curl -sSfL --retry 3 -o parmetis.tar.gz \
+              https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/parmetis/4.0.3-4/parmetis_4.0.3.orig.tar.gz ||
+            curl -sSfL --retry 3 -o parmetis.tar.gz \
+              http://archive.ubuntu.com/ubuntu/pool/multiverse/p/parmetis/parmetis_4.0.3.orig.tar.gz
+          echo "f2d9a231b7cf97f1fee6e8c9663113ebf6c240d407d3c118c55b3633d6be6e5f  parmetis.tar.gz" | sha256sum -c -
+          tar xzf parmetis.tar.gz
+          mv parmetis-4.0.3 ~/parmetis-4.0.3-int64
+          cd ~/parmetis-4.0.3-int64
+          sed -i 's/#define IDXTYPEWIDTH 32/#define IDXTYPEWIDTH 64/' metis/include/metis.h
+          grep -q '#define IDXTYPEWIDTH 64' metis/include/metis.h
+          # Static libraries; configured from inside the build directory as
+          # ParMETIS's own "make config" does (its CMakeLists.txt creates a
+          # "metis" symlink in the current directory).  ParMETIS asks for
+          # CMake 2.8, which CMake 4 refuses without the policy minimum.
+          mkdir build-int64
+          cd build-int64
+          cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_BUILD_TYPE=Release \
+              -DGKLIB_PATH="$HOME/parmetis-4.0.3-int64/metis/GKlib" \
+              -DMETIS_PATH="$HOME/parmetis-4.0.3-int64/metis" \
+              -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          make -j4 parmetis metis
 
       - name: Configure
         run: >
