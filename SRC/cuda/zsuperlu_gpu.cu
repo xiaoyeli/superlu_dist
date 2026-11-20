@@ -566,9 +566,14 @@ int zSchurCompUpdate_GPU(
 
         doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
-        /* The following are used in gpublasZgemm() call */
-        gpuDoubleComplex *cu_alpha = (gpuDoubleComplex *) &alpha;
-        gpuDoubleComplex *cu_beta = (gpuDoubleComplex  *) &beta;
+        /* The following are used in gpublasZgemm() call: aligned copies,
+           since a doublecomplex is only 8-byte aligned and the GPU BLAS may
+           read these scalars with aligned 16-byte loads */
+        gpuDoubleComplex cu_alpha_v, cu_beta_v;
+        memcpy(&cu_alpha_v, &alpha, sizeof(cu_alpha_v));
+        memcpy(&cu_beta_v, &beta, sizeof(cu_beta_v));
+        gpuDoubleComplex *cu_alpha = &cu_alpha_v;
+        gpuDoubleComplex *cu_beta = &cu_beta_v;
         gpuDoubleComplex *cu_A, *cu_B, *cu_C; /* C <- A*B */
 
 	int_t ii_st  = 0;

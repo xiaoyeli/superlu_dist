@@ -4,6 +4,21 @@
 
 #if defined(HAVE_CUDA) || defined(HAVE_HIP)
 
+#include <cstring>
+
+/* A doublecomplex is only 8-byte aligned, but cuDoubleComplex and
+   hipDoubleComplex are 16-byte aligned types, and the GPU BLAS may read a host
+   scalar of that type with an aligned 16-byte load (cuBLAS 13 does in Zscal):
+   a doublecomplex scalar at an address equal to 8 mod 16, cast to the GPU type,
+   faults inside the BLAS.  The doublecomplex wrappers below therefore pass
+   aligned copies of their scalars. */
+static inline gpuDoubleComplex slu_gpu_zscalar(const doublecomplex *z)
+{
+    gpuDoubleComplex c;
+    std::memcpy(&c, z, sizeof(c));
+    return c;
+}
+
 // ============================================================
 // cuSolver wrappers — CUDA only (no HIP/rocSOLVER equivalent here)
 // ============================================================
@@ -134,8 +149,9 @@ gpublasStatus_t myCublasTrsm<doublecomplex>(gpublasHandle_t handle,
     int m, int n, const doublecomplex *alpha,
     const doublecomplex *A, int lda, doublecomplex *B, int ldb)
 {
+    const gpuDoubleComplex a = slu_gpu_zscalar(alpha);
     return cublasZtrsm(handle, side, uplo, trans, diag, m, n,
-        reinterpret_cast<const cuDoubleComplex *>(alpha),
+        &a,
         reinterpret_cast<const cuDoubleComplex *>(A), lda,
         reinterpret_cast<cuDoubleComplex *>(B), ldb);
 }
@@ -173,8 +189,9 @@ template <>
 gpublasStatus_t myCublasScal<doublecomplex>(gpublasHandle_t handle, int n,
     const doublecomplex *alpha, doublecomplex *x, int incx)
 {
+    const gpuDoubleComplex a = slu_gpu_zscalar(alpha);
     return cublasZscal(handle, n,
-        reinterpret_cast<const cuDoubleComplex *>(alpha),
+        &a,
         reinterpret_cast<cuDoubleComplex *>(x), incx);
 }
 
@@ -213,8 +230,9 @@ gpublasStatus_t myCublasAxpy<doublecomplex>(gpublasHandle_t handle, int n,
     const doublecomplex *alpha, const doublecomplex *x, int incx,
     doublecomplex *y, int incy)
 {
+    const gpuDoubleComplex a = slu_gpu_zscalar(alpha);
     return cublasZaxpy(handle, n,
-        reinterpret_cast<const cuDoubleComplex *>(alpha),
+        &a,
         reinterpret_cast<const cuDoubleComplex *>(x), incx,
         reinterpret_cast<cuDoubleComplex *>(y), incy);
 }
@@ -272,11 +290,13 @@ gpublasStatus_t myCublasGemm<doublecomplex>(gpublasHandle_t handle,
     const doublecomplex *B, int ldb,
     const doublecomplex *beta, doublecomplex *C, int ldc)
 {
+    const gpuDoubleComplex a = slu_gpu_zscalar(alpha);
+    const gpuDoubleComplex b = slu_gpu_zscalar(beta);
     return cublasZgemm(handle, transa, transb, m, n, k,
-        reinterpret_cast<const cuDoubleComplex *>(alpha),
+        &a,
         reinterpret_cast<const cuDoubleComplex *>(A), lda,
         reinterpret_cast<const cuDoubleComplex *>(B), ldb,
-        reinterpret_cast<const cuDoubleComplex *>(beta),
+        &b,
         reinterpret_cast<cuDoubleComplex *>(C), ldc);
 }
 
@@ -312,8 +332,9 @@ gpublasStatus_t myCublasTrsm<doublecomplex>(gpublasHandle_t handle,
     int m, int n, const doublecomplex *alpha,
     const doublecomplex *A, int lda, doublecomplex *B, int ldb)
 {
+    const gpuDoubleComplex a = slu_gpu_zscalar(alpha);
     return hipblasZtrsm(handle, side, uplo, trans, diag, m, n,
-        reinterpret_cast<const gpuDoubleComplex *>(alpha),
+        &a,
         reinterpret_cast<gpuDoubleComplex *>(const_cast<doublecomplex *>(A)), lda,
         reinterpret_cast<gpuDoubleComplex *>(B), ldb);
 }
@@ -337,8 +358,9 @@ template <>
 gpublasStatus_t myCublasScal<doublecomplex>(gpublasHandle_t handle, int n,
     const doublecomplex *alpha, doublecomplex *x, int incx)
 {
+    const gpuDoubleComplex a = slu_gpu_zscalar(alpha);
     return hipblasZscal(handle, n,
-        reinterpret_cast<const gpuDoubleComplex *>(alpha),
+        &a,
         reinterpret_cast<gpuDoubleComplex *>(x), incx);
 }
 
@@ -362,8 +384,9 @@ gpublasStatus_t myCublasAxpy<doublecomplex>(gpublasHandle_t handle, int n,
     const doublecomplex *alpha, const doublecomplex *x, int incx,
     doublecomplex *y, int incy)
 {
+    const gpuDoubleComplex a = slu_gpu_zscalar(alpha);
     return hipblasZaxpy(handle, n,
-        reinterpret_cast<const gpuDoubleComplex *>(alpha),
+        &a,
         reinterpret_cast<const gpuDoubleComplex *>(x), incx,
         reinterpret_cast<gpuDoubleComplex *>(y), incy);
 }
@@ -399,11 +422,13 @@ gpublasStatus_t myCublasGemm<doublecomplex>(gpublasHandle_t handle,
     const doublecomplex *B, int ldb,
     const doublecomplex *beta, doublecomplex *C, int ldc)
 {
+    const gpuDoubleComplex a = slu_gpu_zscalar(alpha);
+    const gpuDoubleComplex b = slu_gpu_zscalar(beta);
     return hipblasZgemm(handle, transa, transb, m, n, k,
-        reinterpret_cast<const gpuDoubleComplex *>(alpha),
+        &a,
         reinterpret_cast<const gpuDoubleComplex *>(A), lda,
         reinterpret_cast<const gpuDoubleComplex *>(B), ldb,
-        reinterpret_cast<const gpuDoubleComplex *>(beta),
+        &b,
         reinterpret_cast<gpuDoubleComplex *>(C), ldc);
 }
 
