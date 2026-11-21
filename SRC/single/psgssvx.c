@@ -948,10 +948,16 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
                 } else { /* use LargeDiag_HWPM */
 #ifdef HAVE_COMBBLAS
 		    s_c2cpp_GetHWPM(A, grid, ScalePermstruct);
+		    /* Permute the global matrix GA for symbfact() */
+		    for (i = 0; i < colptr[n]; ++i) {
+		        irow = rowind[i];
+		        rowind[i] = perm_r[irow];
+		    }
 #else
 		    if ( iam == 0 ) {
 		        printf("CombBLAS is not available\n"); fflush(stdout);
 		    }
+		    for (i = 0; i < m; ++i) perm_r[i] = i;
 #endif
                 } /* end if options->RowPerm ... */
 

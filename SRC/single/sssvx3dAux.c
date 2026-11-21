@@ -57,6 +57,16 @@ void validateInput_psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
         fprintf(stderr,
                 "Extra precise iterative refinement yet to support.");
     }
+    else if (options->RowPerm == LargeDiag_HWPM && grid3d->npdep > 1 &&
+             Fact != FACTORED && Fact != SamePattern_SameRowPerm)
+    {
+        /* Only layer 0 computes the row permutation, and CombBLAS's
+           matching communicates on MPI_COMM_WORLD: it would deadlock. */
+        *info = -1;
+        if (grid3d->iam == 0)
+            fprintf(stderr, "RowPerm = LargeDiag_HWPM needs a single Z-layer "
+                    "in the 3D interface.\n");
+    }
     else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc || A->Dtype != SLU_S || A->Mtype != SLU_GE)
         *info = -2;
     else if (ldb < Astore->m_loc)
@@ -572,12 +582,16 @@ void sperform_row_permutation(
             {
 #ifdef HAVE_COMBBLAS
                 s_c2cpp_GetHWPM(A, grid, ScalePermstruct);
+                /* Permute the global matrix GA for symbfact() */
+                applyRowPerm(colptr, rowind, perm_r, n);
 #else
                 if (iam == 0)
                 {
                     printf("CombBLAS is not available\n");
                     fflush(stdout);
                 }
+                for (int i = 0; i < m; ++i)
+                    perm_r[i] = i;
 #endif
             }
 

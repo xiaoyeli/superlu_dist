@@ -70,7 +70,22 @@ dGetHWPM(SuperMatrix *A, gridinfo_t *grid, dScalePermstruct_t *ScalePermstruct)
     
     if(grid->nprow != grid->npcol)
     {
-        printf("HWPM only supports square process grid. Retuning without a permutation.\n");
+        if (grid->iam == 0)
+            printf("HWPM only supports square process grid. Returning without a permutation.\n");
+        for (i = 0; i < A->nrow; ++i) ScalePermstruct->perm_r[i] = i;
+        return;
+    }
+    /* CombBLAS's matching code also communicates on MPI_COMM_WORLD, so it
+       deadlocks when the grid holds only some of the processes, e.g. one
+       Z-layer of a 3D process grid. */
+    int cmp;
+    MPI_Comm_compare(grid->comm, MPI_COMM_WORLD, &cmp);
+    if (cmp == MPI_UNEQUAL)
+    {
+        if (grid->iam == 0)
+            printf("HWPM needs a process grid of all the processes of MPI_COMM_WORLD. Returning without a permutation.\n");
+        for (i = 0; i < A->nrow; ++i) ScalePermstruct->perm_r[i] = i;
+        return;
     }
     combblas::SpParMat < int_t, double, combblas::SpDCCols<int_t,double> > Adcsc(grid->comm);
     std::vector< std::vector < std::tuple<int_t,int_t,double> > > data(procs);
@@ -132,9 +147,11 @@ dGetHWPM(SuperMatrix *A, gridinfo_t *grid, dScalePermstruct_t *ScalePermstruct)
     {
         rdispls[i+1] = rdispls[i] + recvcnt[i];
     }
-    int_t *senddata = (int_t *)mateRow2Col.GetLocArr();
-    
-    MPI_Allgatherv(senddata, sendcnt, combblas::MPIType<int_t>(), ScalePermstruct->perm_r, recvcnt, rdispls, combblas::MPIType<int_t>(), World);
+    /* perm_r[] is int (32-bit even when int_t is 64-bit) */
+    int_t *locmate = (int_t *)mateRow2Col.GetLocArr();
+    std::vector<int> senddata(locmate, locmate + sendcnt);
+
+    MPI_Allgatherv(senddata.data(), sendcnt, MPI_INT, ScalePermstruct->perm_r, recvcnt, rdispls, MPI_INT, World);
     
     delete[] rdispls;
     delete[] recvcnt;

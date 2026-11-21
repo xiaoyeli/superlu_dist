@@ -525,7 +525,9 @@ if(PARMETIS_FOUND OR METIS_FOUND)
 endif()
 
 #--------------------- COLAMD ---------------------
-if (TPL_ENABLE_COLAMD)   ## want to use colamd
+# The option is TPL_ENABLE_COLAMDLIB; TPL_ENABLE_COLAMD, which this test
+# used to read by mistake, is still accepted.
+if (TPL_ENABLE_COLAMDLIB OR TPL_ENABLE_COLAMD)   ## want to use colamd
   if (NOT TPL_COLAMD_LIBRARIES)
     message(FATAL_ERROR "TPL_COLAMD_LIBRARIES option should be set for COLAMD support to be enabled.")
   endif()
