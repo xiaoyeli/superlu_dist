@@ -26,15 +26,23 @@ jobs:
             tests: all
             ctest: false
           # METIS/ParMETIS orderings, parallel symbolic factorization, LAPACK
-          # (DiagInv); also runs the ctest suite
+          # (DiagInv), COLAMD and CombBLAS (the HWPM row permutation, built by
+          # the step "Build CombBLAS" below); also runs the ctest suite
           - name: parmetis-lapack
-            packages: libmetis-dev libparmetis-dev
+            packages: libmetis-dev libparmetis-dev libsuitesparse-dev
+            combblas: true
             cflags: -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0
             cmake: >-
               -DTPL_ENABLE_PARMETISLIB=ON
               -DTPL_PARMETIS_INCLUDE_DIRS=/usr/include
               -DTPL_PARMETIS_LIBRARIES="/usr/lib/libparmetis.so;/usr/lib/x86_64-linux-gnu/libmetis.so"
               -DTPL_ENABLE_LAPACKLIB=ON
+              -DTPL_ENABLE_COLAMDLIB=ON
+              -DTPL_COLAMD_INCLUDE_DIRS=/usr/include/suitesparse
+              -DTPL_COLAMD_LIBRARIES=/usr/lib/x86_64-linux-gnu/libcolamd.so
+              -DTPL_ENABLE_COMBBLASLIB=ON
+              -DTPL_COMBBLAS_INCLUDE_DIRS="$HOME/combblas-2.0.0/include;$HOME/combblas-2.0.0/BipartiteMatchings"
+              -DTPL_COMBBLAS_LIBRARIES=$HOME/combblas-2.0.0/lib/libCombBLAS.a
             tests: all
             ctest: true
           # 64-bit indices
@@ -47,20 +55,27 @@ jobs:
             tests: all
             ctest: false
           # 64-bit indices with the METIS/ParMETIS orderings, the parallel
-          # symbolic factorization and LAPACK; also runs the ctest suite.
-          # libparmetis-dev has 32-bit indices, so the step "Build 64-bit
-          # ParMETIS" below builds ParMETIS 4.0.3 (with its METIS 5.1.0) for
-          # this configuration.  Mixing int (32-bit) and int_t (64-bit)
-          # arrays goes unnoticed in the 32-bit configurations.
+          # symbolic factorization, LAPACK, COLAMD and CombBLAS; also runs the
+          # ctest suite.  libparmetis-dev has 32-bit indices, so the step
+          # "Build 64-bit ParMETIS" below builds ParMETIS 4.0.3 (with its
+          # METIS 5.1.0) for this configuration.  Mixing int (32-bit) and
+          # int_t (64-bit) arrays goes unnoticed in the 32-bit configurations.
           - name: int64-parmetis
-            packages: ""
+            packages: libsuitesparse-dev
             parmetis64: true
+            combblas: true
             cflags: -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0
             cmake: >-
               -DTPL_ENABLE_PARMETISLIB=ON
               -DTPL_PARMETIS_INCLUDE_DIRS="$HOME/parmetis-4.0.3-int64/include;$HOME/parmetis-4.0.3-int64/metis/include"
               -DTPL_PARMETIS_LIBRARIES="$HOME/parmetis-4.0.3-int64/build-int64/libparmetis/libparmetis.a;$HOME/parmetis-4.0.3-int64/build-int64/libmetis/libmetis.a"
               -DTPL_ENABLE_LAPACKLIB=ON
+              -DTPL_ENABLE_COLAMDLIB=ON
+              -DTPL_COLAMD_INCLUDE_DIRS=/usr/include/suitesparse
+              -DTPL_COLAMD_LIBRARIES=/usr/lib/x86_64-linux-gnu/libcolamd.so
+              -DTPL_ENABLE_COMBBLASLIB=ON
+              -DTPL_COMBBLAS_INCLUDE_DIRS="$HOME/combblas-2.0.0/include;$HOME/combblas-2.0.0/BipartiteMatchings"
+              -DTPL_COMBBLAS_LIBRARIES=$HOME/combblas-2.0.0/lib/libCombBLAS.a
               -DXSDK_INDEX_SIZE=64
             tests: all
             ctest: true
@@ -126,6 +141,38 @@ jobs:
               -DMETIS_PATH="$HOME/parmetis-4.0.3-int64/metis" \
               -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           make -j4 parmetis metis
+
+      # CombBLAS, for the HWPM row permutation (LargeDiag_HWPM).  No Ubuntu
+      # package; 2.0.0 is its only release.  The library does not depend on
+      # SuperLU's index size, so both configurations share the cache.
+      - name: Cache CombBLAS
+        if: ${{ matrix.config.combblas }}
+        id: cache-combblas
+        uses: actions/cache@v6
+        with:
+          path: ~/combblas-2.0.0
+          key: combblas-2.0.0-ubuntu-24.04-v1
+
+      - name: Build CombBLAS
+        if: ${{ matrix.config.combblas && steps.cache-combblas.outputs.cache-hit != 'true' }}
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -sSfL --retry 3 -o combblas.tar.gz \
+              https://github.com/PASSIONLab/CombBLAS/archive/refs/tags/v2.0.0.tar.gz
+          echo "632a94201a042a2a9aa86803f50ee38b7bf0aa1cfef6ba0eb34ea4007f79a679  combblas.tar.gz" | sha256sum -c -
+          tar xzf combblas.tar.gz
+          cd CombBLAS-2.0.0
+          # The library only (its tests and applications take far longer);
+          # CombBLAS asks for CMake 3.3, which CMake 4 refuses without the
+          # policy minimum.
+          cmake -S . -B _build -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++ \
+              -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HOME/combblas-2.0.0" \
+              -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake --build _build --target CombBLAS --parallel 4
+          cmake --install _build
+          # SuperLU includes the matching code, which is header-only and not
+          # installed
+          cp -r Applications/BipartiteMatchings "$HOME/combblas-2.0.0/"
 
       - name: Configure
         run: >

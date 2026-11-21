@@ -276,7 +276,12 @@ foreach(p d z)
   add_superlu_dist_ci_test(2d_diaginv ${p} 4 -r 2 -c 2 -D 1 -f DFPRF ${CI_G3} LABELS cpu 2d)
   add_superlu_dist_ci_test(3d_diaginv ${p} 4 -r 2 -c 1 -d 2 -D 1 -f DFPRF ${CI_G3} LABELS cpu 3d)
 endforeach()
-add_superlu_dist_ci_test(2d_hwpm d 4 -r 2 -c 2 -p 2 -k 1 ${CI_G3} LABELS cpu 2d)
+add_superlu_dist_ci_test(2d_hwpm d 4 -r 2 -c 2 -p 2 -k 1 -f DFPRF ${CI_G3} LABELS cpu 2d)
+add_superlu_dist_ci_test(2d_hwpm s 4 -r 2 -c 2 -p 2 -k 1 -f DFPRF ${CI_G3} LABELS cpu 2d)
+add_superlu_dist_ci_test(2d_hwpm z 4 -r 2 -c 2 -p 2 -k 1 -f DFPRF ${CI_G3} LABELS cpu 2d)
+# HWPM in the 3D interface needs a single Z-layer (CombBLAS works on
+# MPI_COMM_WORLD); with more layers pdgssvx3d rejects it
+add_superlu_dist_ci_test(3d_hwpm d 4 -r 2 -c 2 -d 1 -p 2 -k 1 -f DFPRF ${CI_G3} LABELS cpu 3d)
 add_superlu_dist_ci_test(2d_refine d 4 -r 2 -c 2 -i 2 -s 2 -f DFPRF ${CI_DATA}/big.rua LABELS cpu 2d)
 add_superlu_dist_ci_test(3d_refine d 4 -r 2 -c 1 -d 2 -i 2 -f DFPRF ${CI_DATA}/big.rua LABELS cpu 3d)
 add_superlu_dist_ci_test(2d_gmres d 4 -r 2 -c 2 -G 1 -f DF ${CI_G3} LABELS cpu 2d)

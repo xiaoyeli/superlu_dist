@@ -622,6 +622,9 @@ static const char *unsupported(const params_t *par, superlu_dist_options_t *opti
 #ifndef HAVE_COMBBLAS
     if (par->rowperm == LargeDiag_HWPM) return "RowPerm = LargeDiag_HWPM needs CombBLAS";
 #endif
+    /* pdgssvx3d rejects it: CombBLAS's matching works on MPI_COMM_WORLD */
+    if (par->rowperm == LargeDiag_HWPM && par->npdep > 1)
+	return "RowPerm = LargeDiag_HWPM needs a single Z-layer in the 3D interface";
 #ifndef SLU_HAVE_LAPACK
     if (par->diaginv == 1) return "DiagInv needs LAPACK";
 #endif
