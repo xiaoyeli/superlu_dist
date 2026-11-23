@@ -281,6 +281,18 @@ int zcreate_matrix_qcd(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 }
 
 
+/* Restore the right-hand side, which every call of pzgssvx3d overwrites with
+   the solution, so that the repeated calls all solve the same system. */
+static void restore_rhs(doublecomplex *b, doublecomplex *d_b, const doublecomplex *b0,
+                        size_t len, yes_no_t gpures)
+{
+    memcpy(b, b0, sizeof(doublecomplex) * len);
+#ifdef GPU_ACC
+    if (gpures == YES)
+        checkGPU(gpuMemcpy(d_b, b0, sizeof(doublecomplex) * len, gpuMemcpyHostToDevice));
+#endif
+}
+
 int main(int argc, char *argv[])
 {
     SuperLUStat_t stat;
@@ -292,6 +304,7 @@ int main(int argc, char *argv[])
     double   *berr;
     float output;
     doublecomplex   *b, *xtrue, *d_b = NULL, *solve_b = NULL;
+    doublecomplex   *b0 = NULL; /* copy of the right-hand side */
     int    m, n;
     int      nprow, npcol, npdep;
     int      iam, info, ldb, ldx, nrhs;
@@ -467,6 +480,10 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    if ( !(b0 = doublecomplexMalloc_dist((size_t)ldb * nrhs)) )
+        ABORT("Malloc fails for b0[].");
+    memcpy(b0, b, sizeof(doublecomplex) * (size_t)ldb * nrhs);
+
     if ( !(berr = doubleMalloc_dist(nrhs)) )
         ABORT("Malloc fails for berr[].");
 
@@ -545,7 +562,11 @@ int main(int argc, char *argv[])
 
 
     for (int i = 0; i < nsolves; ++i){
-        t0 = w_time();  
+        /* Not timed.  Without it each call would solve with the previous
+           solution, and the error checked below would be that of
+           nsolves+1 successive solves. */
+        restore_rhs(b, d_b, b0, (size_t)ldb * nrhs, options.GPURES);
+        t0 = w_time();
         pzgssvx3d(&options, &A, &ScalePermstruct, solve_b, ldb, nrhs, &grid,
                     &LUstruct, &SOLVEstruct, berr, &stat, &info);
         double elapsed = w_time() - t0;
@@ -588,6 +609,7 @@ int main(int argc, char *argv[])
     zDestroy_LU(n, &grid.grid2d, &LUstruct);
     zLUstructFree(&LUstruct);
     SUPERLU_FREE(b);
+    SUPERLU_FREE(b0);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
 
