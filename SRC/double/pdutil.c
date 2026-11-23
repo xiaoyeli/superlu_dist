@@ -1480,7 +1480,7 @@ void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,
       tempxnorm = xnorm;
       MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, slucomm);
       temperr = errcomp;
-      MPI_Allreduce( &temperr, &errcomp, 1, MPI_FLOAT, MPI_MAX, slucomm);
+      MPI_Allreduce( &temperr, &errcomp, 1, MPI_DOUBLE, MPI_MAX, slucomm);
 
       err = err / xnorm;
       if ( !iam ) {
