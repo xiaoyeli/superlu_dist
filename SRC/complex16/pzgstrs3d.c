@@ -3617,6 +3617,10 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv[1] * sizeof(int)));
 	//printf("2-(%d) maxrecvsz=%d,zready_x=%d, zready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
 	//fflush(stdout);
+    /* The resets above are cudaMemsets, which return before they run: finish them
+       before the barrier, or a faster process can put a flag or a message into
+       this one's buffers that a pending reset then erases (the solve hangs). */
+    checkGPU(gpuDeviceSynchronize());
     // MUST have this barrier, otherwise the code hang.
 	MPI_Barrier( grid->comm );
     #endif
@@ -5750,6 +5754,10 @@ if (get_acc_solve()){  /* GPU trisolve*/
     checkGPU(gpuMemset(zready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(doublecomplex)));
     checkGPU(gpuMemset(zready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(doublecomplex)));
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv_u[1] * sizeof(int)));
+    /* The resets above are cudaMemsets, which return before they run: finish them
+       before the barrier, or a faster process can put a flag or a message into
+       this one's buffers that a pending reset then erases (the solve hangs). */
+    checkGPU(gpuDeviceSynchronize());
     // MUST have this barrier, otherwise the code hang.
 	MPI_Barrier( grid->comm );
     #endif
