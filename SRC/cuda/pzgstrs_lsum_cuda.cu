@@ -1955,9 +1955,9 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
     cnt = LBtree_ptr[lk].destCnt_;
     if (cnt > 0) {
         //cnt=LBtree_ptr[lk].msgSize_;
-        my_flag_bc[gc * RDMA_FLAG_SIZE] = lk;
-        my_flag_bc[gc * RDMA_FLAG_SIZE + 1] = LBtree_ptr[lk].msgSize_ * nrhs + XK_H;
-        zC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk], flag_bc_q, &my_flag_bc[gc * RDMA_FLAG_SIZE],
+        my_flag_bc[lk * RDMA_FLAG_SIZE] = lk;
+        my_flag_bc[lk * RDMA_FLAG_SIZE + 1] = LBtree_ptr[lk].msgSize_ * nrhs + XK_H;
+        zC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk], flag_bc_q, &my_flag_bc[lk * RDMA_FLAG_SIZE],
                                              mype, tid, &zready_x[0], maxrecvsz);
         //printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
         //zC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&zready_x[maxrecvsz*lk],cnt*nrhs+XK_H);
@@ -2060,8 +2060,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                         if(LRtree_ptr[lk].myRoot_ != LRtree_ptr[lk].myRank_){
                             //cnt=LRtree_ptr[lib].msgSize_;
 
-                            my_flag_rd[ik*RDMA_FLAG_SIZE]=lk;
-                            my_flag_rd[ik*RDMA_FLAG_SIZE+1]=LRtree_ptr[lk].msgSize_ * nrhs;
+                            my_flag_rd[lk*RDMA_FLAG_SIZE]=lk;
+                            my_flag_rd[lk*RDMA_FLAG_SIZE+1]=LRtree_ptr[lk].msgSize_ * nrhs;
                             //doublecomplex tmp_sum=0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < iknsupc; aab++) {
@@ -2082,7 +2082,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                             //       temp_mysendcout,temp_flag_mod,
                             //       maxrecvsz);
                             //printf("(%d,%d,%d) in solve,lib=%d,gr=%d,ik=%d,myflagrd=%d,%d\n",mype,bid,tid,lk,gr,ik,my_flag_rd[ik*RDMA_FLAG_SIZE],my_flag_rd[ik*RDMA_FLAG_SIZE+1]);
-                            zC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &zready_lsum[0],maxrecvsz,LRtree_ptr[lk].myRoot_);
+                            zC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*lk], mype, bid, tid, &zready_lsum[0],maxrecvsz,LRtree_ptr[lk].myRoot_);
                         }
                     }
                 }
@@ -2144,13 +2144,13 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                        partial sum to the process of the diagonal block, as
                        the branch without GEMM does. */
                     if (fmod_tmp == 1 && LRtree_ptr[lk].myRoot_ != LRtree_ptr[lk].myRank_) {
-                        my_flag_rd[ik*RDMA_FLAG_SIZE] = lk;
-                        my_flag_rd[ik*RDMA_FLAG_SIZE+1] = LRtree_ptr[lk].msgSize_ * nrhs;
+                        my_flag_rd[lk*RDMA_FLAG_SIZE] = lk;
+                        my_flag_rd[lk*RDMA_FLAG_SIZE+1] = LRtree_ptr[lk].msgSize_ * nrhs;
                         RHS_ITERATE(j) {
                             for (int aab = 0; aab < iknsupc; aab++)
                                 zready_lsum[lk * maxrecvsz * 2 + aab + j * iknsupc] = lsum[il + aab + j * iknsupc];
                         }
-                        zC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &zready_lsum[0], maxrecvsz, LRtree_ptr[lk].myRoot_);
+                        zC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*lk], mype, bid, tid, &zready_lsum[0], maxrecvsz, LRtree_ptr[lk].myRoot_);
                     }
                 }
 
@@ -4457,9 +4457,9 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
      //if (tid==0) printf("in solve forward (%d,%d) done my col %d, cnt=%d, nub=%d\n", mype, bid, gc, cnt,nub);
      if (cnt > 0) {
          //cnt=LBtree_ptr[lk].msgSize_;
-         my_flag_bc[k * RDMA_FLAG_SIZE] = lk;
-         my_flag_bc[k * RDMA_FLAG_SIZE + 1] = UBtree_ptr[lk].msgSize_ * nrhs + XK_H;
-         zC_BcTree_forwardMessageSimple_Device(&UBtree_ptr[lk], flag_bc_q, &my_flag_bc[k * RDMA_FLAG_SIZE],
+         my_flag_bc[lk * RDMA_FLAG_SIZE] = lk;
+         my_flag_bc[lk * RDMA_FLAG_SIZE + 1] = UBtree_ptr[lk].msgSize_ * nrhs + XK_H;
+         zC_BcTree_forwardMessageSimple_Device(&UBtree_ptr[lk], flag_bc_q, &my_flag_bc[lk * RDMA_FLAG_SIZE],
                                               mype, tid, &zready_x[0], maxrecvsz);
          //if (tid==0) printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
      }
