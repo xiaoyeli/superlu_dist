@@ -168,6 +168,101 @@ s_solve_graph_levels(int_t nsupers, sLocalLU_t *Llu, int *lev)
 }
 #endif
 
+#ifdef HAVE_NVSHMEM
+/* The local block columns of a multi-process GPU solve in increasing level of
+   the dependency graph of the solves (the levels of s_solve_graph_levels, over
+   the blocks of all processes of the 2D grid), in increasing lk within a
+   level.  The single spin-wait launch of the L solve runs its thread blocks in
+   this order and the U solve in the reverse one.  The natural order is
+   topological too, but most of its resident thread blocks wait on each other:
+   on a 4-D lattice a window of 300 consecutive supernodes spans about 20
+   levels.  Collective over grid->comm; returns a device array of
+   CEILING(nsupers, npcol) entries. */
+static int *
+s_solve_block_order(int_t nsupers, gridinfo_t *grid, sLocalLU_t *Llu)
+{
+    int nprocs = grid->nprow * grid->npcol, iam = grid->iam;
+    int myrow = MYROW(iam, grid), mycol = MYCOL(iam, grid);
+    int_t nbc = CEILING(nsupers, grid->npcol);
+
+    /* my edges (j, k), j < k: L(k,j) of my block columns, U(j,k) of theirs */
+    long ne = 0;
+    for (int_t lk = 0; lk < nbc; ++lk) {
+        if (mycol + lk * grid->npcol >= nsupers) continue;
+        if (Llu->Lrowind_bc_ptr[lk]) ne += Llu->Lrowind_bc_ptr[lk][0];
+        if (Llu->Urbs) ne += Llu->Urbs[lk];
+    }
+    int *e = (int *) SUPERLU_MALLOC((2 * ne + 1) * sizeof(int));
+    int n2 = 0;
+    for (int_t lk = 0; lk < nbc; ++lk) {
+        int_t k = mycol + lk * grid->npcol;
+        if (k >= nsupers) continue;
+        int_t *lsub = Llu->Lrowind_bc_ptr[lk];
+        if (lsub) {
+            int_t p = BC_HEADER;
+            for (int_t lb = 0; lb < lsub[0]; ++lb) {
+                if (lsub[p] != k) { e[n2++] = (int) k; e[n2++] = (int) lsub[p]; }
+                p += LB_DESCRIPTOR + lsub[p + 1];
+            }
+        }
+        int_t nub = Llu->Urbs ? Llu->Urbs[lk] : 0;
+        for (int_t ub = 0; ub < nub; ++ub) {
+            e[n2++] = (int) (Llu->Ucb_indptr[lk][ub].lbnum * grid->nprow + myrow);
+            e[n2++] = (int) k;
+        }
+    }
+    int *cnts = (int *) SUPERLU_MALLOC((2 * nprocs + 1) * sizeof(int)), *displs = cnts + nprocs;
+    MPI_Allgather(&n2, 1, MPI_INT, cnts, 1, MPI_INT, grid->comm);
+    displs[0] = 0;
+    for (int p = 0; p < nprocs; ++p) displs[p + 1] = displs[p] + cnts[p];
+    int *all = (int *) SUPERLU_MALLOC((displs[nprocs] + 1) * sizeof(int));
+    MPI_Allgatherv(e, n2, MPI_INT, all, cnts, displs, MPI_INT, grid->comm);
+    int ntot = displs[nprocs] / 2;
+    SUPERLU_FREE(e);
+    SUPERLU_FREE(cnts);
+
+    /* targets grouped by source; a sweep in increasing source sets the levels */
+    int *beg = (int *) SUPERLU_MALLOC((2 * nsupers + 2) * sizeof(int)), *pos = beg + nsupers + 1;
+    int *tgt = (int *) SUPERLU_MALLOC((ntot + 1) * sizeof(int));
+    int *lev = (int *) SUPERLU_MALLOC(nsupers * sizeof(int));
+    for (int_t k = 0; k <= nsupers; ++k) beg[k] = 0;
+    for (int i = 0; i < ntot; ++i) ++beg[all[2 * i] + 1];
+    for (int_t k = 0; k < nsupers; ++k) { beg[k + 1] += beg[k]; pos[k] = beg[k]; lev[k] = 0; }
+    for (int i = 0; i < ntot; ++i) tgt[pos[all[2 * i]]++] = all[2 * i + 1];
+    int nlev = 1;
+    for (int_t k = 0; k < nsupers; ++k) {
+        for (int q = beg[k]; q < beg[k + 1]; ++q)
+            if (lev[k] + 1 > lev[tgt[q]]) lev[tgt[q]] = lev[k] + 1;
+        if (lev[k] + 1 > nlev) nlev = lev[k] + 1;
+    }
+    SUPERLU_FREE(all);
+    SUPERLU_FREE(tgt);
+
+    /* counting sort of my block columns by level */
+    int *ord = (int *) SUPERLU_MALLOC((nbc + nlev + 1) * sizeof(int)), *c = ord + nbc;
+    for (int l = 0; l <= nlev; ++l) c[l] = 0;
+    for (int_t lk = 0; lk < nbc; ++lk) {
+        int_t k = mycol + lk * grid->npcol;
+        ++c[(k < nsupers ? lev[k] : 0) + 1];
+    }
+    for (int l = 0; l < nlev; ++l) c[l + 1] += c[l];
+    for (int_t lk = 0; lk < nbc; ++lk) {
+        int_t k = mycol + lk * grid->npcol;
+        ord[c[k < nsupers ? lev[k] : 0]++] = (int) lk;
+    }
+    int *d_ord;
+    checkGPU(gpuMalloc((void**)&d_ord, (nbc > 0 ? nbc : 1) * sizeof(int)));
+    checkGPU(gpuMemcpy(d_ord, ord, nbc * sizeof(int), gpuMemcpyHostToDevice));
+#if ( PRNTlevel>=1 )
+    if ( !iam ) printf(".. GPU trisolve: thread blocks in graph-level order, %d levels\n", nlev);
+#endif
+    SUPERLU_FREE(ord);
+    SUPERLU_FREE(beg);
+    SUPERLU_FREE(lev);
+    return d_ord;
+}
+#endif
+
 static flops_t
 s_acc_lsolve_flops(int_t nsupers, int nrhs, gridinfo_t *grid,
                    Glu_persist_t *Glu_persist, sLocalLU_t *Llu)
@@ -1372,6 +1467,10 @@ int strs_compute_communication_structure(superlu_dist_options_t *options, int_t 
         }
     }
     Llu->d_levlist = NULL; Llu->levlims = NULL; Llu->nlevels = 0; Llu->levwarp = NULL;
+#ifdef GPU_ACC
+    if ( Llu->d_bcorder ) checkGPU(gpuFree(Llu->d_bcorder));
+#endif
+    Llu->d_bcorder = NULL;
     Llu->acc_solve_flops_nrhs = -1;
     // printf("Llu->nbcol_masked: %10d\n",Llu->nbcol_masked);
     // fflush(stdout);
@@ -3665,6 +3764,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
         nblock_loc=k;
     }
     slsum_set_solve_levels(Llu->d_levlist, Llu->levlims, (Llu->nlevels > 0 && get_solve_levels()) ? Llu->nlevels : 0, Llu->levwarp);
+    slsum_set_solve_order(Llu->d_bcorder);
 	int nthx, nthy; slu_solve_block_dims(nrhs, &nthx, &nthy);
 	slsum_fmod_inv_gpu_wrap(nblock_loc,nlb,nthx,nthy,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked, d_grid,
                          maxrecvsz,
@@ -5785,6 +5885,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
     }
 
     slsum_set_solve_levels(Llu->d_levlist, Llu->levlims, (Llu->nlevels > 0 && get_solve_levels()) ? Llu->nlevels : 0, Llu->levwarp);
+    slsum_set_solve_order(Llu->d_bcorder);
     int nthx, nthy; slu_solve_block_dims(nrhs, &nthx, &nthy);
     slsum_bmod_inv_gpu_wrap(options, k,nlb,nthx,nthy,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
                         Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
@@ -7684,6 +7785,7 @@ void psgstrs3d_gpu_fast_solve(superlu_dist_options_t *options, int_t n, sLUstruc
     checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(float), (gpuStream_t) stream));
     slsum_set_solve_stream(stream);
     slsum_set_solve_levels(Llu->d_levlist, Llu->levlims, Llu->nlevels > 0 ? Llu->nlevels : 0, Llu->levwarp);
+    slsum_set_solve_order(Llu->d_bcorder);
     slu_solve_block_dims(nrhs, &nthx, &nthy);
     slsum_fmod_inv_gpu_wrap(Llu->nbcol_masked, nlb, nthx, nthy, d_lsum, d_x, nrhs, knsupc, nsupers, SOLVEstruct->d_fmod,
         Llu->d_LBtree_ptr, Llu->d_LRtree_ptr, Llu->d_ilsum, Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset,
@@ -7695,6 +7797,7 @@ void psgstrs3d_gpu_fast_solve(superlu_dist_options_t *options, int_t n, sLUstruc
     /* the forward solve leaves its partial sums in lsum; the backward solve
        accumulates into the same array (the regular path recopies the zeros) */
     checkGPU(gpuMemsetAsync(d_lsum, 0, sizelsum * sizeof(float), (gpuStream_t) stream));
+    slsum_set_solve_order(Llu->d_bcorder);
     slsum_bmod_inv_gpu_wrap(options, k, nlb, nthx, nthy, d_lsum, d_x, nrhs, knsupc, nsupers, SOLVEstruct->d_bmod,
         Llu->d_UBtree_ptr, Llu->d_URtree_ptr, Llu->d_ilsum, Llu->d_Ucolind_bc_dat, Llu->d_Ucolind_bc_offset,
         Llu->d_Ucolind_br_dat, Llu->d_Ucolind_br_offset, Llu->d_Uind_br_dat, Llu->d_Uind_br_offset,
@@ -7844,6 +7947,10 @@ psgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, sLUstruct_t * LUst
 	    Llu->nlevels = -1;   /* not applicable; do not try again */
 	}
     }
+#ifdef HAVE_NVSHMEM
+    if ( (grid3d->grid2d.nprow * grid3d->grid2d.npcol) > 1 && get_acc_solve() && Llu->d_bcorder == NULL )
+	Llu->d_bcorder = s_solve_block_order(nsupers, grid, Llu);
+#endif
 #endif
     }
     Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;

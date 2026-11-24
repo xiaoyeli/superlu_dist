@@ -269,6 +269,7 @@ typedef struct {
     int_t *levlims;
     int    nlevels;
     int   *levwarp;      /* per level: 1 = warp-per-supernode kernel (nrhs == 1) */
+    int   *d_bcorder;    /* multi-process GPU solve: local block columns in graph-level order (device) */
     double acc_solve_flops[2];   /* L/U solve flop counts of this pattern, for the stats */
     int    acc_solve_flops_nrhs; /* nrhs they were computed for (-1: not yet) */
 
@@ -827,6 +828,7 @@ extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, Su
 
 extern void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwarp);
 extern void dlsum_set_solve_stream(void *stream);
+extern void dlsum_set_solve_order(int *d_bcorder);
 extern void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *, int_t, dLUstruct_t *, dSOLVEstruct_t *, gridinfo3d_t *, int, void *stream);
 extern void dlsum_fmod_inv_gpu_wrap(int, int, int, int, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *,
 int_t , uint64_t* ,uint64_t* ,double* ,double* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int);

@@ -472,6 +472,7 @@ void dLUstructInit(const int_t n, dLUstruct_t *LUstruct)
 	   SUPERLU_MALLOC(sizeof(dLocalLU_t))) )
 	ABORT("Malloc fails for LocalLU_t.");
     LUstruct->Llu->inv = 0;
+    LUstruct->Llu->d_bcorder = NULL;
     LUstruct->dt = 'd';
     LUstruct->trf3Dpart = NULL;
     LUstruct->batch_dev = NULL;
@@ -612,6 +613,7 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->bcols_masked);
 
 #ifdef GPU_ACC
+if ( Llu->d_bcorder ) { checkGPU (gpuFree (Llu->d_bcorder)); Llu->d_bcorder = NULL; }
 if (get_acc_solve()){
     checkGPU (gpuFree (Llu->d_xsup));
     checkGPU (gpuFree (Llu->d_supno));

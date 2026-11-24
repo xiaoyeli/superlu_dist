@@ -82,6 +82,15 @@ void zlsum_set_solve_stream(void *stream)
 {
     g_solve_stream = (cudaStream_t) stream;
 }
+/* Multi-process GPU solve: the order of the local block columns in the single
+   spin-wait launch of each process (device array of CEILING(nsupers, npcol)
+   entries; NULL: natural order).  Set before each call of the L and U
+   wrappers, which take it and clear it. */
+static int *g_solve_order = NULL;
+void zlsum_set_solve_order(int *d_bcorder)
+{
+    g_solve_order = d_bcorder;
+}
 #ifdef HAVE_NVSHMEM
 /* The receive kernels zwait_bcrd and zwait_bcrd_u are cooperative launches on
    one stream, the compute kernel follows on another, and its thread blocks
@@ -1800,7 +1809,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                 volatile int* d_status,
                 volatile int* d_statusmod,
                 int* d_flag_mod,
-                int gemmflag
+                int gemmflag,
+                const int *bcorder   /* order of the block columns, or NULL */
         )
 {
     doublecomplex zero = {0.0, 0.0};
@@ -1820,7 +1830,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
     int   knsupc;    /* Size of supernode k.                               */
     int_t nlb;       /* Number of L blocks.                                */
 
-    int bid=blockIdx_x;
+    int bid = bcorder ? bcorder[blockIdx_x] : blockIdx_x;
     int_t tmp;
     int tid = threadIdx_x + threadIdx_y * blockDim_x;
 // int_t lock = 0;
@@ -2970,6 +2980,8 @@ void zlsum_fmod_inv_gpu_wrap
 
     int mype;
     int gemmflag = get_acc_solve()==2;
+    const int *bcorder = g_solve_order;
+    g_solve_order = NULL;
 
     if(procs==1){
         nblock_ex=0;
@@ -3075,7 +3087,7 @@ void zlsum_fmod_inv_gpu_wrap
                                                                                 zready_x, zready_lsum,
                                                                                 my_flag_bc, my_flag_rd,
                                                                                 d_nfrecv, d_status,
-                                                                                d_statusmod,d_flag_mod,gemmflag);
+                                                                                d_statusmod,d_flag_mod,gemmflag,bcorder);
             CUDA_CHECK(cudaGetLastError());
         } // if status
     //} // if npes==1
@@ -4308,7 +4320,8 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
                  int nblock_ex,
                  int maxsuper,
                  int* d_flag_mod_u,
-                 int gemmflag
+                 int gemmflag,
+                 const int *bcorder   /* order of the block columns, or NULL */
          )
  {
     doublecomplex zero = {0.0, 0.0};
@@ -4333,6 +4346,7 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
      // __shared__ doublecomplex x_share[DIM_X*DIM_Y];
 
      bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
+     if (bcorder) bid = bcorder[bid];   /* the U solve runs the order backwards */
      int idx = threadIdx_x;  // thread's m dimension
      int idy = threadIdx_y;  // thread's n dimension
      int ni,mi;
@@ -4723,6 +4737,8 @@ printf("increase MAXSUPER\n");
 exit(1);
 }
 int gemmflag = get_acc_solve()==2;
+const int *bcorder = g_solve_order;
+g_solve_order = NULL;
 
 
 if(procs==1){
@@ -4855,7 +4871,7 @@ if(procs==1){
                                                                     my_flag_bc, my_flag_rd,
                                                                     d_nfrecv_u, d_status,
                                                                     d_statusmod, nblock_ex,
-                                                                    maxsuper, d_flag_mod_u,gemmflag); //temp2_offset, temp2,maxsuper);
+                                                                    maxsuper, d_flag_mod_u,gemmflag,bcorder); //temp2_offset, temp2,maxsuper);
         CUDA_CHECK(cudaGetLastError());
     }
 
