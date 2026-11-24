@@ -829,6 +829,7 @@ extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, Su
 extern void dlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwarp);
 extern void dlsum_set_solve_stream(void *stream);
 extern void dlsum_set_solve_order(int *d_bcorder);
+extern int dsolve_gemmflag(int nrhs);
 extern void pdgstrs3d_gpu_fast_solve(superlu_dist_options_t *, int_t, dLUstruct_t *, dSOLVEstruct_t *, gridinfo3d_t *, int, void *stream);
 extern void dlsum_fmod_inv_gpu_wrap(int, int, int, int, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *,
 int_t , uint64_t* ,uint64_t* ,double* ,double* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int);

@@ -148,6 +148,209 @@ __device__ doublecomplex z_atomicAdd(doublecomplex* a, doublecomplex b){
   return out;
 }
 
+/******************************************************************************/
+/* Several right-hand sides (nrhs > 1, SUPERLU_ACC_SOLVE=1): the dense block
+   products of the solve in 8x8 tiles (8 rows x 8 right-hand sides), one tile
+   per warp at a time, on FP64 tensor cores (DMMA m8n8k4, sm_80 and newer; a
+   complex multiply-add is 4 real DMMAs).  A lane then reads each matrix entry
+   once for up to 8 right-hand sides, where the per-row loops read it once per
+   right-hand side.  Without DMMA (an older NVIDIA architecture) the same tiles
+   are computed with FP64 FMAs.  The kernels take this path for gemmflag == 2,
+   which zsolve_gemmflag() sets; one right-hand side, SUPERLU_ACC_SOLVE=2 and
+   HIP keep the other paths.  The thread block size must be a multiple of 32.
+   Lane fragments (g = lane/4, t = lane%4): A[g][t], B[t][g], C[g][2t..2t+1]. */
+/******************************************************************************/
+/* -DSLU_SOLVE_NO_DMMA: the FMA tiles on any architecture (for testing) */
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 800) && !defined(__HIP_PLATFORM_AMD__) && !defined(SLU_SOLVE_NO_DMMA)
+#define SLU_SOLVE_DMMA 1
+static __device__ __forceinline__
+void z_dmma884(double &c0, double &c1, double a, double b)
+{
+    asm volatile("mma.sync.aligned.m8n8k4.row.col.f64.f64.f64.f64 {%0,%1}, {%2}, {%3}, {%0,%1};\n"
+                 : "+d"(c0), "+d"(c1) : "d"(a), "d"(b));
+}
+#endif
+
+/* One 8x8 tile of C = A * B, rows r0..r0+7 and columns c0..c0+7, rows >= M and
+   columns >= N zero.  A is M x K, column major (lda); B(k,j) = B[kb + j*ldb]
+   with kb = k, or gat[k] - rel when gat != NULL.  Every lane of the warp calls
+   it with the same arguments; c[u] = C[g][2t+u]. */
+static __device__ __forceinline__
+void z_tile_gemm(int M, int N, int K, int r0, int c0,
+                 const doublecomplex *A, int lda,
+                 const doublecomplex *B, int ldb, const int_t *gat, int_t rel,
+                 doublecomplex *c)
+{
+    const int lane = (threadIdx_x + threadIdx_y * blockDim_x) & 31;
+    const int g = lane >> 2, t = lane & 3;
+    const int row = r0 + g;
+#ifdef SLU_SOLVE_DMMA
+    __syncwarp();                                      /* mma.sync needs the whole warp */
+    const int col = c0 + g;
+    const int rok = row < M, cok = col < N;
+    double rr0 = 0., rr1 = 0., ii0 = 0., ii1 = 0.;   /* sum ar*br, sum ar*bi */
+    double ri0 = 0., ri1 = 0., ir0 = 0., ir1 = 0.;   /* sum -ai*bi, sum ai*br */
+    /* 8 k-steps at a time, their loads issued before their DMMAs: the time of
+       a tile is then about one memory latency per 32 columns of A. */
+    for (int k0 = 0; k0 < K; k0 += 32) {
+        double ar[8], ai[8], br[8], bi[8];
+#pragma unroll
+        for (int q = 0; q < 8; ++q) {
+            const int k = k0 + 4 * q + t;
+            ar[q] = 0.; ai[q] = 0.; br[q] = 0.; bi[q] = 0.;
+            if (k < K) {
+                if (rok) { ar[q] = A[(size_t) k * lda + row].r; ai[q] = A[(size_t) k * lda + row].i; }
+                if (cok) {
+                    const int_t kb = gat ? gat[k] - rel : k;
+                    br[q] = B[kb + (size_t) col * ldb].r; bi[q] = B[kb + (size_t) col * ldb].i;
+                }
+            }
+        }
+#pragma unroll
+        for (int q = 0; q < 8; ++q) {
+            if (k0 + 4 * q < K) {                     /* the same in every lane */
+                z_dmma884(rr0, rr1, ar[q], br[q]);
+                z_dmma884(ri0, ri1, -ai[q], bi[q]);
+                z_dmma884(ii0, ii1, ar[q], bi[q]);
+                z_dmma884(ir0, ir1, ai[q], br[q]);
+            }
+        }
+    }
+    c[0].r = rr0 + ri0; c[0].i = ii0 + ir0;
+    c[1].r = rr1 + ri1; c[1].i = ii1 + ir1;
+#else
+    const int j0 = c0 + 2 * t, j1 = j0 + 1;
+    double s0r = 0., s0i = 0., s1r = 0., s1i = 0.;
+    if (row < M) {
+        for (int k = 0; k < K; ++k) {
+            const doublecomplex a = A[(size_t) k * lda + row];
+            const int_t kb = gat ? gat[k] - rel : k;
+            if (j0 < N) {
+                const doublecomplex b = B[kb + (size_t) j0 * ldb];
+                s0r += a.r * b.r - a.i * b.i; s0i += a.r * b.i + a.i * b.r;
+            }
+            if (j1 < N) {
+                const doublecomplex b = B[kb + (size_t) j1 * ldb];
+                s1r += a.r * b.r - a.i * b.i; s1i += a.r * b.i + a.i * b.r;
+            }
+        }
+    }
+    c[0].r = s0r; c[0].i = s0i; c[1].r = s1r; c[1].i = s1i;
+#endif
+}
+
+/* x_k <- Inv * x_k for the n x n inverse of a diagonal block (column major) and
+   x_k n x nrhs (ld n); tmp (n x nrhs, ld n) is scratch.  Called by all threads
+   of the block after x_k is complete; returns synchronized. */
+static __device__ void z_tile_diag_inv(int n, int nrhs, const doublecomplex *Inv,
+                                       doublecomplex *xk, doublecomplex *tmp)
+{
+    const int tid = threadIdx_x + threadIdx_y * blockDim_x;
+    const int bs = blockDim_x * blockDim_y, warp = tid >> 5, nwarps = bs >> 5;
+    const int g = (tid & 31) >> 2, t = tid & 3;
+    const int ct = (nrhs + 7) >> 3, ntiles = ((n + 7) >> 3) * ct;
+    for (int tile = warp; tile < ntiles; tile += nwarps) {
+        const int r0 = (tile / ct) * 8, c0 = (tile % ct) * 8, row = r0 + g;
+        doublecomplex c[2];
+        z_tile_gemm(n, nrhs, n, r0, c0, Inv, n, xk, n, NULL, 0, c);
+        for (int u = 0; u < 2; ++u) {
+            const int j = c0 + 2 * t + u;
+            if (row < n && j < nrhs) tmp[row + j * n] = c[u];
+        }
+    }
+    __syncthreads();
+    for (int e = tid; e < n * nrhs; e += bs) xk[e] = tmp[e];
+    __syncthreads();
+}
+
+/* lsum -= L(:,k) * x_k for the m rows of block column k below its diagonal
+   block: lval = their first entry (ld nsupr), row i of L block lb is
+   added to lsum[LSUM_BLK(lk) + irow + j*iknsupc] as in the per-row loops;
+   xk = x_k (ld knsupc).  idx_i as in the kernels (lloc[lb+idx_i] = start of
+   block lb in lsub).  All threads of the block; no synchronization. */
+static __device__ void z_tile_lsum_fmod(int m, int knsupc, int nrhs,
+        const doublecomplex *lval, int nsupr, const doublecomplex *xk,
+        doublecomplex *lsum, const int_t *lsub, const int_t *lloc, int_t idx_i,
+        const int_t *ilsum, const int_t *xsup, gridinfo_t *grid)
+{
+    const int tid = threadIdx_x + threadIdx_y * blockDim_x;
+    const int bs = blockDim_x * blockDim_y, warp = tid >> 5, nwarps = bs >> 5;
+    const int g = (tid & 31) >> 2, t = tid & 3;
+    const int ct = (nrhs + 7) >> 3, rt = (m + 7) >> 3;
+    int_t lb = 0, nbrow = 0, lptr1 = lloc[idx_i];    /* block of this lane's row */
+    int_t il = 0, irow = 0, iknsupc = 0;
+    for (int r = warp; r < rt; r += nwarps) {          /* rows increase */
+        const int row = r * 8 + g;
+        if (row < m) {
+            while (nbrow + lsub[lptr1 + 1] <= row) {
+                nbrow += lsub[lptr1 + 1];
+                ++lb;
+                lptr1 = lloc[lb + idx_i];
+            }
+            const int_t ik = lsub[lptr1];               /* global block row */
+            const int_t lk = LBi(ik, grid);
+            iknsupc = SuperSize(ik);
+            il = LSUM_BLK(lk);
+            irow = lsub[lptr1 + 2 + row - nbrow] - xsup[ik];
+        }
+        for (int cc = 0; cc < ct; ++cc) {
+            doublecomplex c[2];
+            z_tile_gemm(m, nrhs, knsupc, r * 8, cc * 8, lval, nsupr, xk, knsupc, NULL, 0, c);
+            for (int u = 0; u < 2; ++u) {
+                const int j = cc * 8 + 2 * t + u;
+                if (row < m && j < nrhs) {
+                    doublecomplex mc;
+                    mc.r = -c[u].r; mc.i = -c[u].i;
+                    z_atomicAdd(&lsum[il + irow + j * iknsupc], mc);
+                }
+            }
+        }
+    }
+}
+
+/* lsum -= U(:,k) * x_k block by block: U block ub (block row lloc[ub], local)
+   has iknsupc rows (lusup + lloc[2*nub+ub], ld iknsupc) and ncol columns,
+   column l multiplying row usub[lptr+l] - rel of x_k (ld knsupc), lptr =
+   lloc[nub+ub] + 2; the columns are in increasing order (pzconvertU).  The tiles
+   of all blocks are dealt to the warps in turn.  All threads; no sync. */
+static __device__ void z_tile_lsum_bmod(int nub, int knsupc, int nrhs,
+        const doublecomplex *lusup, const doublecomplex *xk, doublecomplex *lsum,
+        const int_t *usub, const int_t *lloc, int_t rel,
+        const int_t *ilsum, const int_t *xsup, gridinfo_t *grid, int myrow)
+{
+    const int tid = threadIdx_x + threadIdx_y * blockDim_x;
+    const int bs = blockDim_x * blockDim_y, warp = tid >> 5, nwarps = bs >> 5;
+    const int g = (tid & 31) >> 2, t = tid & 3;
+    const int ct = (nrhs + 7) >> 3;
+    int base = 0;                                      /* tiles of the blocks before ub */
+    for (int ub = 0; ub < nub; ++ub) {
+        const int_t ik = lloc[ub];
+        const int_t gik = ik * grid->nprow + myrow;
+        const int iknsupc = SuperSize(gik);
+        const int_t luptr = lloc[2 * nub + ub], lptr1 = lloc[nub + ub];
+        const int ncol = usub[lptr1 + 1];
+        const int_t il = LSUM_BLK(ik);
+        const int ntiles = ((iknsupc + 7) >> 3) * ct;
+        /* the columns are in increasing order: all knsupc of them, no gather */
+        const int_t *gat = (ncol == knsupc) ? NULL : &usub[lptr1 + 2];
+        for (int tile = (warp - base % nwarps + nwarps) % nwarps; tile < ntiles; tile += nwarps) {
+            const int r0 = (tile / ct) * 8, c0 = (tile % ct) * 8, row = r0 + g;
+            doublecomplex c[2];
+            z_tile_gemm(iknsupc, nrhs, ncol, r0, c0, &lusup[luptr], iknsupc,
+                        xk, knsupc, gat, rel, c);
+            for (int u = 0; u < 2; ++u) {
+                const int j = c0 + 2 * t + u;
+                if (row < iknsupc && j < nrhs) {
+                    doublecomplex mc;
+                    mc.r = -c[u].r; mc.i = -c[u].i;
+                    z_atomicAdd(&lsum[il + row + j * iknsupc], mc);
+                }
+            }
+        }
+        base += ntiles;
+    }
+}
+
 
 
 
@@ -1902,6 +2105,10 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
         il = LSUM_BLK(lib);
         ii = X_BLK(lib);
 
+        if(gemmflag==2){
+            for (i = tid; i < knsupc*nrhs; i += block_size)
+                z_add(&x[i + ii], &x[i + ii], &lsum[i + il]);
+        }else
         RHS_ITERATE(j)
             for (i = tid; i < knsupc; i += block_size) {
                 //z_atomicAdd(&zready_x[0],lsum[i + il + j * knsupc]);
@@ -1918,7 +2125,9 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 
         Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
-        if(gemmflag==0 || nrhs==1){
+        if(gemmflag==2){
+            z_tile_diag_inv(knsupc, nrhs, Linv, &x[ii], &lsum[il]);
+        }else if(gemmflag==0 || nrhs==1){
             RHS_ITERATE(j){
             for (i = tid; i < knsupc; i += block_size) {
                 temp1 = zero;
@@ -1969,6 +2178,10 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
             __syncthreads();
         }//if(nrhs==1)
 
+        if(gemmflag==2){
+            for (i = tid; i < knsupc*nrhs; i += block_size)
+                zready_x[i + maxrecvsz * lk] = x[i + ii];
+        }else
         RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
                 zready_x[i + maxrecvsz * lk + j * knsupc] = x[i + ii + j * knsupc];
 
@@ -2016,7 +2229,11 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
         lib = LBi(k, grid); /* Local block number, row-wise. */
         ii = X_BLK(lib);
 
-        if(gemmflag==0 || nrhs==1){
+        if(gemmflag!=1 || nrhs==1){
+            if(gemmflag==2){
+                z_tile_lsum_fmod(m, knsupc, nrhs, &lusup[lloc[idx_v]], nsupr, &zready_x[maxrecvsz * keep_lk],
+                                 lsum, lsub, lloc, idx_i, ilsum, xsup, grid);
+            }else{
             luptr_tmp1 = lloc[idx_v];
             lb = 0;
             nbrow = 0;
@@ -2066,6 +2283,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 
 
             }
+            } /* gemmflag != 2 */
             __syncthreads();
 
             luptr_tmp1 = lloc[idx_v];
@@ -2346,6 +2564,10 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                 il = LSUM_BLK( lib );
                 ii = X_BLK( lib );
 
+                if(gemmflag==2){
+                    for (i = tid; i < knsupc*nrhs; i += block_size)
+                        z_add(&x[i + ii], &x[i + ii], &lsum[i + il]);
+                }else
                 RHS_ITERATE(j)
                     for (i = tid; i < knsupc; i+=block_size)
                         z_add(&x[i + ii + j*knsupc],
@@ -2358,7 +2580,9 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
 
                     Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 
-                    if(gemmflag==0 || nrhs==1){
+                    if(gemmflag==2){
+                        z_tile_diag_inv(knsupc, nrhs, Linv, &x[ii], &lsum[il]);
+                    }else if(gemmflag==0 || nrhs==1){
                         RHS_ITERATE(j){
 
                         for (i = tid; i < knsupc; i+=block_size){
@@ -2447,7 +2671,11 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
                 lib = LBi( k, grid ); /* Local block number, row-wise. */
                 ii = X_BLK( lib );
 
-                if(gemmflag==0 || nrhs==1){
+                if(gemmflag!=1 || nrhs==1){
+                    if(gemmflag==2){
+                        z_tile_lsum_fmod(m, knsupc, nrhs, &lusup[lloc[idx_v]], nsupr, &x[ii],
+                                         lsum, lsub, lloc, idx_i, ilsum, xsup, grid);
+                    }else{
                     luptr_tmp1 = lloc[idx_v];
                     lb = 0;
                     nbrow=0;
@@ -2496,6 +2724,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs
 
 
                     }
+                    } /* gemmflag != 2 */
                     __syncthreads();
 
                     if (!nowait) {   /* fmod counters are only read by spinning blocks */
@@ -2924,6 +3153,22 @@ __global__ void zlsum_fmod_inv_gpu_1rhs_warp
 
 
 
+/* gemmflag of the solve kernels: 1 = SUPERLU_ACC_SOLVE=2 (gemm_device_* tiles,
+   several right-hand sides); 2 = several right-hand sides on the 8x8 tiles
+   of z_tile_gemm (tensor cores from sm_80); 0 = the per-row loops.
+   SLU_SOLVE_TC=0 turns the 8x8 tiles off. */
+int zsolve_gemmflag(int nrhs)
+{
+    if ( get_acc_solve() == 2 ) return 1;
+#ifdef HAVE_HIP
+    return 0;
+#else
+    static int tc = -1;
+    if ( tc < 0 ) { const char *e = getenv("SLU_SOLVE_TC"); tc = e ? atoi(e) : 1; }
+    return ( nrhs > 1 && tc ) ? 2 : 0;
+#endif
+}
+
 void zlsum_fmod_inv_gpu_wrap
         (
                 int nbcol_loc,    /*number of local supernode columns*/
@@ -2979,7 +3224,7 @@ void zlsum_fmod_inv_gpu_wrap
     int nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
 
     int mype;
-    int gemmflag = get_acc_solve()==2;
+    int gemmflag = zsolve_gemmflag(nrhs);
     const int *bcorder = g_solve_order;
     g_solve_order = NULL;
 
@@ -3233,6 +3478,10 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 				il = LSUM_BLK( lib );
 				ii = X_BLK( lib );
 
+				if(gemmflag==2){
+					for (i = tid; i < knsupc*nrhs; i += block_size)
+						z_add(&x[i + ii], &x[i + ii], &lsum[i + il]);
+				}else
 				RHS_ITERATE(j)
 					for (i = tid; i < knsupc; i+=block_size){
 			            z_add(&x[i + ii + j*knsupc],
@@ -3251,7 +3500,9 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 
 					Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 
-					if(gemmflag==0 || nrhs==1){
+					if(gemmflag==2){
+						z_tile_diag_inv(knsupc, nrhs, Uinv, &x[ii], &lsum[il]);
+					}else if(gemmflag==0 || nrhs==1){
                         RHS_ITERATE(j){
 						for (i = tid; i < knsupc; i+=block_size){
 							temp1=zero;
@@ -3336,7 +3587,10 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 				lib = LBi( k, grid ); /* Local block number, row-wise. */
 				ii = X_BLK( lib );
 
-				if(gemmflag==0 || nrhs==1){
+				if(gemmflag==2){
+					z_tile_lsum_bmod(nub, knsupc, nrhs, lusup, &x[ii], lsum, usub, lloc, rel,
+					                 ilsum, xsup, grid, myrow);
+				}else if(gemmflag==0 || nrhs==1){
 				// if(0){
                     RHS_ITERATE(j){
 					for (i=tid;i<knsupc;i+=block_size)
@@ -4409,6 +4663,10 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
          il = LSUM_BLK( lib );
          ii = X_BLK( lib );
 
+         if(gemmflag==2){
+             for (i = tid; i < knsupc*nrhs; i += block_size)
+                 z_add(&x[i + ii], &x[i + ii], &lsum[i + il]);
+         }else
          RHS_ITERATE(j)
              for (i = tid; i < knsupc; i+=block_size){
 			z_add(&x[i + ii + j*knsupc],
@@ -4427,7 +4685,9 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 
          Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 
-         if(gemmflag==0 || nrhs==1){
+         if(gemmflag==2){
+             z_tile_diag_inv(knsupc, nrhs, Uinv, &x[ii], &lsum[il]);
+         }else if(gemmflag==0 || nrhs==1){
             RHS_ITERATE(j){
              for (i = tid; i < knsupc; i+=block_size){
                  temp1=zero;
@@ -4479,6 +4739,10 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
              __syncthreads();
          }//if(nrhs==1)
 
+         if(gemmflag==2){
+             for (i = tid; i < knsupc*nrhs; i += block_size)
+                 zready_x[i + maxrecvsz*lk] = x[i + ii];
+         }else
          RHS_ITERATE(j)
              for (i = tid; i < knsupc; i+=block_size)
                  zready_x[i + maxrecvsz*lk + j*knsupc ] = x[i + ii + j*knsupc];
@@ -4530,7 +4794,10 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
          lib = LBi( k, grid ); /* Local block number, row-wise. */
          ii = X_BLK( lib );
 
-         if(gemmflag==0 || nrhs==1){
+         if(gemmflag==2){
+             z_tile_lsum_bmod(nub, knsupc, nrhs, lusup, &zready_x[maxrecvsz*keep_lk], lsum, usub, lloc, rel,
+                              ilsum, xsup, grid, myrow);
+         }else if(gemmflag==0 || nrhs==1){
              RHS_ITERATE(j){
              for (i=tid;i<knsupc;i+=block_size)
                  temp2[i]=zready_x[i + maxrecvsz*keep_lk + j*knsupc]; // Nan
@@ -4736,7 +5003,7 @@ if (MAXSUPER < maxsuper) {
 printf("increase MAXSUPER\n");
 exit(1);
 }
-int gemmflag = get_acc_solve()==2;
+int gemmflag = zsolve_gemmflag(nrhs);
 const int *bcorder = g_solve_order;
 g_solve_order = NULL;
 

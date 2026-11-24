@@ -3272,18 +3272,24 @@ int_t zleafForestForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t 
 
 
 
-/* Threads per block of the single-process GPU triangular-solve kernels
-   (SLU_SOLVE_BLOCK, default 128: the blocks are latency-bound with few
-   active threads, so more resident blocks beat DIM_X*DIM_Y = 256);
-   x-dimension capped at 32.  The GEMM kernels of SUPERLU_ACC_SOLVE=2 with
-   several right-hand sides index their threads as a DIM_X x DIM_Y block and
-   give a wrong solution on any other layout, so they keep it. */
+/* Threads per block of the GPU triangular-solve kernels (SLU_SOLVE_BLOCK;
+   x-dimension capped at 32).  Default 128 for the per-row loops: the blocks
+   are latency-bound with few active threads, so more resident blocks beat
+   DIM_X*DIM_Y = 256.  Default 256 for the 8x8 tiles of several right-hand
+   sides (zsolve_gemmflag() == 2): 8 warps share the tiles of a supernode.
+   The GEMM kernels of SUPERLU_ACC_SOLVE=2 with several right-hand sides
+   index their threads as a DIM_X x DIM_Y block and give a wrong solution on
+   any other layout, so they keep it. */
 static void slu_solve_block_dims(int nrhs, int *nthx, int *nthy)
 {
     static int nt = -1;
     if ( get_acc_solve() == 2 && nrhs > 1 ) { *nthx = DIM_X; *nthy = DIM_Y; return; }
-    if ( nt < 0 ) { const char *e = getenv("SLU_SOLVE_BLOCK"); nt = e ? atoi(e) : 128; if ( nt < 32 ) nt = 32; }
-    *nthx = (nt < 32) ? nt : 32; *nthy = nt / *nthx;
+    if ( nt < 0 ) { const char *e = getenv("SLU_SOLVE_BLOCK"); nt = e ? atoi(e) : 0; if ( e && nt < 32 ) nt = 32; }
+    int t = nt ? nt : 128;
+#ifdef GPU_ACC
+    if ( !nt && zsolve_gemmflag(nrhs) == 2 ) t = 256;
+#endif
+    *nthx = (t < 32) ? t : 32; *nthy = t / *nthx;
 }
 void zForwardSolve3d_newsolve_reusepzgstrs(superlu_dist_options_t *options, int_t n,  zLUstruct_t * LUstruct,
                                zScalePermstruct_t * ScalePermstruct,

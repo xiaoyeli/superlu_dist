@@ -829,6 +829,7 @@ extern void pzconvertU(superlu_dist_options_t *, gridinfo_t *, zLUstruct_t *, Su
 extern void zlsum_set_solve_levels(int *d_levlist, int_t *levlims, int nlev, int *levwarp);
 extern void zlsum_set_solve_stream(void *stream);
 extern void zlsum_set_solve_order(int *d_bcorder);
+extern int zsolve_gemmflag(int nrhs);
 extern void pzgstrs3d_gpu_fast_solve(superlu_dist_options_t *, int_t, zLUstruct_t *, zSOLVEstruct_t *, gridinfo3d_t *, int, void *stream);
 extern void zlsum_fmod_inv_gpu_wrap(int, int, int, int, doublecomplex *, doublecomplex *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, doublecomplex *, int64_t *, doublecomplex *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *,
 int_t , uint64_t* ,uint64_t* ,doublecomplex* ,doublecomplex* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int* ,int);
