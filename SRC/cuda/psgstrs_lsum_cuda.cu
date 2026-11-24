@@ -2560,6 +2560,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs_nvshmem
                 /* All the threads have added their updates of block lk to lsum. */
                 __syncthreads();
                 if (tid == 0) {
+                    __threadfence();   /* release: the block's additions to lsum before the count */
                     fmod_tmp = atomicSub(&fmod[lk * aln_i], 1);
                     /* Last update of block row lk on this process: send the
                        partial sum to the process of the diagonal block, as
@@ -2875,6 +2876,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs
                     __syncthreads();
 
                     if (!nowait) {   /* fmod counters are only read by spinning blocks */
+                    __threadfence();   /* release: the block's additions to lsum before the counts */
                     luptr_tmp1 = lloc[idx_v];
                     lb = 0;
                     nbrow=0;
@@ -2979,7 +2981,7 @@ __global__ void slsum_fmod_inv_gpu_mrhs
 
                         /* All the threads have added their updates of block lk to lsum. */
                         __syncthreads();
-                        if(tid==0)atomicSub(&fmod[lk*aln_i],1);
+                        if(tid==0){ __threadfence(); atomicSub(&fmod[lk*aln_i],1); }   /* release, as above */
 
 
 
@@ -3226,14 +3228,23 @@ __global__ void slsum_fmod_inv_gpu_1rhs_warp
                         s_atomicAdd(&lsum[il+irow + j*iknsupc], -temp1);
                         }
 
-                        if(!nowait && i==nbrow+lsub[lptr1_tmp+1]-1){
-                       	 atomicSub(&fmod[lk*aln_i],1);
-                       	 // __threadfence();
-                        }
 
 
 
 }
+                    /* Release: the lane with a block's last row decremented the
+                       block's count right after its own addition, unordered with
+                       the other lanes' additions to the block.  Now the warp
+                       synchronizes and each count, one per L block, is decremented
+                       after a fence. */
+                    if (!nowait) {
+#ifdef HAVE_CUDA
+                        __syncwarp();
+#endif
+                        __threadfence();
+                        for (lb = lne; lb < nlb; lb += WARP_SIZE)
+                            atomicSub(&fmod[LBi(lsub[lloc[lb+idx_i]], grid)*aln_i], 1);
+                    }
                     // __syncwarp();
 
                 //     luptr_tmp1 = lloc[idx_v];
@@ -3802,11 +3813,13 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
 
 					}//if(nrhs==1)
 	                __syncthreads();
-                    if (!nowait)
+                    if (!nowait) {
+                        __threadfence();   /* release: the additions to lsum before the counts */
                     for (ub = tid; ub < nub; ub+=block_size){
                         ik = lloc[ub];
                         atomicSub(&bmod[ik*aln_i],1);
                         // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
+                    }
                     }
 	                __syncthreads();
 				// } /*if tid<Nchunk*/
@@ -4587,11 +4600,13 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
                     __syncwarp();
                     #endif
 
-                    if (!nowait)
+                    if (!nowait) {
+                        __threadfence();   /* release: the additions to lsum before the counts */
                     for (ub = lne; ub < nub; ub+=WARP_SIZE){
                         ik = lloc[ub];
                         atomicSub(&bmod[ik*aln_i],1);
                         // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
+                    }
                     }
 				}//if(nrhs==1)
                 #ifdef HAVE_CUDA
