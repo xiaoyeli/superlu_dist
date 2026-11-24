@@ -83,6 +83,40 @@ void slsum_set_solve_stream(void *stream)
 {
     g_solve_stream = (cudaStream_t) stream;
 }
+#ifdef HAVE_NVSHMEM
+/* The receive kernels swait_bcrd and swait_bcrd_u are cooperative launches on
+   one stream, the compute kernel follows on another, and its thread blocks
+   spin on what the receive kernel takes in.  If those blocks fill the GPU
+   first, the cooperative launch never starts and the solve hangs: it did in
+   most first solves on a 1x4 grid with lazy module loading, the flags of the
+   arrived messages set and never read.  So the receive kernel's first thread
+   sets this flag (mapped host memory), and the host launches the compute
+   kernel only after it is set. */
+static __device__ int *swait_started_d = NULL;
+static volatile int *swait_started_h = NULL;
+static void swait_started_reset(void)
+{
+    if ( !swait_started_h ) {
+        int *h, *d;
+        CUDA_CHECK(cudaHostAlloc((void**)&h, sizeof(int), cudaHostAllocMapped));
+        CUDA_CHECK(cudaHostGetDevicePointer((void**)&d, h, 0));
+        CUDA_CHECK(cudaMemcpyToSymbol(swait_started_d, &d, sizeof(int *)));
+        swait_started_h = h;
+    }
+    *swait_started_h = 0;
+}
+static void swait_started_wait(void)
+{
+    while ( *swait_started_h == 0 ) ;
+}
+static __device__ __forceinline__ void swait_started_set(void)
+{
+    if ( blockIdx.x == 0 && threadIdx.x == 0 && threadIdx.y == 0 && swait_started_d ) {
+        *(volatile int *) swait_started_d = 1;
+        __threadfence_system();
+    }
+}
+#endif
 /* SLU_SOLVE_PROF=1: synchronize after every level launch and print its time */
 static int solve_prof_on(void)
 { static int on = -1; if (on < 0) { const char *e = getenv("SLU_SOLVE_PROF"); on = e ? atoi(e) : 0; } return on; }
@@ -908,6 +942,7 @@ __global__ void swait_bcrd
                 int_t  nsupers
         ) {
 #ifdef HAVE_NVSHMEM
+    swait_started_set();
     int bid = blockIdx.x;
 //int global_id= blockIdx.x * blockDim.x * blockDim.y + threadIdx.x + threadIdx.y * blockDim.x;
     int tid = threadIdx.x + threadIdx.y * blockDim.x;
@@ -1350,6 +1385,7 @@ __global__ void swait_bcrd_u
                 int_t  nsupers
         ) {
 #ifdef HAVE_NVSHMEM
+    swait_started_set();
     int bid = blockIdx.x;
 //int global_id= blockIdx.x * blockDim.x * blockDim.y + threadIdx.x + threadIdx.y * blockDim.x;
     int tid = threadIdx.x + threadIdx.y * blockDim.x;
@@ -3081,6 +3117,7 @@ void slsum_fmod_inv_gpu_wrap
                         &d_recv_cnt, &d_msgnum, &d_flag_mod, &lsum,&fmod,&grid,&xsup,&ilsum,&nbrow_loc,&nsupers};
 
         int status=1;
+        swait_started_reset();
         status = nvshmemx_collective_launch((const void *) swait_bcrd, dimGrid_bc, dimBlock_bc, args, 0, stream[0]);
         //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
         //printf("(%d), status=%d\n",mype, status);
@@ -3090,6 +3127,7 @@ void slsum_fmod_inv_gpu_wrap
             fprintf(stderr, "shmemx_collective_launch failed %d\n", status);
             exit(-1);
         }else{
+            swait_started_wait();
             slsum_fmod_inv_gpu_mrhs_nvshmem<<< dimGrid, dimBlock, 0, stream[1] >>>(nbcol_loc,nblock_ex,
                                                                                 lsum,x,nrhs,maxsup,nsupers,fmod,
                                                                                 LBtree_ptr,LRtree_ptr,ilsum,
@@ -4793,6 +4831,7 @@ if(procs==1){
             &nsupers};
 
     int status = 1;
+    swait_started_reset();
     status = nvshmemx_collective_launch((const void *) swait_bcrd_u, dimGrid_nv, dimBlock_nv, args, 0, stream[0]);
     //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
     //printf("(%d), status=%d,%d\n",mype, status,status1);
@@ -4802,6 +4841,7 @@ if(procs==1){
         fprintf(stderr, "shmemx_collective_launch U failed %d\n", status);
         exit(-1);
     } else {
+        swait_started_wait();
         slsum_bmod_inv_gpu_mrhs_nvshmem<<< dimGrid, dimBlock, 0, stream[1] >>>(nbcol_loc,
                                                                     lsum, x,
                                                                     nrhs, nsupers, bmod,
