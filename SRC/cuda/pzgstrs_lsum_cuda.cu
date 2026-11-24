@@ -860,6 +860,124 @@ __device__ void zC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
     #endif
     }
 
+#ifdef HAVE_NVSHMEM
+/* Forward the partial sum of block row lib, staged in zready_lsum at lib's
+   first slot, to the parent in the reduction tree: count entries, put by the
+   whole warp (every lane calls it). */
+static __device__ __forceinline__ void zrd_forward_warp(C_Tree *Tree, volatile uint64_t *flag_rd_q, int lib, int count,
+                                                        doublecomplex *zready_lsum, int_t maxrecvsz)
+{
+    const int s = Tree->myIdx % 2;
+    nvshmemx_double_put_signal_nbi_warp((double *) &zready_lsum[lib * maxrecvsz * 2 + s * maxrecvsz],
+                                        (double *) &zready_lsum[lib * maxrecvsz * 2], count * 2,
+                                        (uint64_t *) flag_rd_q + lib * 2 + s, 1, NVSHMEM_SIGNAL_SET, Tree->myRoot_);
+}
+
+/* The reduction messages of a receive kernel (one thread block of nthreads).
+   Each warp serves a share of the nrows block rows that expect messages
+   (colnummod[0:nrows]): its lanes scan the rows for one whose messages have
+   all arrived, add them to lsum together, decrement the row's count (mod) and,
+   when that completes the row on a process that is not the root of its
+   reduction tree, copy the sum to the send buffer and put it with the warp.
+   One thread per row did all of this alone before: knsupc*nrhs additions and
+   copies in a row, on the critical path of every reduction.  statusmod[2*lib]
+   marks a row done. */
+static __device__ void zrecv_rd_warp(int nthreads, int nrhs, C_Tree *Rtree_ptr, int_t maxrecvsz,
+                                     uint64_t *flag_rd_q, doublecomplex *zready_lsum,
+                                     int nrows, const int *colnummod, int *statusmod,
+                                     doublecomplex *lsum, int *mod, gridinfo_t *grid,
+                                     int_t *xsup, int_t *ilsum)
+{
+    const unsigned FULL = 0xffffffffu;
+    const int tid = threadIdx.x + threadIdx.y * blockDim.x;
+    const int lane = tid & 31, w = tid >> 5, nw = nthreads >> 5;
+    if (w >= nw) return;                          /* only whole warps */
+    const int rs = (int) ((long) nrows * w / nw), re = (int) ((long) nrows * (w + 1) / nw);
+    const int myrow = MYROW(grid->iam, grid);
+    volatile uint64_t *flag = (volatile uint64_t *) flag_rd_q;
+    int left = re - rs;
+    while (left > 0) {
+        for (int base = rs; base < re; base += 32) {
+            int r = base + lane, lib = -1, hit = 0;
+            if (r < re) {
+                lib = colnummod[r];
+                if (statusmod[lib * 2] == 0)
+                    hit = ((flag[lib * 2] == 1) + (flag[lib * 2 + 1] == 1)) == Rtree_ptr[lib].destCnt_;
+            }
+            unsigned m = __ballot_sync(FULL, hit);
+            while (m) {
+                const int src = __ffs(m) - 1;
+                m &= m - 1;
+                const int lb = __shfl_sync(FULL, lib, src);
+                const int k = myrow + lb * grid->nprow;   /* global block row */
+                const int knsupc = SuperSize(k), cnt = Rtree_ptr[lb].destCnt_, n = knsupc * nrhs;
+                const int_t il = LSUM_BLK(lb);
+                __threadfence();                          /* the data arrived before the flags */
+                for (int s = 0; s < 2; ++s) {
+                    if (flag[lb * 2 + s] != 1) continue;  /* one message: either slot */
+                    const double *in = (const double *) &zready_lsum[maxrecvsz * lb * 2 + s * maxrecvsz];
+                    for (int e = lane; e < n; e += 32) {
+                        doublecomplex v;
+                        v.r = __ldcg(in + 2 * e);
+                        v.i = __ldcg(in + 2 * e + 1);
+                        z_atomicAdd(&lsum[il + e], v);
+                    }
+                }
+                __threadfence();                          /* the additions before the count */
+                __syncwarp();
+                int old = 0;
+                if (lane == 0) {
+                    statusmod[lb * 2] = 1;
+                    statusmod[lb * 2 + 1] = 1;
+                    old = atomicSub(&mod[lb], cnt);
+                }
+                old = __shfl_sync(FULL, old, 0);
+                if (old == cnt && Rtree_ptr[lb].myRoot_ != Rtree_ptr[lb].myRank_) {
+                    __threadfence();                      /* every addition to the row is in */
+                    const double *ls = (const double *) &lsum[il];
+                    double *out = (double *) &zready_lsum[lb * maxrecvsz * 2];
+                    for (int e = lane; e < 2 * n; e += 32) out[e] = __ldcg(ls + e);
+                    __syncwarp();
+                    zrd_forward_warp(&Rtree_ptr[lb], flag_rd_q, lb, Rtree_ptr[lb].msgSize_ * nrhs,
+                                     zready_lsum, maxrecvsz);
+                }
+                --left;
+            }
+        }
+    }
+}
+#endif
+
+#define RD_FWD_MAX 64
+#ifdef HAVE_NVSHMEM
+/* Rows a thread block of a solve kernel completes and must forward to the
+   parent in their reduction tree: listed in shared memory by the thread that
+   completes each one, then copied and put by the block's warps together. */
+static __device__ void zrd_forward_list(const int *list, int n, C_Tree *Rtree_ptr, volatile uint64_t *flag_rd_q,
+                                        doublecomplex *zready_lsum, doublecomplex *lsum, int_t maxrecvsz,
+                                        int nrhs, int_t *ilsum, int_t *xsup, gridinfo_t *grid)
+{
+    const int tid = threadIdx.x + threadIdx.y * blockDim.x;
+    const int lane = tid & 31, w = tid >> 5, nw = (blockDim.x * blockDim.y) >> 5;
+    if (n == 0) return;
+    __threadfence();                              /* every addition to the rows is in */
+    const int myrow = MYROW(grid->iam, grid);
+    for (int q = w; q < n; q += nw) {
+        const int lk = list[q];
+        const int knsupc = SuperSize(lk * grid->nprow + myrow), cnt = knsupc * nrhs;
+        const double *ls = (const double *) &lsum[LSUM_BLK(lk)];
+        double *out = (double *) &zready_lsum[lk * maxrecvsz * 2];
+        for (int e = lane; e < 2 * cnt; e += 32) out[e] = __ldcg(ls + e);
+        __syncwarp();
+        zrd_forward_warp(&Rtree_ptr[lk], flag_rd_q, lk, Rtree_ptr[lk].msgSize_ * nrhs, zready_lsum, maxrecvsz);
+    }
+}
+#else
+/* The multi-process solve kernels run only with NVSHMEM; they still compile without it. */
+static __device__ __forceinline__ void zrd_forward_list(const int *, int, C_Tree *, volatile uint64_t *,
+                                                        doublecomplex *, doublecomplex *, int_t, int, int_t *, int_t *, gridinfo_t *) {}
+#endif
+
 
 
 
@@ -1100,9 +1218,6 @@ __global__ void zwait_bcrd
     if (bid >=4) { // for RD recv
         tid=(bid-4)*WAIT_NUM_THREADS+tid;
         WAIT_NUM_THREADS=WAIT_NUM_THREADS*4;
-#else
-    if (bid == 1) { // for RD recv
-#endif
         //if (tid==0) printf("RD---(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecvmod[1]);
        int j, iam, lib, myrow, k, knsupc, il, cnt;
        int fmod_tmp, aln_i;
@@ -1349,6 +1464,11 @@ __global__ void zwait_bcrd
            }//for
        } // else WAIT_NUM_THREAD<recv
    }
+#else
+    if (bid == 1)   /* RD recv */
+        zrecv_rd_warp(blockDim.x * blockDim.y, nrhs, LRtree_ptr, maxrecvsz, flag_rd_q, zready_lsum,
+                      d_nfrecvmod[1], d_colnummod, d_statusmod, lsum, fmod, grid, xsup, ilsum);
+#endif
 #if 0
     if (bid==2){
         int tot_threads=blockDim.x * blockDim.y;
@@ -1540,9 +1660,6 @@ __global__ void zwait_bcrd_u
      if (bid >=4) { // for RD recv
         tid=(bid-4)*WAIT_NUM_THREADS+tid;
         WAIT_NUM_THREADS=WAIT_NUM_THREADS*4;
-#else
-     if (bid == 1) { // for RD recv
-#endif
         //if (tid==0) printf("RD---(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecvmod[1]);
         int j, iam, lib, myrow, k, knsupc, il, cnt;
         int bmod_tmp, aln_i;
@@ -1790,6 +1907,11 @@ __global__ void zwait_bcrd_u
             }//for
         } // else WAIT_NUM_THREAD<recv
     }
+#else
+    if (bid == 1)   /* RD recv */
+        zrecv_rd_warp(blockDim.x * blockDim.y, nrhs, URtree_ptr, maxrecvsz, flag_rd_q, zready_lsum,
+                      d_nfrecvmod[1], d_colnummod, d_statusmod, lsum, bmod, grid, xsup, ilsum);
+#endif
 #if 0
     if (bid==2){
         int tot_threads=blockDim.x * blockDim.y;
@@ -2036,6 +2158,7 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
     int bid = bcorder ? bcorder[blockIdx_x] : blockIdx_x;
     int_t tmp;
     int tid = threadIdx_x + threadIdx_y * blockDim_x;
+    __shared__ int rd_fwd[RD_FWD_MAX], rd_nfwd;   /* rows this block forwards */
 // int_t lock = 0;
     const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
     doublecomplex rC[THR_N][THR_M];
@@ -2284,6 +2407,8 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
 
             }
             } /* gemmflag != 2 */
+            if (tid == 0) rd_nfwd = 0;
+            __threadfence();   /* the additions before the counts */
             __syncthreads();
 
             luptr_tmp1 = lloc[idx_v];
@@ -2324,6 +2449,10 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                         if(LRtree_ptr[lk].myRoot_ != LRtree_ptr[lk].myRank_){
                             //cnt=LRtree_ptr[lib].msgSize_;
 
+                            int q = atomicAdd(&rd_nfwd, 1);
+                            if (q < RD_FWD_MAX) {
+                                rd_fwd[q] = lk;   /* the block forwards it below */
+                            } else {          /* list full: this thread alone */
                             my_flag_rd[lk*RDMA_FLAG_SIZE]=lk;
                             my_flag_rd[lk*RDMA_FLAG_SIZE+1]=LRtree_ptr[lk].msgSize_ * nrhs;
                             //doublecomplex tmp_sum=0;
@@ -2347,10 +2476,14 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
                             //       maxrecvsz);
                             //printf("(%d,%d,%d) in solve,lib=%d,gr=%d,ik=%d,myflagrd=%d,%d\n",mype,bid,tid,lk,gr,ik,my_flag_rd[ik*RDMA_FLAG_SIZE],my_flag_rd[ik*RDMA_FLAG_SIZE+1]);
                             zC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*lk], mype, bid, tid, &zready_lsum[0],maxrecvsz,LRtree_ptr[lk].myRoot_);
+                            }
                         }
                     }
                 }
             }
+            __syncthreads();
+            zrd_forward_list(rd_fwd, rd_nfwd < RD_FWD_MAX ? rd_nfwd : RD_FWD_MAX, LRtree_ptr, flag_rd_q,
+                             zready_lsum, lsum, maxrecvsz, nrhs, ilsum, xsup, grid);
             //__syncthreads();
 
         } else {
@@ -3308,6 +3441,7 @@ void zlsum_fmod_inv_gpu_wrap
                         &d_recv_cnt, &d_msgnum, &d_flag_mod, &lsum,&fmod,&grid,&xsup,&ilsum,&nbrow_loc,&nsupers};
 
         int status=1;
+        double t_prof = solve_prof_on() ? SuperLU_timer_() : 0.0;
         zwait_started_reset();
         status = nvshmemx_collective_launch((const void *) zwait_bcrd, dimGrid_bc, dimBlock_bc, args, 0, stream[0]);
         //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
@@ -3337,6 +3471,8 @@ void zlsum_fmod_inv_gpu_wrap
         } // if status
     //} // if npes==1
     CUDA_CHECK(cudaDeviceSynchronize());
+    if ( solve_prof_on() )
+        printf("[solve-prof] L multi-GPU pe %d: %.3f ms\n", mype, 1e3 * (SuperLU_timer_() - t_prof));
     /* The puts of the kernels above are non-blocking.  To another node they go
        through NVSHMEM's proxy and can still be in flight here; the caller then
        resets zready_x/zready_lsum, which are their source and destination, and
@@ -4595,6 +4731,7 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
      int_t tmp;
      int bmod_tmp;
      int tid = threadIdx_x + threadIdx_y * blockDim_x;
+     __shared__ int rd_fwd[RD_FWD_MAX], rd_nfwd;   /* rows this block forwards */
      const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
      doublecomplex rC[THR_N][THR_M];
      // __shared__ doublecomplex x_share[DIM_X*DIM_Y];
@@ -4883,6 +5020,8 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
                  }
              }
          }
+         if (tid == 0) rd_nfwd = 0;
+         __threadfence();   /* the additions before the counts */
          __syncthreads();
 
          for (ub = tid; ub < nub; ub+=block_size){
@@ -4897,6 +5036,10 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
                  if(URtree_ptr[ik].myRoot_ != URtree_ptr[ik].myRank_){
                      //cnt=LRtree_ptr[lib].msgSize_;
 
+                     int q = atomicAdd(&rd_nfwd, 1);
+                     if (q < RD_FWD_MAX) {
+                         rd_fwd[q] = ik;   /* the block forwards it below */
+                     } else {          /* list full: this thread alone */
                      my_flag_rd[ik*RDMA_FLAG_SIZE]=ik;
                      my_flag_rd[ik*RDMA_FLAG_SIZE+1]=URtree_ptr[ik].msgSize_ * nrhs;
                      // doublecomplex tmp_sum=0;
@@ -4921,10 +5064,13 @@ int nowait   /* 1: dependencies already satisfied (level-synchronous launch) */
                      //       maxrecvsz);
                      //printf("(%d,%d,%d) in u solve,lib=%d,gr=%d,myflagrd=%d,%d, sum=%lf\n",mype,bid,tid,ik,gik,my_flag_rd[gik*RDMA_FLAG_SIZE],my_flag_rd[gik*RDMA_FLAG_SIZE+1], tmp_sum);
                      zC_RdTree_forwardMessageSimple_Device(&URtree_ptr[ik], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &zready_lsum[0],maxrecvsz,URtree_ptr[ik].myRoot_);
+                     }
                  }
              }
          }
          __syncthreads();
+         zrd_forward_list(rd_fwd, rd_nfwd < RD_FWD_MAX ? rd_nfwd : RD_FWD_MAX, URtree_ptr, flag_rd_q,
+                          zready_lsum, lsum, maxrecvsz, nrhs, ilsum, xsup, grid);
          // } /*if tid<Nchunk*/
      } /* if nub>0*/
 
@@ -5109,6 +5255,7 @@ if(procs==1){
             &nsupers};
 
     int status = 1;
+    double t_prof = solve_prof_on() ? SuperLU_timer_() : 0.0;
     zwait_started_reset();
     status = nvshmemx_collective_launch((const void *) zwait_bcrd_u, dimGrid_nv, dimBlock_nv, args, 0, stream[0]);
     //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
@@ -5146,6 +5293,8 @@ if(procs==1){
     //CUDA_CHECK(cudaDeviceSynchronize());
     //zlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Urbs,Ufstnz_br_dat,Ufstnz_br_offset,Unzval_br_dat,Unzval_br_offset,Ucb_valdat,Ucb_valoffset,Ucb_inddat,Ucb_indoffset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
     gpuDeviceSynchronize();
+    if ( solve_prof_on() )
+        printf("[solve-prof] U multi-GPU pe %d: %.3f ms\n", mype, 1e3 * (SuperLU_timer_() - t_prof));
     /* The puts of the kernels above are non-blocking.  To another node they go
        through NVSHMEM's proxy and can still be in flight here; the caller then
        resets zready_x/zready_lsum, which are their source and destination, and
