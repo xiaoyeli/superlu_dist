@@ -25,6 +25,22 @@ at the top-level directory.
 
 #include "superlu_zdefs.h"
 
+#ifdef GPU_ACC
+/* A device buffer of at least `bytes`, kept in (*buf, *cap) across solves and
+   freed with the NRformat_loc3d structure.  Allocating and freeing B's device
+   buffers on every solve cost up to 7 ms each (cudaFree also synchronizes the
+   device). */
+static void *dev_buf(void **buf, size_t *cap, size_t bytes)
+{
+    if ( *buf == NULL || *cap < bytes ) {
+        if ( *buf ) checkGPU(gpuFree(*buf));
+        checkGPU(gpuMalloc(buf, bytes > 0 ? bytes : 1));
+        *cap = bytes;
+    }
+    return *buf;
+}
+#endif
+
 /* Dst <- BlockByBlock (Src), reshape the block storage. */
 static void matCopy(int n, int m, doublecomplex *Dst, int lddst, doublecomplex *Src, int ldsrc)
 {
@@ -68,6 +84,9 @@ void zGatherNRformat_loc3d
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+            A3d->B2d = NULL; A3d->B2d_dev_bytes = 0;
+            A3d->Bwork_dev[0] = A3d->Bwork_dev[1] = NULL;
+            A3d->Bwork_dev_bytes[0] = A3d->Bwork_dev_bytes[1] = 0;
 	A3d->num_procs_to_send = SLU_EMPTY; // No X(2d) -> X(3d) comm. schedule yet
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
 
@@ -366,6 +385,9 @@ void zGatherNRformat_loc3d_allgrid
 
         if (Fact == DOFACT) {
             A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+            A3d->B2d = NULL; A3d->B2d_dev_bytes = 0;
+            A3d->Bwork_dev[0] = A3d->Bwork_dev[1] = NULL;
+            A3d->Bwork_dev_bytes[0] = A3d->Bwork_dev_bytes[1] = 0;
             A3d->num_procs_to_send = SLU_EMPTY;
             A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
 
@@ -467,20 +489,18 @@ void zGatherNRformat_loc3d_allgrid
         if (nrhs > 0) {
             if (options && options->GPURES == YES) {
 #ifdef GPU_ACC
-                doublecomplex *Btmp, *Ball;
-                checkGPU(gpuMalloc((void**)&Btmp,
-                                   sizeof(doublecomplex) * (size_t)A->m_loc * (size_t)nrhs));
+                doublecomplex *Btmp = (doublecomplex *) dev_buf(&A3d->Bwork_dev[0], &A3d->Bwork_dev_bytes[0],
+                                   sizeof(doublecomplex) * (size_t)A->m_loc * (size_t)nrhs);
                 zdevice_matcopy_wrap(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
 
-                checkGPU(gpuMalloc((void**)&Ball,
-                                   sizeof(doublecomplex) * (size_t)all_row_disp[nprocs3d] * (size_t)nrhs));
-                checkGPU(gpuMalloc((void**)&A3d->B2d,
-                                   sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs));
+                doublecomplex *Ball = (doublecomplex *) dev_buf(&A3d->Bwork_dev[1], &A3d->Bwork_dev_bytes[1],
+                                   sizeof(doublecomplex) * (size_t)all_row_disp[nprocs3d] * (size_t)nrhs);
+                dev_buf(&A3d->B2d, &A3d->B2d_dev_bytes,
+                        sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs);
 
                 MPI_Allgatherv(Btmp, nrhs * A->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
                                Ball, all_b_counts_int, all_b_disp,
                                SuperLU_MPI_DOUBLE_COMPLEX, grid3d->comm);
-                checkGPU(gpuFree(Btmp));
 
                 for (int z = 0; z < npdep; ++z) {
                     int src_rank = base_rank + z;
@@ -488,7 +508,6 @@ void zGatherNRformat_loc3d_allgrid
                                          ((doublecomplex*)A3d->B2d) + row_disp[z], A2d->m_loc,
                                          Ball + nrhs * all_row_disp[src_rank], row_counts_int[z]);
                 }
-                checkGPU(gpuFree(Ball));
 #else
                 ABORT("GPURES requires GPU_ACC in zGatherNRformat_loc3d_allgrid().");
 #endif
@@ -529,6 +548,9 @@ void zGatherNRformat_loc3d_allgrid
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+            A3d->B2d = NULL; A3d->B2d_dev_bytes = 0;
+            A3d->Bwork_dev[0] = A3d->Bwork_dev[1] = NULL;
+            A3d->Bwork_dev_bytes[0] = A3d->Bwork_dev_bytes[1] = 0;
 	A3d->num_procs_to_send = SLU_EMPTY; // No X(2d) -> X(3d) comm. schedule yet
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
 
@@ -703,24 +725,32 @@ void zGatherNRformat_loc3d_allgrid
 	b_counts_int   = A3d->b_counts_int;
 	b_disp         = A3d->b_disp;;
 
-	if (options && options->GPURES == YES) {
+	if (options && options->GPURES == YES && grid3d->npdep == 1) {
+#ifdef GPU_ACC
+	    /* One process layer: the 2D and 3D row partitions coincide, so
+	       B2d is a device copy of B (no MPI on device memory; the matching
+	       shortcut is in zScatter_B3d). */
+	    dev_buf(&A3d->B2d, &A3d->B2d_dev_bytes, sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs);
+	    zdevice_matcopy_wrap(A->m_loc, nrhs, (doublecomplex*)A3d->B2d, A2d->m_loc, B, ldb);
+#else
+	    ABORT("GPURES requires GPU_ACC in zGatherNRformat_loc3d_allgrid().");
+#endif
+	} else if (options && options->GPURES == YES) {
 #ifdef GPU_ACC
 	    /* Btmp <- compact(B), compacting device B */
-	    doublecomplex *Btmp, *B1;
-	    checkGPU(gpuMalloc((void**)&Btmp,
-			       sizeof(doublecomplex) * (size_t)A->m_loc * (size_t)nrhs));
+	    doublecomplex *Btmp = (doublecomplex *) dev_buf(&A3d->Bwork_dev[0], &A3d->Bwork_dev_bytes[0],
+			       sizeof(doublecomplex) * (size_t)A->m_loc * (size_t)nrhs);
 	    zdevice_matcopy_wrap(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
 
-	    checkGPU(gpuMalloc((void**)&B1,
-			       sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs));
-	    checkGPU(gpuMalloc((void**)&A3d->B2d,
-			       sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs));
+	    doublecomplex *B1 = (doublecomplex *) dev_buf(&A3d->Bwork_dev[1], &A3d->Bwork_dev_bytes[1],
+			       sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs);
+	    dev_buf(&A3d->B2d, &A3d->B2d_dev_bytes,
+		    sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs);
 
 	    // B1 <- allgatherv(Btmp)
 	    MPI_Allgatherv(Btmp, nrhs * A->m_loc, SuperLU_MPI_DOUBLE_COMPLEX, B1,
 			   b_counts_int, b_disp,
 			   SuperLU_MPI_DOUBLE_COMPLEX, grid3d->zscp.comm);
-	    checkGPU(gpuFree(Btmp));
 
 	    // B2d <- colMajor(B1)
 	    for (int i = 0; i < grid3d->npdep; ++i)
@@ -729,8 +759,6 @@ void zGatherNRformat_loc3d_allgrid
 				     ((doublecomplex*)A3d->B2d) + row_disp[i], A2d->m_loc,
 				     B1 + nrhs * row_disp[i], row_counts_int[i]);
 	    }
-
-	    checkGPU(gpuFree(B1));
 #else
 	    ABORT("GPURES requires GPU_ACC in zGatherNRformat_loc3d_allgrid().");
 #endif
@@ -806,12 +834,13 @@ int zScatter_B3d(superlu_dist_options_t *options,
         zdevice_matcopy_wrap(A3d->m_loc, nrhs,
                                   B, ldb,
                                   B2d, A2d->m_loc);
-        checkGPU(gpuFree(B2d));
-		if ( rankorder == 0 ) { // these are not used, but SUPERLU_FREE() will be called in xFreeNRformat_loc3d()
+        /* B2d stays allocated for the next solve (see the gather) */
+		if ( rankorder == 0 && A3d->num_procs_to_send == SLU_EMPTY ) { // these are not used, but SUPERLU_FREE() will be called in xFreeNRformat_loc3d()
 	     A3d->procs_to_send_list = SUPERLU_MALLOC(1 * sizeof(int));
 	     A3d->send_count_list = SUPERLU_MALLOC(1 * sizeof(int));
 	     A3d->procs_recv_from_list = SUPERLU_MALLOC(1 * sizeof(int));
 	     A3d->recv_count_list = SUPERLU_MALLOC(1 * sizeof(int));
+	     A3d->num_procs_to_send = 0;
 		}
         return 0;
 #else
@@ -824,8 +853,8 @@ int zScatter_B3d(superlu_dist_options_t *options,
     {
 	if (gpures) {
 #ifdef GPU_ACC
-	    checkGPU(gpuMalloc((void**)&B1,
-			       sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs));
+	    B1 = (doublecomplex *) dev_buf(&A3d->Bwork_dev[1], &A3d->Bwork_dev_bytes[1],
+				sizeof(doublecomplex) * (size_t)A2d->m_loc * (size_t)nrhs);
 #else
 	    ABORT("GPURES requires GPU_ACC in zScatter_B3d().");
 #endif
@@ -858,8 +887,8 @@ int zScatter_B3d(superlu_dist_options_t *options,
     doublecomplex *Btmp; // on 3D grid
     if (gpures) {
 #ifdef GPU_ACC
-	checkGPU(gpuMalloc((void**)&Btmp,
-			   sizeof(doublecomplex) * (size_t)A3d->m_loc * (size_t)nrhs));
+	Btmp = (doublecomplex *) dev_buf(&A3d->Bwork_dev[0], &A3d->Bwork_dev_bytes[0],
+			     sizeof(doublecomplex) * (size_t)A3d->m_loc * (size_t)nrhs);
 #else
 	ABORT("GPURES requires GPU_ACC in zScatter_B3d().");
 #endif
@@ -1040,6 +1069,9 @@ int zScatter_B3d(superlu_dist_options_t *options,
 	}
 
 	/* 3. Perform the acutal communication */
+	int self_roff = -1;   /* offset of my own block in Btmp */
+	int nsend = 0;
+	MPI_Request *send_reqs = (MPI_Request*) SUPERLU_MALLOC((num_procs_to_send + 1) * sizeof(MPI_Request));
 
 	/* Post irecv first */
 	i = 0; // tracking offset in the recv buffer Btmp[]
@@ -1047,6 +1079,10 @@ int zScatter_B3d(superlu_dist_options_t *options,
 	    src = procs_recv_from_list[j];
 	    tag = iam;
 	    k = nrhs * recv_count_list[j]; // recv count
+	    if ( src == iam ) {   /* my own block: copied below, not sent */
+		self_roff = i;
+		recv_reqs[j] = MPI_REQUEST_NULL;
+	    } else
 	    MPI_Irecv( Btmp + i, k, SuperLU_MPI_DOUBLE_COMPLEX,
 		       src, tag, grid3d->comm, &recv_reqs[j] );
 	    i += k;
@@ -1063,12 +1099,27 @@ int zScatter_B3d(superlu_dist_options_t *options,
 		  iam,dest, send_count_list[p], tag);
 		  fflush(stdout); */
 
-		MPI_Send(B1 + i, nrhs * send_count_list[p],
-			 SuperLU_MPI_DOUBLE_COMPLEX, dest, tag, grid3d->comm);
+		if ( dest == iam ) {
+		    /* A message to myself through MPI was the slowest part of
+		       the scatter with device buffers (92 ms for 67 MB). */
+		    if ( gpures ) {
+#ifdef GPU_ACC
+			checkGPU(gpuMemcpy(Btmp + self_roff, B1 + i,
+					   sizeof(doublecomplex) * (size_t)nrhs * send_count_list[p],
+					   gpuMemcpyDeviceToDevice));
+#endif
+		    } else {
+			memcpy(Btmp + self_roff, B1 + i, sizeof(doublecomplex) * (size_t)nrhs * send_count_list[p]);
+		    }
+		} else
+		MPI_Isend(B1 + i, nrhs * send_count_list[p],
+			 SuperLU_MPI_DOUBLE_COMPLEX, dest, tag, grid3d->comm, &send_reqs[nsend++]);
 		i += nrhs * send_count_list[p];
 	    }
 	}  /* end layer 0 send */
 
+	MPI_Waitall(nsend, send_reqs, MPI_STATUSES_IGNORE);
+	SUPERLU_FREE(send_reqs);
 	/* Wait for all Irecv's to complete */
 	for (i = 0; i < num_procs_to_recv; ++i)
 	    MPI_Wait(&recv_reqs[i], &recv_status);
@@ -1114,33 +1165,15 @@ int zScatter_B3d(superlu_dist_options_t *options,
     }
 
     /* free storage */
-    if (gpures) {
-#ifdef GPU_ACC
-	checkGPU(gpuFree(Btmp));
-#else
-	ABORT("GPURES requires GPU_ACC in zScatter_B3d().");
-#endif
-    } else {
+    if (!gpures) {   /* the device buffers stay allocated for the next solve */
     SUPERLU_FREE(Btmp);
     }
     if (grid3d->zscp.Iam == 0) {
-	if (gpures) {
-#ifdef GPU_ACC
-	    checkGPU(gpuFree(B1));
-#else
-	    ABORT("GPURES requires GPU_ACC in zScatter_B3d().");
-#endif
-	} else {
+	if (!gpures) {
 	SUPERLU_FREE(B1);
     }
     }
-    if (gpures) {
-#ifdef GPU_ACC
-	checkGPU(gpuFree(B2d));
-#else
-	ABORT("GPURES requires GPU_ACC in zScatter_B3d().");
-#endif
-    } else {
+    if (!gpures) {
 	SUPERLU_FREE(B2d); // YL: B2d is allocated in dGatherNRformat_loc3d_allgrid on all layers
     }
 

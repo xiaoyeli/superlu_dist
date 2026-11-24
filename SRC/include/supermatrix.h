@@ -198,8 +198,10 @@ typedef struct NRformat_loc3d
     int nrhs;
     int m_loc;  // relative to 3D process grid
     void *B2d;  // on 2D process layer grid-0
-    size_t B2d_dev_bytes; // GPURES, one process layer: capacity of the device
-                          // B2d kept across solves (0: B2d is not cached)
+    size_t B2d_dev_bytes; // GPURES: capacity of the device B2d kept across
+                          // solves (0: B2d is not cached)
+    void *Bwork_dev[2];   // GPURES: device work buffers of the gather and
+    size_t Bwork_dev_bytes[2]; // the scatter of B, kept across solves
 
     int *row_counts_int; // these counts are stored on 2D layer grid-0,
     int *row_disp;       // but count the number of {A, B} rows along Z-dimension

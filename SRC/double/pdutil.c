@@ -1441,6 +1441,8 @@ void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
     SUPERLU_FREE(A3d->b_disp);
 #ifdef GPU_ACC
     if ( A3d->B2d_dev_bytes > 0 && A3d->B2d ) checkGPU(gpuFree(A3d->B2d));
+    for (int w = 0; w < 2; ++w)
+        if ( A3d->Bwork_dev[w] ) checkGPU(gpuFree(A3d->Bwork_dev[w]));
 #endif
     int rankorder = grid3d->rankorder;
     if ( rankorder == 0 ) { /* Z-major in 3D grid */
