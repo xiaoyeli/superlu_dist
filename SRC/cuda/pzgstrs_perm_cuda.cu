@@ -29,8 +29,12 @@ static __host__ __device__ inline doublecomplex pxgstrs_type_from_int(int_t v) {
 static __host__ __device__ inline int pxgstrs_type_to_int(doublecomplex v) { return (int)v.r; }
 static __host__ __device__ inline doublecomplex pxgstrs_type_scale_real(doublecomplex v, pxgstrs_real_t s) { v.r *= s; v.i *= s; return v; }
 static __host__ __device__ inline doublecomplex pxgstrs_type_add(doublecomplex a, doublecomplex b) { a.r += b.r; a.i += b.i; return a; }
+/* The puts are issued from the GPU (on the default stream), like those of the
+   solve kernels.  Host-initiated puts to another node, issued while NVSHMEM's
+   proxy thread is posting the device-initiated ones, fail in the libfabric
+   transport ("Received an error when trying to post an RMA operation"). */
 #define pxgstrs_nvshmem_put_nbi(dst, src, count, pe) \
-    nvshmem_double_put_nbi((double*)(dst), (const double*)(src), 2*(count), (pe))
+    nvshmemx_double_put_nbi_on_stream((double*)(dst), (const double*)(src), 2*(count), (pe), 0)
 
 
 // This now only deals with 1 MPI case
@@ -248,6 +252,18 @@ void pzReDistribute_B_to_X_gpu_wrap(doublecomplex *B, int_t m_loc, int_t n, int 
     size_t send_alloc_elems = send_elems ? send_elems : 1;
     size_t recv_alloc_elems = recv_elems ? recv_elems : 1;
 
+    /* nvshmem_malloc is collective and symmetric: every PE must pass the same
+       size, since a remote address is the same offset in the target PE's heap;
+       with per-process sizes the buffers can start at different offsets on
+       different PEs.  Use the global maxima, as p?ReDistribute_X_to_B_gpu_wrap
+       does. */
+    {
+        unsigned long long loc_elems[2] = {send_alloc_elems, recv_alloc_elems}, max_elems[2];
+        MPI_Allreduce(loc_elems, max_elems, 2, MPI_UNSIGNED_LONG_LONG, MPI_MAX, grid->comm);
+        send_alloc_elems = (size_t) max_elems[0];
+        recv_alloc_elems = (size_t) max_elems[1];
+    }
+
     d_send_idbuf_B2X = (doublecomplex*) nvshmem_malloc(send_alloc_elems * sizeof(doublecomplex));
     d_recv_idbuf_B2X = (doublecomplex*) nvshmem_malloc(recv_alloc_elems * sizeof(doublecomplex));
 
@@ -307,7 +323,8 @@ void pzReDistribute_B_to_X_gpu_wrap(doublecomplex *B, int_t m_loc, int_t n, int 
     }
     }
 
-    nvshmem_quiet();
+    nvshmemx_quiet_on_stream(0);
+    checkGPU(gpuStreamSynchronize(0));
     nvshmem_barrier_all();
 
 
@@ -672,7 +689,8 @@ void pzReDistribute_X_to_B_gpu_wrap(doublecomplex *B, int_t m_loc, int_t n, int 
     }
     }
 
-    nvshmem_quiet();
+    nvshmemx_quiet_on_stream(0);
+    checkGPU(gpuStreamSynchronize(0));
     nvshmem_barrier_all();
 
     SUPERLU_FREE(remote_rdisp_for_dst_h);
@@ -910,6 +928,18 @@ int pzPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
     size_t send_alloc_elems = send_elems ? send_elems : 1;
     size_t recv_alloc_elems = recv_elems ? recv_elems : 1;
 
+    /* nvshmem_malloc is collective and symmetric: every PE must pass the same
+       size, since a remote address is the same offset in the target PE's heap;
+       with per-process sizes the buffers can start at different offsets on
+       different PEs.  Use the global maxima, as p?ReDistribute_X_to_B_gpu_wrap
+       does. */
+    {
+        unsigned long long loc_elems[2] = {send_alloc_elems, recv_alloc_elems}, max_elems[2];
+        MPI_Allreduce(loc_elems, max_elems, 2, MPI_UNSIGNED_LONG_LONG, MPI_MAX, grid->comm);
+        send_alloc_elems = (size_t) max_elems[0];
+        recv_alloc_elems = (size_t) max_elems[1];
+    }
+
     doublecomplex *d_send_idbuf_PermuteC = NULL;
     doublecomplex *d_recv_idbuf_PermuteC = NULL;
 
@@ -969,7 +999,8 @@ int pzPermute_Dense_Matrix_gpu_wrap(int_t fst_row,
         }
     }
 
-    nvshmem_quiet();
+    nvshmemx_quiet_on_stream(0);
+    checkGPU(gpuStreamSynchronize(0));
     nvshmem_barrier_all();
 
     SUPERLU_FREE(remote_rdisp_for_dst_h);

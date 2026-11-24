@@ -873,6 +873,7 @@ pzgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_x), (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex)));
     checkGPU(gpuMemset( SOLVEstruct->d_lsum, 0, sizelsum * sizeof(doublecomplex)));
     checkGPU(gpuMemset( SOLVEstruct->d_x, 0, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex)));
+    SOLVEstruct->d_Xgpures = NULL; SOLVEstruct->d_Xgpures_len = 0;   /* allocated on first use */
 
     doublecomplex* lsum = (doublecomplex*)SUPERLU_MALLOC(sizelsum * sizeof(doublecomplex));
     for (int_t ii=0; ii < sizelsum; ii++ )
@@ -1142,6 +1143,7 @@ pzgstrs_delete_device_lsum_x(zSOLVEstruct_t *SOLVEstruct)
 {
 #if ( defined(GPU_ACC) )
     checkGPU (gpuFree (SOLVEstruct->d_x));
+    if ( SOLVEstruct->d_Xgpures ) { checkGPU (gpuFree (SOLVEstruct->d_Xgpures)); SOLVEstruct->d_Xgpures = NULL; SOLVEstruct->d_Xgpures_len = 0; }
     checkGPU (gpuFree (SOLVEstruct->d_lsum));
     checkGPU (gpuFree (SOLVEstruct->d_lsum_save));
     checkGPU (gpuFree (SOLVEstruct->d_fmod));

@@ -3108,6 +3108,13 @@ void dlsum_fmod_inv_gpu_wrap
         } // if status
     //} // if npes==1
     CUDA_CHECK(cudaDeviceSynchronize());
+    /* The puts of the kernels above are non-blocking.  To another node they go
+       through NVSHMEM's proxy and can still be in flight here; the caller then
+       resets dready_x/dready_lsum, which are their source and destination, and
+       the receiver gets zeros with a valid flag.  Complete them first. */
+    nvshmemx_quiet_on_stream(0);
+    CUDA_CHECK(cudaStreamSynchronize(0));
+    nvshmem_quiet();
     for (int i = 0; i < 2; ++i) {
         CUDA_CHECK(cudaStreamDestroy(stream[i]));
     }
@@ -4821,6 +4828,13 @@ if(procs==1){
     //CUDA_CHECK(cudaDeviceSynchronize());
     //dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Urbs,Ufstnz_br_dat,Ufstnz_br_offset,Unzval_br_dat,Unzval_br_offset,Ucb_valdat,Ucb_valoffset,Ucb_inddat,Ucb_indoffset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
     gpuDeviceSynchronize();
+    /* The puts of the kernels above are non-blocking.  To another node they go
+       through NVSHMEM's proxy and can still be in flight here; the caller then
+       resets dready_x/dready_lsum, which are their source and destination, and
+       the receiver gets zeros with a valid flag.  Complete them first. */
+    nvshmemx_quiet_on_stream(0);
+    CUDA_CHECK(cudaStreamSynchronize(0));
+    nvshmem_quiet();
     //printf("(%d) back to CPU !!!!! \n",mype);
     //}
     for (int i = 0; i < 2; ++i) {
