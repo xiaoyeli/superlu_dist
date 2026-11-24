@@ -137,6 +137,37 @@ int_t dtrs_B_init3d_newsolve(superlu_dist_options_t *options, int_t nsupers, dou
 double *dready_x, *dready_lsum;
 // #endif
 
+#ifdef GPU_ACC
+/* Levels of the dependency graph of the triangular solves on a 1x1 grid:
+   lev[k] = 1 + max lev[j] over the j < k with L(k,j) or U(j,k) nonzero, so an
+   L solve can run the levels in increasing order and a U solve in decreasing
+   order.  Returns the number of levels. */
+static int
+d_solve_graph_levels(int_t nsupers, dLocalLU_t *Llu, int *lev)
+{
+    int nlev = 0;
+    for (int_t k = 0; k < nsupers; ++k) lev[k] = 0;
+    for (int_t k = 0; k < nsupers; ++k) {
+        int_t nub = Llu->Urbs ? Llu->Urbs[k] : 0;
+        for (int_t ub = 0; ub < nub; ++ub) {      /* U(ik,k), ik < k */
+            int_t ik = Llu->Ucb_indptr[k][ub].lbnum;
+            if (lev[ik] + 1 > lev[k]) lev[k] = lev[ik] + 1;
+        }
+        int_t *lsub = Llu->Lrowind_bc_ptr[k];
+        if (lsub) {                                /* L(gb,k), gb > k */
+            int_t p = BC_HEADER;
+            for (int_t lb = 0; lb < lsub[0]; ++lb) {
+                int_t gb = lsub[p];
+                if (gb != k && lev[k] + 1 > lev[gb]) lev[gb] = lev[k] + 1;
+                p += LB_DESCRIPTOR + lsub[p + 1];
+            }
+        }
+        if (lev[k] + 1 > nlev) nlev = lev[k] + 1;
+    }
+    return nlev;
+}
+#endif
+
 static flops_t
 d_acc_lsolve_flops(int_t nsupers, int nrhs, gridinfo_t *grid,
                    Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
@@ -7756,12 +7787,31 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 	if ( sf && sf->nNodes == nsupers && Llu->nbcol_masked == nsupers ) {
 	    int nlev = (int) sf->topoInfo.numLvl;
 	    int *hl = (int *) SUPERLU_MALLOC(nsupers * sizeof(int));
-	    for (int_t t = 0; t < nsupers; ++t) hl[t] = (int) sf->nodeList[t];
+	    /* The levels of the dependency graph of the two solves.  For a factor
+	       computed here they are as many as the tree levels; a solve-only
+	       factor (options->SolveOnly) comes with a chain tree, one level per
+	       supernode, and its graph may have far fewer (37 instead of 8192 for
+	       a 4-D lattice).  Use them when they are fewer. */
+	    int *glev = (int *) SUPERLU_MALLOC(nsupers * sizeof(int));
+	    int gnlev = d_solve_graph_levels(nsupers, Llu, glev);
+	    int use_graph = (gnlev < nlev);
+	    Llu->levlims = (int_t *) SUPERLU_MALLOC(((use_graph ? gnlev : nlev) + 1) * sizeof(int_t));
+	    if ( use_graph ) {
+		/* counting sort of the supernodes by level, increasing k in a level */
+		for (int l = 0; l <= gnlev; ++l) Llu->levlims[l] = 0;
+		for (int_t k = 0; k < nsupers; ++k) ++Llu->levlims[glev[k] + 1];
+		for (int l = 0; l < gnlev; ++l) Llu->levlims[l + 1] += Llu->levlims[l];
+		for (int_t k = 0; k < nsupers; ++k) hl[Llu->levlims[glev[k]]++] = (int) k;
+		for (int l = gnlev; l > 0; --l) Llu->levlims[l] = Llu->levlims[l - 1];
+		Llu->levlims[0] = 0;
+		nlev = gnlev;
+	    } else {
+		for (int_t t = 0; t < nsupers; ++t) hl[t] = (int) sf->nodeList[t];
+		for (int l = 0; l <= nlev; ++l) Llu->levlims[l] = sf->topoInfo.eTreeTopLims[l];
+	    }
+	    SUPERLU_FREE(glev);
 	    checkGPU(gpuMalloc((void**)&Llu->d_levlist, nsupers * sizeof(int)));
 	    checkGPU(gpuMemcpy(Llu->d_levlist, hl, nsupers * sizeof(int), gpuMemcpyHostToDevice));
-	    SUPERLU_FREE(hl);
-	    Llu->levlims = (int_t *) SUPERLU_MALLOC((nlev + 1) * sizeof(int_t));
-	    for (int l = 0; l <= nlev; ++l) Llu->levlims[l] = sf->topoInfo.eTreeTopLims[l];
 	    Llu->nlevels = nlev;
 	    /* A level of many small supernodes is latency-bound: one warp per
 	       supernode (48 registers) keeps 2-8x more supernodes in flight than
@@ -7775,7 +7825,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 		for (int l = 0; l < nlev; ++l) {
 		    int_t maxsz = 0;
 		    for (int_t t = Llu->levlims[l]; t < Llu->levlims[l + 1]; ++t) {
-			int_t sz = SuperSize(sf->nodeList[t]);
+			int_t sz = SuperSize(hl[t]);
 			if (sz > maxsz) maxsz = sz;
 		    }
 		    int_t w = Llu->levlims[l + 1] - Llu->levlims[l];
@@ -7784,11 +7834,12 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 		}
 #if ( PRNTlevel>=1 )
 		if ( get_solve_levels() )
-		    printf(".. GPU trisolve: level-synchronous launches, %d levels (%d with the warp kernel)\n", nlev, nwarp);
+		    printf(".. GPU trisolve: level-synchronous launches, %d %s levels (%d with the warp kernel)\n", nlev, use_graph ? "graph" : "tree", nwarp);
 		else
-		    printf(".. GPU trisolve: single launch with spin-wait (SLU_SOLVE_LEVELS=0), %d tree levels\n", nlev);
+		    printf(".. GPU trisolve: single launch with spin-wait (SLU_SOLVE_LEVELS=0), %d %s levels\n", nlev, use_graph ? "graph" : "tree");
 #endif
 	    }
+	    SUPERLU_FREE(hl);
 	} else {
 	    Llu->nlevels = -1;   /* not applicable; do not try again */
 	}
