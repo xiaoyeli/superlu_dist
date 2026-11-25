@@ -41,7 +41,7 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
  * Static pivoting is a technique that combines the numerical stability
  * of partial pivoting with the scalability of Cholesky (no pivoting),
  * to run accurately and efficiently on large numbers of processors.
- * See our paper at http://www.nersc.gov/~xiaoye/SuperLU/ for a detailed
+ * See our paper at https://portal.nersc.gov/project/sparse/superlu/ for a detailed
  * description of the parallel algorithms.
  *
  * The input matrices A and B are distributed by block rows.
