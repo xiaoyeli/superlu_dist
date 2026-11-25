@@ -1438,7 +1438,9 @@ void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
         if ( A3d->Bwork_dev[w] ) checkGPU(gpuFree(A3d->Bwork_dev[w]));
 #endif
     int rankorder = grid3d->rankorder;
-    if ( rankorder == 0 ) { /* Z-major in 3D grid */
+    /* Z-major in 3D grid: the lists are allocated by the first solve
+       (zScatter_B3d); there are none after a factorization alone (nrhs = 0) */
+    if ( rankorder == 0 && A3d->num_procs_to_send != SLU_EMPTY ) {
         SUPERLU_FREE(A3d->procs_to_send_list);
         SUPERLU_FREE(A3d->send_count_list);
         SUPERLU_FREE(A3d->procs_recv_from_list);
