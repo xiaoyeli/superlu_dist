@@ -14,12 +14,12 @@ at the top-level directory.
  * \brief Several matrix utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 9.3.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
- *
- * Last modified:
- * 	December 28, 2022
+ * Last update: December 28, 2022
+ *              September 23, 2026, v9.3.0
+ *		November 26, 2026
  * </pre>
  */
 
@@ -124,6 +124,7 @@ int pdCompRow_loc_to_CompCol_global
 	rdispls[i] = i * (n_loc + 1);
 	j += n_locs[i]; /* First column of next block in colptr_loc[] */
     }
+
     /* Only the blocks with nonzeros need to be exchanged: the column
        pointers of an empty block are all equal (their differences, the
        column counts, are all zero). The number of nonzeros per block is
@@ -155,7 +156,7 @@ int pdCompRow_loc_to_CompCol_global
         SUPERLU_FREE(reqs);
         SUPERLU_FREE(nnzcnts);
     }
-
+    
     /* Adjust colptr_blk[] so that they contain the local indices of the
        column pointers in the receive buffer. */
     nnz = 0; /* The running sum of the nonzeros counted by far */
@@ -190,6 +191,8 @@ int pdCompRow_loc_to_CompCol_global
     if ( !(rowind_recv = (int_t *) intMalloc_dist(2*k)) )
         ABORT("Malloc fails for rowind_recv[]");
     rowind_buf = rowind_recv + k;
+    
+    /* Only the blocks with nonzeros need to be exchanged */
     {
         int nreq = 0;
         MPI_Request *reqs;
@@ -206,10 +209,14 @@ int pdCompRow_loc_to_CompCol_global
         MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
         SUPERLU_FREE(reqs);
     }
+    
     if ( need_value ) {
         if ( !(a_recv = (double *) doubleMalloc_dist(2*k)) )
 	    ABORT("Malloc fails for rowind_recv[]");
 	a_buf = a_recv + k;
+	//MPI_Alltoallv(a_loc, sendcnts, sdispls, MPI_DOUBLE,
+        //            a_recv, recvcnts, rdispls, MPI_DOUBLE, grid->comm);
+        /* Only the blocks with nonzeros need to be exchanged */
         {
             int nreq = 0;
             MPI_Request *reqs;

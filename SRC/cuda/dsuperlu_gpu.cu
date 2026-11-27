@@ -286,7 +286,7 @@ void Scatter_GPU_kernel(
 		/*do a search ljb_ind at local row lib*/
 		// int blks_per_threads = CEILING(num_u_blocks, blockDim.x);
 		int blks_per_threads = CEILING(num_u_blocks, blockDim_x);
-		// printf("blockDim.x =%d \n", blockDim.x);
+		// printf("blockDim_x =%d \n", blockDim_x);
 
 		for (int i = 0; i < blks_per_threads; ++i)
 			/* each thread is assigned a chunk of consecutive U blocks to search */

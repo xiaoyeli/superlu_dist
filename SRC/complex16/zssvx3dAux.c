@@ -179,12 +179,12 @@ void zscaleFromScratch(
         return;
     }
 
-    /* *iinfo > 0 means pzgsequ() found a zero row or column scale factor
-       (A has an empty row/column); R, C, rowcnd and colcnd are not fully
-       computed in that case (see pzgsequ.c), so skip applying them here
-       instead of scaling A by garbage. The matrix is singular; the
-       caller will still get info > 0 back, from pivotL() by way of
-       symbfact(), a little further down. */
+    /* *iinfo > 0 means pzgsequ() found a zero row or column scale
+       factor (A has an empty row/column); R, C, rowcnd and colcnd are
+       not fully computed in that case (see pzgsequ.c), so skip
+       applying them here instead of scaling A by garbage. The matrix
+       is singular; the caller will still get info > 0 back, from
+       pivotL() by way of symbfact(), a little further down. */
     if (*iinfo == 0) {
     pzlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
 
@@ -545,7 +545,9 @@ void zperform_row_permutation(
     int_t* rowind = NULL;
     int_t nnz = 0;
     doublecomplex* a_GA = NULL;
-    if ( Fact != SamePattern_SameRowPerm ) {
+    /* GA is also absent for ParSymbFact = YES with NOROWPERM: the
+       distributed symbolic factorization consumes A directly. */
+    if ( Fact != SamePattern_SameRowPerm && GA->Store != NULL ) {
 	GAstore = (NCformat *)GA->Store;
 	colptr = GAstore->colptr;
 	rowind = GAstore->rowind;

@@ -19,6 +19,7 @@ at the top-level directory.
  * March 15, 2003
  * Last update: December 28, 2022
  *              September 23, 2026, v9.3.0
+ *		November 26, 2026
  * </pre>
  */
 
@@ -123,6 +124,7 @@ int psCompRow_loc_to_CompCol_global
 	rdispls[i] = i * (n_loc + 1);
 	j += n_locs[i]; /* First column of next block in colptr_loc[] */
     }
+
     /* Only the blocks with nonzeros need to be exchanged: the column
        pointers of an empty block are all equal (their differences, the
        column counts, are all zero). The number of nonzeros per block is
@@ -154,7 +156,7 @@ int psCompRow_loc_to_CompCol_global
         SUPERLU_FREE(reqs);
         SUPERLU_FREE(nnzcnts);
     }
-
+    
     /* Adjust colptr_blk[] so that they contain the local indices of the
        column pointers in the receive buffer. */
     nnz = 0; /* The running sum of the nonzeros counted by far */
@@ -189,6 +191,8 @@ int psCompRow_loc_to_CompCol_global
     if ( !(rowind_recv = (int_t *) intMalloc_dist(2*k)) )
         ABORT("Malloc fails for rowind_recv[]");
     rowind_buf = rowind_recv + k;
+    
+    /* Only the blocks with nonzeros need to be exchanged */
     {
         int nreq = 0;
         MPI_Request *reqs;
@@ -205,10 +209,14 @@ int psCompRow_loc_to_CompCol_global
         MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
         SUPERLU_FREE(reqs);
     }
+    
     if ( need_value ) {
         if ( !(a_recv = (float *) floatMalloc_dist(2*k)) )
 	    ABORT("Malloc fails for rowind_recv[]");
 	a_buf = a_recv + k;
+	//MPI_Alltoallv(a_loc, sendcnts, sdispls, MPI_FLOAT,
+        //            a_recv, recvcnts, rdispls, MPI_FLOAT, grid->comm);
+        /* Only the blocks with nonzeros need to be exchanged */
         {
             int nreq = 0;
             MPI_Request *reqs;
@@ -475,6 +483,7 @@ void sLUstructInit(const int_t n, sLUstruct_t *LUstruct)
     LUstruct->dt = 's';
     LUstruct->trf3Dpart = NULL;
     LUstruct->batch_dev = NULL;
+    LUstruct->batch_anorm = 0.0;
 }
 
 /*! \brief Deallocate LUstruct */
@@ -641,6 +650,9 @@ if (get_acc_solve()){
     checkGPU (gpuFree (Llu->d_Unzval_bc_offset));
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat));
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
+    if (Llu->d_levlist) { checkGPU (gpuFree (Llu->d_levlist)); Llu->d_levlist = NULL; }
+    if (Llu->levlims) { SUPERLU_FREE (Llu->levlims); Llu->levlims = NULL; }
+    if (Llu->levwarp) { SUPERLU_FREE (Llu->levwarp); Llu->levwarp = NULL; }
 #ifdef U_BLOCK_PER_ROW_ROWDATA
     checkGPU (gpuFree (Llu->d_Ucolind_br_dat));
     checkGPU (gpuFree (Llu->d_Ucolind_br_offset));
@@ -875,6 +887,7 @@ psgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     checkGPU(gpuMemset( SOLVEstruct->d_lsum, 0, sizelsum * sizeof(float)));
     checkGPU(gpuMemset( SOLVEstruct->d_x, 0, (ldalsum * nrhs + nlb * XK_H) * sizeof(float)));
     SOLVEstruct->d_Xgpures = NULL; SOLVEstruct->d_Xgpures_len = 0;   /* allocated on first use */
+    SOLVEstruct->fast_xlen = 0; SOLVEstruct->fast_in = NULL; SOLVEstruct->fast_out = NULL;
 
     float* lsum = (float*)SUPERLU_MALLOC(sizelsum * sizeof(float));
     for (int_t ii=0; ii < sizelsum; ii++ )
@@ -1131,7 +1144,6 @@ psgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     SUPERLU_FREE(tmp_val_u);
     #endif
 
-
 #endif
 
     return 0;
@@ -1144,6 +1156,9 @@ psgstrs_delete_device_lsum_x(sSOLVEstruct_t *SOLVEstruct)
 #if ( defined(GPU_ACC) )
     checkGPU (gpuFree (SOLVEstruct->d_x));
     if ( SOLVEstruct->d_Xgpures ) { checkGPU (gpuFree (SOLVEstruct->d_Xgpures)); SOLVEstruct->d_Xgpures = NULL; SOLVEstruct->d_Xgpures_len = 0; }
+    if ( SOLVEstruct->fast_in ) { SUPERLU_FREE (SOLVEstruct->fast_in); SOLVEstruct->fast_in = NULL; }
+    if ( SOLVEstruct->fast_out ) { SUPERLU_FREE (SOLVEstruct->fast_out); SOLVEstruct->fast_out = NULL; }
+    SOLVEstruct->fast_xlen = 0;
     checkGPU (gpuFree (SOLVEstruct->d_lsum));
     checkGPU (gpuFree (SOLVEstruct->d_lsum_save));
     checkGPU (gpuFree (SOLVEstruct->d_fmod));

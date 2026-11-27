@@ -535,13 +535,13 @@ void zbcastDistSymbLU(SuperMatrix *A,
 
     MPI_Bcast(memStrLU, 1, MPI_FLOAT, 0, zcomm);
 
-    /* Scale/permutation state is modified only on layer zero. */
+    /* Scale/permutation state is modified only on layer zero.  perm_r[] and
+       perm_c[] are int arrays (32-bit even when int_t is 64-bit), allocated
+       on every layer by zScalePermstructInit(). */
     MPI_Bcast(&ScalePermstruct->DiagScale, sizeof(DiagScale_t), MPI_BYTE,
               0, zcomm);
-    MPI_Bcast(ScalePermstruct->perm_r, m * sizeof(int_t), MPI_BYTE,
-              0, zcomm);
-    MPI_Bcast(ScalePermstruct->perm_c, n * sizeof(int_t), MPI_BYTE,
-              0, zcomm);
+    MPI_Bcast(ScalePermstruct->perm_r, m, MPI_INT, 0, zcomm);
+    MPI_Bcast(ScalePermstruct->perm_c, n, MPI_INT, 0, zcomm);
     if (ScalePermstruct->DiagScale == ROW ||
         ScalePermstruct->DiagScale == BOTH)
         allocBcastArray((void **) &ScalePermstruct->R,
